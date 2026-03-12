@@ -1,0 +1,88 @@
+:root {
+  /* Surface */
+  --bg: #FAFAF9;
+  --surface: #FFFFFF;
+  --surface-hover: #F5F5F4;
+  --surface-active: #EFEDEB;
+  --surface-elevated: #FFFFFF;
+  --sidebar-bg: #1A1247;
+  --sidebar-hover: #2B1878;
+  --sidebar-active: #3A2888;
+
+  /* Text */
+  --text-primary: #333333;
+  --text-secondary: #555555;
+  --text-tertiary: #999999;
+  --text-inverse: #FAFAF9;
+  --text-sidebar: #A8A0C4;
+  --text-sidebar-active: #FFFFFF;
+
+  /* Accent (Brand Indigo) */
+  --accent: #2B1878;
+  --accent-light: #EEEAFF;
+  --accent-hover: #1F1059;
+
+  /* Brand CTA (Orange) */
+  --cta: #FF8730;
+  --cta-hover: #E6751A;
+  --cta-light: #FFF3E8;
+
+  /* Status */
+  --committed: #16A34A;
+  --committed-bg: #F0FDF4;
+  --awaiting: #EA580C;
+  --awaiting-bg: #FFF7ED;
+  --upcoming: #9CA3AF;
+  --upcoming-bg: #F9FAFB;
+
+  /* Phase Colors */
+  --phase-1: #7C3AED;
+  --phase-1-light: #F5F3FF;
+  --phase-1-mid: #EDE9FE;
+  --phase-1-text: #6D28D9;
+
+  --phase-2: #2563EB;
+  --phase-2-light: #EFF6FF;
+  --phase-2-mid: #DBEAFE;
+  --phase-2-text: #1D4ED8;
+
+  --phase-3: #D97706;
+  --phase-3-light: #FFFBEB;
+  --phase-3-mid: #FEF3C7;
+  --phase-3-text: #B45309;
+
+  --phase-4: #059669;
+  --phase-4-light: #ECFDF5;
+  --phase-4-mid: #D1FAE5;
+  --phase-4-text: #047857;
+
+  /* Border */
+  --border: #E5E5E5;
+  --border-light: #F0F0F0;
+
+  /* Radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-xl: 0 8px 40px rgba(0,0,0,0.12);
+
+  /* Spacing */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-2xl: 32px;
+  --sp-3xl: 48px;
+
+  /* Layout */
+  --sidebar-w: 260px;
+  --sidebar-collapsed-w: 56px;
+  --bottomnav-h: 64px;
+}
