@@ -10,7 +10,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
-- **Deploy:** Vercel
+- **Deploy:** Vercel (frontend), Coolify → self-hosted Supabase (backend + Edge Functions)
 - **Fonts:** DM Sans (UI) + DM Mono (code/metadata)
 
 ## Architecture Rules (non-negotiable)
@@ -45,7 +45,8 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/ARCHITECTURE.md` | System architecture, data flow diagrams |
 | `docs/DECISIONS.md` | Architecture Decision Records |
 | `docs/CHANGELOG.md` | What changed, when, why |
-| `kamanin-portal-prototype.html` | Working HTML prototype — visual reference for all UI |
+| `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
+| `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts |
 
 ## Commands
 
@@ -59,42 +60,57 @@ npx supabase gen types typescript --project-id [id] > src/shared/types/database.
 ## Project Structure
 
 ```
-kamanin-portal/
+PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 ├── CLAUDE.md
 ├── docs/
-│   ├── SPEC.md              # Design tokens, component specs, status mapping
-│   ├── ARCHITECTURE.md       # System architecture
-│   ├── DECISIONS.md          # ADR log
+│   ├── SPEC.md                 # Design tokens, component specs, status mapping
+│   ├── ARCHITECTURE.md         # System architecture
+│   ├── DECISIONS.md            # ADR log
 │   └── CHANGELOG.md
 ├── src/
-│   ├── app/                  # App.tsx, routes.tsx, providers.tsx
+│   ├── app/                    # App.tsx, routes.tsx, providers.tsx
 │   ├── shared/
-│   │   ├── components/ui/    # shadcn/ui
+│   │   ├── components/ui/      # shadcn/ui
 │   │   ├── components/layout/  # AppShell, Sidebar, MobileHeader, BottomNav
 │   │   ├── components/common/  # Badge, StatusDot, EmptyState
-│   │   ├── hooks/            # useAuth, useProfile, useRealtime, useBreakpoint
-│   │   ├── lib/              # supabase.ts, constants.ts, utils.ts
-│   │   ├── styles/tokens.css # CSS custom properties
-│   │   └── types/            # database.ts (generated), common.ts
+│   │   ├── hooks/              # useAuth, useProfile, useRealtime, useBreakpoint
+│   │   ├── lib/                # supabase.ts, constants.ts, utils.ts
+│   │   ├── styles/tokens.css   # CSS custom properties
+│   │   └── types/              # database.ts (generated), common.ts
 │   ├── modules/
-│   │   ├── projects/         # Project Experience module
-│   │   │   ├── components/   # overview/, steps/, tasks/, files/, messages/, help/
-│   │   │   ├── hooks/        # useProject, useChapterHelpers, useHeroPriority
-│   │   │   ├── lib/          # phase-colors, mock-data, helpers
-│   │   │   ├── types/        # project.ts
-│   │   │   └── pages/        # ProjectPage.tsx
-│   │   └── tickets/          # Tasks/Support module (Phase 3.5)
-│   │       ├── components/   # TaskCard (rich), TaskList (grid), TaskDetail, TaskActions,
-│   │       │                 # TaskFilters (counts+Mehr), TaskSearchBar, SyncIndicator,
-│   │       │                 # NewTaskButton, TaskDetailSheet, TaskComments, etc.
-│   │       ├── hooks/        # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts
-│   │       ├── lib/          # status-mapping, status-dictionary, transforms, dictionary
-│   │       ├── types/        # tasks.ts
-│   │       └── pages/        # TicketsPage (Sheet-based), SupportPage
+│   │   ├── projects/           # Project Experience module
+│   │   │   ├── components/     # overview/, steps/, tasks/, files/, messages/, help/
+│   │   │   ├── hooks/          # useProject, useChapterHelpers, useHeroPriority
+│   │   │   ├── lib/            # phase-colors, mock-data, helpers
+│   │   │   ├── types/          # project.ts
+│   │   │   └── pages/          # ProjectPage.tsx
+│   │   └── tickets/            # Tasks/Support module (Phase 3.5)
+│   │       ├── components/     # TaskCard, TaskList, TaskDetail, TaskActions,
+│   │       │                   # TaskFilters, TaskSearchBar, SyncIndicator,
+│   │       │                   # NewTaskButton, TaskDetailSheet, TaskComments
+│   │       ├── hooks/          # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts
+│   │       ├── lib/            # status-mapping, status-dictionary, transforms, dictionary
+│   │       ├── types/          # tasks.ts
+│   │       └── pages/          # TicketsPage (Sheet-based), SupportPage
 │   └── main.tsx
-├── supabase/functions/       # Edge Functions (existing, don't modify)
+├── supabase/
+│   └── functions/              # Edge Functions (deployed via volume mount to Coolify)
+│       ├── main/index.ts       # Router — dispatches requests to worker functions
+│       ├── _shared/            # cors.ts, logger.ts, utils.ts, emailCopy.ts
+│       ├── fetch-clickup-tasks/
+│       ├── fetch-task-comments/
+│       ├── fetch-single-task/
+│       ├── post-task-comment/
+│       ├── update-task-status/
+│       ├── clickup-webhook/
+│       ├── fetch-project-tasks/
+│       ├── send-mailjet-email/
+│       ├── create-clickup-task/
+│       ├── auth-email/
+│       ├── send-feedback/
+│       └── send-support-message/
 ├── tailwind.config.ts
-└── .env.local                # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+└── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 ```
 
 ## Status Mapping (ClickUp → Portal)
@@ -127,7 +143,7 @@ Secondary actions (Put on Hold, Cancel) available on all non-terminal states.
 Tool for fetching LLM-optimized API docs on demand instead of guessing from training data.
 
 - **Install:** `npm install -g @aisuite/chub` (already installed globally)
-- **Skill:** `~/.claude/skills/get-api-docs/SKILL.md` (global) + `kamanin-portal/.claude/skills/get-api-docs/SKILL.md` (project)
+- **Skill:** `~/.claude/skills/get-api-docs/SKILL.md` (global)
 - **Usage:** Before writing code against an external API → `chub search [api]` → `chub get [id] --lang js`
 - **Add gotchas:** `chub annotate [id] "note"` (overwrites — combine all notes for same ID into one call)
 - **Available for our stack:** `supabase/client` (v2.76.1) — includes our portal-specific annotations

@@ -42,6 +42,23 @@
 - Build: 0 TypeScript errors
 
 
+## Monorepo + Edge Functions Deployment — 2026-03-12
+
+### Repo Restructure (ADR-007)
+- Flattened project: React app at repo root, Edge Functions at `supabase/functions/`
+- Pushed to GitHub: `kamanin-lab/portal` (initial commit `21b9330`)
+- Old dirs (`kamanin-portal/`, `tickets/`) gitignored as local reference
+
+### Edge Functions Deployment (ADR-008)
+- Deployed 12 Edge Functions to self-hosted Supabase via Coolify volume mount
+- Added `supabase/functions/main/index.ts` — official router using `EdgeRuntime.userWorkers.create()`
+- Fixed: `index.ts` files created as directories instead of files (caused "Is a directory" boot error)
+- Fixed: placeholder `main/index.ts` caught all requests instead of routing to workers
+- All 12 functions responding: fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message
+- Env vars (CLICKUP_API_TOKEN, MAILJET keys, ANTHROPIC_API_KEY) set via Coolify UI
+- Copied `.claude/skills/clickup-api/` (9 files) and `.env.local` from old `kamanin-portal/` to project root
+- Old directories (`kamanin-portal/`, `tickets/`) safe to delete — all content verified migrated
+
 ## Phase 3.5: AppShell Redesign + Ticket UI Restoration — 2026-03-11
 
 ### Step 1: Workspace Registry
