@@ -32,7 +32,10 @@ export function AppRoutes() {
           element={<WorkspaceGuard moduleKey="tickets"><SupportPage /></WorkspaceGuard>}
         />
 
-        <Route path="/uebersicht/*" element={<UebersichtPage />} />
+        <Route
+          path="/projekte/*"
+          element={<WorkspaceGuard moduleKey="projects"><UebersichtPage /></WorkspaceGuard>}
+        />
         <Route path="/aufgaben" element={<Navigate to="/tickets" replace />} />
         <Route path="/nachrichten" element={<NachrichtenPage />} />
         <Route path="/dateien" element={<DateienPage />} />

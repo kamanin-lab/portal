@@ -96,7 +96,7 @@ function getPhaseOptionId(
 ): string | null {
   if (!customFields || !phaseFieldId) return null;
   const field = customFields.find((f) => f.id === phaseFieldId);
-  if (!field || !field.value) return null;
+  if (!field || field.value === undefined || field.value === null) return null;
   // Dropdown fields store the option index as a number; the actual option UUID is in type_config
   // But ClickUp API returns the option orderindex as value for dropdown fields
   // We need to match by value → type_config.options[orderindex].id

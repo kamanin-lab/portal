@@ -54,7 +54,7 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage }: DynamicHeroP
       phase: phaseColor.main,
       primaryCta: {
         label: 'Öffnen & prüfen →',
-        onClick: () => onOpenStep ? onOpenStep(checkpoint.step.id) : navigate(`/uebersicht/schritt/${checkpoint.step.id}`),
+        onClick: () => onOpenStep ? onOpenStep(checkpoint.step.id) : navigate(`/projekte/schritt/${checkpoint.step.id}`),
       },
       ghostCta: {
         label: 'Nachricht senden',

@@ -1,4 +1,4 @@
-import { Upload, CheckCircle, MessageSquare } from 'lucide-react';
+import { Upload, CheckCircle, MessageSquare, AlertCircle, Clock, Circle, PauseCircle, XCircle } from 'lucide-react';
 import type { Update, Project } from '../../types/project';
 
 interface UpdateItemProps {
@@ -7,22 +7,34 @@ interface UpdateItemProps {
   onOpenStep?: (stepId: string) => void;
 }
 
-const iconConfig = {
-  file: {
-    icon: Upload,
-    bg: 'var(--accent-light)',
-    color: 'var(--accent)',
-  },
-  status: {
-    icon: CheckCircle,
-    bg: '#ECFDF5',
-    color: '#059669',
-  },
-  message: {
-    icon: MessageSquare,
-    bg: '#F5F3FF',
-    color: '#7C3AED',
-  },
+function getStatusIcon(rawStatus?: string) {
+  const s = (rawStatus || '').toLowerCase().trim();
+
+  if (['approved', 'complete', 'done'].includes(s)) {
+    return { icon: CheckCircle, bg: '#ECFDF5', color: '#059669' };
+  }
+  if (s === 'client review') {
+    return { icon: AlertCircle, bg: '#FFFBEB', color: '#D97706' };
+  }
+  if (['in progress', 'internal review', 'rework'].includes(s)) {
+    return { icon: Clock, bg: '#EFF6FF', color: '#2563EB' };
+  }
+  if (s === 'to do') {
+    return { icon: Circle, bg: 'var(--surface-active)', color: 'var(--text-tertiary)' };
+  }
+  if (s === 'on hold') {
+    return { icon: PauseCircle, bg: '#FFF7ED', color: '#EA580C' };
+  }
+  if (['canceled', 'cancelled'].includes(s)) {
+    return { icon: XCircle, bg: '#FEF2F2', color: '#DC2626' };
+  }
+
+  return { icon: CheckCircle, bg: '#ECFDF5', color: '#059669' };
+}
+
+const typeIconConfig = {
+  file: { icon: Upload, bg: 'var(--accent-light)', color: 'var(--accent)' },
+  message: { icon: MessageSquare, bg: '#F5F3FF', color: '#7C3AED' },
 } as const;
 
 function findStepIdByTitle(title: string, project: Project): string | null {
@@ -36,7 +48,9 @@ function findStepIdByTitle(title: string, project: Project): string | null {
 }
 
 export function UpdateItem({ update, project, onOpenStep }: UpdateItemProps) {
-  const cfg = iconConfig[update.type];
+  const cfg = update.type === 'status'
+    ? getStatusIcon(update.rawStatus)
+    : typeIconConfig[update.type];
   const Icon = cfg.icon;
 
   const stepId = project && onOpenStep ? findStepIdByTitle(update.text, project) : null;

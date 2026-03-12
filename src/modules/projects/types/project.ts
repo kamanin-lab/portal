@@ -16,6 +16,7 @@ export interface Update {
   text: string;
   time: string;
   type: UpdateType;
+  rawStatus?: string;
 }
 
 export interface FileItem {

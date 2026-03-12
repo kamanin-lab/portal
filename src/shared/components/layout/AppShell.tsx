@@ -10,7 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/meine-aufgaben': 'Meine Aufgaben',
   '/tickets': 'Aufgaben',
   '/support': 'Support',
-  '/uebersicht': 'Übersicht',
+  '/projekte': 'Projekte',
   '/nachrichten': 'Nachrichten',
   '/dateien': 'Dateien',
   '/hilfe': 'Hilfe',

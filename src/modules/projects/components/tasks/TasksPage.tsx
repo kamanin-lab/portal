@@ -83,7 +83,7 @@ function TaskGroup({ label, count, headerColor, headerBg, tasks, project }: Task
           return (
             <div
               key={task.id}
-              onClick={() => navigate(`/uebersicht/schritt/${task.stepId}`)}
+              onClick={() => navigate(`/projekte/schritt/${task.stepId}`)}
               className={`flex items-start justify-between gap-[10px] px-[14px] py-[12px] cursor-pointer hover:bg-[var(--surface-hover)] transition-colors ${
                 idx > 0 ? 'border-t border-[var(--border-light)]' : ''
               }`}

@@ -17,7 +17,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/uebersicht'
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/inbox'
 
   if (isAuthenticated) {
     navigate(from, { replace: true })

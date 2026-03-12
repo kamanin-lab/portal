@@ -151,6 +151,7 @@ export function transformToProject(
       text: `${t.name} — ${t.status}`,
       time: formatDate(t.last_activity_at) || '',
       type: 'status' as const,
+      rawStatus: t.status,
     }));
 
   return {
