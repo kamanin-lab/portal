@@ -129,3 +129,37 @@
 ### New: docs/ideas/
 - Created `docs/ideas/` folder for future feature proposals
 - `knowledge-base.md`: per-client AI knowledge base architecture (planned Phase 4+)
+
+## Phase 3.7 — UX Polish: Links, Inbox, Meine Aufgaben, Sheet fixes (2026-03-13)
+
+### Clickable Links in Chat & Inbox
+- Created `src/shared/lib/linkify.tsx` — `linkifyText()` utility, detects URLs and renders as `<a>` tags
+- Applied in `MessageBubble.tsx` — chat messages now have clickable links (accent color, underline, opens in new tab)
+- Applied in `InboxPage.tsx` — notification messages also linkified
+
+### Inbox Cleanup
+- Removed redundant "Als gelesen markieren" button from detail panel — notifications are already auto-marked as read on selection via `handleSelect()`
+- Simplified `DetailPanel` props (removed `onMarkRead`)
+
+### Meine Aufgaben — Dedicated Page (ADR-011)
+- Replaced `<Navigate>` redirect with full page component
+- Shows only tasks with `client review` status (needs_attention)
+- Grouped by workspace (`list_name`) with section dividers
+- Sorted by priority (urgent first), then by date
+- Click → TaskDetailSheet (URL-based `?taskId=xxx`)
+- Empty state: "Keine offenen Aufgaben — alles erledigt!"
+- Reuses existing TaskCard, TaskDetailSheet, useClickUpTasks
+
+### NewTicketDialog → Sheet
+- Converted from centered popup to right-side Sheet (matching TaskDetailSheet pattern)
+- Added file attachment support: Paperclip button, attachment pills, max 5 files / 10MB
+- Fixed z-index bug: overlay z-40, content z-50 (was z-50/z-[51])
+
+### Sidebar Badge Fix
+- `useTaskActions.ts`: now invalidates `['needs-attention-count']` query on status change
+- Sidebar badge updates immediately when tasks are approved/actioned
+
+### ClickUp Webhook
+- Registered webhook for 11 events (taskCreated, taskUpdated, taskStatusUpdated, etc.)
+- Webhook ID: `dce8756d-3a76-4e79-9d95-a21801d6ee8e`
+- Inbox notifications now populated via realtime webhook events

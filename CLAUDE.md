@@ -80,7 +80,7 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   │   ├── components/layout/  # AppShell, Sidebar, MobileHeader, BottomNav
 │   │   ├── components/common/  # Badge, StatusDot, EmptyState
 │   │   ├── hooks/              # useAuth, useProfile, useRealtime, useBreakpoint
-│   │   ├── lib/                # supabase.ts, constants.ts, utils.ts
+│   │   ├── lib/                # supabase.ts, constants.ts, utils.ts, linkify.tsx
 │   │   ├── styles/tokens.css   # CSS custom properties
 │   │   └── types/              # database.ts (generated), common.ts
 │   ├── modules/

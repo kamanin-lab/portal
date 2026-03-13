@@ -35,7 +35,7 @@ bun.lockb
 
 # Old project directories (kept locally as reference, not in repo)
 kamanin-portal/
-tickets/
+/tickets/
 kamanin-portal-prototype.html
 EXECUTION.md
 SPEC.md

@@ -1,3 +1,5 @@
+import { linkifyText } from '@/shared/lib/linkify';
+
 interface MessageBubbleProps {
   role: 'team' | 'client';
   content: string;
@@ -102,7 +104,7 @@ export function MessageBubble({
             wordBreak: 'break-word',
           }}
         >
-          {content}
+          {linkifyText(content)}
         </div>
       </div>
     </div>

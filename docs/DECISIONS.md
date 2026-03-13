@@ -99,3 +99,13 @@
 **Decision:** Ascending bars like a volume indicator: Low=1 bar, Normal=2 bars, High=3 bars (heights: 35%, 65%, 100%). Urgent uses AlertCircle icon. Inactive/ghost bars rendered at 0.15 opacity for visual context.
 
 **Consequences:** Clearer visual hierarchy. Volume metaphor is universally understood. Ghost bars show "capacity" remaining.
+
+## ADR-011: Meine Aufgaben as dedicated page (not redirect)
+**Date:** 2026-03-13
+**Status:** Accepted
+
+**Context:** "Meine Aufgaben" was a `<Navigate>` redirect to `/tickets?filter=needs_attention`. This felt broken — user clicks a sidebar item and lands on a different page with a filter applied. No focused experience.
+
+**Decision:** Build a dedicated page with tasks grouped by workspace (`list_name`). Shows only `client review` tasks. Reuses existing TaskCard + TaskDetailSheet. No filters/search — the page IS the filter.
+
+**Consequences:** Focused inbox-like experience for pending tasks. Grouped by workspace gives context. Sidebar badge + page count always aligned.

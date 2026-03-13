@@ -4,6 +4,7 @@ import { useAuth } from '@/shared/hooks/useAuth'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 import type { Notification } from '@/modules/tickets/hooks/useNotifications'
 import { cn } from '@/shared/lib/utils'
+import { linkifyText } from '@/shared/lib/linkify'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 
 const PAGE_SIZE = 10
@@ -16,23 +17,21 @@ function formatDate(iso: string) {
 }
 
 function TypeBadge({ type }: { type: string }) {
-  const isReply = type === 'team_reply'
+  const isReply = type === 'team_reply' || type === 'project_reply'
+  const isStepReady = type === 'step_ready'
   return (
     <span className={cn(
       'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0',
-      isReply ? 'bg-accent/10 text-accent' : 'bg-surface-raised text-text-secondary'
+      isReply ? 'bg-accent/10 text-accent'
+        : isStepReady ? 'bg-green-500/10 text-green-600'
+        : 'bg-surface-raised text-text-secondary'
     )}>
-      {isReply ? 'Antwort' : 'Status'}
+      {isReply ? 'Antwort' : isStepReady ? 'Bereit' : 'Status'}
     </span>
   )
 }
 
-interface DetailPanelProps {
-  notification: Notification | null
-  onMarkRead: (ids: string[]) => void
-}
-
-function DetailPanel({ notification, onMarkRead }: DetailPanelProps) {
+function DetailPanel({ notification }: { notification: Notification | null }) {
   if (!notification) {
     return (
       <div className="flex-1 flex items-center justify-center text-text-tertiary text-sm">
@@ -48,15 +47,7 @@ function DetailPanel({ notification, onMarkRead }: DetailPanelProps) {
         <span className="text-xs text-text-tertiary">{formatDate(notification.created_at)}</span>
       </div>
       <h2 className="text-base font-semibold text-text-primary mb-3">{notification.title}</h2>
-      <p className="text-sm text-text-secondary leading-relaxed mb-6">{notification.message}</p>
-      {!notification.is_read && (
-        <button
-          onClick={() => onMarkRead([notification.id])}
-          className="text-xs text-accent hover:underline"
-        >
-          Als gelesen markieren
-        </button>
-      )}
+      <p className="text-sm text-text-secondary leading-relaxed mb-6">{linkifyText(notification.message)}</p>
     </div>
   )
 }
@@ -176,7 +167,7 @@ export function InboxPage() {
 
       {/* Right detail panel (desktop only) */}
       <div className="hidden md:flex flex-1 flex-col bg-bg">
-        <DetailPanel notification={selected} onMarkRead={ids => markAsRead(ids)} />
+        <DetailPanel notification={selected} />
       </div>
     </ContentContainer>
   )
