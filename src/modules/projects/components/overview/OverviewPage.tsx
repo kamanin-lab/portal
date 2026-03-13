@@ -10,6 +10,7 @@ import { StepSheet } from '../StepSheet';
 import { SchritteSheet } from '../SchritteSheet';
 import { MessageSheet } from '../MessageSheet';
 import { UploadSheet } from '../UploadSheet';
+import { NewTicketDialog } from '@/modules/tickets/components/NewTicketDialog';
 
 interface OverviewPageProps {
   project: Project;
@@ -21,6 +22,7 @@ export function OverviewPage({ project }: OverviewPageProps) {
   const activeKapitelId = searchParams.get('kapitelId');
   const [messageOpen, setMessageOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   function openStep(stepId: string) {
     setSearchParams(prev => { prev.set('stepId', stepId); prev.delete('kapitelId'); return prev }, { replace: true });
@@ -37,6 +39,15 @@ export function OverviewPage({ project }: OverviewPageProps) {
   function openStepFromKapitel(stepId: string) {
     setSearchParams(prev => { prev.delete('kapitelId'); prev.set('stepId', stepId); return prev }, { replace: true });
   }
+
+  // Build chapter options for the create-task dialog
+  const chapterOptions = project.chapters
+    .filter(ch => ch.clickupCfOptionId)
+    .map(ch => ({
+      id: ch.id,
+      title: ch.title,
+      clickup_cf_option_id: ch.clickupCfOptionId!,
+    }));
 
   return (
     <div className="h-full flex flex-col overflow-y-auto px-[32px] py-[28px] max-[1100px]:px-[24px] max-[1100px]:py-[20px] max-[768px]:px-[16px] max-[768px]:py-[16px]">
@@ -61,6 +72,7 @@ export function OverviewPage({ project }: OverviewPageProps) {
           project={project}
           onOpenStep={openStep}
           onOpenMessage={() => setMessageOpen(true)}
+          onCreateTask={() => setCreateTaskOpen(true)}
         />
 
         {/* 4. Quick actions */}
@@ -68,6 +80,7 @@ export function OverviewPage({ project }: OverviewPageProps) {
           project={project}
           onOpenMessage={() => setMessageOpen(true)}
           onOpenUpload={() => setUploadOpen(true)}
+          onCreateTask={() => setCreateTaskOpen(true)}
         />
 
         {/* 5. Tabs */}
@@ -78,6 +91,15 @@ export function OverviewPage({ project }: OverviewPageProps) {
       <StepSheet project={project} stepId={activeStepId} onClose={closeStep} />
       <MessageSheet project={project} open={messageOpen} onClose={() => setMessageOpen(false)} />
       <UploadSheet project={project} open={uploadOpen} onClose={() => setUploadOpen(false)} />
+
+      <NewTicketDialog
+        open={createTaskOpen}
+        onClose={() => setCreateTaskOpen(false)}
+        mode="project"
+        listId={project.clickupListId}
+        chapters={chapterOptions}
+        phaseFieldId={project.clickupPhaseFieldId ?? undefined}
+      />
     </div>
   );
 }

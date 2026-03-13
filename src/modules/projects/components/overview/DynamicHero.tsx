@@ -12,6 +12,7 @@ interface DynamicHeroProps {
   project: Project;
   onOpenStep?: (stepId: string) => void;
   onOpenMessage?: () => void;
+  onCreateTask?: () => void;
 }
 
 type HeroPriority = 1 | 2 | 3 | 4;
@@ -30,7 +31,7 @@ interface HeroContent {
   summary?: string;
 }
 
-export function DynamicHero({ project, onOpenStep, onOpenMessage }: DynamicHeroProps) {
+export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }: DynamicHeroProps) {
   const navigate = useNavigate();
   const checkpoint = getNextCheckpoint(project);
   const upcomingStep = getNextUpcomingStep(project);
@@ -74,8 +75,8 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage }: DynamicHeroP
       tint: '#FFFBEB',
       phase: '#D97706',
       primaryCta: {
-        label: 'Aufgaben öffnen →',
-        onClick: () => navigate('/aufgaben'),
+        label: 'Aufgabe erstellen →',
+        onClick: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
       },
     };
   } else if (upcomingStep) {

@@ -94,3 +94,38 @@
 - Deleted `TicketDetailPage.tsx` (replaced by TaskDetailSheet)
 - Added CSS animations: fadeIn, slideInRight, slideOutRight
 - Build: 0 TypeScript errors, production build clean
+
+## Phase 3.6 — Project Task Creation, Priority Icons, AI Enrichment (2026-03-13)
+
+### Project Task Creation
+- **NewTicketDialog**: dual mode (`ticket` / `project`) — reused for both ticket and project task creation
+  - Project mode: receives `listId`, `chapters`, `phaseFieldId` from project config
+  - Priority selector: 4 buttons (Dringend/Hoch/Normal/Niedrig) with PriorityIcon
+  - Chapter/phase dropdown (project mode only)
+- **QuickActions**: "Aufgaben öffnen" → "Aufgabe erstellen" with Plus icon, `onCreateTask` prop
+- **DynamicHero**: added "Aufgabe erstellen →" CTA in awaiting_input priority state
+- **OverviewPage**: integrates NewTicketDialog in project mode, builds chapter options from project.chapters
+- **create-clickup-task Edge Function**: dual mode — ticket (profile's ClickUp list) or project (explicit listId + chapter custom field)
+
+### Priority Icons
+- Redesigned to volume-bar style: Low=1 bar, Normal=2 ascending bars, High=3 ascending bars, Urgent=AlertCircle
+- Ghost/inactive bars visible with opacity 0.15
+- Ascending height ratios: [0.35, 0.65, 1.0]
+
+### UpdatesFeed
+- Added pagination: 10 items default, "Mehr anzeigen" button (+10 per click)
+
+### AI Enrichment Fixes
+- Fixed off-by-one: prompt task numbering starts from 0 (matching `task_index` in response)
+- Fixed JSON parsing: strip markdown code block wrapper (`\`\`\`json ... \`\`\``) from Claude response
+- Increased `max_tokens`: 2000 → 4000
+
+### Type Changes
+- `Project`: added `clickupListId`, `clickupPhaseFieldId`
+- `Chapter`: added `clickupCfOptionId`
+- `CreateTaskInput`: added `listId?`, `phaseFieldId?`, `phaseOptionId?`
+- `transforms-project.ts`: passes through new ClickUp fields from config
+
+### New: docs/ideas/
+- Created `docs/ideas/` folder for future feature proposals
+- `knowledge-base.md`: per-client AI knowledge base architecture (planned Phase 4+)

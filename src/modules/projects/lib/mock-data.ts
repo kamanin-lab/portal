@@ -8,6 +8,8 @@ export const mockProject: Project = {
   clientInitials: 'MW',
   startDate: '15. Feb 2026',
   targetDate: '30. Apr 2026',
+  clickupListId: '',
+  clickupPhaseFieldId: null,
 
   tasksSummary: {
     needsAttention: 3,
@@ -44,6 +46,7 @@ export const mockProject: Project = {
       order: 1,
       narrative: 'Wir definieren gemeinsam den Umfang und die Ziele Ihres Projekts.',
       nextNarrative: 'Als Nächstes folgt die Seitenstruktur.',
+      clickupCfOptionId: null,
       steps: [
         {
           id: 's1',
@@ -101,6 +104,7 @@ export const mockProject: Project = {
       order: 2,
       narrative: 'Die Seitenstruktur und Navigation Ihrer Website werden festgelegt.',
       nextNarrative: 'Danach beginnt die visuelle Gestaltung.',
+      clickupCfOptionId: null,
       steps: [
         {
           id: 's3',
@@ -138,6 +142,7 @@ export const mockProject: Project = {
       order: 3,
       narrative: 'Inhalte und visuelles Design werden gemeinsam erarbeitet.',
       nextNarrative: 'Anschließend wird die Website technisch umgesetzt.',
+      clickupCfOptionId: null,
       steps: [
         {
           id: 's5',
@@ -161,6 +166,7 @@ export const mockProject: Project = {
       order: 4,
       narrative: 'Ihre Website wird technisch umgesetzt und für den Launch vorbereitet.',
       nextNarrative: 'Projekt abgeschlossen — Ihre Website ist live!',
+      clickupCfOptionId: null,
       steps: [
         {
           id: 's6',

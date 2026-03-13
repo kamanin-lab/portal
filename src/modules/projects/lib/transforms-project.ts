@@ -115,6 +115,7 @@ export function transformToProject(
       order: ch.sort_order,
       narrative: ch.narrative,
       nextNarrative: ch.next_narrative,
+      clickupCfOptionId: ch.clickup_cf_option_id,
       steps,
     };
   });
@@ -162,6 +163,8 @@ export function transformToProject(
     clientInitials: config.client_initials,
     startDate: config.start_date || '',
     targetDate: config.target_date || '',
+    clickupListId: config.clickup_list_id,
+    clickupPhaseFieldId: config.clickup_phase_field_id,
     tasksSummary: {
       needsAttention,
       inProgress,

@@ -31,7 +31,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 
 | Module | Path | Data Source | Status |
 |--------|------|------------|--------|
-| Project Experience | `src/modules/projects/` | Mock data (Supabase later) | Building |
+| Project Experience | `src/modules/projects/` | Live Supabase (project_config, project_task_cache, step_enrichment) | Phase 3.6 complete |
 | Tasks/Support | `src/modules/tickets/` | Live Supabase (task_cache, comment_cache) | Phase 3.5 complete |
 | Shared Shell | `src/shared/` | Auth, layout, design tokens | Phase 3.5 complete |
 | Content Editor | `src/modules/content/` | — | Future |
@@ -47,6 +47,10 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/CHANGELOG.md` | What changed, when, why |
 | `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts |
+| `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
+| `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
+| `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
+| `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
 
 ## Commands
 
@@ -66,7 +70,9 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   ├── SPEC.md                 # Design tokens, component specs, status mapping
 │   ├── ARCHITECTURE.md         # System architecture
 │   ├── DECISIONS.md            # ADR log
-│   └── CHANGELOG.md
+│   ├── CHANGELOG.md
+│   └── ideas/                  # Future feature proposals
+│       └── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
 ├── src/
 │   ├── app/                    # App.tsx, routes.tsx, providers.tsx
 │   ├── shared/
@@ -87,7 +93,8 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   │   └── tickets/            # Tasks/Support module (Phase 3.5)
 │   │       ├── components/     # TaskCard, TaskList, TaskDetail, TaskActions,
 │   │       │                   # TaskFilters, TaskSearchBar, SyncIndicator,
-│   │       │                   # NewTaskButton, TaskDetailSheet, TaskComments
+│   │       │                   # NewTaskButton, TaskDetailSheet, TaskComments,
+│   │       │                   # NewTicketDialog, PriorityIcon
 │   │       ├── hooks/          # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts
 │   │       ├── lib/            # status-mapping, status-dictionary, transforms, dictionary
 │   │       ├── types/          # tasks.ts

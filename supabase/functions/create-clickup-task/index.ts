@@ -75,6 +75,9 @@ interface CreateTaskRequest {
   description?: string;
   priority: 1 | 2 | 3 | 4;
   files?: FileData[];
+  listId?: string;
+  phaseFieldId?: string;
+  phaseOptionId?: string;
 }
 
 // Allowed file types for upload
@@ -280,24 +283,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    const listIds = profile?.clickup_list_ids || [];
-    
-    if (listIds.length === 0) {
-      log.info("No ClickUp list IDs configured for user");
-      return new Response(
-        JSON.stringify({ error: "No list configured. Please contact your administrator." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Use explicit listId from request (project mode) or fall back to profile's list
+    let listId: string;
+    if (body.listId) {
+      listId = body.listId;
+    } else {
+      const listIds = profile?.clickup_list_ids || [];
+      if (listIds.length === 0) {
+        log.info("No ClickUp list IDs configured for user");
+        return new Response(
+          JSON.stringify({ error: "No list configured. Please contact your administrator." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      listId = listIds[0];
     }
-
-    // Use the first list ID
-    const listId = listIds[0];
     log.debug("Creating task in ClickUp list");
 
     // Get visibility field ID for automatic tagging
     const visibleFieldId = Deno.env.get("CLICKUP_VISIBLE_FIELD_ID");
 
-    // Create task in ClickUp with visibility checkbox and ticket tag
+    // Build custom_fields array
+    const customFields: Array<{ id: string; value: unknown }> = [];
+    if (visibleFieldId) {
+      customFields.push({ id: visibleFieldId, value: true });
+    }
+    if (body.phaseFieldId && body.phaseOptionId) {
+      customFields.push({ id: body.phaseFieldId, value: body.phaseOptionId });
+    }
+
+    // Create task in ClickUp with visibility checkbox and optional phase
     const createTaskResponse = await fetchWithRetry(
       `https://api.clickup.com/api/v2/list/${listId}/task`,
       {
@@ -311,12 +326,7 @@ Deno.serve(async (req) => {
           description: body.description?.trim() || "",
           priority: body.priority,
           status: "to do",
-          custom_fields: visibleFieldId ? [
-            {
-              id: visibleFieldId,
-              value: true, // Set "Visible in client portal" checkbox to checked
-            },
-          ] : [],
+          custom_fields: customFields,
         }),
       },
       2,
@@ -335,34 +345,69 @@ Deno.serve(async (req) => {
     const taskData = await createTaskResponse.json();
     log.info("Task created successfully");
 
-    // Upsert task_cache with creator info (service role client)
+    // Upsert cache with creator info (service role client)
     const supabaseAdmin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || supabaseAnonKey);
     const fullName = (profile.full_name || '').trim();
     const firstName = fullName.split(' ').filter(Boolean)[0] || 'Portal User';
 
-    const { error: cacheError } = await supabaseAdmin
-      .from('task_cache')
-      .upsert({
-        clickup_id: taskData.id,
-        profile_id: user.id,
-        name: taskData.name,
-        description: body.description?.trim() || '',
-        status: 'to do',
-        status_color: '',
-        list_id: listId,
-        list_name: '',
-        clickup_url: taskData.url,
-        is_visible: true,
-        last_synced: new Date().toISOString(),
-        created_by_user_id: user.id,
-        created_by_name: firstName,
-      }, { onConflict: 'clickup_id,profile_id' });
+    const isProjectTask = !!body.listId;
+    const cacheTable = isProjectTask ? 'project_task_cache' : 'task_cache';
 
-    if (cacheError) {
-      log.error("Failed to cache task with creator info", { error: cacheError.message });
-      // Non-blocking: task was already created in ClickUp
+    if (isProjectTask) {
+      // Look up project_config_id from clickup_list_id
+      const { data: projectConfig } = await supabaseAdmin
+        .from('project_config')
+        .select('id')
+        .eq('clickup_list_id', listId)
+        .single();
+
+      if (projectConfig) {
+        const { error: cacheError } = await supabaseAdmin
+          .from('project_task_cache')
+          .upsert({
+            clickup_id: taskData.id,
+            project_config_id: projectConfig.id,
+            name: taskData.name,
+            description: body.description?.trim() || '',
+            status: 'to do',
+            status_color: '',
+            chapter_config_id: body.phaseOptionId || null,
+            is_visible: true,
+            last_synced: new Date().toISOString(),
+          }, { onConflict: 'clickup_id,project_config_id' });
+
+        if (cacheError) {
+          log.error("Failed to cache project task", { error: cacheError.message });
+        } else {
+          log.debug("Project task cached", { firstName });
+        }
+      } else {
+        log.warn("No project_config found for list", { listId });
+      }
     } else {
-      log.debug("Task cached with creator info", { firstName });
+      const { error: cacheError } = await supabaseAdmin
+        .from('task_cache')
+        .upsert({
+          clickup_id: taskData.id,
+          profile_id: user.id,
+          name: taskData.name,
+          description: body.description?.trim() || '',
+          status: 'to do',
+          status_color: '',
+          list_id: listId,
+          list_name: '',
+          clickup_url: taskData.url,
+          is_visible: true,
+          last_synced: new Date().toISOString(),
+          created_by_user_id: user.id,
+          created_by_name: firstName,
+        }, { onConflict: 'clickup_id,profile_id' });
+
+      if (cacheError) {
+        log.error("Failed to cache task with creator info", { error: cacheError.message });
+      } else {
+        log.debug("Task cached with creator info", { firstName });
+      }
     }
 
     // Upload attachments if any

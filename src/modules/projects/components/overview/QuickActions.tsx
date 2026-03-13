@@ -1,30 +1,30 @@
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, MessageSquare, Upload } from 'lucide-react';
+import { Plus, MessageSquare, Upload } from 'lucide-react';
 import type { Project } from '../../types/project';
 
 interface QuickActionsProps {
   project: Project;
   onOpenMessage?: () => void;
   onOpenUpload?: () => void;
+  onCreateTask?: () => void;
 }
 
-export function QuickActions({ project, onOpenMessage, onOpenUpload }: QuickActionsProps) {
+export function QuickActions({ project, onOpenMessage, onOpenUpload, onCreateTask }: QuickActionsProps) {
   const navigate = useNavigate();
-  const { needsAttention } = project.tasksSummary;
 
   // Unread messages: count messages from team (approximation from updates)
   const unreadMessages = project.updates.filter(u => u.type === 'message').length;
 
   const cards = [
     {
-      label: 'Aufgaben öffnen',
+      label: 'Aufgabe erstellen',
       sub: `${project.tasksSummary.total} Aufgaben insgesamt`,
-      icon: <CheckSquare size={18} />,
+      icon: <Plus size={18} />,
       accent: '#D97706',
       bg: '#FFFBEB',
-      count: needsAttention > 0 ? needsAttention : null,
+      count: null,
       countBg: '#D97706',
-      onClick: () => navigate('/aufgaben'),
+      onClick: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
     },
     {
       label: 'Nachricht senden',

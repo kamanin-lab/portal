@@ -19,9 +19,31 @@ ClickUp Webhook → Edge Function → task_cache update
 
 ## Module Structure
 - `src/shared/` — auth, layout, hooks, lib, types
-- `src/modules/projects/` — Project Experience (mock data → Supabase)
-- `src/modules/tasks/` — Tasks/Support (live Supabase)
+- `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
+- `src/modules/tickets/` — Tasks/Support (live Supabase: task_cache, comment_cache)
 - `src/app/` — routing, providers
+
+## Task Creation (Dual Mode)
+```
+NewTicketDialog (mode="ticket" | "project")
+        │
+        ▼
+useCreateTask hook → Edge Function: create-clickup-task
+        │
+        ├── mode=ticket: POST to profile's ClickUp list → upsert task_cache
+        └── mode=project: POST to project's ClickUp list → upsert project_task_cache
+                          + set chapter custom field (phase assignment)
+```
+
+## AI Enrichment (Project Steps)
+```
+fetch-project-tasks Edge Function (triggered on first project page load)
+  1. Fetch tasks from ClickUp list → upsert project_task_cache
+  2. For NEW tasks not in step_enrichment:
+     → Batch by 10 → Claude Haiku API → generate why_it_matters + what_becomes_fixed
+     → Upsert step_enrichment (keyed by clickup_task_id)
+  3. Frontend: useProject → transformToProject merges enrichment into Step objects
+```
 
 ## Auth
 Supabase Auth — email/password + magic link
@@ -30,7 +52,7 @@ Profile auto-created via `on_auth_user_created` trigger on `auth.users`
 ## Supabase
 - URL: https://portal.db.kamanin.at
 - Project: self-hosted (PostgreSQL 15.8) on Coolify
-- Tables: profiles, task_cache, comment_cache, notifications, read_receipts
+- Tables: profiles, task_cache, comment_cache, notifications, read_receipts, project_config, chapter_config, project_task_cache, step_enrichment, project_access, client_workspaces
 
 ## Edge Functions Deployment (self-hosted)
 

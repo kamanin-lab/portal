@@ -192,7 +192,7 @@ async function generateStepEnrichment(
 Antworte NUR mit einem JSON-Array. Kein Markdown, keine Erklärung.
 
 Tasks:
-${tasks.map((t, i) => `${i + 1}. "${t.name}" — ${t.description || "Keine Beschreibung"}`).join("\n")}
+${tasks.map((t, i) => `${i}. "${t.name}" — ${t.description || "Keine Beschreibung"}`).join("\n")}
 
 Format:
 [{"task_index": 0, "why_it_matters": "...", "what_becomes_fixed": "..."}, ...]`;
@@ -207,7 +207,7 @@ Format:
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{ role: "user", content: prompt }],
       }),
     }, 30000); // 30s timeout for AI
@@ -218,7 +218,9 @@ Format:
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || "";
+    let text = data.content?.[0]?.text || "";
+    // Strip markdown code block wrapper if present
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
     const parsed = JSON.parse(text);
 
     if (!Array.isArray(parsed)) return [];

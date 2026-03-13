@@ -40,3 +40,7 @@ kamanin-portal-prototype.html
 EXECUTION.md
 SPEC.md
 schema.sql
+
+# Debug scripts
+debug-clickup-task.cjs
+get-clickup-fields.cjs

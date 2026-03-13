@@ -115,6 +115,7 @@ export interface Chapter {
   order: number;
   narrative: string;
   nextNarrative: string;
+  clickupCfOptionId: string | null;
   steps: Step[];
 }
 
@@ -138,6 +139,8 @@ export interface Project {
   clientInitials: string;
   startDate: string;
   targetDate: string;
+  clickupListId: string;
+  clickupPhaseFieldId: string | null;
   tasksSummary: TasksSummary;
   tasks: ProjectTask[];
   updates: Update[];
