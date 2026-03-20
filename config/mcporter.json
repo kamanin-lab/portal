@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp",
+        "--headless",
+        "--isolated",
+        "--output-dir",
+        "G:\\\\01_OPUS\\\\Projects\\\\PORTAL_staging\\\\.playwright-mcp"
+      ],
+      "description": "Playwright MCP for PORTAL staging browser testing"
+    }
+  },
+  "imports": []
+}

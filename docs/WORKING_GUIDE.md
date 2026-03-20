@@ -61,7 +61,7 @@ These are reference only.
 3. `docs/REPOSITORY_MAP.md`
 4. `docs/ARCHITECTURE.md`
 5. `docs/DECISIONS.md`
-6. `docs/reference/context-hub/README.md` when touching React / Tailwind / Vite / Vitest or other Context Hub-covered tech
+6. `docs/reference/context-hub/README.md` when touching React / Tailwind / Vite / Vitest / Playwright or other Context Hub-covered tech
 7. `docs/reference/supabase-context-hub/README.md` when touching Supabase
 8. `.claude/skills/clickup-api/SKILL.md` when touching ClickUp
 

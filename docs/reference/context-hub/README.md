@@ -13,6 +13,7 @@ For this project, Context Hub is the preferred source for curated, versioned API
 - `tailwindcss.md`
 - `vite.md`
 - `vitest.md`
+- `playwright.md`
 - `../supabase-context-hub/` (Supabase reference imported separately)
 
 ## Working rule
