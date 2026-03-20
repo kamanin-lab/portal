@@ -64,10 +64,10 @@ ClickUp Webhook → Edge Function → cache update
 - `public/` — static assets
 
 ### Historical / reference areas
-- `tickets/` — older reference code / historical layer
-- `kamanin-portal/` — older reference code / historical layer
+- `archive/legacy-reference/tickets/` — older reference code / historical layer
+- `archive/legacy-reference/kamanin-portal/` — older reference code / historical layer
 
-These folders should be treated as **reference/legacy context**, not as the primary place for active implementation.
+These folders are kept as **reference/legacy context**, not as the primary place for active implementation.
 
 ## Key docs
 

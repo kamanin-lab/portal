@@ -1,0 +1,38 @@
+project_id = "yuezkvaasmfakxoqldmh"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+
+[functions.fetch-clickup-tasks]
+verify_jwt = false
+
+[functions.fetch-task-comments]
+verify_jwt = false
+
+[functions.update-task-status]
+verify_jwt = false
+
+[functions.post-task-comment]
+verify_jwt = false
+
+[functions.clickup-webhook]
+verify_jwt = false
+
+[functions.create-clickup-task]
+verify_jwt = false
+
+[functions.send-mailjet-email]
+verify_jwt = false
+
+[functions.auth-email]
+verify_jwt = false
+
+[functions.fetch-single-task]
+verify_jwt = false
+
+[functions.send-support-message]
+verify_jwt = false
+
+[functions.send-feedback]
+verify_jwt = false

@@ -40,11 +40,11 @@ Historical/planning execution context; useful, but should be read carefully agai
 
 ## Historical / legacy / reference areas
 
-### `tickets/`
+### `archive/legacy-reference/tickets/`
 Older code/reference layer from earlier project phase.
 Do not treat this as the primary active app unless explicitly needed for comparison/reference.
 
-### `kamanin-portal/`
+### `archive/legacy-reference/kamanin-portal/`
 Older code/reference layer from an earlier structure.
 Useful for archaeology/reference only.
 
