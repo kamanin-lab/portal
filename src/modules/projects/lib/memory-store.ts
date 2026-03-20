@@ -36,6 +36,7 @@ let memoryTestAdapter: {
   listEntries: (context: MemoryContextKey) => Promise<MemoryEntry[]>;
   upsertEntry: (entry: MemoryEntry) => Promise<MemoryEntry>;
   archiveEntry: (entryId: string, actor: string) => Promise<MemoryEntry>;
+  resolveContext?: (project: Project, preferredClientProfileId?: string | null) => Promise<MemoryContextKey | null>;
   reset: (entries: MemoryEntry[]) => void;
 } | null = null;
 
@@ -69,6 +70,35 @@ export function getMemoryContextKey(project: Project, clientProfileId: string | 
     clientId: clientProfileId,
     projectId: project.id,
   };
+}
+
+export async function resolveProjectMemoryContext(project: Project, preferredClientProfileId?: string | null): Promise<MemoryContextKey | null> {
+  if (memoryTestAdapter?.resolveContext) {
+    return memoryTestAdapter.resolveContext(project, preferredClientProfileId);
+  }
+
+  const { data: existingRows } = await supabase
+    .from(MEMORY_TABLE)
+    .select('client_id, created_at')
+    .eq('project_id', project.id)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  const existingClientId = existingRows?.[0]?.client_id;
+  if (existingClientId) {
+    return getMemoryContextKey(project, existingClientId);
+  }
+
+  const { data: accessRows } = await supabase
+    .from('project_access')
+    .select('profile_id, created_at')
+    .eq('project_config_id', project.id)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  const anchoredClientId = accessRows?.[0]?.profile_id ?? preferredClientProfileId ?? null;
+  if (!anchoredClientId) return null;
+  return getMemoryContextKey(project, anchoredClientId);
 }
 
 export function validateMemoryEntry(entry: MemoryEntry): MemoryValidationResult {
@@ -181,11 +211,14 @@ export async function upsertMemoryEntry(context: MemoryContextKey, draft: Memory
     return memoryTestAdapter.upsertEntry(nextEntry);
   }
 
-  const { data, error } = await supabase
-    .from(MEMORY_TABLE)
-    .upsert(nextEntry)
-    .select('*')
-    .single();
+  const { data, error } = await supabase.functions.invoke('manage-project-memory', {
+    body: {
+      action: 'upsert',
+      projectId: context.projectId,
+      entryId: existingId,
+      draft,
+    },
+  });
 
   if (error || !data) {
     throw new Error(error?.message ?? 'Failed to save memory entry');
@@ -194,21 +227,18 @@ export async function upsertMemoryEntry(context: MemoryContextKey, draft: Memory
   return normalizeMemoryRow(data as MemoryRow);
 }
 
-export async function archiveMemoryEntry(entryId: string, actor: string): Promise<MemoryEntry> {
+export async function archiveMemoryEntry(entryId: string, actor: string, projectId?: string): Promise<MemoryEntry> {
   if (memoryTestAdapter) {
     return memoryTestAdapter.archiveEntry(entryId, actor);
   }
 
-  const { data, error } = await supabase
-    .from(MEMORY_TABLE)
-    .update({
-      status: 'archived',
-      updated_by: actor,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', entryId)
-    .select('*')
-    .single();
+  const { data, error } = await supabase.functions.invoke('manage-project-memory', {
+    body: {
+      action: 'archive',
+      entryId,
+      projectId,
+    },
+  });
 
   if (error || !data) {
     throw new Error(error?.message ?? 'Memory entry not found');
@@ -250,6 +280,10 @@ export function installMemoryTestAdapter(initialEntries: MemoryEntry[] = []) {
       };
       store = store.map(entry => (entry.id === entryId ? nextEntry : entry));
       return nextEntry;
+    },
+    async resolveContext(project, preferredClientProfileId) {
+      const anchoredClientId = store.find(entry => entry.project_id === project.id)?.client_id ?? preferredClientProfileId ?? 'profile-1';
+      return getMemoryContextKey(project, anchoredClientId);
     },
     reset(entries) {
       store = [...entries];

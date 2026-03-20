@@ -4,6 +4,7 @@ import {
   archiveMemoryEntry,
   getMemoryContextKey,
   getMemoryPreview,
+  resolveProjectMemoryContext,
   installMemoryTestAdapter,
   listMemoryEntries,
   resetMemoryStore,
@@ -39,6 +40,20 @@ describe('memory-store', () => {
   test('uses stable backend profile identity for client memory context', () => {
     expect(getMemoryContextKey(project, 'profile-1')).toEqual({
       clientId: 'profile-1',
+      projectId: 'project-1',
+    });
+  });
+
+  test('resolves project memory context to a shared anchored profile instead of current viewer identity', async () => {
+    await upsertMemoryEntry(getMemoryContextKey(project, 'anchored-profile'), {
+      scope: 'project',
+      category: 'decision',
+      title: 'Shared anchor',
+      body: 'Body',
+    }, 'tester');
+
+    await expect(resolveProjectMemoryContext(project, 'different-viewer-profile')).resolves.toEqual({
+      clientId: 'anchored-profile',
       projectId: 'project-1',
     });
   });

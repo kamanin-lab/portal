@@ -15,6 +15,7 @@ import { interpretProjectOverview } from '../../lib/overview-interpretation';
 import { useProjectMemory } from '../../hooks/useProjectMemory';
 import { ProjectContextPreview } from './ProjectContextPreview';
 import { ProjectContextSection } from './ProjectContextSection';
+import { ProjectContextAdminPanel } from './ProjectContextAdminPanel';
 
 interface OverviewPageProps {
   project: Project;
@@ -155,6 +156,7 @@ export function OverviewPage({ project }: OverviewPageProps) {
 
         {/* 5. Project context */}
         <ProjectContextSection project={project} />
+        <ProjectContextAdminPanel project={project} />
 
         {/* 6. Quick actions */}
         <QuickActions
