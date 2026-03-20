@@ -61,6 +61,8 @@ These are reference only.
 3. `docs/REPOSITORY_MAP.md`
 4. `docs/ARCHITECTURE.md`
 5. `docs/DECISIONS.md`
+6. `docs/reference/supabase-context-hub/README.md` when touching Supabase
+7. `.claude/skills/clickup-api/SKILL.md` when touching ClickUp
 
 ---
 

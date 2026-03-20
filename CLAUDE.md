@@ -149,8 +149,22 @@ Secondary actions (Put on Hold, Cancel) available on all non-terminal states.
 | Webhook down (stale data) | Portal works with cached data. Manual refresh button triggers full sync |
 | Comment post fails | Revert optimistic update, show error toast |
 
-## Context Hub (chub)
+## API Reference Rules
 
+### ClickUp
+- Always use the project-local ClickUp reference skill at:
+  `G:/01_OPUS/Projects/PORTAL_staging/.claude/skills/clickup-api/SKILL.md`
+- For any work touching ClickUp tasks, comments, webhooks, statuses, custom fields, lists/folders/spaces, or integration behavior, do not rely on memory alone.
+
+### Supabase
+- Always consult the project-local Supabase reference docs at:
+  `docs/reference/supabase-context-hub/`
+- Primary local files:
+  - `docs/reference/supabase-context-hub/javascript-sdk.md`
+  - `docs/reference/supabase-context-hub/python-sdk.md`
+- Use these alongside official docs when working on Supabase client usage, queries, auth, storage, realtime, edge functions, and RLS-sensitive flows.
+
+### Context Hub (chub)
 Tool for fetching LLM-optimized API docs on demand instead of guessing from training data.
 
 - **Install:** `npm install -g @aisuite/chub` (already installed globally)
