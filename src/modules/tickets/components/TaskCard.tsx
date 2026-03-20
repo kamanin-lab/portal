@@ -1,4 +1,4 @@
-import { User } from 'lucide-react'
+import { User, CalendarDays } from 'lucide-react'
 import { StatusBadge } from '@/shared/components/common/StatusBadge'
 import { PriorityIcon } from './PriorityIcon'
 import { mapStatus } from '../lib/status-mapping'
@@ -13,12 +13,21 @@ interface Props {
 function getPreview(task: ClickUpTask): string {
   const text = task.description?.trim()
   if (text) return text.slice(0, 90) + (text.length > 90 ? '…' : '')
-  return ''
+  return 'Keine Vorschau verfügbar.'
+}
+
+function formatDueDate(date: string | null): string | null {
+  if (!date) return null
+  return new Date(date).toLocaleDateString('de-AT', {
+    day: '2-digit',
+    month: 'short',
+  })
 }
 
 export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
   const portalStatus = mapStatus(task.status)
   const preview = getPreview(task)
+  const dueDate = formatDueDate(task.due_date)
 
   return (
     <button
@@ -38,17 +47,22 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
       </div>
 
       {/* Preview text */}
-      {preview && (
-        <p className="text-[12px] text-text-tertiary leading-relaxed mb-2 line-clamp-2">
-          {preview}
-        </p>
-      )}
+      <p className="text-[12px] text-text-tertiary leading-relaxed mb-2 line-clamp-2">
+        {preview}
+      </p>
 
       {/* Meta row */}
       <div className="flex items-center gap-2 flex-wrap">
         <StatusBadge status={portalStatus} variant="ticket" size="sm" />
 
         <PriorityIcon priority={task.priority} size={13} showLabel />
+
+        {dueDate && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary">
+            <CalendarDays size={11} />
+            {dueDate}
+          </span>
+        )}
 
         <span className="flex items-center gap-1 text-[11px] text-text-tertiary ml-auto">
           <User size={11} />

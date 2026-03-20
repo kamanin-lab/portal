@@ -8,7 +8,7 @@ interface Props {
 }
 
 function formatSyncTime(date: Date | null): string {
-  if (!date) return '–'
+  if (!date) return 'Noch nicht synchronisiert'
   return date.toLocaleDateString('de-AT', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   })
@@ -19,7 +19,7 @@ export function SyncIndicator({ lastSyncedAt, isSyncing, onSync }: Props) {
     <button
       onClick={onSync}
       disabled={isSyncing}
-      className="flex items-center gap-1.5 text-[11.5px] text-text-tertiary hover:text-accent transition-colors cursor-pointer disabled:cursor-not-allowed"
+      className="flex items-center gap-1.5 text-[11.5px] text-text-tertiary hover:text-accent transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
       title="Daten aus ClickUp aktualisieren"
     >
       <RefreshCw
@@ -27,7 +27,7 @@ export function SyncIndicator({ lastSyncedAt, isSyncing, onSync }: Props) {
         className={cn('shrink-0', isSyncing && 'animate-spin')}
       />
       <span>
-        {isSyncing ? 'Synchronisiert…' : `Synchronisiert: ${formatSyncTime(lastSyncedAt)}`}
+        {isSyncing ? 'Wird synchronisiert…' : `Stand: ${formatSyncTime(lastSyncedAt)}`}
       </span>
     </button>
   )
