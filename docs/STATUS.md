@@ -28,11 +28,10 @@ It is intentionally short and practical.
 ## Partial / unfinished
 
 - projects as a fully completed client workspace
-- repository clarity and cleanup
-- test protection around critical flows
 - client memory/context as a first-class product layer
-- performance hardening of project read path
-- clearer source-of-truth documentation set
+- deeper test protection around critical product flows
+- further hardening of project read path and data aggregation
+- credits/commercial model design and implementation
 
 ---
 

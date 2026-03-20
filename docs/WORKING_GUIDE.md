@@ -47,11 +47,10 @@ These are reference only.
 
 ## Current priority order
 
-1. repo clarity / docs alignment
-2. tickets completion
-3. projects completion
-4. client memory / context design
-5. credits model design
+1. tickets completion
+2. projects completion
+3. client memory / context design
+4. credits model design
 
 ---
 

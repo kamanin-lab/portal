@@ -163,3 +163,41 @@
 - Registered webhook for 11 events (taskCreated, taskUpdated, taskStatusUpdated, etc.)
 - Webhook ID: `dce8756d-3a76-4e79-9d95-a21801d6ee8e`
 - Inbox notifications now populated via realtime webhook events
+
+## Phase 3.8 — Staging Hardening, Clarity, and Product Polish — 2026-03-20
+
+### Staging workflow and repository clarity
+- Created dedicated staging working copy: `PORTAL_staging`
+- Replaced template root README with real project README for staging
+- Added `docs/STATUS.md`, `docs/REPOSITORY_MAP.md`, and `docs/WORKING_GUIDE.md`
+- Moved historical root planning docs out of the active root into `archive/legacy-reference/root-planning/`
+- Archived legacy reference trees into `archive/legacy-reference/` to reduce root ambiguity
+- Updated `.gitignore` behavior so archived legacy reference content can remain tracked inside staging
+
+### Test and build contract hardening
+- Added `test`, `test:watch`, and `test:coverage` scripts to `package.json`
+- Added proper `vitest.config.ts` for the active staging app only
+- Excluded archived legacy code from active test runs
+- Added `@vitest/coverage-v8` so coverage is real, not just declared
+- Added focused tests for `transformToProject()` in the projects module
+- Confirmed active staging tests pass and build succeeds after each pass
+
+### Performance and bundle improvements
+- Added route-level lazy loading for major pages in `src/app/routes.tsx`
+- Added route-level loading fallback with `LoadingSkeleton`
+- Added Rollup `manualChunks` vendor splitting in `vite.config.ts`
+- Reduced the main app entry chunk substantially and removed prior chunk-size warning pressure
+
+### Product polish — tickets
+- Improved ticket empty states so they reflect filter/search context instead of generic blanks
+- Improved task detail flow to preserve non-task query params and close filter panel on open
+- Refined sync indicator wording and sync empty state
+- Improved task card preview fallback and due-date visibility
+- Added support intro copy to make the support surface feel more product-complete
+
+### Product polish — projects and shared flows
+- Added loading and empty states to `UebersichtPage`, `NachrichtenPage`, and `DateienPage`
+- Improved empty state handling in project files page
+- Replaced blank `WorkspaceGuard` loading state with a proper loading shell
+- Replaced imperative login redirect side-effect with declarative `<Navigate>`
+- Improved Inbox and MeineAufgaben loading / empty states
