@@ -1,12 +1,13 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { Project } from '../types/project';
 import {
   archiveMemoryEntry,
-  deriveClientId,
   getMemoryContextKey,
   getMemoryPreview,
+  installMemoryTestAdapter,
   listMemoryEntries,
   resetMemoryStore,
+  uninstallMemoryTestAdapter,
   upsertMemoryEntry,
   validateMemoryEntry,
 } from '../lib/memory-store';
@@ -30,19 +31,22 @@ const project: Project = {
 };
 
 beforeEach(() => {
-  window.localStorage.clear();
+  installMemoryTestAdapter([]);
   resetMemoryStore([]);
 });
 
 describe('memory-store', () => {
-  test('derives a deterministic client id from project identity', () => {
-    expect(deriveClientId(project)).toBe('client-mbm-mb');
+  test('uses stable backend profile identity for client memory context', () => {
+    expect(getMemoryContextKey(project, 'profile-1')).toEqual({
+      clientId: 'profile-1',
+      projectId: 'project-1',
+    });
   });
 
   test('validates scope invariants', () => {
     const invalidProjectEntry: MemoryEntry = {
       id: '1',
-      client_id: 'client-1',
+      client_id: 'profile-1',
       project_id: null,
       scope: 'project',
       category: 'decision',
@@ -62,17 +66,17 @@ describe('memory-store', () => {
     expect(validateMemoryEntry(invalidProjectEntry).valid).toBe(false);
   });
 
-  test('creates, lists, and archives project and client entries', () => {
-    const context = getMemoryContextKey(project);
+  test('creates, lists, and archives project and client entries', async () => {
+    const context = getMemoryContextKey(project, 'profile-1');
 
-    upsertMemoryEntry(context, {
+    await upsertMemoryEntry(context, {
       scope: 'project',
       category: 'decision',
       title: 'Project rule',
       body: 'Project memory body',
     }, 'tester');
 
-    upsertMemoryEntry(context, {
+    await upsertMemoryEntry(context, {
       scope: 'client',
       category: 'communication',
       title: 'Client rule',
@@ -80,30 +84,46 @@ describe('memory-store', () => {
       visibility: 'shared',
     }, 'tester');
 
-    const activeEntries = listMemoryEntries(context);
+    const activeEntries = await listMemoryEntries(context);
     expect(activeEntries).toHaveLength(2);
     expect(activeEntries.some(entry => entry.scope === 'client' && entry.project_id === null)).toBe(true);
     expect(activeEntries.some(entry => entry.scope === 'project' && entry.project_id === 'project-1')).toBe(true);
 
-    archiveMemoryEntry(activeEntries[0].id, 'tester');
+    await archiveMemoryEntry(activeEntries[0].id, 'tester');
 
-    expect(listMemoryEntries(context)).toHaveLength(1);
-    expect(listMemoryEntries(context, { status: 'archived' })).toHaveLength(1);
+    expect(await listMemoryEntries(context)).toHaveLength(1);
+    expect(await listMemoryEntries(context, { status: 'archived' })).toHaveLength(1);
   });
 
-  test('builds preview entries with client-safe/shared context first', () => {
-    const context = getMemoryContextKey(project);
+  test('client-facing reads exclude internal entries in list and preview paths', async () => {
+    const context = getMemoryContextKey(project, 'profile-1');
 
-    const entries = [
-      upsertMemoryEntry(context, { scope: 'project', category: 'risk', title: 'Internal risk', body: 'Body', visibility: 'internal' }, 'tester'),
-      upsertMemoryEntry(context, { scope: 'project', category: 'decision', title: 'Visible decision', body: 'Body', visibility: 'client_visible' }, 'tester'),
-      upsertMemoryEntry(context, { scope: 'client', category: 'communication', title: 'Shared preference', body: 'Body', visibility: 'shared' }, 'tester'),
-    ];
+    await upsertMemoryEntry(context, { scope: 'project', category: 'risk', title: 'Internal risk', body: 'Body', visibility: 'internal' }, 'tester');
+    await upsertMemoryEntry(context, { scope: 'project', category: 'decision', title: 'Visible decision', body: 'Body', visibility: 'client_visible' }, 'tester');
+    await upsertMemoryEntry(context, { scope: 'client', category: 'communication', title: 'Shared preference', body: 'Body', visibility: 'shared' }, 'tester');
 
-    expect(getMemoryPreview(entries).map(entry => entry.title)).toEqual([
+    const clientEntries = await listMemoryEntries(context, {}, 'client');
+    expect(clientEntries.map(entry => entry.title)).toEqual(['Shared preference', 'Visible decision']);
+    expect(clientEntries.some(entry => entry.visibility === 'internal')).toBe(false);
+
+    expect(getMemoryPreview(clientEntries).map(entry => entry.title)).toEqual([
       'Visible decision',
       'Shared preference',
-      'Internal risk',
     ]);
   });
+
+  test('internal reads still return internal entries for non-client surfaces', async () => {
+    const context = getMemoryContextKey(project, 'profile-1');
+
+    await upsertMemoryEntry(context, { scope: 'project', category: 'risk', title: 'Internal risk', body: 'Body', visibility: 'internal' }, 'tester');
+    await upsertMemoryEntry(context, { scope: 'project', category: 'decision', title: 'Visible decision', body: 'Body', visibility: 'client_visible' }, 'tester');
+
+    const internalEntries = await listMemoryEntries(context, {}, 'internal');
+    expect(internalEntries).toHaveLength(2);
+    expect(getMemoryPreview(internalEntries, 3, 'client').map(entry => entry.title)).toEqual(['Visible decision']);
+  });
+});
+
+afterEach(() => {
+  uninstallMemoryTestAdapter();
 });

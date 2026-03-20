@@ -1,3 +1,4 @@
+import { supabase } from '@/shared/lib/supabase';
 import type { Project } from '../types/project';
 import type {
   MemoryContextKey,
@@ -7,108 +8,67 @@ import type {
   MemoryValidationResult,
 } from '../types/memory';
 
-const STORAGE_KEY = 'portal.project-memory.v1';
+const MEMORY_TABLE = 'project_memory_entries';
+const CLIENT_VISIBLE_VISIBILITIES = new Set<MemoryEntry['visibility']>(['shared', 'client_visible']);
 
-const SEED_ENTRIES: MemoryEntry[] = [
-  {
-    id: 'seed-client-communication',
-    client_id: 'client-mbm-mb',
-    project_id: null,
-    scope: 'client',
-    category: 'communication',
-    title: 'Kommunikation in Deutsch, Ton sachlich und direkt',
-    body: 'Für Abstimmungen funktionieren kurze, klare Zusammenfassungen am besten. Formale Kommunikation sollte auf Deutsch bleiben, insbesondere bei Freigaben und Status-Updates.',
-    visibility: 'shared',
-    status: 'active',
-    source_type: 'manual',
-    source_ref: null,
-    created_by: 'system-seed',
-    updated_by: 'system-seed',
-    created_at: '2026-03-20T10:00:00.000Z',
-    updated_at: '2026-03-20T10:00:00.000Z',
-    reviewed_at: null,
-  },
-  {
-    id: 'seed-project-decision',
-    client_id: 'client-mbm-mb',
-    project_id: 'project-1',
-    scope: 'project',
-    category: 'decision',
-    title: 'Navigation zuerst vereinfachen, dann Design vertiefen',
-    body: 'Im Relaunch soll die Seitenstruktur vor visuellen Feinheiten festgezogen werden. Das reduziert Schleifen im Design und klärt Freigaben früher.',
-    visibility: 'internal',
-    status: 'active',
-    source_type: 'manual',
-    source_ref: null,
-    created_by: 'system-seed',
-    updated_by: 'system-seed',
-    created_at: '2026-03-20T10:15:00.000Z',
-    updated_at: '2026-03-20T10:15:00.000Z',
-    reviewed_at: null,
-  },
-  {
-    id: 'seed-project-risk',
-    client_id: 'client-mbm-mb',
-    project_id: 'project-1',
-    scope: 'project',
-    category: 'risk',
-    title: 'Freigaben bündeln, sonst zieht sich die Strukturphase',
-    body: 'Einzelne Rückmeldungen über mehrere Tage verteilen die Entscheiderunde unnötig. Für diese Phase besser Sammelfeedback statt kleinteiliger Iterationen einplanen.',
-    visibility: 'shared',
-    status: 'active',
-    source_type: 'manual',
-    source_ref: null,
-    created_by: 'system-seed',
-    updated_by: 'system-seed',
-    created_at: '2026-03-20T10:30:00.000Z',
-    updated_at: '2026-03-20T10:30:00.000Z',
-    reviewed_at: null,
-  },
-];
+type MemoryAudience = 'client' | 'internal';
 
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'client';
-}
+type MemoryRow = {
+  id: string;
+  client_id: string;
+  project_id: string | null;
+  scope: MemoryEntry['scope'];
+  category: MemoryEntry['category'];
+  title: string;
+  body: string;
+  visibility: MemoryEntry['visibility'];
+  status: MemoryEntry['status'];
+  source_type: MemoryEntry['source_type'];
+  source_ref: string | null;
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+  reviewed_at: string | null;
+};
 
-export function deriveClientId(project: Project) {
-  return `client-${slugify(project.client)}-${slugify(project.clientInitials)}`;
-}
+let memoryTestAdapter: {
+  listEntries: (context: MemoryContextKey) => Promise<MemoryEntry[]>;
+  upsertEntry: (entry: MemoryEntry) => Promise<MemoryEntry>;
+  archiveEntry: (entryId: string, actor: string) => Promise<MemoryEntry>;
+  reset: (entries: MemoryEntry[]) => void;
+} | null = null;
 
-export function getMemoryContextKey(project: Project): MemoryContextKey {
+function normalizeMemoryRow(row: MemoryRow): MemoryEntry {
   return {
-    clientId: deriveClientId(project),
-    projectId: project.id,
+    id: row.id,
+    client_id: row.client_id,
+    project_id: row.project_id,
+    scope: row.scope,
+    category: row.category,
+    title: row.title,
+    body: row.body,
+    visibility: row.visibility,
+    status: row.status,
+    source_type: row.source_type,
+    source_ref: row.source_ref,
+    created_by: row.created_by,
+    updated_by: row.updated_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    reviewed_at: row.reviewed_at,
   };
 }
 
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
-
-function readStoredEntries(): MemoryEntry[] {
-  if (!canUseStorage()) return SEED_ENTRIES;
-
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_ENTRIES));
-    return SEED_ENTRIES;
+export function getMemoryContextKey(project: Project, clientProfileId: string | null | undefined): MemoryContextKey {
+  if (!clientProfileId?.trim()) {
+    throw new Error('Stable backend client identity is required for project memory context');
   }
 
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : SEED_ENTRIES;
-  } catch {
-    return SEED_ENTRIES;
-  }
-}
-
-function writeStoredEntries(entries: MemoryEntry[]) {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return {
+    clientId: clientProfileId,
+    projectId: project.id,
+  };
 }
 
 export function validateMemoryEntry(entry: MemoryEntry): MemoryValidationResult {
@@ -129,22 +89,56 @@ export function validateMemoryEntry(entry: MemoryEntry): MemoryValidationResult 
   return { valid: errors.length === 0, errors };
 }
 
-export function listMemoryEntries(context: MemoryContextKey, filters: MemoryFilters = {}): MemoryEntry[] {
+function matchesContext(entry: MemoryEntry, context: MemoryContextKey) {
+  return entry.client_id === context.clientId
+    && (entry.scope === 'client' || entry.project_id === context.projectId);
+}
+
+function applyAudienceFilter(entries: MemoryEntry[], audience: MemoryAudience) {
+  if (audience === 'internal') return entries;
+  return entries.filter(entry => CLIENT_VISIBLE_VISIBILITIES.has(entry.visibility));
+}
+
+function applyListFilters(entries: MemoryEntry[], filters: MemoryFilters = {}) {
   const status = filters.status ?? 'active';
-  return readStoredEntries()
-    .filter(entry => entry.client_id === context.clientId)
-    .filter(entry => {
-      if (entry.scope === 'client') return true;
-      return entry.project_id === context.projectId;
-    })
+
+  return entries
     .filter(entry => (filters.scope && filters.scope !== 'all' ? entry.scope === filters.scope : true))
     .filter(entry => (filters.visibility && filters.visibility !== 'all' ? entry.visibility === filters.visibility : true))
     .filter(entry => entry.status === status)
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 }
 
-export function getMemoryPreview(entries: MemoryEntry[], limit = 3) {
-  return [...entries]
+async function listStoredEntries(context: MemoryContextKey): Promise<MemoryEntry[]> {
+  if (memoryTestAdapter) {
+    return (await memoryTestAdapter.listEntries(context)).filter(entry => matchesContext(entry, context));
+  }
+
+  const { data, error } = await supabase
+    .from(MEMORY_TABLE)
+    .select('*')
+    .eq('client_id', context.clientId)
+    .or(`scope.eq.client,and(scope.eq.project,project_id.eq.${context.projectId})`)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as MemoryRow[]).map(normalizeMemoryRow);
+}
+
+export async function listMemoryEntries(
+  context: MemoryContextKey,
+  filters: MemoryFilters = {},
+  audience: MemoryAudience = 'internal',
+): Promise<MemoryEntry[]> {
+  const entries = await listStoredEntries(context);
+  return applyListFilters(applyAudienceFilter(entries, audience), filters);
+}
+
+export function getMemoryPreview(entries: MemoryEntry[], limit = 3, audience: MemoryAudience = 'client') {
+  return applyAudienceFilter(entries, audience)
     .sort((a, b) => {
       const visibilityRank = { client_visible: 0, shared: 1, internal: 2 } as const;
       const categoryRank = { decision: 0, risk: 1 } as Record<string, number>;
@@ -154,10 +148,10 @@ export function getMemoryPreview(entries: MemoryEntry[], limit = 3) {
     .slice(0, limit);
 }
 
-export function upsertMemoryEntry(context: MemoryContextKey, draft: MemoryDraft, actor: string, existingId?: string): MemoryEntry {
-  const entries = readStoredEntries();
+export async function upsertMemoryEntry(context: MemoryContextKey, draft: MemoryDraft, actor: string, existingId?: string): Promise<MemoryEntry> {
+  const currentEntries = await listStoredEntries(context);
+  const current = existingId ? currentEntries.find(entry => entry.id === existingId) : undefined;
   const now = new Date().toISOString();
-  const current = existingId ? entries.find(entry => entry.id === existingId) : undefined;
 
   const nextEntry: MemoryEntry = {
     id: current?.id ?? crypto.randomUUID(),
@@ -183,30 +177,86 @@ export function upsertMemoryEntry(context: MemoryContextKey, draft: MemoryDraft,
     throw new Error(validation.errors.join(', '));
   }
 
-  const nextEntries = current
-    ? entries.map(entry => (entry.id === current.id ? nextEntry : entry))
-    : [nextEntry, ...entries];
+  if (memoryTestAdapter) {
+    return memoryTestAdapter.upsertEntry(nextEntry);
+  }
 
-  writeStoredEntries(nextEntries);
-  return nextEntry;
+  const { data, error } = await supabase
+    .from(MEMORY_TABLE)
+    .upsert(nextEntry)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Failed to save memory entry');
+  }
+
+  return normalizeMemoryRow(data as MemoryRow);
 }
 
-export function archiveMemoryEntry(entryId: string, actor: string): MemoryEntry {
-  const entries = readStoredEntries();
-  const current = entries.find(entry => entry.id === entryId);
-  if (!current) throw new Error('Memory entry not found');
+export async function archiveMemoryEntry(entryId: string, actor: string): Promise<MemoryEntry> {
+  if (memoryTestAdapter) {
+    return memoryTestAdapter.archiveEntry(entryId, actor);
+  }
 
-  const nextEntry: MemoryEntry = {
-    ...current,
-    status: 'archived',
-    updated_by: actor,
-    updated_at: new Date().toISOString(),
+  const { data, error } = await supabase
+    .from(MEMORY_TABLE)
+    .update({
+      status: 'archived',
+      updated_by: actor,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', entryId)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Memory entry not found');
+  }
+
+  return normalizeMemoryRow(data as MemoryRow);
+}
+
+export function resetMemoryStore(entries: MemoryEntry[] = []) {
+  if (memoryTestAdapter) {
+    memoryTestAdapter.reset(entries);
+  }
+}
+
+export function installMemoryTestAdapter(initialEntries: MemoryEntry[] = []) {
+  let store = [...initialEntries];
+
+  memoryTestAdapter = {
+    async listEntries() {
+      return store;
+    },
+    async upsertEntry(entry) {
+      const existingIndex = store.findIndex(item => item.id === entry.id);
+      if (existingIndex >= 0) {
+        store[existingIndex] = entry;
+      } else {
+        store = [entry, ...store];
+      }
+      return entry;
+    },
+    async archiveEntry(entryId, actor) {
+      const current = store.find(entry => entry.id === entryId);
+      if (!current) throw new Error('Memory entry not found');
+      const nextEntry = {
+        ...current,
+        status: 'archived' as const,
+        updated_by: actor,
+        updated_at: new Date().toISOString(),
+      };
+      store = store.map(entry => (entry.id === entryId ? nextEntry : entry));
+      return nextEntry;
+    },
+    reset(entries) {
+      store = [...entries];
+    },
   };
-
-  writeStoredEntries(entries.map(entry => (entry.id === entryId ? nextEntry : entry)));
-  return nextEntry;
 }
 
-export function resetMemoryStore(entries: MemoryEntry[] = SEED_ENTRIES) {
-  writeStoredEntries(entries);
+export function uninstallMemoryTestAdapter() {
+  memoryTestAdapter = null;
 }
