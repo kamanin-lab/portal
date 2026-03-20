@@ -1,0 +1,97 @@
+@import "tailwindcss";
+@import "./shared/styles/tokens.css";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  code, pre, .mono {
+    font-family: 'DM Mono', 'Fira Code', monospace;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-inverse: var(--text-inverse);
+  --color-text-sidebar: var(--text-sidebar);
+  --color-text-sidebar-active: var(--text-sidebar-active);
+
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-cta-light: var(--cta-light);
+
+  --color-committed: var(--committed);
+  --color-committed-bg: var(--committed-bg);
+  --color-awaiting: var(--awaiting);
+  --color-awaiting-bg: var(--awaiting-bg);
+  --color-upcoming: var(--upcoming);
+  --color-upcoming-bg: var(--upcoming-bg);
+
+  --color-phase-1: var(--phase-1);
+  --color-phase-1-light: var(--phase-1-light);
+  --color-phase-1-mid: var(--phase-1-mid);
+  --color-phase-1-text: var(--phase-1-text);
+
+  --color-phase-2: var(--phase-2);
+  --color-phase-2-light: var(--phase-2-light);
+  --color-phase-2-mid: var(--phase-2-mid);
+  --color-phase-2-text: var(--phase-2-text);
+
+  --color-phase-3: var(--phase-3);
+  --color-phase-3-light: var(--phase-3-light);
+  --color-phase-3-mid: var(--phase-3-mid);
+  --color-phase-3-text: var(--phase-3-text);
+
+  --color-phase-4: var(--phase-4);
+  --color-phase-4-light: var(--phase-4-light);
+  --color-phase-4-mid: var(--phase-4-mid);
+  --color-phase-4-text: var(--phase-4-text);
+
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+}
+
+@keyframes phase-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(43,24,120,0.12); }
+  50% { box-shadow: 0 0 0 7px rgba(43,24,120,0.06); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}

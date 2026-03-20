@@ -33,13 +33,18 @@ bun.lockb
 # Claude session files
 .claude/
 
-# Old project directories (kept locally as reference, not in repo)
+# Old project directories (kept locally as reference, not in repo root)
 kamanin-portal/
 /tickets/
 kamanin-portal-prototype.html
 EXECUTION.md
 SPEC.md
 schema.sql
+
+# Allow archived legacy copies inside staging repo
+!archive/
+!archive/legacy-reference/
+!archive/legacy-reference/**
 
 # Debug scripts
 debug-clickup-task.cjs
