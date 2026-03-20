@@ -72,6 +72,7 @@ These folders are kept as **reference/legacy context**, not as the primary place
 ## Key docs
 
 Start here:
+- `docs/WORKING_GUIDE.md`
 - `docs/ARCHITECTURE.md`
 - `docs/DECISIONS.md`
 - `docs/STATUS.md`
@@ -79,6 +80,9 @@ Start here:
 
 Planning documents created outside the repo currently live in:
 - `C:/Users/upan/.openclaw/workspace/portal-planning/`
+
+Historical root planning docs moved out of the active root:
+- `archive/legacy-reference/root-planning/`
 
 ## Local development
 

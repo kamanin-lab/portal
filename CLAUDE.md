@@ -1,5 +1,9 @@
 # KAMANIN Client Portal
 
+> Current working rule: this repository is the **staging implementation copy**.
+> Original reference repo copy remains untouched at `G:/01_OPUS/Projects/PORTAL`.
+> Historical reference code has been moved under `archive/legacy-reference/`.
+
 ## What This Is
 
 Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). German-language B2B interface. Clients track projects, review deliverables, approve work, manage support tickets. Clients never see ClickUp.

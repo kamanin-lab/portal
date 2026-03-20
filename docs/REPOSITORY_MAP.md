@@ -33,9 +33,6 @@ Dependencies and local scripts.
 ### `CLAUDE.md`
 Project-specific notes/instructions carried with the repo.
 
-### `EXECUTION.md`
-Historical/planning execution context; useful, but should be read carefully against current repo reality.
-
 ---
 
 ## Historical / legacy / reference areas
@@ -47,6 +44,10 @@ Do not treat this as the primary active app unless explicitly needed for compari
 ### `archive/legacy-reference/kamanin-portal/`
 Older code/reference layer from an earlier structure.
 Useful for archaeology/reference only.
+
+### `archive/legacy-reference/root-planning/`
+Historical root planning docs moved out of the active root to reduce ambiguity.
+Use only as historical reference.
 
 ### `dist/`
 Build output.
