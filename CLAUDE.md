@@ -164,6 +164,13 @@ Secondary actions (Put on Hold, Cancel) available on all non-terminal states.
   - `docs/reference/supabase-context-hub/python-sdk.md`
 - Use these alongside official docs when working on Supabase client usage, queries, auth, storage, realtime, edge functions, and RLS-sensitive flows.
 
+### Context Hub as a general rule
+- Prefer Context Hub as the first curated documentation source when available.
+- Project-local Context Hub reference copies live at:
+  `docs/reference/context-hub/`
+- Current local references include React, React DOM, Tailwind CSS, Vite, and Vitest.
+- If Context Hub does not have the technology you need, or the local CLI fetch path is broken, fall back to official documentation directly.
+
 ### Context Hub (chub)
 Tool for fetching LLM-optimized API docs on demand instead of guessing from training data.
 
