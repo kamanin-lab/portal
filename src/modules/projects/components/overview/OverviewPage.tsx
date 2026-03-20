@@ -11,6 +11,10 @@ import { SchritteSheet } from '../SchritteSheet';
 import { MessageSheet } from '../MessageSheet';
 import { UploadSheet } from '../UploadSheet';
 import { NewTicketDialog } from '@/modules/tickets/components/NewTicketDialog';
+import { interpretProjectOverview } from '../../lib/overview-interpretation';
+import { useProjectMemory } from '../../hooks/useProjectMemory';
+import { ProjectContextPreview } from './ProjectContextPreview';
+import { ProjectContextSection } from './ProjectContextSection';
 
 interface OverviewPageProps {
   project: Project;
@@ -23,6 +27,8 @@ export function OverviewPage({ project }: OverviewPageProps) {
   const [messageOpen, setMessageOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const overview = interpretProjectOverview(project);
+  const { previewEntries } = useProjectMemory(project);
 
   function openStep(stepId: string) {
     setSearchParams(prev => { prev.set('stepId', stepId); prev.delete('kapitelId'); return prev }, { replace: true });
@@ -75,15 +81,91 @@ export function OverviewPage({ project }: OverviewPageProps) {
           onCreateTask={() => setCreateTaskOpen(true)}
         />
 
-        {/* 4. Quick actions */}
+        {/* 4. Client attention overview */}
+        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] gap-[14px] mb-[18px] max-[900px]:grid-cols-1">
+          <section className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+            <div className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-[8px]">
+              Was jetzt Ihre Aufmerksamkeit braucht
+            </div>
+            <h2 className="text-[18px] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[6px]">
+              {overview.attention.title}
+            </h2>
+            <p className="text-[13px] text-[var(--text-secondary)] leading-[1.6] mb-[12px]">
+              {overview.attention.description}
+            </p>
+            {(overview.attention.chapterTitle || overview.attention.lastUpdated) && (
+              <p className="text-[11px] text-[var(--text-tertiary)] mb-[12px]">
+                {[overview.attention.chapterTitle, overview.attention.lastUpdated ? `Zuletzt aktualisiert ${overview.attention.lastUpdated}` : null].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-[8px] mb-[12px]">
+              {overview.attention.stepId && (
+                <button
+                  onClick={() => openStep(overview.attention.stepId!)}
+                  className="px-[14px] py-[8px] text-[13px] font-semibold text-white rounded-[var(--r-sm)] bg-[var(--text-primary)] transition-opacity hover:opacity-90"
+                >
+                  {overview.attention.primaryLabel}
+                </button>
+              )}
+              <button
+                onClick={() => setMessageOpen(true)}
+                className="px-[14px] py-[8px] text-[13px] font-medium rounded-[var(--r-sm)] border border-[var(--border)] bg-white transition-colors hover:bg-[var(--surface-hover)]"
+              >
+                {overview.attention.supportingLabel}
+              </button>
+            </div>
+            {(overview.attention.whyItMatters || overview.attention.whatBecomesFixed) && (
+              <div className="grid grid-cols-2 gap-[10px] max-[700px]:grid-cols-1">
+                {overview.attention.whyItMatters && (
+                  <div className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-[12px] py-[10px]">
+                    <div className="text-[11px] font-semibold text-[var(--text-primary)] mb-[4px]">Warum das wichtig ist</div>
+                    <div className="text-[12px] text-[var(--text-secondary)] leading-[1.5]">{overview.attention.whyItMatters}</div>
+                  </div>
+                )}
+                {overview.attention.whatBecomesFixed && (
+                  <div className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-[12px] py-[10px]">
+                    <div className="text-[11px] font-semibold text-[var(--text-primary)] mb-[4px]">Was danach feststeht</div>
+                    <div className="text-[12px] text-[var(--text-secondary)] leading-[1.5]">{overview.attention.whatBecomesFixed}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {previewEntries.length > 0 ? (
+            <ProjectContextPreview entries={previewEntries} />
+          ) : (
+            <aside className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-[18px] flex flex-col gap-[12px]">
+              <div>
+                <div className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-[8px]">Aktueller Stand</div>
+                <div className="text-[15px] font-semibold text-[var(--text-primary)] mb-[4px]">{overview.currentStateTitle}</div>
+                <p className="text-[12.5px] text-[var(--text-secondary)] leading-[1.55]">{overview.currentStateDescription}</p>
+              </div>
+              <div className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-[12px] py-[10px]">
+                <div className="text-[11px] font-semibold text-[var(--text-primary)] mb-[4px]">Worauf das Team wartet</div>
+                <div className="text-[12px] text-[var(--text-secondary)] leading-[1.5]">{overview.waitingOnTeamSummary}</div>
+              </div>
+              <div className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-[12px] py-[10px]">
+                <div className="text-[11px] font-semibold text-[var(--text-primary)] mb-[4px]">Nächster sinnvoller Schritt</div>
+                <div className="text-[12px] text-[var(--text-secondary)] leading-[1.5]">{overview.nextStepSummary}</div>
+              </div>
+            </aside>
+          )}
+        </div>
+
+        {/* 5. Project context */}
+        <ProjectContextSection project={project} />
+
+        {/* 6. Quick actions */}
         <QuickActions
           project={project}
+          onOpenStep={openStep}
           onOpenMessage={() => setMessageOpen(true)}
           onOpenUpload={() => setUploadOpen(true)}
           onCreateTask={() => setCreateTaskOpen(true)}
         />
 
-        {/* 5. Tabs */}
+        {/* 7. Tabs */}
         <OverviewTabs project={project} onOpenStep={openStep} />
       </ContentContainer>
 
