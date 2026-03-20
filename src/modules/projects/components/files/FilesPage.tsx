@@ -3,6 +3,7 @@ import { FileText, Image, File } from 'lucide-react';
 import type { Project, FileItem } from '../../types/project';
 import { getPhaseColor } from '../../lib/phase-colors';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
+import { EmptyState } from '@/shared/components/common/EmptyState';
 
 interface EnrichedFile extends FileItem {
   chapterId: string;
@@ -97,7 +98,7 @@ export function FilesPage({ project }: FilesPageProps) {
 
       {/* File table */}
       {filtered.length === 0 ? (
-        <p className="text-[13px] text-[var(--text-tertiary)]">Keine Dateien gefunden.</p>
+        <EmptyState message="Keine Dateien für die aktuelle Auswahl gefunden." />
       ) : (
         <div className="flex flex-col gap-[2px]">
           {filtered.map((f, idx) => {
