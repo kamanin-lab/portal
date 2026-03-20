@@ -17,6 +17,34 @@ interface Props {
   onTaskClick: (id: string) => void
 }
 
+function getEmptyMessage(filter: TaskFilter, query: string, activeFilters?: ActiveFilters): string {
+  const hasSearch = query.trim().length > 0
+  const hasAdvancedFilters = !!activeFilters && (activeFilters.priorities.length > 0 || activeFilters.datePreset !== null)
+
+  if (hasSearch && hasAdvancedFilters) return 'Keine Aufgaben passen zu Suche und Filtern.'
+  if (hasSearch) return 'Keine Aufgaben zur aktuellen Suche gefunden.'
+  if (hasAdvancedFilters) return 'Keine Aufgaben passen zu den gewählten Filtern.'
+
+  switch (filter) {
+    case 'attention':
+      return 'Aktuell wartet keine Aufgabe auf Ihre Rückmeldung.'
+    case 'open':
+      return 'Aktuell gibt es keine offenen Aufgaben.'
+    case 'in_progress':
+      return 'Aktuell gibt es keine Aufgaben in Bearbeitung.'
+    case 'approved':
+      return 'Aktuell gibt es keine freigegebenen Aufgaben.'
+    case 'done':
+      return 'Aktuell gibt es keine erledigten Aufgaben.'
+    case 'on_hold':
+      return 'Aktuell gibt es keine pausierten Aufgaben.'
+    case 'cancelled':
+      return 'Aktuell gibt es keine abgebrochenen Aufgaben.'
+    default:
+      return dict.labels.noTasks
+  }
+}
+
 function addDays(d: Date, n: number): Date {
   return new Date(d.getTime() + n * 86400000)
 }
@@ -95,7 +123,7 @@ export function TaskList({ tasks, isLoading, filter, taskUnread, searchQuery = '
   })
 
   if (sorted.length === 0) {
-    return <EmptyState message={dict.labels.noTasks} />
+    return <EmptyState message={getEmptyMessage(filter, searchQuery, activeFilters)} />
   }
 
   return (

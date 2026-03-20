@@ -51,11 +51,16 @@ export function TicketsPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openTask(id: string) {
+    setFilterPanelOpen(false)
     setSearchParams({ taskId: id }, { replace: true })
   }
 
   function closeTask() {
-    setSearchParams({}, { replace: true })
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('taskId')
+      return next
+    }, { replace: true })
   }
 
   const lastSynced = dataUpdatedAt ? new Date(dataUpdatedAt) : null
