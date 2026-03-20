@@ -1,73 +1,126 @@
-# React + TypeScript + Vite
+# KAMANIN Portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Client-facing portal for KAMANIN projects and support workflows.
 
-Currently, two official plugins are available:
+## What this repository is
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This repository contains the current portal application built with:
 
-## React Compiler
+- **Vite + React + TypeScript**
+- **Supabase** for auth, cache tables, realtime, and data access
+- **Edge Functions** as the action/integration boundary to ClickUp and other external services
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The portal currently focuses on two main product areas:
 
-## Expanding the ESLint configuration
+- **Tickets / Support**
+- **Projects / Project Experience**
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Current status
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+This is an active product codebase with a strong foundation.
+It is **not** a greenfield prototype anymore, but it is also **not yet fully product-complete**.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Current priorities:
+1. improve repo clarity and docs alignment
+2. complete tickets module as a production-grade workflow
+3. complete projects module as a production-grade client workspace
+4. design and introduce client memory / context layer
+5. later design credits / commercial accounting properly
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Important working rule
+
+This repository is the **staging working copy**.
+
+- original reference folder: `G:/01_OPUS/Projects/PORTAL`
+- staging working folder: `G:/01_OPUS/Projects/PORTAL_staging`
+
+All future implementation work should happen in **staging**, not in the original reference copy.
+
+## Architecture at a glance
+
+### Data flow
+
+```text
+Browser → Supabase Auth → profiles
+Browser → React Query → cache tables
+Browser → Supabase Realtime → live updates
+Browser → Edge Functions → ClickUp API (proxied)
+ClickUp Webhook → Edge Function → cache update
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Key constraints
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- UI reads from cache/data tables, not directly from ClickUp
+- ClickUp is accessed through Edge Functions
+- RLS is used on user/client data
+- realtime and polling are used for freshness depending on module/flow
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Main folders
+
+### Active code
+- `src/` — frontend application
+- `supabase/functions/` — Edge Functions
+- `docs/` — architecture, decisions, status, and working docs
+- `public/` — static assets
+
+### Historical / reference areas
+- `tickets/` — older reference code / historical layer
+- `kamanin-portal/` — older reference code / historical layer
+
+These folders should be treated as **reference/legacy context**, not as the primary place for active implementation.
+
+## Key docs
+
+Start here:
+- `docs/ARCHITECTURE.md`
+- `docs/DECISIONS.md`
+- `docs/STATUS.md`
+- `docs/REPOSITORY_MAP.md`
+
+Planning documents created outside the repo currently live in:
+- `C:/Users/upan/.openclaw/workspace/portal-planning/`
+
+## Local development
+
+Install dependencies:
+
+```bash
+npm install
 ```
+
+Run dev server:
+
+```bash
+npm run dev
+```
+
+Build:
+
+```bash
+npm run build
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+## Known repository reality
+
+This repository still contains some historical layers and documentation drift from earlier phases.
+That is expected at the current stage.
+The immediate goal is **clarity first**, not destructive cleanup.
+
+## Near-term goals
+
+- stabilize repo structure and source-of-truth docs
+- finish product understanding of tickets and projects
+- prepare stronger test coverage around critical flows
+- improve project read-model clarity and future performance path
+
+## Non-goals for now
+
+- no AI-first portal redesign
+- no autonomous in-portal agent system yet
+- no risky changes in the original reference copy
