@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ClipboardCheck, CheckCircle2 } from 'lucide-react'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
+import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
+import { EmptyState } from '@/shared/components/common/EmptyState'
 import { TaskCard } from '@/modules/tickets/components/TaskCard'
 import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet'
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
@@ -77,16 +79,13 @@ export function MeineAufgabenPage() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center py-16 text-text-tertiary text-sm">
-          Laden…
-        </div>
+        <LoadingSkeleton lines={5} height="72px" className="py-4" />
       )}
 
       {/* Empty state */}
       {!isLoading && attentionTasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <CheckCircle2 size={36} className="text-green-500 opacity-60" />
-          <p className="text-sm text-text-tertiary">Keine offenen Aufgaben — alles erledigt!</p>
+        <div className="py-8">
+          <EmptyState message="Keine offenen Aufgaben — alles erledigt!" icon={<CheckCircle2 size={36} className="text-green-500" />} />
         </div>
       )}
 

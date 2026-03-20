@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { cn } from '@/shared/lib/utils'
 
@@ -20,8 +20,7 @@ export function LoginPage() {
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/inbox'
 
   if (isAuthenticated) {
-    navigate(from, { replace: true })
-    return null
+    return <Navigate to={from} replace />
   }
 
   const handleSubmit = async (e: FormEvent) => {

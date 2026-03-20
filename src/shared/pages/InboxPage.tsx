@@ -6,6 +6,8 @@ import type { Notification } from '@/modules/tickets/hooks/useNotifications'
 import { cn } from '@/shared/lib/utils'
 import { linkifyText } from '@/shared/lib/linkify'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
+import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
+import { EmptyState } from '@/shared/components/common/EmptyState'
 
 const PAGE_SIZE = 10
 
@@ -101,14 +103,13 @@ export function InboxPage() {
         {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && (
-            <div className="flex items-center justify-center py-12 text-text-tertiary text-sm">
-              Laden…
+            <div className="px-5 py-4">
+              <LoadingSkeleton lines={6} height="44px" />
             </div>
           )}
           {!isLoading && pageItems.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-text-tertiary text-sm gap-2">
-              <Bell size={24} className="opacity-30" />
-              Keine Benachrichtigungen
+            <div className="py-8">
+              <EmptyState message="Keine Benachrichtigungen vorhanden." icon={<Bell size={24} />} />
             </div>
           )}
           {pageItems.map(n => (
