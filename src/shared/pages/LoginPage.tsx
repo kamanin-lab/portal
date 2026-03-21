@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/utils'
 
 type Mode = 'signin' | 'magic' | 'reset'
 
-const STAGING_AUTH_BYPASS = true
+const STAGING_AUTH_BYPASS = false
 
 export function LoginPage() {
   const navigate = useNavigate()

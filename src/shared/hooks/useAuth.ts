@@ -3,7 +3,7 @@ import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
 import type { Profile } from '@/shared/types/common'
 
-const STAGING_AUTH_BYPASS = true
+const STAGING_AUTH_BYPASS = false
 const STAGING_BYPASS_USER_ID = 'staging-auth-bypass-user'
 
 const STAGING_BYPASS_USER = {
