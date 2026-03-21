@@ -3,6 +3,26 @@ import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
 import type { Profile } from '@/shared/types/common'
 
+const STAGING_AUTH_BYPASS = true
+const STAGING_BYPASS_USER_ID = 'staging-auth-bypass-user'
+
+const STAGING_BYPASS_USER = {
+  id: STAGING_BYPASS_USER_ID,
+  email: 'yuri@kamanin.at',
+} as User
+
+const STAGING_BYPASS_PROFILE: Profile = {
+  id: STAGING_BYPASS_USER_ID,
+  email: 'yuri@kamanin.at',
+  full_name: 'Yuri Kamanin',
+  company_name: 'KAMANIN',
+  clickup_list_ids: null,
+  email_notifications: true,
+  avatar_url: null,
+  support_task_id: null,
+  clickup_chat_channel_id: null,
+}
+
 interface AuthContextValue {
   user: User | null
   session: Session | null
@@ -35,10 +55,10 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(STAGING_AUTH_BYPASS ? STAGING_BYPASS_USER : null)
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(STAGING_AUTH_BYPASS ? STAGING_BYPASS_PROFILE : null)
+  const [isLoading, setIsLoading] = useState(!STAGING_AUTH_BYPASS)
 
   const loadProfile = useCallback(async (userId: string) => {
     const p = await fetchProfile(userId)
@@ -46,6 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (STAGING_AUTH_BYPASS) {
+      setUser(STAGING_BYPASS_USER)
+      setSession(null)
+      setProfile(STAGING_BYPASS_PROFILE)
+      setIsLoading(false)
+      return
+    }
+
     let mounted = true
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -113,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextValue = {
     user, session, profile, isLoading,
-    isAuthenticated: !!session,
+    isAuthenticated: STAGING_AUTH_BYPASS ? true : !!session,
     signIn, signInWithMagicLink, resetPassword, updatePassword, signOut,
   }
 

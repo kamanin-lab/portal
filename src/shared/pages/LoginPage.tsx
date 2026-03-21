@@ -5,6 +5,8 @@ import { cn } from '@/shared/lib/utils'
 
 type Mode = 'signin' | 'magic' | 'reset'
 
+const STAGING_AUTH_BYPASS = true
+
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -71,6 +73,11 @@ export function LoginPage() {
 
         {/* Card */}
         <div className="bg-surface rounded-[14px] border border-border p-6 shadow-md">
+          {STAGING_AUTH_BYPASS && (
+            <div className="mb-4 rounded-[8px] border border-accent/20 bg-accent/5 px-3 py-2 text-xs text-text-secondary">
+              Staging-Prototypmodus aktiv: Login ist derzeit für Vorschau und Tests umgangen.
+            </div>
+          )}
           {mode === 'signin' && (
             <h2 className="text-base font-semibold text-text-primary mb-5">Anmelden</h2>
           )}
