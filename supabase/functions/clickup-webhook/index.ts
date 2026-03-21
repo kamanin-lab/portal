@@ -8,11 +8,12 @@ import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
 import {
+  buildChapterConfigMap,
   getClientFacingDisplayText,
   isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
   isTaskVisible,
-  resolveChapterConfigId,
+  resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
@@ -553,7 +554,7 @@ Deno.serve(async (req) => {
           return rows?.[0]?.name || "Schritt";
         }
 
-        async function getProjectChapterConfigId(taskData: { custom_fields?: Array<{ id: string; value?: unknown }>; }): Promise<string | null> {
+        async function getProjectChapterConfigId(taskData: { custom_fields?: Array<{ id: string; value?: unknown; type_config?: { options?: Array<{ id: string; orderindex?: number | string }> } }>; }): Promise<string | null> {
           const { data: projectConfigRows } = await supabase
             .from("project_config")
             .select("clickup_phase_field_id")
@@ -561,13 +562,7 @@ Deno.serve(async (req) => {
             .limit(1);
 
           const phaseFieldId = projectConfigRows?.[0]?.clickup_phase_field_id;
-          if (!phaseFieldId || !taskData.custom_fields) {
-            return null;
-          }
-
-          const phaseField = taskData.custom_fields.find((field) => field.id === phaseFieldId);
-          const phaseOptionId = typeof phaseField?.value === "string" ? phaseField.value : null;
-          if (!phaseOptionId) {
+          if (!phaseFieldId) {
             return null;
           }
 
@@ -577,14 +572,11 @@ Deno.serve(async (req) => {
             .eq("project_config_id", projectConfigId!)
             .eq("is_active", true);
 
-          const chapterMap = new Map<string, string>();
-          for (const row of chapterRows || []) {
-            if (row.clickup_cf_option_id) {
-              chapterMap.set(row.clickup_cf_option_id, row.id);
-            }
-          }
-
-          return resolveChapterConfigId(phaseOptionId, chapterMap);
+          return resolveTaskChapterConfigId(
+            taskData.custom_fields,
+            phaseFieldId,
+            buildChapterConfigMap(chapterRows || []),
+          );
         }
 
         // ---- PROJECT: taskStatusUpdated ----

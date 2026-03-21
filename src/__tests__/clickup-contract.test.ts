@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildChapterConfigMap,
   getClientFacingDisplayText,
   getPhaseOptionId,
   getVisibilityFromFields,
@@ -7,6 +8,7 @@ import {
   isPortalOriginatedComment,
   resolveChapterConfigId,
   resolveStatusForAction,
+  resolveTaskChapterConfigId,
 } from '../../supabase/functions/_shared/clickup-contract';
 
 describe('clickup contract helpers', () => {
@@ -41,6 +43,56 @@ describe('clickup contract helpers', () => {
 
     expect(resolveChapterConfigId('phase-b', chapterMap)).toBe('chapter-2');
     expect(resolveChapterConfigId('missing', chapterMap)).toBeNull();
+  });
+
+  it('resolves webhook-style chapter config ids for numeric dropdown and direct string options', () => {
+    const chapterMap = buildChapterConfigMap([
+      { id: 'chapter-1', clickup_cf_option_id: 'phase-a' },
+      { id: 'chapter-2', clickup_cf_option_id: 'phase-b' },
+    ]);
+
+    expect(resolveTaskChapterConfigId([
+      {
+        id: 'phase-field',
+        value: 2,
+        type_config: { options: [{ id: 'phase-a', orderindex: 1 }, { id: 'phase-b', orderindex: 2 }] },
+      },
+    ], 'phase-field', chapterMap)).toBe('chapter-2');
+
+    expect(resolveTaskChapterConfigId([
+      { id: 'phase-field', value: 'phase-a' },
+    ], 'phase-field', chapterMap)).toBe('chapter-1');
+
+    expect(resolveTaskChapterConfigId([
+      { id: 'phase-field', value: 'phase-missing' },
+    ], 'phase-field', chapterMap)).toBeNull();
+  });
+
+  it('preserves the correct chapter assignment across webhook-style project task updates and moves', () => {
+    const chapterMap = buildChapterConfigMap([
+      { id: 'chapter-discovery', clickup_cf_option_id: 'phase-discovery' },
+      { id: 'chapter-build', clickup_cf_option_id: 'phase-build' },
+    ]);
+
+    const taskInDiscovery = [
+      { id: 'phase-field', value: 'phase-discovery' },
+    ];
+    const taskMovedToBuild = [
+      {
+        id: 'phase-field',
+        value: 2,
+        type_config: {
+          options: [
+            { id: 'phase-discovery', orderindex: 1 },
+            { id: 'phase-build', orderindex: 2 },
+          ],
+        },
+      },
+    ];
+
+    expect(resolveTaskChapterConfigId(taskInDiscovery, 'phase-field', chapterMap)).toBe('chapter-discovery');
+    expect(resolveTaskChapterConfigId(taskMovedToBuild, 'phase-field', chapterMap)).toBe('chapter-build');
+    expect(resolveTaskChapterConfigId(taskMovedToBuild, 'phase-field', chapterMap)).toBe('chapter-build');
   });
 
   it('classifies public and portal comments through the shared contract', () => {

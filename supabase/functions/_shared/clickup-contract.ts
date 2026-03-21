@@ -87,6 +87,28 @@ export function resolveChapterConfigId(
   return chapterMap.get(phaseOptionId) || null;
 }
 
+export function buildChapterConfigMap(
+  chapterRows: Array<{ id: string; clickup_cf_option_id: string | null }> | undefined,
+): Map<string, string> {
+  const chapterMap = new Map<string, string>();
+
+  for (const row of chapterRows || []) {
+    if (row.clickup_cf_option_id) {
+      chapterMap.set(row.clickup_cf_option_id, row.id);
+    }
+  }
+
+  return chapterMap;
+}
+
+export function resolveTaskChapterConfigId(
+  customFields: ClickUpCustomFieldLike[] | undefined,
+  phaseFieldId: string,
+  chapterMap: Map<string, string>,
+): string | null {
+  return resolveChapterConfigId(getPhaseOptionId(customFields, phaseFieldId), chapterMap);
+}
+
 export const PORTAL_COMMENT_REGEX = /^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/;
 export const PUBLIC_COMMENT_PREFIX_REGEX = /^@client:\s*/i;
 
