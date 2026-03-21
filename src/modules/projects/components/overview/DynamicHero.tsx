@@ -1,12 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import type { Project } from '../../types/project';
-import {
-  getNextCheckpoint,
-  getNextUpcomingStep,
-  getCurrentChapter,
-} from '../../lib/helpers';
 import { getPhaseColor } from '../../lib/phase-colors';
+import { interpretProjectOverview } from '../../lib/overview-interpretation';
 
 interface DynamicHeroProps {
   project: Project;
@@ -33,54 +29,54 @@ interface HeroContent {
 
 export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }: DynamicHeroProps) {
   const navigate = useNavigate();
-  const checkpoint = getNextCheckpoint(project);
-  const upcomingStep = getNextUpcomingStep(project);
-  const currentChapter = getCurrentChapter(project);
+  const overview = interpretProjectOverview(project);
+  const primaryAttention = overview.primaryAttention;
+  const upcomingStep = overview.nextMeaningfulStep?.step.status === 'upcoming_locked' ? overview.nextMeaningfulStep : null;
+  const currentChapter = overview.currentChapter;
   const phaseColor = currentChapter ? getPhaseColor(currentChapter.order) : getPhaseColor(1);
-
-  const hasPriority2Tasks = project.tasksSummary.needsAttention > 0;
 
   let content: HeroContent;
 
-  if (checkpoint) {
-    // Priority 1: awaiting_input step exists
+  if (primaryAttention) {
     content = {
       priority: 1,
       eyebrow: 'NÄCHSTER SCHRITT',
       eyebrowPulse: true,
       eyebrowIcon: <AlertCircle size={12} />,
-      title: checkpoint.step.title,
-      description: checkpoint.step.description,
+      title: primaryAttention.portalCta || primaryAttention.title,
+      description: primaryAttention.description,
       tint: phaseColor.light,
       phase: phaseColor.main,
       primaryCta: {
         label: 'Öffnen & prüfen →',
-        onClick: () => onOpenStep ? onOpenStep(checkpoint.step.id) : navigate(`/projekte/schritt/${checkpoint.step.id}`),
+        onClick: () => onOpenStep ? onOpenStep(primaryAttention.stepId) : navigate(`/projekte/schritt/${primaryAttention.stepId}`),
       },
       ghostCta: {
         label: 'Nachricht senden',
         onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
       },
-      summary: `Phase: ${checkpoint.chapter.title} · ${checkpoint.step.updatedAt ? `Zuletzt aktualisiert ${checkpoint.step.updatedAt}` : ''}`,
+      summary: `Phase: ${primaryAttention.chapterTitle}${primaryAttention.lastUpdated ? ` · Zuletzt aktualisiert ${primaryAttention.lastUpdated}` : ''}`,
     };
-  } else if (hasPriority2Tasks) {
-    // Priority 2: tasks need attention
+  } else if (project.tasksSummary.needsAttention > 0) {
     content = {
       priority: 2,
       eyebrow: 'JETZT WICHTIG',
       eyebrowPulse: true,
       eyebrowIcon: <AlertCircle size={12} />,
       title: `${project.tasksSummary.needsAttention} Aufgaben warten auf Sie`,
-      description: 'Einige Aufgaben benötigen Ihre Eingabe oder Freigabe, bevor wir weitermachen können.',
+      description: 'Mindestens ein Schritt braucht Ihre Eingabe oder Freigabe. Öffnen Sie den Überblick oder schreiben Sie uns direkt, wenn etwas unklar ist.',
       tint: '#FFFBEB',
       phase: '#D97706',
       primaryCta: {
-        label: 'Aufgabe erstellen →',
+        label: 'Nachricht senden',
+        onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
+      },
+      ghostCta: {
+        label: 'Aufgabe erstellen',
         onClick: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
       },
     };
   } else if (upcomingStep) {
-    // Priority 3: next upcoming_locked step
     const upPhase = getPhaseColor(upcomingStep.chapter.order);
     content = {
       priority: 3,
@@ -95,10 +91,9 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }
         label: 'Nachricht senden',
         onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
       },
-      summary: `Das Team arbeitet daran · ${project.teamWorkingOn.task}`,
+      summary: `Das Team arbeitet daran${project.teamWorkingOn.task ? ` · ${project.teamWorkingOn.task}` : ''}`,
     };
   } else {
-    // Priority 4: all complete
     content = {
       priority: 4,
       eyebrow: 'ALLES ERLEDIGT',
@@ -122,7 +117,6 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }
         flexShrink: 0,
       }}
     >
-      {/* Top accent line */}
       <div
         className="absolute top-0 left-0 right-0 h-[4px] rounded-t-[var(--r-lg)] z-[1]"
         style={{
@@ -130,7 +124,6 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }
         }}
       />
 
-      {/* Eyebrow */}
       <div className="flex items-center gap-[6px] mb-[8px]" style={{ color: content.phase }}>
         {content.eyebrowIcon}
         <span className="text-[10px] font-bold tracking-[0.08em] uppercase">{content.eyebrow}</span>
@@ -145,17 +138,14 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }
         )}
       </div>
 
-      {/* Title */}
       <div className="text-[22px] font-bold text-[var(--text-primary)] tracking-[-0.025em] leading-[1.2] mb-[10px]">
         {content.title}
       </div>
 
-      {/* Description */}
       <div className="text-[13.5px] text-[var(--text-secondary)] leading-[1.6] max-w-[520px] mb-[18px]">
         {content.description}
       </div>
 
-      {/* Actions */}
       {(content.primaryCta || content.ghostCta) && (
         <div className="flex items-center gap-[10px]">
           {content.primaryCta && (
@@ -178,7 +168,6 @@ export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }
         </div>
       )}
 
-      {/* Summary line */}
       {content.summary && (
         <div className="text-[11px] text-[var(--text-tertiary)] mt-[14px] opacity-70">
           {content.summary}

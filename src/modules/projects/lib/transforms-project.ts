@@ -4,6 +4,19 @@ import type {
 } from '../types/project';
 import { mapStepStatus } from './step-status-mapping';
 
+const PORTAL_CTA_FIELD_ID = 'f820ea20-fafc-4c72-9bf0-0903cbfc3b02';
+const MILESTONE_ORDER_FIELD_NAME = 'milestone order';
+
+type ClickUpCustomField = {
+  id?: unknown;
+  name?: unknown;
+  value?: unknown;
+};
+
+type ClickUpRawTask = {
+  custom_fields?: ClickUpCustomField[];
+};
+
 // File type detection from extension or MIME type
 function detectFileType(name: string, type: string): FileItem['type'] {
   const ext = name.split('.').pop()?.toLowerCase() || type.toLowerCase();
@@ -16,7 +29,6 @@ function detectFileType(name: string, type: string): FileItem['type'] {
   return 'doc';
 }
 
-// Format bytes to human-readable
 function formatSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
@@ -24,7 +36,6 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Format ISO date to German short format
 function formatDate(isoDate: string | null): string | null {
   if (!isoDate) return null;
   try {
@@ -33,6 +44,52 @@ function formatDate(isoDate: string | null): string | null {
   } catch {
     return isoDate;
   }
+}
+
+function asRawTask(rawData: unknown): ClickUpRawTask | null {
+  if (!rawData || typeof rawData !== 'object') return null;
+  return rawData as ClickUpRawTask;
+}
+
+function getCustomFields(rawData: unknown): ClickUpCustomField[] {
+  const rawTask = asRawTask(rawData);
+  return Array.isArray(rawTask?.custom_fields) ? rawTask.custom_fields : [];
+}
+
+function getCustomFieldById(rawData: unknown, fieldId: string): ClickUpCustomField | null {
+  return getCustomFields(rawData).find(field => field.id === fieldId) ?? null;
+}
+
+function getCustomFieldByName(rawData: unknown, fieldName: string): ClickUpCustomField | null {
+  const normalizedName = fieldName.trim().toLowerCase();
+  return getCustomFields(rawData).find(field => {
+    return typeof field.name === 'string' && field.name.trim().toLowerCase() === normalizedName;
+  }) ?? null;
+}
+
+export function parsePortalCta(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function parseMilestoneOrder(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function extractPortalCta(rawData: unknown): string | null {
+  return parsePortalCta(getCustomFieldById(rawData, PORTAL_CTA_FIELD_ID)?.value);
+}
+
+function extractMilestoneOrder(rawData: unknown): number | null {
+  return parseMilestoneOrder(getCustomFieldByName(rawData, MILESTONE_ORDER_FIELD_NAME)?.value);
 }
 
 /**
@@ -45,33 +102,24 @@ export function transformToProject(
   enrichments: StepEnrichmentRow[],
   commentCounts: Record<string, number>,
 ): Project {
-  // Build enrichment lookup
   const enrichmentMap = new Map<string, StepEnrichmentRow>();
   for (const e of enrichments) {
     enrichmentMap.set(e.clickup_task_id, e);
   }
 
-  // Group tasks by chapter_config_id
   const tasksByChapter = new Map<string, ProjectTaskCacheRow[]>();
-  const unassignedTasks: ProjectTaskCacheRow[] = [];
   for (const task of tasks) {
-    if (task.chapter_config_id) {
-      const list = tasksByChapter.get(task.chapter_config_id) || [];
-      list.push(task);
-      tasksByChapter.set(task.chapter_config_id, list);
-    } else {
-      unassignedTasks.push(task);
-    }
+    if (!task.chapter_config_id) continue;
+    const list = tasksByChapter.get(task.chapter_config_id) || [];
+    list.push(task);
+    tasksByChapter.set(task.chapter_config_id, list);
   }
 
-  // Sort chapters by sort_order
   const sortedChapters = [...chapters].sort((a, b) => a.sort_order - b.sort_order);
 
-  // Build chapters with steps
   const projectChapters: Chapter[] = sortedChapters.map(ch => {
     const chapterTasks = tasksByChapter.get(ch.id) || [];
 
-    // Sort tasks by enrichment sort_order, then by name
     chapterTasks.sort((a, b) => {
       const ea = enrichmentMap.get(a.clickup_id);
       const eb = enrichmentMap.get(b.clickup_id);
@@ -83,14 +131,17 @@ export function transformToProject(
 
     const steps: Step[] = chapterTasks.map(task => {
       const enrichment = enrichmentMap.get(task.clickup_id);
-      const stepStatus = mapStepStatus(task.status);
+      const rawStatus = (task.status || '').trim();
+      const stepStatus = mapStepStatus(rawStatus);
+      const portalCta = extractPortalCta(task.raw_data);
+      const milestoneOrder = extractMilestoneOrder(task.raw_data);
 
       const files: FileItem[] = (task.attachments || []).map(att => ({
         name: att.name,
         size: formatSize(att.size),
         date: formatDate(att.date) || '',
         type: detectFileType(att.name, att.type),
-        author: '', // ClickUp attachments don't include uploader name
+        author: '',
       }));
 
       return {
@@ -98,13 +149,17 @@ export function transformToProject(
         clickupTaskId: task.clickup_id,
         title: task.name,
         status: stepStatus,
+        rawStatus,
+        portalCta,
+        milestoneOrder,
+        isClientReview: rawStatus.toLowerCase() === 'client review',
         updatedAt: formatDate(task.last_activity_at),
-        taskIds: [], // ProjectTasks (sub-items) not used in live data
+        taskIds: [],
         description: task.description || '',
         whyItMatters: enrichment?.why_it_matters || '',
         whatBecomesFixed: enrichment?.what_becomes_fixed || '',
         files,
-        messages: [], // Live comments loaded on-demand via useTaskComments in Phase 4
+        messages: [],
         commentCount: commentCounts[task.clickup_id] || 0,
       };
     });
@@ -120,12 +175,10 @@ export function transformToProject(
     };
   });
 
-  // Compute tasksSummary from step statuses
   const allSteps = projectChapters.flatMap(ch => ch.steps);
   const needsAttention = allSteps.filter(s => s.status === 'awaiting_input').length;
   const inProgress = allSteps.filter(s => s.status === 'upcoming_locked').length;
 
-  // Compute teamWorkingOn from most recently active non-review task
   const inProgressTasks = tasks
     .filter(t => {
       const s = t.status.toLowerCase();
@@ -139,7 +192,6 @@ export function transformToProject(
 
   const currentWork = inProgressTasks[0];
 
-  // Build updates from recent task activity
   const updates: Update[] = tasks
     .filter(t => t.last_activity_at)
     .sort((a, b) => {
@@ -165,12 +217,13 @@ export function transformToProject(
     targetDate: config.target_date || '',
     clickupListId: config.clickup_list_id,
     clickupPhaseFieldId: config.clickup_phase_field_id,
+    generalMessageTaskId: config.general_message_task_id ?? null,
     tasksSummary: {
       needsAttention,
       inProgress,
       total: allSteps.length,
     },
-    tasks: [] as ProjectTask[], // Not used in live data (sub-tasks not mapped)
+    tasks: [] as ProjectTask[],
     updates,
     teamWorkingOn: {
       task: currentWork?.name || '',

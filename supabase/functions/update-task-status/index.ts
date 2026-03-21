@@ -3,7 +3,6 @@ import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { resolvePublicThreadRootId, resolveStatusForAction } from "../_shared/clickup-contract.ts";
 
-// Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
@@ -23,7 +22,6 @@ async function fetchWithTimeout(
   }
 }
 
-// Retry wrapper with exponential backoff
 async function fetchWithRetry(
   url: string,
   options: RequestInit = {},
@@ -31,29 +29,28 @@ async function fetchWithRetry(
   log?: ReturnType<typeof createLogger>
 ): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetchWithTimeout(url, options);
-      
-      // Retry on 429 (rate limit) or 5xx (server errors)
+
       if (response.status === 429 || response.status >= 500) {
         if (attempt < maxRetries) {
-          const delay = Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+          const delay = Math.pow(2, attempt) * 500;
           log?.debug(`Retry ${attempt + 1} after ${delay}ms`, { status: response.status });
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
       }
-      
+
       return response;
     } catch (error) {
       lastError = error as Error;
-      
+
       if ((error as Error).name === 'AbortError') {
         log?.error('Request timed out');
       }
-      
+
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 500;
         log?.debug(`Retry ${attempt + 1} after ${delay}ms`, { error: (error as Error).name });
@@ -61,19 +58,24 @@ async function fetchWithRetry(
       }
     }
   }
-  
+
   throw lastError || new Error('Request failed after retries');
 }
 
 const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel"];
 
-// Validate task ID format (ClickUp task IDs are alphanumeric)
 function isValidTaskId(taskId: string): boolean {
   return /^[a-zA-Z0-9]+$/.test(taskId) && taskId.length <= 50;
 }
 
-// Helper: resolve the single active public thread root for this task.
-// If multiple public roots exist, fail closed and let the portal create a new top-level message.
+function validateActionComment(action: string, comment: unknown): string | null {
+  if (action !== 'request_changes') return null;
+  if (typeof comment !== 'string' || !comment.trim()) {
+    return 'Request changes requires a comment';
+  }
+  return null;
+}
+
 async function resolveActivePublicThread(
   taskId: string,
   clickupApiToken: string,
@@ -117,17 +119,14 @@ Deno.serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
   const log = createLogger('update-task-status', requestId);
 
-  // Get dynamic CORS headers based on request origin
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Validate auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       log.error("Missing or invalid authorization header");
@@ -137,7 +136,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -159,15 +157,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase client with user's auth
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify user using getUser (stable API)
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+
     if (userError || !user) {
       log.error("Failed to verify token", { error: userError?.message });
       return new Response(
@@ -180,11 +176,9 @@ Deno.serve(async (req) => {
     const userEmail = user.email || '';
     log.info("User attempting to update task status");
 
-    // Parse request body
     const body = await req.json();
     const { taskId, action, comment } = body;
 
-    // Validate taskId format
     if (!taskId || !isValidTaskId(taskId)) {
       return new Response(
         JSON.stringify({ error: "Invalid task ID format" }),
@@ -206,7 +200,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate comment length if provided
+    const commentValidationError = validateActionComment(action, comment);
+    if (commentValidationError) {
+      return new Response(
+        JSON.stringify({ error: commentValidationError }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (comment && typeof comment === 'string' && comment.length > 10000) {
       return new Response(
         JSON.stringify({ error: "Comment is too long (max 10,000 characters)" }),
@@ -216,7 +217,6 @@ Deno.serve(async (req) => {
 
     log.info("Updating task with action", { action });
 
-    // First, get the task to find the list and available statuses
     const taskResponse = await fetchWithRetry(
       `https://api.clickup.com/api/v2/task/${taskId}`,
       {
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
     );
 
     if (!taskResponse.ok) {
-      await taskResponse.text(); // Consume response body
+      await taskResponse.text();
       log.error("External service error fetching task", { status: taskResponse.status });
       return new Response(
         JSON.stringify({ error: "Failed to fetch task" }),
@@ -242,7 +242,6 @@ Deno.serve(async (req) => {
     const listId = task.list.id;
     log.debug("Task is in list");
 
-    // Get list statuses to find the correct status name
     const listResponse = await fetchWithRetry(
       `https://api.clickup.com/api/v2/list/${listId}`,
       {
@@ -256,7 +255,7 @@ Deno.serve(async (req) => {
     );
 
     if (!listResponse.ok) {
-      await listResponse.text(); // Consume response body
+      await listResponse.text();
       log.error("External service error fetching list", { status: listResponse.status });
       return new Response(
         JSON.stringify({ error: "Failed to fetch list configuration" }),
@@ -268,13 +267,12 @@ Deno.serve(async (req) => {
     const availableStatuses = list.statuses || [];
     log.debug("Available statuses", { statuses: availableStatuses.map((s: { status: string }) => s.status) });
 
-    // Find matching status from the list
     const matchedStatus = resolveStatusForAction(action, availableStatuses);
 
     if (!matchedStatus) {
       log.error("No matching status found for action", { action });
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `Cannot ${action === "approve" ? "approve" : "request changes for"} task. The required status is not available in this list.`,
           availableStatuses: availableStatuses.map((s: { status: string }) => s.status)
         }),
@@ -284,7 +282,6 @@ Deno.serve(async (req) => {
 
     log.info("Updating task status", { newStatus: matchedStatus.status });
 
-    // Update the task status in ClickUp
     const updateResponse = await fetchWithRetry(
       `https://api.clickup.com/api/v2/task/${taskId}`,
       {
@@ -302,7 +299,7 @@ Deno.serve(async (req) => {
     );
 
     if (!updateResponse.ok) {
-      await updateResponse.text(); // Consume response body
+      await updateResponse.text();
       log.error("External service error updating status", { status: updateResponse.status });
       return new Response(
         JSON.stringify({ error: "Failed to update task status" }),
@@ -313,11 +310,9 @@ Deno.serve(async (req) => {
     const updatedTask = await updateResponse.json();
     log.info("Task status updated successfully");
 
-    // If there's a comment, post it to the existing portal thread (or create a new one)
     if (comment && typeof comment === 'string' && comment.trim()) {
       log.debug("Posting comment to task");
-      
-      // Get user profile for the name
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
@@ -327,7 +322,6 @@ Deno.serve(async (req) => {
       const fullName = profile?.full_name || userEmail?.split('@')[0] || 'Client';
       const firstName = fullName.split(' ')[0];
 
-      // Format comment with portal prefix (same as post-task-comment)
       const clickupText = `${fullName} (via Client Portal):\n\n${comment.trim()}`;
       const displayText = comment.trim();
 
@@ -341,7 +335,7 @@ Deno.serve(async (req) => {
         endpoint = `https://api.clickup.com/api/v2/task/${taskId}/comment`;
         log.debug("Creating new top-level portal thread", { reason: threadResolution.reason });
       }
-      
+
       const commentResponse = await fetchWithRetry(endpoint, {
         method: "POST",
         headers: {
@@ -355,16 +349,14 @@ Deno.serve(async (req) => {
       }, 2, log);
 
       if (!commentResponse.ok) {
-        await commentResponse.text(); // Consume response body
+        await commentResponse.text();
         log.error("Failed to post comment", { status: commentResponse.status });
-        // Don't fail the whole request, just log the error
       } else {
         const commentData = await commentResponse.json();
         log.info("Comment posted successfully");
 
-        // Cache the comment for instant UI update
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-        
+
         const { error: cacheError } = await supabaseAdmin
           .from("comment_cache")
           .upsert({
@@ -392,7 +384,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update local cache
     const now = new Date().toISOString();
     await supabase
       .from("task_cache")
@@ -413,8 +404,8 @@ Deno.serve(async (req) => {
     };
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         newStatus: matchedStatus.status,
         message: ACTION_MESSAGES[action] || `Task status updated to ${matchedStatus.status}`
       }),

@@ -18,6 +18,7 @@ const config: ProjectConfigRow = {
   start_date: '2026-03-01',
   target_date: '2026-06-01',
   is_active: true,
+  general_message_task_id: null,
 }
 
 const chapters: ChapterConfigRow[] = [
@@ -58,7 +59,12 @@ const tasks: ProjectTaskCacheRow[] = [
     attachments: [
       { name: 'brief.pdf', url: 'https://example.com/brief.pdf', size: 1200, type: 'pdf', date: '2026-03-10T00:00:00Z' },
     ],
-    raw_data: {},
+    raw_data: {
+      custom_fields: [
+        { id: 'f820ea20-fafc-4c72-9bf0-0903cbfc3b02', value: 'Jetzt freigeben' },
+        { id: 'milestone-field', name: 'Milestone Order', value: '5' },
+      ],
+    },
     is_visible: true,
     last_synced: '2026-03-10T00:00:00Z',
     last_activity_at: '2026-03-10T00:00:00Z',
@@ -135,11 +141,19 @@ describe('transformToProject', () => {
     expect(step.commentCount).toBe(3)
   })
 
+  test('parses Portal CTA and Milestone Order from raw ClickUp custom fields', () => {
+    const project = transformToProject(config, chapters, tasks, enrichments, {})
+    const step = project.chapters[0].steps[1]
+    expect(step.portalCta).toBe('Jetzt freigeben')
+    expect(step.milestoneOrder).toBe(5)
+    expect(step.isClientReview).toBe(true)
+    expect(step.rawStatus).toBe('client review')
+  })
+
   test('computes tasks summary from current mapped step status rules', () => {
     const project = transformToProject(config, chapters, tasks, enrichments, {})
     expect(project.tasksSummary.total).toBe(3)
     expect(project.tasksSummary.needsAttention).toBe(1)
-    // Current project summary behavior counts both active in-progress and upcoming/open work here.
     expect(project.tasksSummary.inProgress).toBe(2)
   })
 

@@ -1,60 +1,107 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, Upload } from 'lucide-react';
-import type { Project } from '../../types/project';
+import type { Project, ProjectQuickAction } from '../../types/project';
+import { interpretProjectOverview } from '../../lib/overview-interpretation';
 
 interface QuickActionsProps {
   project: Project;
+  onOpenStep?: (stepId: string) => void;
   onOpenMessage?: () => void;
   onOpenUpload?: () => void;
   onCreateTask?: () => void;
 }
 
-export function QuickActions({ project, onOpenMessage, onOpenUpload, onCreateTask }: QuickActionsProps) {
+interface QuickActionCardModel {
+  id: string;
+  label: string;
+  sub: string;
+  icon: React.ReactNode;
+  accent: string;
+  bg: string;
+  count: number | null;
+  countBg: string;
+  onClick: () => void;
+}
+
+export function QuickActions({ project, onOpenStep, onOpenMessage, onOpenUpload, onCreateTask }: QuickActionsProps) {
   const navigate = useNavigate();
+  const overview = interpretProjectOverview(project);
 
-  // Unread messages: count messages from team (approximation from updates)
-  const unreadMessages = project.updates.filter(u => u.type === 'message').length;
-
-  const cards = [
-    {
-      label: 'Aufgabe erstellen',
-      sub: `${project.tasksSummary.total} Aufgaben insgesamt`,
-      icon: <Plus size={18} />,
-      accent: '#D97706',
-      bg: '#FFFBEB',
-      count: null,
-      countBg: '#D97706',
-      onClick: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
-    },
-    {
-      label: 'Nachricht senden',
-      sub: 'Direkter Kontakt zum Team',
-      icon: <MessageSquare size={18} />,
-      accent: '#7C3AED',
-      bg: '#F5F3FF',
-      count: unreadMessages > 0 ? unreadMessages : null,
-      countBg: '#7C3AED',
-      onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
-    },
-    {
-      label: 'Datei hochladen',
-      sub: 'Dateien teilen',
-      icon: <Upload size={18} />,
-      accent: '#2563EB',
-      bg: '#EFF6FF',
-      count: null,
-      countBg: '#2563EB',
-      onClick: () => onOpenUpload ? onOpenUpload() : navigate('/dateien'),
-    },
-  ];
+  const cards = overview.quickActions
+    .filter(card => card.isEnabled)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(card => toCardModel(card, overview.primaryAttention?.stepId ?? null, {
+      openStep: (stepId) => onOpenStep ? onOpenStep(stepId) : navigate(`/projekte/schritt/${stepId}`),
+      openMessage: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
+      openUpload: () => onOpenUpload ? onOpenUpload() : navigate('/dateien'),
+      createTask: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
+    }));
 
   return (
     <div className="grid grid-cols-3 gap-[10px] mb-[24px] max-[768px]:grid-cols-2 max-[420px]:grid-cols-1">
       {cards.map((card) => (
-        <QACard key={card.label} {...card} />
+        <QACard key={card.id} {...card} />
       ))}
     </div>
   );
+}
+
+function toCardModel(
+  card: ProjectQuickAction,
+  primaryStepId: string | null,
+  handlers: {
+    openStep: (stepId: string) => void;
+    openMessage: () => void;
+    openUpload: () => void;
+    createTask: () => void;
+  },
+): QuickActionCardModel {
+  const base = {
+    id: card.key,
+    label: card.label,
+    sub: card.subtitle,
+    count: card.count ?? null,
+  };
+
+  switch (card.destinationKind) {
+    case 'primary_cta':
+      return {
+        ...base,
+        icon: <Plus size={18} />,
+        accent: '#D97706',
+        bg: '#FFFBEB',
+        countBg: '#D97706',
+        onClick: () => primaryStepId ? handlers.openStep(primaryStepId) : handlers.createTask(),
+      };
+    case 'general_message':
+      return {
+        ...base,
+        icon: <MessageSquare size={18} />,
+        accent: '#7C3AED',
+        bg: '#F5F3FF',
+        countBg: '#7C3AED',
+        onClick: handlers.openMessage,
+      };
+    case 'files':
+      return {
+        ...base,
+        icon: <Upload size={18} />,
+        accent: '#2563EB',
+        bg: '#EFF6FF',
+        countBg: '#2563EB',
+        onClick: handlers.openUpload,
+      };
+    case 'create_task':
+    default:
+      return {
+        ...base,
+        icon: <Plus size={18} />,
+        accent: '#D97706',
+        bg: '#FFFBEB',
+        countBg: '#D97706',
+        onClick: handlers.createTask,
+      };
+  }
 }
 
 interface QACardProps {

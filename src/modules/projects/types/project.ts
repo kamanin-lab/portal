@@ -39,6 +39,10 @@ export interface Step {
   clickupTaskId: string;
   title: string;
   status: StepStatus;
+  rawStatus: string;
+  portalCta: string | null;
+  milestoneOrder: number | null;
+  isClientReview: boolean;
   updatedAt: string | null;
   taskIds: string[];
   description: string;
@@ -61,6 +65,7 @@ export interface ProjectConfigRow {
   start_date: string | null;
   target_date: string | null;
   is_active: boolean;
+  general_message_task_id?: string | null;
 }
 
 export interface ChapterConfigRow {
@@ -141,6 +146,7 @@ export interface Project {
   targetDate: string;
   clickupListId: string;
   clickupPhaseFieldId: string | null;
+  generalMessageTaskId?: string | null;
   tasksSummary: TasksSummary;
   tasks: ProjectTask[];
   updates: Update[];
@@ -151,4 +157,29 @@ export interface Project {
 export interface StepWithChapter {
   step: Step;
   chapter: Chapter;
+}
+
+export interface ProjectAttentionItem {
+  stepId: string;
+  chapterId: string;
+  chapterTitle: string;
+  title: string;
+  description: string;
+  whyItMatters: string;
+  whatBecomesFixed: string;
+  lastUpdated: string | null;
+  portalCta: string | null;
+  milestoneOrder: number | null;
+  isPrimary: boolean;
+}
+
+export interface ProjectQuickAction {
+  key: string;
+  label: string;
+  subtitle: string;
+  iconToken: 'primary_cta' | 'general_message' | 'files' | 'create_task';
+  destinationKind: 'primary_cta' | 'general_message' | 'files' | 'create_task';
+  count?: number | null;
+  isEnabled: boolean;
+  sortOrder: number;
 }
