@@ -12,6 +12,7 @@ import {
   getClientFacingDisplayText,
   isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
+  isPublicCommentThreadRoot,
   isTaskVisible,
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
@@ -261,18 +262,24 @@ async function fetchTaskForVisibilityCheck(
   }
 }
 
+type ProfileResolutionSource = "task_cache" | "list_fallback" | "none" | "ambiguous_fallback";
+
+interface ProfileResolutionResult {
+  profileIds: string[];
+  source: ProfileResolutionSource;
+}
+
 /**
  * Find profile IDs that should receive notifications for a given task.
  * 1. Try task_cache first (fast, exact match).
- * 2. Fallback: find profiles whose clickup_list_ids contain the task's listId.
+ * 2. Fallback to list ownership only when it resolves to a single recipient.
  */
 async function findProfilesForTask(
   supabase: ReturnType<typeof createClient>,
   taskId: string,
   listId: string | null,
   log: ReturnType<typeof createLogger>
-): Promise<string[]> {
-  // 1. Try task_cache first (fast, exact)
+): Promise<ProfileResolutionResult> {
   const { data: cacheEntries } = await supabase
     .from("task_cache")
     .select("profile_id")
@@ -281,13 +288,12 @@ async function findProfilesForTask(
   if (cacheEntries && cacheEntries.length > 0) {
     const ids = Array.from(new Set(cacheEntries.map((e: { profile_id: string }) => e.profile_id)));
     log.info("Profiles resolved via task_cache", { taskId, count: ids.length });
-    return ids;
+    return { profileIds: ids, source: "task_cache" };
   }
 
-  // 2. Fallback: find profiles by list_id in clickup_list_ids (jsonb array)
   if (!listId) {
     log.warn("No task_cache entries and no listId for fallback", { taskId });
-    return [];
+    return { profileIds: [], source: "none" };
   }
 
   const { data: profiles } = await supabase
@@ -295,24 +301,24 @@ async function findProfilesForTask(
     .select("id")
     .contains("clickup_list_ids", [listId]);
 
-  if (profiles && profiles.length > 0) {
-    const ids = Array.from(new Set(profiles.map((p: { id: string }) => p.id)));
-    log.info("Profiles resolved via list_id fallback", {
-      taskId, listId, count: ids.length
+  const ids = Array.from(new Set((profiles || []).map((p: { id: string }) => p.id)));
+
+  if (ids.length === 1) {
+    log.info("Profile resolved via single-recipient list fallback", { taskId, listId });
+    return { profileIds: ids, source: "list_fallback" };
+  }
+
+  if (ids.length > 1) {
+    log.warn("Ambiguous list fallback - dropping notification recipient resolution", {
+      taskId,
+      listId,
+      count: ids.length,
     });
-
-    // Sanity check: warn if unexpectedly many recipients
-    if (ids.length > 10) {
-      log.warn("Fallback returned many profiles - verify list configuration", {
-        taskId, listId, count: ids.length
-      });
-    }
-
-    return ids;
+    return { profileIds: [], source: "ambiguous_fallback" };
   }
 
   log.warn("No profiles found for task", { taskId, listId });
-  return [];
+  return { profileIds: [], source: "none" };
 }
 
 // Check thread context for a comment: is it a reply? If so, is the parent thread client-facing?
@@ -396,7 +402,7 @@ async function checkCommentThreadContext(
           // Check if our new comment is in the replies
           if (replies.some((r: any) => r.id === newCommentId)) {
             const parentText = comment.comment_text || "";
-            const isClientFacing = isPortalOriginatedComment(parentText) || isExplicitPublicTopLevelComment(parentText);
+            const isClientFacing = isPublicCommentThreadRoot(parentText);
             log.info(`Comment is a reply`, {
               commentId: newCommentId,
               parentCommentId: comment.id,
@@ -785,7 +791,7 @@ Deno.serve(async (req) => {
         const taskName = taskInfo.name;
         
         // Find portal users for this task (with list_id fallback)
-        const profileIds = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
+        const { profileIds, source } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
         if (profileIds.length > 0) {
           // Get profiles for notifications
@@ -805,7 +811,7 @@ Deno.serve(async (req) => {
           }));
 
           await supabase.from("notifications").insert(notifications);
-          log.info(`Created status change notifications`, { count: notifications.length });
+          log.info(`Created status change notifications`, { count: notifications.length, source });
 
           // Update task activity timestamp
           const eventTimestamp = parseClickUpTimestamp(historyItem.date);
@@ -862,7 +868,7 @@ Deno.serve(async (req) => {
 
           if (isVisible) {
             // Find portal users for this task (with list_id fallback)
-            const profileIds = await findProfilesForTask(supabase, taskId, taskListId, log);
+            const { profileIds } = await findProfilesForTask(supabase, taskId, taskListId, log);
 
             if (profileIds.length > 0) {
               const { data: profiles } = await supabase
@@ -940,7 +946,7 @@ Deno.serve(async (req) => {
 
             if (isVisible) {
               // Find portal users for this task (with list_id fallback)
-              const profileIds = await findProfilesForTask(supabase, taskId, taskListId, log);
+              const { profileIds } = await findProfilesForTask(supabase, taskId, taskListId, log);
 
               if (profileIds.length > 0) {
                 const notifications = profileIds.map(profileId => ({
@@ -1180,10 +1186,10 @@ Deno.serve(async (req) => {
       }
 
       // Find portal users for this task (with list_id fallback)
-      const profileIds = await findProfilesForTask(supabase, taskId, commentTaskListId, log);
+      const { profileIds, source } = await findProfilesForTask(supabase, taskId, commentTaskListId, log);
 
       if (profileIds.length === 0) {
-        log.debug("No portal users subscribed to this task", { taskId });
+        log.debug("No portal users subscribed to this task", { taskId, source });
         return new Response(
           JSON.stringify({ message: "No subscribers" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

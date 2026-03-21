@@ -126,6 +126,46 @@ export function getClientFacingDisplayText(commentText: string): string {
     : commentText;
 }
 
+export interface ClickUpCommentLike {
+  id: string;
+  comment_text?: string;
+  comment?: {
+    text_content?: string;
+  };
+  date?: string;
+}
+
+export function getCommentText(comment: ClickUpCommentLike): string {
+  return typeof comment.comment_text === "string"
+    ? comment.comment_text
+    : typeof comment.comment?.text_content === "string"
+      ? comment.comment.text_content
+      : "";
+}
+
+export function isPublicCommentThreadRoot(commentText: string): boolean {
+  return isPortalOriginatedComment(commentText) || isExplicitPublicTopLevelComment(commentText);
+}
+
+export function resolvePublicThreadRootId(comments: ClickUpCommentLike[]): {
+  rootId: string | null;
+  reason: "none" | "single" | "ambiguous";
+} {
+  const publicRoots = comments
+    .filter((comment) => isPublicCommentThreadRoot(getCommentText(comment)))
+    .sort((left, right) => Number(right.date || 0) - Number(left.date || 0));
+
+  if (publicRoots.length === 0) {
+    return { rootId: null, reason: "none" };
+  }
+
+  if (publicRoots.length === 1) {
+    return { rootId: publicRoots[0].id, reason: "single" };
+  }
+
+  return { rootId: null, reason: "ambiguous" };
+}
+
 const STATUS_ALIASES: Record<string, string[]> = {
   approve: ["approved", "Approved", "APPROVED"],
   request_changes: ["rework", "Rework", "REWORK", "changes requested", "Changes Requested"],

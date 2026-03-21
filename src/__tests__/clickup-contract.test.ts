@@ -7,6 +7,7 @@ import {
   isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
   resolveChapterConfigId,
+  resolvePublicThreadRootId,
   resolveStatusForAction,
   resolveTaskChapterConfigId,
 } from '../../supabase/functions/_shared/clickup-contract';
@@ -100,6 +101,22 @@ describe('clickup contract helpers', () => {
     expect(getClientFacingDisplayText('@client: Please review')).toBe('Please review');
     expect(isPortalOriginatedComment('Yuri Kamanin (via Client Portal):\n\nHello')).toBe(true);
     expect(isExplicitPublicTopLevelComment('Internal only')).toBe(false);
+  });
+
+  it('resolves a single public thread root and rejects ambiguous public roots', () => {
+    expect(resolvePublicThreadRootId([
+      { id: 'internal-1', comment_text: 'Internal only', date: '10' },
+      { id: 'public-1', comment_text: '@client: Visible update', date: '20' },
+    ])).toEqual({ rootId: 'public-1', reason: 'single' });
+
+    expect(resolvePublicThreadRootId([
+      { id: 'public-1', comment_text: '@client: First public thread', date: '20' },
+      { id: 'portal-1', comment_text: 'Yuri Kamanin (via Client Portal):\n\nReply', date: '30' },
+    ])).toEqual({ rootId: null, reason: 'ambiguous' });
+
+    expect(resolvePublicThreadRootId([
+      { id: 'internal-1', comment_text: 'Internal only', date: '10' },
+    ])).toEqual({ rootId: null, reason: 'none' });
   });
 
   it('resolves write-status aliases through one shared matcher', () => {

@@ -1,7 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
-import { resolveChapterConfigId, TEST_FOLDER_CONTRACT } from "../_shared/clickup-contract.ts";
+import {
+  buildChapterConfigMap,
+  resolveChapterConfigId,
+  TEST_FOLDER_CONTRACT,
+} from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -372,13 +376,7 @@ Deno.serve(async (req) => {
           .eq('project_config_id', projectConfig.id)
           .eq('is_active', true);
 
-        const chapterMap = new Map<string, string>();
-        for (const chapterConfig of chapterConfigs || []) {
-          if (chapterConfig.clickup_cf_option_id) {
-            chapterMap.set(chapterConfig.clickup_cf_option_id, chapterConfig.id);
-          }
-        }
-
+        const chapterMap = buildChapterConfigMap(chapterConfigs || []);
         chapterConfigId = resolveChapterConfigId(body.phaseOptionId, chapterMap);
       }
 
