@@ -9,11 +9,10 @@ import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/co
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
 import {
   buildChapterConfigMap,
-  getClientFacingDisplayText,
-  isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
   isPublicCommentThreadRoot,
   isTaskVisible,
+  resolveClientFacingCommentEvent,
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
 
@@ -649,13 +648,28 @@ Deno.serve(async (req) => {
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
 
-          // Only process explicit public top-level comments
-          if (!isExplicitPublicTopLevelComment(commentText)) {
+          let isThreadedReply = false;
+          let isClientFacingThread = false;
+          const clickupToken = Deno.env.get("CLICKUP_API_TOKEN");
+
+          if (clickupToken) {
+            const threadContext = await checkCommentThreadContext(taskId, commentId, clickupToken, log);
+            isThreadedReply = threadContext.isReply;
+            isClientFacingThread = threadContext.isClientFacingThread;
+          }
+
+          const commentEvent = resolveClientFacingCommentEvent({
+            commentText,
+            isReply: isThreadedReply,
+            isClientFacingThread,
+          });
+
+          if (!commentEvent.shouldNotify) {
             return new Response(JSON.stringify({ message: "Internal comment ignored", context: "project" }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
 
-          const displayText = getClientFacingDisplayText(commentText);
+          const displayText = commentEvent.displayText;
           const firstName = historyItem.user.username.split(" ")[0];
           const profileIds = await getProjectProfileIds();
           const stepName = await getStepName();
@@ -1029,9 +1043,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Detect explicit public top-level messages
-      const isTeamToClient = isExplicitPublicTopLevelComment(commentText);
-
       // Always check thread context to determine if this is a reply and whether the thread is client-facing
       let isThreadedReply = false;
       let isClientFacingThread = false;
@@ -1041,34 +1052,23 @@ Deno.serve(async (req) => {
         const threadContext = await checkCommentThreadContext(taskId, commentId, clickupToken, log);
         isThreadedReply = threadContext.isReply;
         isClientFacingThread = threadContext.isClientFacingThread;
-
-        if (isThreadedReply && !isClientFacingThread) {
-          log.info("Blocking notification: comment is in an internal thread", {
-            commentId, hasClientPrefix: isTeamToClient,
-          });
-        }
       }
 
-      const shouldNotify = isClientFacingCommentEvent({
+      const commentEvent = resolveClientFacingCommentEvent({
         commentText,
         isReply: isThreadedReply,
         isClientFacingThread,
       });
 
-      // Skip if not client-facing
-      if (!shouldNotify) {
-        log.debug("Skipping comment - not client-facing", { isTeamToClient, isThreadedReply, isClientFacingThread });
+      if (!commentEvent.shouldNotify) {
+        log.debug("Skipping comment - not client-facing", { isThreadedReply, isClientFacingThread });
         return new Response(
           JSON.stringify({ message: "Internal comment ignored" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const displayTextForClient = getClientFacingDisplayTextForEvent({
-        commentText,
-        isReply: isThreadedReply,
-        isClientFacingThread,
-      });
+      const displayTextForClient = commentEvent.displayText;
 
       log.info(`Processing client-facing message`, { type: isThreadedReply ? "threaded reply" : "@client: prefix" });
 

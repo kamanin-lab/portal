@@ -9,6 +9,7 @@ import {
   isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
   resolveChapterConfigId,
+  resolveClientFacingCommentEvent,
   resolvePublicThreadRootId,
   resolveStatusForAction,
   resolveTaskChapterConfigId,
@@ -151,6 +152,35 @@ describe('clickup contract helpers', () => {
       isReply: true,
       isClientFacingThread: true,
     })).toBe('Reply inside public thread');
+  });
+
+  it('returns one shared inbound comment decision payload for ticket and project handlers', () => {
+    expect(resolveClientFacingCommentEvent({
+      commentText: '@client: Visible top-level update',
+      isReply: false,
+      isClientFacingThread: false,
+    })).toEqual({
+      shouldNotify: true,
+      displayText: 'Visible top-level update',
+    });
+
+    expect(resolveClientFacingCommentEvent({
+      commentText: 'Reply inside public thread',
+      isReply: true,
+      isClientFacingThread: true,
+    })).toEqual({
+      shouldNotify: true,
+      displayText: 'Reply inside public thread',
+    });
+
+    expect(resolveClientFacingCommentEvent({
+      commentText: '@client: Prefix inside internal reply should stay blocked',
+      isReply: true,
+      isClientFacingThread: false,
+    })).toEqual({
+      shouldNotify: false,
+      displayText: 'Prefix inside internal reply should stay blocked',
+    });
   });
 
   it('resolves write-status aliases through one shared matcher', () => {

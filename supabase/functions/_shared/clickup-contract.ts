@@ -150,6 +150,22 @@ export function getClientFacingDisplayTextForEvent(params: {
   return getClientFacingDisplayText(params.commentText);
 }
 
+export function resolveClientFacingCommentEvent(params: {
+  commentText: string;
+  isReply: boolean;
+  isClientFacingThread: boolean;
+}): {
+  shouldNotify: boolean;
+  displayText: string;
+} {
+  const shouldNotify = isClientFacingCommentEvent(params);
+
+  return {
+    shouldNotify,
+    displayText: shouldNotify ? getClientFacingDisplayTextForEvent(params) : getClientFacingDisplayText(params.commentText),
+  };
+}
+
 export interface ClickUpCommentLike {
   id: string;
   comment_text?: string;

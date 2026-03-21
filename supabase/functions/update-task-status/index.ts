@@ -72,12 +72,13 @@ function isValidTaskId(taskId: string): boolean {
   return /^[a-zA-Z0-9]+$/.test(taskId) && taskId.length <= 50;
 }
 
-// Helper: Find the most recent portal comment to thread replies
-async function findLatestPortalComment(
+// Helper: resolve the single active public thread root for this task.
+// If multiple public roots exist, fail closed and let the portal create a new top-level message.
+async function resolveActivePublicThread(
   taskId: string,
   clickupApiToken: string,
   log?: ReturnType<typeof createLogger>
-): Promise<string | null> {
+): Promise<{ rootId: string | null; reason: "none" | "single" | "ambiguous" }> {
   try {
     const response = await fetchWithRetry(
       `https://api.clickup.com/api/v2/task/${taskId}/comment`,
@@ -93,27 +94,22 @@ async function findLatestPortalComment(
 
     if (!response.ok) {
       log?.debug("Failed to fetch comments for thread detection", { status: response.status });
-      return null;
+      return { rootId: null, reason: "none" };
     }
 
     const data = await response.json();
-    const comments = data.comments || [];
+    const resolution = resolvePublicThreadRootId(data.comments || []);
 
-    // Find portal comments (match the prefix pattern)
-    // Match both old format (**Name**) and new format (Name) for backward compatibility
-    const portalRegex = /^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/;
-
-    for (const comment of comments) {
-      if (portalRegex.test(comment.comment_text)) {
-        log?.debug("Found existing portal thread");
-        return comment.id;
-      }
+    if (resolution.reason === "ambiguous") {
+      log?.warn("Multiple public thread roots found; creating a new top-level portal message", { taskId });
+    } else if (resolution.reason === "single") {
+      log?.debug("Resolved single public thread root", { taskId, rootId: resolution.rootId });
     }
 
-    return null; // No existing portal comments
+    return resolution;
   } catch (error) {
-    log?.error("Error finding portal thread", { error: (error as Error).message });
-    return null;
+    log?.error("Error resolving public thread", { error: (error as Error).message });
+    return { rootId: null, reason: "none" };
   }
 }
 
@@ -335,18 +331,15 @@ Deno.serve(async (req) => {
       const clickupText = `${fullName} (via Client Portal):\n\n${comment.trim()}`;
       const displayText = comment.trim();
 
-      // Find existing portal thread for this task
-      const existingThreadId = await findLatestPortalComment(taskId, clickupApiToken, log);
+      const threadResolution = await resolveActivePublicThread(taskId, clickupApiToken, log);
 
       let endpoint: string;
-      if (existingThreadId) {
-        // Post as a threaded reply to continue the conversation
-        endpoint = `https://api.clickup.com/api/v2/comment/${existingThreadId}/reply`;
-        log.debug("Posting as reply to existing thread");
+      if (threadResolution.rootId) {
+        endpoint = `https://api.clickup.com/api/v2/comment/${threadResolution.rootId}/reply`;
+        log.debug("Posting as reply to the active public thread", { rootId: threadResolution.rootId });
       } else {
-        // First message - create new top-level comment
         endpoint = `https://api.clickup.com/api/v2/task/${taskId}/comment`;
-        log.debug("Creating new portal thread");
+        log.debug("Creating new top-level portal thread", { reason: threadResolution.reason });
       }
       
       const commentResponse = await fetchWithRetry(endpoint, {
