@@ -2,6 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
+import {
+  getPhaseOptionId,
+  getVisibilityFromFields,
+  resolveChapterConfigId,
+  TEST_FOLDER_CONTRACT,
+} from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -71,42 +77,6 @@ interface ClickUpTask {
   list: { id: string; name: string };
   custom_fields?: ClickUpCustomField[];
   attachments?: Array<{ id: string; title: string; url: string; type: string; size: number; date: string }>;
-}
-
-// Helper: Check if a value represents "visible"
-function isVisibleValue(value: unknown): boolean {
-  return value === true || value === 1 || value === "true" || value === "1";
-}
-
-// Helper: Find visibility field value from custom_fields
-function getVisibilityFromFields(
-  customFields: ClickUpCustomField[] | undefined,
-  visibleFieldId: string
-): { found: boolean; visible: boolean } {
-  if (!customFields || !Array.isArray(customFields)) return { found: false, visible: false };
-  const field = customFields.find((f) => f.id === visibleFieldId);
-  if (!field || field.value === undefined || field.value === null) return { found: false, visible: false };
-  return { found: true, visible: isVisibleValue(field.value) };
-}
-
-// Helper: Get phase custom field option ID from task
-function getPhaseOptionId(
-  customFields: ClickUpCustomField[] | undefined,
-  phaseFieldId: string
-): string | null {
-  if (!customFields || !phaseFieldId) return null;
-  const field = customFields.find((f) => f.id === phaseFieldId);
-  if (!field || field.value === undefined || field.value === null) return null;
-  // Dropdown fields store the option index as a number; the actual option UUID is in type_config
-  // But ClickUp API returns the option orderindex as value for dropdown fields
-  // We need to match by value → type_config.options[orderindex].id
-  if (field.type_config?.options && typeof field.value === 'number') {
-    const option = field.type_config.options.find(o => o.orderindex === field.value);
-    return option?.id || null;
-  }
-  // If value is already a string UUID (some ClickUp versions), use directly
-  if (typeof field.value === 'string') return field.value;
-  return null;
 }
 
 // Fetch single task detail (fallback for visibility check)
@@ -325,6 +295,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    log.info("Using frozen ClickUp hardening contract", {
+      approvedFolderUrl: TEST_FOLDER_CONTRACT.approvedFolderUrl,
+      visibilityFieldName: TEST_FOLDER_CONTRACT.visibilityFieldName,
+      publicCommentPrefix: TEST_FOLDER_CONTRACT.publicCommentPrefix,
+    });
+
     // Get existing step_enrichment IDs (to skip AI generation for existing)
     const { data: existingEnrichments } = await supabaseService
       .from("step_enrichment")
@@ -385,7 +361,7 @@ Deno.serve(async (req) => {
         for (let i = 0; i < visibleTasks.length; i += BATCH_SIZE) {
           const batch = visibleTasks.slice(i, i + BATCH_SIZE).map(task => {
             const phaseOptionId = getPhaseOptionId(task.custom_fields, project.clickup_phase_field_id || "");
-            const chapterConfigId = phaseOptionId ? chapterMap.get(phaseOptionId) || null : null;
+            const chapterConfigId = resolveChapterConfigId(phaseOptionId, chapterMap);
 
             return {
               clickup_id: task.id,

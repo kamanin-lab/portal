@@ -7,6 +7,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
+import {
+  getClientFacingDisplayText,
+  isExplicitPublicTopLevelComment,
+  isPortalOriginatedComment,
+  isTaskVisible,
+  resolveChapterConfigId,
+} from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -194,24 +201,6 @@ function isInProgressStatus(status: string): boolean {
   return statusLower === "in progress" || statusLower === "in_progress";
 }
 
-// Helper: Check if a value represents "visible" (handles various formats)
-function isVisibleValue(value: unknown): boolean {
-  return value === true || value === 1 || value === "true" || value === "1";
-}
-
-// Helper: Check task visibility from custom fields
-function checkTaskVisibility(
-  customFields: Array<{ id: string; value?: unknown }> | undefined,
-  visibleFieldId: string
-): boolean {
-  if (!customFields || !visibleFieldId) return false;
-  const field = customFields.find((f) => f.id === visibleFieldId);
-  if (!field || field.value === undefined || field.value === null) {
-    return false; // Safe default: not visible
-  }
-  return isVisibleValue(field.value);
-}
-
 /**
  * Update task activity timestamp for ALL cached entries of this task.
  */
@@ -261,7 +250,7 @@ async function fetchTaskForVisibilityCheck(
     const task = await response.json();
     const visibleFieldId = Deno.env.get("CLICKUP_VISIBLE_FIELD_ID") || "";
     return {
-      visible: checkTaskVisibility(task.custom_fields, visibleFieldId),
+      visible: isTaskVisible(task.custom_fields, visibleFieldId),
       name: task.name || "Task",
       listId: task.list?.id || null,
     };
@@ -362,9 +351,7 @@ async function checkCommentThreadContext(
       const data = await response.json();
       const comments = data.comments || [];
 
-      // Regex patterns for client-facing comments
-      const portalRegex = /^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/;
-      const teamToClientRegex = /^@client:\s*/i;
+      // Shared client-facing comment contract
 
       const commentsWithReplies = comments.filter((c: any) => (c.reply_count || 0) > 0);
 
@@ -408,7 +395,7 @@ async function checkCommentThreadContext(
           // Check if our new comment is in the replies
           if (replies.some((r: any) => r.id === newCommentId)) {
             const parentText = comment.comment_text || "";
-            const isClientFacing = portalRegex.test(parentText) || teamToClientRegex.test(parentText);
+            const isClientFacing = isPortalOriginatedComment(parentText) || isExplicitPublicTopLevelComment(parentText);
             log.info(`Comment is a reply`, {
               commentId: newCommentId,
               parentCommentId: comment.id,
@@ -566,6 +553,40 @@ Deno.serve(async (req) => {
           return rows?.[0]?.name || "Schritt";
         }
 
+        async function getProjectChapterConfigId(taskData: { custom_fields?: Array<{ id: string; value?: unknown }>; }): Promise<string | null> {
+          const { data: projectConfigRows } = await supabase
+            .from("project_config")
+            .select("clickup_phase_field_id")
+            .eq("id", projectConfigId!)
+            .limit(1);
+
+          const phaseFieldId = projectConfigRows?.[0]?.clickup_phase_field_id;
+          if (!phaseFieldId || !taskData.custom_fields) {
+            return null;
+          }
+
+          const phaseField = taskData.custom_fields.find((field) => field.id === phaseFieldId);
+          const phaseOptionId = typeof phaseField?.value === "string" ? phaseField.value : null;
+          if (!phaseOptionId) {
+            return null;
+          }
+
+          const { data: chapterRows } = await supabase
+            .from("chapter_config")
+            .select("id, clickup_cf_option_id")
+            .eq("project_config_id", projectConfigId!)
+            .eq("is_active", true);
+
+          const chapterMap = new Map<string, string>();
+          for (const row of chapterRows || []) {
+            if (row.clickup_cf_option_id) {
+              chapterMap.set(row.clickup_cf_option_id, row.id);
+            }
+          }
+
+          return resolveChapterConfigId(phaseOptionId, chapterMap);
+        }
+
         // ---- PROJECT: taskStatusUpdated ----
         if (payload.event === "taskStatusUpdated" && historyItem) {
           const statusAfter = historyItem.after?.status;
@@ -625,19 +646,18 @@ Deno.serve(async (req) => {
           const commentId = historyItem.comment.id || historyItem.id;
 
           // Skip portal-originated comments
-          if (/^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/.test(commentText)) {
+          if (isPortalOriginatedComment(commentText)) {
             return new Response(JSON.stringify({ message: "Portal comment ignored", context: "project" }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
 
-          // Only process @client: prefixed comments
-          const teamToClientRegex = /^@client:\s*/i;
-          if (!teamToClientRegex.test(commentText)) {
+          // Only process explicit public top-level comments
+          if (!isExplicitPublicTopLevelComment(commentText)) {
             return new Response(JSON.stringify({ message: "Internal comment ignored", context: "project" }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
 
-          const displayText = commentText.replace(teamToClientRegex, "").trim();
+          const displayText = getClientFacingDisplayText(commentText);
           const firstName = historyItem.user.username.split(" ")[0];
           const profileIds = await getProjectProfileIds();
           const stepName = await getStepName();
@@ -699,9 +719,11 @@ Deno.serve(async (req) => {
                 );
                 if (fullTask.ok) {
                   const taskData = await fullTask.json();
+                  const chapterConfigId = await getProjectChapterConfigId(taskData);
                   await supabase.from("project_task_cache").upsert({
                     clickup_id: taskData.id,
                     project_config_id: projectConfigId,
+                    chapter_config_id: chapterConfigId,
                     name: taskData.name,
                     description: taskData.description || "",
                     status: taskData.status.status,
@@ -1001,8 +1023,7 @@ Deno.serve(async (req) => {
       log.info(`Comment received`, { taskId, commenterName, commentId });
 
       // Skip portal-originated comments (clients already see their own messages)
-      const portalRegex = /^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/;
-      if (portalRegex.test(commentText)) {
+      if (isPortalOriginatedComment(commentText)) {
         log.debug("Skipping portal-originated comment");
         return new Response(
           JSON.stringify({ message: "Portal comment ignored" }),
@@ -1010,9 +1031,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Detect team-to-client messages (@client: prefix)
-      const teamToClientRegex = /^@client:\s*/i;
-      const isTeamToClient = teamToClientRegex.test(commentText);
+      // Detect explicit public top-level messages
+      const isTeamToClient = isExplicitPublicTopLevelComment(commentText);
 
       // Always check thread context to determine if this is a reply and whether the thread is client-facing
       let shouldNotify = false;
@@ -1052,8 +1072,8 @@ Deno.serve(async (req) => {
       }
 
       // For @client: prefixed messages, strip the prefix; for threaded replies, show as-is
-      const displayTextForClient = isTeamToClient 
-        ? commentText.replace(teamToClientRegex, '').trim() 
+      const displayTextForClient = isTeamToClient
+        ? getClientFacingDisplayText(commentText)
         : commentText;
 
       log.info(`Processing client-facing message`, { type: isTeamToClient ? "@client: prefix" : "threaded reply" });

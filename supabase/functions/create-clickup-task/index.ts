@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
+import { resolveChapterConfigId, TEST_FOLDER_CONTRACT } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -186,7 +187,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    log.info("Creating task for user");
+    log.info("Creating task for user", {
+      approvedFolderUrl: TEST_FOLDER_CONTRACT.approvedFolderUrl,
+    });
 
     // Parse request body
     const requestText = await req.text();
@@ -361,6 +364,24 @@ Deno.serve(async (req) => {
         .eq('clickup_list_id', listId)
         .single();
 
+      let chapterConfigId: string | null = null;
+      if (projectConfig?.id && body.phaseOptionId) {
+        const { data: chapterConfigs } = await supabaseAdmin
+          .from('chapter_config')
+          .select('id, clickup_cf_option_id')
+          .eq('project_config_id', projectConfig.id)
+          .eq('is_active', true);
+
+        const chapterMap = new Map<string, string>();
+        for (const chapterConfig of chapterConfigs || []) {
+          if (chapterConfig.clickup_cf_option_id) {
+            chapterMap.set(chapterConfig.clickup_cf_option_id, chapterConfig.id);
+          }
+        }
+
+        chapterConfigId = resolveChapterConfigId(body.phaseOptionId, chapterMap);
+      }
+
       if (projectConfig) {
         const { error: cacheError } = await supabaseAdmin
           .from('project_task_cache')
@@ -371,7 +392,7 @@ Deno.serve(async (req) => {
             description: body.description?.trim() || '',
             status: 'to do',
             status_color: '',
-            chapter_config_id: body.phaseOptionId || null,
+            chapter_config_id: chapterConfigId,
             is_visible: true,
             last_synced: new Date().toISOString(),
           }, { onConflict: 'clickup_id,project_config_id' });

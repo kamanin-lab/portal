@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
+import { resolveStatusForAction } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -63,16 +64,6 @@ async function fetchWithRetry(
   
   throw lastError || new Error('Request failed after retries');
 }
-
-// Map our internal action to ClickUp status names
-// These need to match the ClickUp list's available statuses
-const STATUS_MAP: Record<string, string[]> = {
-  approve: ["approved", "Approved", "APPROVED"],
-  request_changes: ["rework", "Rework", "REWORK", "changes requested", "Changes Requested"],
-  put_on_hold: ["on hold", "On Hold", "ON HOLD"],
-  resume: ["to do", "To Do", "TO DO"],
-  cancel: ["canceled", "Canceled", "CANCELED", "cancelled", "Cancelled", "CANCELLED"],
-};
 
 const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel"];
 
@@ -282,10 +273,7 @@ Deno.serve(async (req) => {
     log.debug("Available statuses", { statuses: availableStatuses.map((s: { status: string }) => s.status) });
 
     // Find matching status from the list
-    const targetStatusNames = STATUS_MAP[action];
-    const matchedStatus = availableStatuses.find((s: { status: string }) => 
-      targetStatusNames.some(name => s.status.toLowerCase() === name.toLowerCase())
-    );
+    const matchedStatus = resolveStatusForAction(action, availableStatuses);
 
     if (!matchedStatus) {
       log.error("No matching status found for action", { action });

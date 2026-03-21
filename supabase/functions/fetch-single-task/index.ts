@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
+import { isTaskVisible } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -93,11 +94,6 @@ interface TransformedTask {
   url: string;
   list_id: string;
   list_name: string;
-}
-
-// Helper: Check if a value represents "visible" (handles various formats from ClickUp)
-function isVisibleValue(value: unknown): boolean {
-  return value === true || value === 1 || value === "true" || value === "1";
 }
 
 Deno.serve(async (req) => {
@@ -275,18 +271,12 @@ Deno.serve(async (req) => {
 
     // Check visibility custom field - only return tasks marked as visible
     const visibleFieldId = Deno.env.get("CLICKUP_VISIBLE_FIELD_ID");
-    if (visibleFieldId) {
-      const visibleField = task.custom_fields?.find((f: ClickUpCustomField) => f.id === visibleFieldId);
-      const fieldValue = visibleField?.value;
-      
-      // Use consistent visibility check (handles true, 1, "true", "1")
-      if (!isVisibleValue(fieldValue)) {
-        log.info("Task is not visible in client portal");
-        return new Response(
-          JSON.stringify({ task: null, message: "Task not found" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    if (visibleFieldId && !isTaskVisible(task.custom_fields, visibleFieldId)) {
+      log.info("Task is not visible in client portal");
+      return new Response(
+        JSON.stringify({ task: null, message: "Task not found" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Transform task to our format

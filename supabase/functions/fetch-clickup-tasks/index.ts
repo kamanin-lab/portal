@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
+import { getVisibilityFromFields } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -147,26 +148,6 @@ interface DiagnosticsData {
   fallback_fetches_succeeded: number;
   visible_after_filtering: number;
   sample_visibility_values: Array<{ taskId: string; value: unknown; source: string }>;
-}
-
-// Helper: Check if a value represents "visible" (handles various formats)
-function isVisibleValue(value: unknown): boolean {
-  return value === true || value === 1 || value === "true" || value === "1";
-}
-
-// Helper: Find visibility field value from custom_fields array
-function getVisibilityFromFields(
-  customFields: ClickUpCustomField[] | undefined,
-  visibleFieldId: string
-): { found: boolean; visible: boolean } {
-  if (!customFields || !Array.isArray(customFields)) {
-    return { found: false, visible: false };
-  }
-  const field = customFields.find((f) => f.id === visibleFieldId);
-  if (!field || field.value === undefined || field.value === null) {
-    return { found: false, visible: false };
-  }
-  return { found: true, visible: isVisibleValue(field.value) };
 }
 
 // Helper: Fetch single task detail from ClickUp (for fallback visibility check)

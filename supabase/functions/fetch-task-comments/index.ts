@@ -2,6 +2,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
+import { isExplicitPublicTopLevelComment, isPortalOriginatedComment } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -283,8 +284,8 @@ Deno.serve(async (req) => {
     const clientFacingComments: ClickUpComment[] = [];
     
     for (const comment of comments) {
-      const portalMatch = CLIENT_PORTAL_REGEX.test(comment.comment_text);
-      const teamToClientMatch = TEAM_TO_CLIENT_REGEX.test(comment.comment_text);
+      const portalMatch = isPortalOriginatedComment(comment.comment_text);
+      const teamToClientMatch = isExplicitPublicTopLevelComment(comment.comment_text);
       
       if (portalMatch || teamToClientMatch) {
         clientFacingComments.push(comment);

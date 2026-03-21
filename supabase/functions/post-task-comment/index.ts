@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { normalizeAttachmentType } from "../_shared/utils.ts";
+import { isExplicitPublicTopLevelComment, isPortalOriginatedComment } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -182,13 +183,9 @@ async function findLatestClientFacingComment(
     const data = await response.json();
     const comments = data.comments || [];
 
-    // Match portal comments or team-to-client (@client:) comments
-    const portalRegex = /^(?:\*\*)?(.+?)(?:\*\*)? \(via Client Portal\):/;
-    const teamToClientRegex = /^@client:\s*/i;
-
     // Find the most recent client-facing comment (they come sorted by date desc)
     for (const comment of comments) {
-      if (portalRegex.test(comment.comment_text) || teamToClientRegex.test(comment.comment_text)) {
+      if (isPortalOriginatedComment(comment.comment_text) || isExplicitPublicTopLevelComment(comment.comment_text)) {
         log?.debug("Found existing client-facing thread");
         return comment.id;
       }
