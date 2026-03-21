@@ -126,6 +126,30 @@ export function getClientFacingDisplayText(commentText: string): string {
     : commentText;
 }
 
+export function isClientFacingCommentEvent(params: {
+  commentText: string;
+  isReply: boolean;
+  isClientFacingThread: boolean;
+}): boolean {
+  if (params.isReply) {
+    return params.isClientFacingThread;
+  }
+
+  return isExplicitPublicTopLevelComment(params.commentText);
+}
+
+export function getClientFacingDisplayTextForEvent(params: {
+  commentText: string;
+  isReply: boolean;
+  isClientFacingThread: boolean;
+}): string {
+  if (params.isReply && params.isClientFacingThread) {
+    return params.commentText;
+  }
+
+  return getClientFacingDisplayText(params.commentText);
+}
+
 export interface ClickUpCommentLike {
   id: string;
   comment_text?: string;

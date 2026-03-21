@@ -1033,48 +1033,44 @@ Deno.serve(async (req) => {
       const isTeamToClient = isExplicitPublicTopLevelComment(commentText);
 
       // Always check thread context to determine if this is a reply and whether the thread is client-facing
-      let shouldNotify = false;
       let isThreadedReply = false;
+      let isClientFacingThread = false;
       const clickupToken = Deno.env.get("CLICKUP_API_TOKEN");
 
       if (clickupToken) {
         const threadContext = await checkCommentThreadContext(taskId, commentId, clickupToken, log);
+        isThreadedReply = threadContext.isReply;
+        isClientFacingThread = threadContext.isClientFacingThread;
 
-        if (threadContext.isReply) {
-          // It's a reply -- only notify if the parent thread is client-facing
-          if (threadContext.isClientFacingThread) {
-            shouldNotify = true;
-            isThreadedReply = true;
-          } else {
-            // Reply in internal thread -- block even if @client: prefix
-            log.info("Blocking notification: comment is in an internal thread", {
-              commentId, hasClientPrefix: isTeamToClient,
-            });
-          }
-        } else {
-          // Top-level comment -- notify only if has @client: prefix
-          shouldNotify = isTeamToClient;
+        if (isThreadedReply && !isClientFacingThread) {
+          log.info("Blocking notification: comment is in an internal thread", {
+            commentId, hasClientPrefix: isTeamToClient,
+          });
         }
-      } else {
-        // No ClickUp token -- fall back to prefix-only check (top-level assumption)
-        shouldNotify = isTeamToClient;
       }
+
+      const shouldNotify = isClientFacingCommentEvent({
+        commentText,
+        isReply: isThreadedReply,
+        isClientFacingThread,
+      });
 
       // Skip if not client-facing
       if (!shouldNotify) {
-        log.debug("Skipping comment - not client-facing", { isTeamToClient, isThreadedReply });
+        log.debug("Skipping comment - not client-facing", { isTeamToClient, isThreadedReply, isClientFacingThread });
         return new Response(
           JSON.stringify({ message: "Internal comment ignored" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // For @client: prefixed messages, strip the prefix; for threaded replies, show as-is
-      const displayTextForClient = isTeamToClient
-        ? getClientFacingDisplayText(commentText)
-        : commentText;
+      const displayTextForClient = getClientFacingDisplayTextForEvent({
+        commentText,
+        isReply: isThreadedReply,
+        isClientFacingThread,
+      });
 
-      log.info(`Processing client-facing message`, { type: isTeamToClient ? "@client: prefix" : "threaded reply" });
+      log.info(`Processing client-facing message`, { type: isThreadedReply ? "threaded reply" : "@client: prefix" });
 
       // ============ CHECK IF THIS IS A SUPPORT TASK ============
       log.debug(`Checking if task is a support task`, { taskId });

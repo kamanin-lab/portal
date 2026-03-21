@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildChapterConfigMap,
   getClientFacingDisplayText,
+  getClientFacingDisplayTextForEvent,
   getPhaseOptionId,
   getVisibilityFromFields,
+  isClientFacingCommentEvent,
   isExplicitPublicTopLevelComment,
   isPortalOriginatedComment,
   resolveChapterConfigId,
@@ -117,6 +119,38 @@ describe('clickup contract helpers', () => {
     expect(resolvePublicThreadRootId([
       { id: 'internal-1', comment_text: 'Internal only', date: '10' },
     ])).toEqual({ rootId: null, reason: 'none' });
+  });
+
+  it('uses one client-facing comment-event contract for top-level and threaded replies', () => {
+    expect(isClientFacingCommentEvent({
+      commentText: '@client: Visible update',
+      isReply: false,
+      isClientFacingThread: false,
+    })).toBe(true);
+
+    expect(isClientFacingCommentEvent({
+      commentText: 'Reply inside public thread',
+      isReply: true,
+      isClientFacingThread: true,
+    })).toBe(true);
+
+    expect(isClientFacingCommentEvent({
+      commentText: '@client: Misleading reply inside internal thread',
+      isReply: true,
+      isClientFacingThread: false,
+    })).toBe(false);
+
+    expect(getClientFacingDisplayTextForEvent({
+      commentText: '@client: Visible update',
+      isReply: false,
+      isClientFacingThread: false,
+    })).toBe('Visible update');
+
+    expect(getClientFacingDisplayTextForEvent({
+      commentText: 'Reply inside public thread',
+      isReply: true,
+      isClientFacingThread: true,
+    })).toBe('Reply inside public thread');
   });
 
   it('resolves write-status aliases through one shared matcher', () => {

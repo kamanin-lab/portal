@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
-import { resolveStatusForAction } from "../_shared/clickup-contract.ts";
+import { resolvePublicThreadRootId, resolveStatusForAction } from "../_shared/clickup-contract.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
