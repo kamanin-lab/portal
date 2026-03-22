@@ -100,6 +100,22 @@
 
 **Consequences:** Clearer visual hierarchy. Volume metaphor is universally understood. Ghost bars show "capacity" remaining.
 
+## ADR-012: Nextcloud file storage as folder tree, not step-bound uploads
+**Date:** 2026-03-22
+**Status:** Accepted
+
+**Context:** `UploadSheet.tsx` previously required a step binding — the user had to select a project step before uploading a file. This field had no real effect on where the file was stored in Nextcloud; it was non-functional stub code left over from an earlier design that assumed files would be tagged to steps. The semantics were unclear and the form field confused the upload flow.
+
+**Decision:** Remove step binding entirely from `UploadSheet`. File storage location is determined solely by the folder the user is currently browsing in `FolderView`. Uploads go to `nextcloud_root_path/{current_sub_path}/`. Users can create subfolders inline. `UploadSheet` now only asks for the file itself, with the destination path derived from the active folder context.
+
+**Consequences:**
+- `ChapterFiles.tsx` deleted; replaced by `FolderView.tsx` (generic, path-driven).
+- `UploadSheet.tsx` fully rewritten — no step selector, receives `subPath` from caller.
+- `FilesPage.tsx` navigation state changes from `selectedChapter` to `pathSegments[]`.
+- Three new hooks: `useNextcloudFilesByPath`, `useUploadFileByPath`, `useCreateFolder`.
+- Edge Function `nextcloud-files` gains `sub_path` (list/upload) and `mkdir` action.
+- Semantically cleaner: Nextcloud IS the file system; the portal navigates it directly.
+
 ## ADR-011: Meine Aufgaben as dedicated page (not redirect)
 **Date:** 2026-03-13
 **Status:** Accepted

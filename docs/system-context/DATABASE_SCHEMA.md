@@ -662,7 +662,7 @@ Supabase Auth email hook. Intercepts auth emails (magic link, password reset, si
 
 ### 2.12 nextcloud-files
 
-WebDAV proxy for Nextcloud file operations. Provides list, download, and upload actions for project files.
+WebDAV proxy for Nextcloud file operations. Provides list, download, upload, and folder creation actions for project files. Supports arbitrary path navigation within a project root.
 
 | Property | Value |
 |----------|-------|
@@ -681,15 +681,24 @@ WebDAV proxy for Nextcloud file operations. Provides list, download, and upload 
 
 | Action | Input | Description |
 |--------|-------|-------------|
-| `list` | `{ action: "list", project_config_id, chapter_sort_order? }` | PROPFIND depth:1, returns `NextcloudFile[]` |
+| `list` | `{ action: "list", project_config_id, sub_path? }` | PROPFIND depth:1 at `nextcloud_root_path/sub_path`. Returns `NextcloudFile[]`. `sub_path` defaults to root if omitted. |
 | `download` | `{ action: "download", project_config_id, file_path }` | Streams file bytes back to browser |
-| `upload` | FormData: `action`, `project_config_id`, `chapter_sort_order?`, `file` | PUTs file to Nextcloud via WebDAV |
+| `upload` | FormData: `action`, `project_config_id`, `sub_path?`, `file` | PUTs file to `nextcloud_root_path/sub_path/filename` via WebDAV |
+| `mkdir` | `{ action: "mkdir", project_config_id, folder_path }` | Creates folder (and all intermediate directories) via recursive WebDAV MKCOL |
+
+**Parameters:**
+
+| Parameter | Used By | Description |
+|-----------|---------|-------------|
+| `project_config_id` | all | Resolves project root path and verifies access |
+| `sub_path` | `list`, `upload` | Path relative to `nextcloud_root_path` for arbitrary folder navigation |
+| `file_path` | `download` | Full path to the file within the project root |
+| `folder_path` | `mkdir` | Path (relative to project root) of the folder to create; intermediate folders are created automatically |
 
 **Security:**
-- Path traversal prevention: rejects `..`, leading `/`, and paths escaping `nextcloud_root_path`
+- Path traversal prevention: rejects `..`, leading `/`, control characters, and paths escaping `nextcloud_root_path`
 - Project access verified via `project_access` table (user must have access to the project)
 - `nextcloud_root_path` loaded from `project_config` (returns `NEXTCLOUD_NOT_CONFIGURED` if null)
-- Chapter folder name resolved from `chapter_config.sort_order` + `chapter_config.title`
 
 **Error Codes:**
 - `NEXTCLOUD_NOT_CONFIGURED` — project has no `nextcloud_root_path` set (HTTP 200, non-error for UI)

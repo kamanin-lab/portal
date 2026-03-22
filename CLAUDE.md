@@ -53,6 +53,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
+| `supabase/functions/nextcloud-files/` | WebDAV proxy: list (`sub_path`), download, upload (`sub_path`), mkdir (`folder_path`) |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
 | `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
 
@@ -120,8 +121,8 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   │   └── types/              # common.ts
 │   ├── modules/
 │   │   ├── projects/           # Project Experience module
-│   │   │   ├── components/     # overview/, steps/, tasks/, files/, messages/, help/
-│   │   │   ├── hooks/          # useProject, useProjects, useProjectMemory, useChapterHelpers, useHeroPriority
+│   │   │   ├── components/     # overview/, steps/, tasks/, files/ (FolderView, CreateFolderInput), messages/, help/
+│   │   │   ├── hooks/          # useProject, useProjects, useProjectMemory, useChapterHelpers, useHeroPriority, useNextcloudFilesByPath, useUploadFileByPath, useCreateFolder
 │   │   │   ├── lib/            # helpers, transforms-project, phase-colors, step-status-mapping, memory-access, memory-store, overview-interpretation, mock-data
 │   │   │   ├── types/          # project.ts
 │   │   │   └── pages/          # UebersichtPage, NachrichtenPage, DateienPage
@@ -151,6 +152,7 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │       ├── manage-project-memory/
 │       ├── post-task-comment/
 │       ├── send-feedback/
+│       ├── nextcloud-files/
 │       ├── send-mailjet-email/
 │       ├── send-support-message/
 │       └── update-task-status/

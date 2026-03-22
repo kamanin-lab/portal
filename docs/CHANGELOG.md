@@ -202,6 +202,33 @@
 - Replaced imperative login redirect side-effect with declarative `<Navigate>`
 - Improved Inbox and MeineAufgaben loading / empty states
 
+## Phase 4.1: Nextcloud Folder Navigation — 2026-03-22
+
+### Edge Function: nextcloud-files
+- Added `mkdir` action: recursive WebDAV MKCOL — creates the full folder tree including intermediate directories
+- Added `sub_path` parameter to `list` and `upload` actions for arbitrary path navigation within a project root
+- Added `folder_path` parameter to `mkdir` for specifying the target folder path
+- Hardened `isPathSafe`: now also rejects paths containing control characters
+
+### New Components
+- `FolderView.tsx` — generic folder browser with breadcrumbs, drill-down navigation, folder creation inline, and upload integration
+- `CreateFolderInput.tsx` — inline folder name input with client-side validation
+
+### Modified Components
+- `FilesPage.tsx` — replaced `selectedChapter` state with `pathSegments[]` array for path-based navigation
+- `FileUpload.tsx` — accepts `subPath` prop to route uploads to the active browsed path
+- `UploadSheet.tsx` — rewritten: folder/subfolder selection replaces the prior step-binding UI (see ADR-012)
+
+### Deleted Components
+- `ChapterFiles.tsx` — replaced entirely by `FolderView.tsx`
+
+### New Hooks
+- `useNextcloudFilesByPath` — path-based file listing (replaces chapter-keyed listing)
+- `useUploadFileByPath` — path-based upload mutation
+- `useCreateFolder` — folder creation mutation (calls `mkdir` action)
+
+---
+
 ## Phase 4: Project Memory & Integration Hardening — 2026-03-20+
 
 ### Project Memory Foundation
