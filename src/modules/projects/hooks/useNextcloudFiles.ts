@@ -53,6 +53,34 @@ async function fetchFiles(
 }
 
 // ---------------------------------------------------------------------------
+// Fetch function (path-based)
+// ---------------------------------------------------------------------------
+
+async function fetchFilesByPath(
+  projectConfigId: string,
+  subPath: string,
+): Promise<{ files: NextcloudFile[]; notConfigured: boolean }> {
+  const { data, error } = await supabase.functions.invoke<ListResponse>(
+    'nextcloud-files',
+    {
+      body: {
+        action: 'list',
+        project_config_id: projectConfigId,
+        sub_path: subPath,
+      },
+    },
+  );
+
+  if (error) throw new Error(error.message || 'Verbindungsfehler');
+  if (data?.code === 'NEXTCLOUD_NOT_CONFIGURED') {
+    return { files: [], notConfigured: true };
+  }
+  if (!data?.ok) throw new Error(data?.code || 'Unbekannter Fehler');
+
+  return { files: data.data?.files ?? [], notConfigured: false };
+}
+
+// ---------------------------------------------------------------------------
 // Hook: useNextcloudFiles
 // ---------------------------------------------------------------------------
 
@@ -63,6 +91,30 @@ export function useNextcloudFiles(projectConfigId: string, chapterSortOrder?: nu
     queryKey,
     queryFn: () => fetchFiles(projectConfigId, chapterSortOrder),
     enabled: !!projectConfigId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  return {
+    files: query.data?.files ?? [],
+    notConfigured: query.data?.notConfigured ?? false,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useNextcloudFilesByPath
+// ---------------------------------------------------------------------------
+
+export function useNextcloudFilesByPath(projectConfigId: string, subPath: string) {
+  const queryKey = ['nextcloud-files', projectConfigId, subPath];
+
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchFilesByPath(projectConfigId, subPath),
+    enabled: !!projectConfigId && !!subPath,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -115,6 +167,87 @@ export function useUploadFile(projectConfigId: string, chapterSortOrder?: number
       // Invalidate file list for this folder
       const queryKey = ['nextcloud-files', projectConfigId, chapterSortOrder ?? 'root'];
       queryClient.invalidateQueries({ queryKey });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useUploadFileByPath  (mutation, path-based)
+// ---------------------------------------------------------------------------
+
+export function useUploadFileByPath(projectConfigId: string, subPath: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File): Promise<UploadResponse> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Nicht authentifiziert');
+
+      const formData = new FormData();
+      formData.append('action', 'upload');
+      formData.append('project_config_id', projectConfigId);
+      formData.append('sub_path', subPath);
+      formData.append('file', file);
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const resp = await fetch(`${supabaseUrl}/functions/v1/nextcloud-files`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+
+      const result: UploadResponse = await resp.json();
+      if (!result.ok) throw new Error(result.code || 'Upload fehlgeschlagen');
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, subPath] });
+      // Also invalidate root if uploading to a chapter root
+      if (!subPath.includes('/')) {
+        queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, 'root'] });
+      }
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useCreateFolder  (mutation)
+// ---------------------------------------------------------------------------
+
+interface MkdirResponse {
+  ok: boolean;
+  code: string;
+  correlationId: string;
+  data?: { path: string };
+}
+
+export function useCreateFolder(projectConfigId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (folderPath: string): Promise<MkdirResponse> => {
+      const { data, error } = await supabase.functions.invoke<MkdirResponse>(
+        'nextcloud-files',
+        {
+          body: {
+            action: 'mkdir',
+            project_config_id: projectConfigId,
+            folder_path: folderPath,
+          },
+        },
+      );
+
+      if (error) throw new Error(error.message || 'Verbindungsfehler');
+      if (!data?.ok) throw new Error(data?.code || 'Ordner konnte nicht erstellt werden');
+      return data;
+    },
+    onSuccess: (_data, folderPath) => {
+      // Invalidate parent folder and root
+      const parentPath = folderPath.includes('/')
+        ? folderPath.substring(0, folderPath.lastIndexOf('/'))
+        : '';
+      queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, parentPath] });
+      queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, 'root'] });
     },
   });
 }
