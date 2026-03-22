@@ -119,15 +119,22 @@ project_config.nextcloud_root_path = "{client_root}/projekte/{project-slug}"
    ```
 
 2. **New action: `upload-task-file`:**
-   - Input: `project_config_id`, `task_name`, `task_date` (ISO), file
-   - Builds path: `portal/aufgaben/{YYYY-MM}_{task-slug}/`
+   - Input: `project_config_id` (for access authorization via `project_access` only), `task_name`, `task_date` (ISO), file
+   - Upload destination path is derived from `profiles.nextcloud_client_root` (not from `project_config.nextcloud_root_path`)
+   - `task_name` is slugified per `buildChapterFolder` pattern (lowercase, umlauts → ae/oe/ue, special chars → hyphens)
+   - **If slug result is empty → reject with `BAD_REQUEST`**
+   - Assembled sub_path `aufgaben/{YYYY-MM}_{slug}` must pass `isPathSafe()` before any MKCOL or PUT
+   - Resolved full path must be prefix-checked against `nextcloud_client_root`
    - Auto-creates folder via MKCOL if missing
    - Uploads file
 
 3. **New action: `browse-client`:**
-   - Input: `profile_id` (to get `nextcloud_client_root`), `sub_path`
+   - Input: `sub_path` (optional, relative to client root)
+   - Authorization: derives `nextcloud_client_root` from the authenticated user's own `profiles` row using `user.id` from JWT. No `profile_id` in request body — the function knows the caller from the token.
+   - **Path security:** `sub_path` must pass `isPathSafe()`. The resolved full path must be prefix-checked against `nextcloud_client_root` before any WebDAV operation. This prevents traversal to `_intern/` or `team/` via `../`.
    - Lists files in the client-level portal folder (not just project)
    - Used for: dokumente/, branding/, uploads/, aufgaben/
+   - Reads `nextcloud_client_root` via user-scoped Supabase client (user can read their own profile row — service-role NOT required)
 
 ### Portal UI Changes
 
@@ -161,12 +168,19 @@ project_config.nextcloud_root_path = "{client_root}/projekte/{project-slug}"
 ### Steps:
 1. Create folder structure in Nextcloud: `kunden/mbm/{_intern,team,portal}/`
 2. Move files (Nextcloud web UI or WebDAV)
-3. Update `project_config.nextcloud_root_path` for MBM project
-4. Add `nextcloud_client_root` to MBM profile
-5. Verify portal still shows files correctly
-6. Archive old `MBM/` folder (don't delete yet)
+3. **Rename existing chapter folders** to match new slugified convention (e.g., `01_Konzept` → `01_konzept`) before deploying Edge Function change
+4. Update `project_config.nextcloud_root_path` for MBM project
+5. Add `nextcloud_client_root` to MBM profile
+6. Verify portal still shows files correctly
+7. Archive old `MBM/` folder (don't delete yet)
 
 ---
+
+## Security Notes
+
+- **Single service account:** Nextcloud credentials (`NEXTCLOUD_USER`, `NEXTCLOUD_PASS`) are a shared service account with access to all `kunden/` folders. Client isolation relies entirely on Edge Function path-scoping. This is acceptable for a small agency but is a known architectural constraint.
+- **Path traversal defense:** All `sub_path` and `task_name` inputs pass `isPathSafe()` (rejects `..`, null bytes, control chars). Resolved paths are prefix-checked against `nextcloud_client_root` before any WebDAV call.
+- **Auth anchoring:** All client-facing actions derive the Nextcloud root from the authenticated user's own JWT/profile, never from request body parameters.
 
 ## What's NOT in Scope
 
