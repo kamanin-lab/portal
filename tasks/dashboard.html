@@ -1,0 +1,1084 @@
+<!--
+  USAGE: Open via local HTTP server, not by double-clicking.
+  Option A: http://localhost:5173/tasks/dashboard.html (while Vite dev server runs)
+  Option B: cd tasks && npx serve . (then open http://localhost:3000/dashboard.html)
+  Option C: cd tasks && python -m http.server 8080 (then open http://localhost:8080/dashboard.html)
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAMANIN PORTAL — Team Dashboard</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --text-dim:  #8b949e;
+    --done:      #3fb950;
+    --progress:  #d29922;
+    --blocked:   #f85149;
+    --pending:   #484f58;
+    --accent:    #58a6ff;
+    --radius:    8px;
+    --font:      'DM Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+
+  html { font-size: 14px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ───────────────────────────────────────────────── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+
+  .header-title span {
+    color: var(--accent);
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .countdown {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .offline-badge {
+    background: var(--blocked);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: none;
+  }
+
+  .offline-badge.visible { display: inline-block; }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--done);
+    display: inline-block;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .status-dot.offline {
+    background: var(--blocked);
+    animation: none;
+  }
+
+  /* ── Status Row ───────────────────────────────────────────── */
+  .status-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    transition: border-color 0.3s ease;
+  }
+
+  .card:hover {
+    border-color: var(--pending);
+  }
+
+  .card-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .task-id {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .task-title {
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .task-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .agent-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .agent-item:last-child { border-bottom: none; }
+
+  .agent-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .agent-dot.working {
+    background: var(--done);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .agent-dot.idle {
+    background: var(--pending);
+  }
+
+  .agent-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+
+  .agent-task {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-left: auto;
+    text-align: right;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .no-agents {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  /* ── Pipeline Timeline ────────────────────────────────────── */
+  .pipeline-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+
+  .pipeline-section .card-label {
+    margin-bottom: 20px;
+  }
+
+  .timeline-wrapper {
+    min-width: 500px;
+    padding: 10px 0 10px 0;
+  }
+
+  .timeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 30px 0 40px 0;
+  }
+
+  .timeline-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    z-index: 2;
+    flex: 0 0 auto;
+    min-width: 90px;
+  }
+
+  .timeline-agent {
+    font-size: 0.65rem;
+    color: var(--progress);
+    margin-bottom: 8px;
+    height: 16px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .timeline-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid var(--pending);
+    background: var(--bg);
+    transition: all 0.4s ease;
+    position: relative;
+  }
+
+  .timeline-circle.done {
+    background: var(--done);
+    border-color: var(--done);
+  }
+
+  .timeline-circle.in_progress {
+    background: var(--bg);
+    border-color: var(--progress);
+    animation: pulse-ring 2s ease-in-out infinite;
+  }
+
+  .timeline-circle.in_progress::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--progress);
+  }
+
+  .timeline-circle.blocked {
+    background: var(--bg);
+    border-color: var(--blocked);
+  }
+
+  .timeline-circle.blocked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--blocked);
+  }
+
+  .timeline-circle.pending {
+    background: var(--bg);
+    border-color: var(--pending);
+  }
+
+  .timeline-phase {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 10px;
+    text-align: center;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timeline-connector {
+    flex: 1;
+    height: 3px;
+    min-width: 24px;
+    max-width: 60px;
+    margin-top: -10px;
+    transition: background 0.4s ease;
+    z-index: 1;
+    align-self: center;
+    position: relative;
+    top: 0;
+  }
+
+  .timeline-connector.done {
+    background: var(--done);
+  }
+
+  .timeline-connector.pending {
+    background: var(--pending);
+  }
+
+  .timeline-connector.transition {
+    background: linear-gradient(90deg, var(--done), var(--pending));
+  }
+
+  /* ── Popover ──────────────────────────────────────────────── */
+  .popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.8rem;
+    z-index: 100;
+    max-width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .popover.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .popover-phase {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .popover-agent {
+    color: var(--accent);
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+
+  .popover-notes {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .popover-status {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .popover-status.done       { background: rgba(63,185,80,0.15); color: var(--done); }
+  .popover-status.in_progress { background: rgba(210,153,34,0.15); color: var(--progress); }
+  .popover-status.blocked    { background: rgba(248,81,73,0.15); color: var(--blocked); }
+  .popover-status.pending    { background: rgba(72,79,88,0.25); color: var(--text-dim); }
+
+  /* ── Completed Tasks ──────────────────────────────────────── */
+  .completed-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .completed-card {
+    border-left: 3px solid var(--done);
+    padding: 12px 16px;
+    margin-top: 10px;
+    background: rgba(63,185,80,0.03);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .completed-card:hover {
+    background: rgba(63,185,80,0.07);
+  }
+
+  .completed-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .completed-id {
+    font-weight: 700;
+    color: var(--done);
+    font-size: 0.85rem;
+    background: rgba(63,185,80,0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .completed-title {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .completed-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .completed-expand-icon {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+
+  .completed-card.expanded .completed-expand-icon {
+    transform: rotate(90deg);
+  }
+
+  .completed-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+
+  .completed-card.expanded .completed-details {
+    max-height: 200px;
+    padding-top: 12px;
+    opacity: 1;
+  }
+
+  .completed-summary {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .completed-commits {
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .completed-commits span {
+    background: rgba(88,166,255,0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 6px;
+    font-family: var(--font);
+  }
+
+  .review-cycles {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ── Stats Bar ────────────────────────────────────────────── */
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-value {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .stat-separator {
+    color: var(--border);
+    user-select: none;
+  }
+
+  .stat-icon {
+    font-size: 0.85rem;
+  }
+
+  /* ── Residual Items ───────────────────────────────────────── */
+  .residual-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .residual-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    font-size: 0.8rem;
+  }
+
+  .residual-item:last-child { border-bottom: none; }
+
+  .priority-tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .priority-tag.low      { background: rgba(72,79,88,0.3); color: var(--text-dim); }
+  .priority-tag.medium   { background: rgba(210,153,34,0.15); color: var(--progress); }
+  .priority-tag.high     { background: rgba(248,81,73,0.15); color: var(--blocked); }
+  .priority-tag.critical { background: rgba(248,81,73,0.3); color: var(--blocked); }
+
+  .residual-text {
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* ── Footer ───────────────────────────────────────────────── */
+  .footer {
+    text-align: center;
+    padding: 16px 0;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Animations ───────────────────────────────────────────── */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(210,153,34,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(210,153,34,0); }
+  }
+
+  /* ── Data-change transitions ──────────────────────────────── */
+  .fade-transition {
+    transition: opacity 0.3s ease;
+  }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .status-row {
+      grid-template-columns: 1fr;
+    }
+
+    .timeline-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .timeline {
+      justify-content: flex-start;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    .stats-bar {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .completed-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .completed-meta {
+      width: 100%;
+    }
+
+    .agent-task {
+      max-width: 45%;
+      font-size: 0.7rem;
+    }
+
+    .task-id {
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    html { font-size: 13px; }
+
+    .timeline-node {
+      min-width: 72px;
+    }
+
+    .timeline-phase {
+      font-size: 0.6rem;
+      max-width: 72px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title"><span>KAMANIN PORTAL</span> &mdash; Team Dashboard</div>
+    <div class="header-meta">
+      <span class="offline-badge" id="offlineBadge">Offline</span>
+      <span class="status-dot" id="statusDot"></span>
+      <span class="countdown" id="countdown">Aktualisierung in 5s...</span>
+    </div>
+  </div>
+
+  <!-- Status Row -->
+  <div class="status-row">
+    <div class="card fade-transition">
+      <div class="card-label">Aktueller Task</div>
+      <div class="task-id" id="taskId">---</div>
+      <div class="task-title" id="taskTitle">Laden...</div>
+      <div class="task-desc" id="taskDesc"></div>
+    </div>
+    <div class="card fade-transition">
+      <div class="card-label">Aktive Agenten</div>
+      <div id="agentsList">
+        <div class="no-agents">Laden...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Timeline -->
+  <div class="pipeline-section">
+    <div class="card-label">Pipeline Timeline</div>
+    <div class="timeline-wrapper">
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+
+  <!-- Completed Tasks -->
+  <div class="completed-section">
+    <div class="card-label">Abgeschlossene Tasks</div>
+    <div id="completedList"></div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" id="statsBar">
+    <span class="stat-item"><span class="stat-icon">&#9679;</span> Laden...</span>
+  </div>
+
+  <!-- Residual Items -->
+  <div class="residual-section">
+    <div class="card-label">Offene Punkte</div>
+    <div id="residualList"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">KAMANIN IT Solutions &middot; Portal Team Dashboard &middot; Auto-Refresh 5s</div>
+</div>
+
+<!-- Popover -->
+<div class="popover" id="popover">
+  <div class="popover-status" id="popoverStatus"></div>
+  <div class="popover-phase" id="popoverPhase"></div>
+  <div class="popover-agent" id="popoverAgent"></div>
+  <div class="popover-notes" id="popoverNotes"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── file:// protocol warning ────────────────────────────────
+  if (window.location.protocol === 'file:') {
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#f85149;color:white;padding:12px 20px;text-align:center;font-size:13px;border-radius:8px;margin-bottom:12px;';
+    banner.innerHTML = 'Diese Seite funktioniert nicht \u00fcber file://. Bitte \u00fcber HTTP \u00f6ffnen: <code style="background:rgba(0,0,0,0.2);padding:2px 6px;border-radius:3px;">http://localhost:5173/tasks/dashboard.html</code>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  // ── State ──────────────────────────────────────────────────
+  var REFRESH_INTERVAL = 5;
+  var countdown = REFRESH_INTERVAL;
+  var timer = null;
+  var isOffline = false;
+  var currentData = null;
+  var popoverEl = document.getElementById('popover');
+  var activePopoverNode = null;
+
+  // ── Elements ───────────────────────────────────────────────
+  var els = {
+    taskId:       document.getElementById('taskId'),
+    taskTitle:    document.getElementById('taskTitle'),
+    taskDesc:     document.getElementById('taskDesc'),
+    agentsList:   document.getElementById('agentsList'),
+    timeline:     document.getElementById('timeline'),
+    completedList:document.getElementById('completedList'),
+    statsBar:     document.getElementById('statsBar'),
+    residualList: document.getElementById('residualList'),
+    countdown:    document.getElementById('countdown'),
+    offlineBadge: document.getElementById('offlineBadge'),
+    statusDot:    document.getElementById('statusDot')
+  };
+
+  // ── Helpers ────────────────────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function statusLabel(status) {
+    var map = {
+      done: 'Done',
+      in_progress: 'In Progress',
+      blocked: 'Blocked',
+      pending: 'Pending'
+    };
+    return map[status] || status;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    var months = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    return d.getDate() + '. ' + months[d.getMonth()];
+  }
+
+  function formatTimestamp(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    return d.toLocaleString('de-AT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  // ── Render Functions ───────────────────────────────────────
+
+  function renderCurrentTask(task) {
+    if (!task) return;
+    els.taskId.textContent = task.id || '---';
+    els.taskTitle.textContent = task.title || '';
+    els.taskDesc.textContent = task.description || '';
+  }
+
+  function renderAgents(agents) {
+    if (!agents || agents.length === 0) {
+      els.agentsList.innerHTML = '<div class="no-agents">Keine aktiven Agenten</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < agents.length; i++) {
+      var a = agents[i];
+      var dotClass = a.status === 'working' ? 'working' : 'idle';
+      html += '<div class="agent-item">'
+        + '<span class="agent-dot ' + dotClass + '"></span>'
+        + '<span class="agent-name">' + escapeHtml(a.name) + '</span>'
+        + '<span class="agent-task">' + escapeHtml(a.task) + '</span>'
+        + '</div>';
+    }
+    els.agentsList.innerHTML = html;
+  }
+
+  function renderTimeline(pipeline) {
+    if (!pipeline || pipeline.length === 0) {
+      els.timeline.innerHTML = '<span style="color:var(--text-dim)">Keine Pipeline-Daten</span>';
+      return;
+    }
+
+    var VALID_STATUSES = ['done', 'in_progress', 'blocked', 'pending'];
+
+    var html = '';
+    for (var i = 0; i < pipeline.length; i++) {
+      var p = pipeline[i];
+      var safeStatus = VALID_STATUSES.indexOf(p.status) >= 0 ? p.status : 'pending';
+      var showAgent = (safeStatus === 'in_progress' || safeStatus === 'blocked');
+
+      // Node
+      html += '<div class="timeline-node" data-index="' + i + '">'
+        + '<div class="timeline-agent">' + (showAgent ? escapeHtml(p.agent) : '') + '</div>'
+        + '<div class="timeline-circle ' + safeStatus + '"></div>'
+        + '<div class="timeline-phase">' + escapeHtml(p.phase) + '</div>'
+        + '</div>';
+
+      // Connector (between nodes)
+      if (i < pipeline.length - 1) {
+        var nextStatus = VALID_STATUSES.indexOf(pipeline[i+1].status) >= 0 ? pipeline[i+1].status : 'pending';
+        var connClass = 'pending';
+        if (safeStatus === 'done' && nextStatus === 'done') {
+          connClass = 'done';
+        } else if (safeStatus === 'done' && nextStatus !== 'done') {
+          connClass = 'transition';
+        }
+        html += '<div class="timeline-connector ' + connClass + '"></div>';
+      }
+    }
+    els.timeline.innerHTML = html;
+
+    // Attach click handlers
+    var nodes = els.timeline.querySelectorAll('.timeline-node');
+    for (var j = 0; j < nodes.length; j++) {
+      (function(node, index) {
+        node.addEventListener('click', function(e) {
+          e.stopPropagation();
+          showPopover(node, pipeline[index]);
+        });
+      })(nodes[j], j);
+    }
+  }
+
+  function showPopover(node, phase) {
+    if (activePopoverNode === node) {
+      hidePopover();
+      return;
+    }
+    activePopoverNode = node;
+
+    var VALID_STATUSES_POP = ['done', 'in_progress', 'blocked', 'pending'];
+    var safePopStatus = VALID_STATUSES_POP.indexOf(phase.status) >= 0 ? phase.status : 'pending';
+    var statusEl = document.getElementById('popoverStatus');
+    statusEl.textContent = statusLabel(phase.status);
+    statusEl.className = 'popover-status ' + safePopStatus;
+
+    document.getElementById('popoverPhase').textContent = phase.phase;
+    document.getElementById('popoverAgent').textContent = phase.agent ? 'Agent: ' + phase.agent : '';
+    document.getElementById('popoverNotes').textContent = phase.notes || 'Keine Notizen';
+
+    // Position
+    var rect = node.getBoundingClientRect();
+    var popW = 260;
+    var left = rect.left + (rect.width / 2) - (popW / 2);
+    var top = rect.bottom + 12;
+
+    // Keep within viewport
+    if (left < 8) left = 8;
+    if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+    if (top + 140 > window.innerHeight) {
+      top = rect.top - 140;
+    }
+
+    popoverEl.style.left = left + 'px';
+    popoverEl.style.top = top + 'px';
+    popoverEl.style.width = popW + 'px';
+    popoverEl.classList.add('visible');
+  }
+
+  function hidePopover() {
+    popoverEl.classList.remove('visible');
+    activePopoverNode = null;
+  }
+
+  // Close popover on outside click
+  document.addEventListener('click', function(e) {
+    if (!popoverEl.contains(e.target)) {
+      hidePopover();
+    }
+  });
+
+  function renderCompleted(tasks) {
+    if (!tasks || tasks.length === 0) {
+      els.completedList.innerHTML = '<div class="no-agents">Keine abgeschlossenen Tasks</div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < tasks.length; i++) {
+      var t = tasks[i];
+      var commitsHtml = '';
+      if (t.commits && t.commits.length > 0) {
+        commitsHtml = 'Commits: ';
+        for (var c = 0; c < t.commits.length; c++) {
+          commitsHtml += '<span>' + escapeHtml(t.commits[c]) + '</span>';
+        }
+      }
+
+      html += '<div class="completed-card" data-index="' + i + '">'
+        + '<div class="completed-header">'
+        + '<span class="completed-id">' + escapeHtml(t.id) + '</span>'
+        + '<span class="completed-title">' + escapeHtml(t.title) + '</span>'
+        + '<span class="completed-meta">'
+        + '<span>' + formatDate(t.date) + '</span>'
+        + '<span>' + (t.filesChanged || 0) + ' Dateien</span>'
+        + '</span>'
+        + '<span class="completed-expand-icon">&#9656;</span>'
+        + '</div>'
+        + '<div class="completed-details">'
+        + '<div class="completed-summary">' + escapeHtml(t.summary) + '</div>'
+        + '<div class="completed-commits">' + commitsHtml + '</div>'
+        + '<div class="review-cycles">Review-Zyklen: ' + (t.reviewCycles || 0) + '</div>'
+        + '</div>'
+        + '</div>';
+    }
+    els.completedList.innerHTML = html;
+
+    // Attach expand/collapse
+    var cards = els.completedList.querySelectorAll('.completed-card');
+    for (var k = 0; k < cards.length; k++) {
+      cards[k].addEventListener('click', function() {
+        this.classList.toggle('expanded');
+      });
+    }
+  }
+
+  function renderStats(stats) {
+    if (!stats) return;
+    var html = ''
+      + '<span class="stat-item">'
+      + '<span class="stat-icon" style="color:var(--accent);">&#8862;</span>'
+      + '<span class="stat-value">' + (stats.totalCommits || 0) + '</span> Commits</span>'
+      + '<span class="stat-separator">&middot;</span>'
+      + '<span class="stat-item">'
+      + '<span class="stat-icon" style="color:var(--progress);">&#9783;</span>'
+      + '<span class="stat-value">' + (stats.totalFilesChanged || 0) + '</span> Dateien</span>'
+      + '<span class="stat-separator">&middot;</span>'
+      + '<span class="stat-item">'
+      + '<span class="stat-icon" style="color:var(--done);">&#10003;</span>'
+      + '<span class="stat-value">' + escapeHtml(stats.testsPassing || '0') + '</span> Tests</span>'
+      + '<span class="stat-separator">&middot;</span>'
+      + '<span class="stat-item">'
+      + '<span class="stat-icon" style="color:' + (stats.buildStatus === 'clean' ? 'var(--done)' : 'var(--blocked)') + ';">&#9672;</span>'
+      + 'Build: <span class="stat-value">' + escapeHtml(stats.buildStatus || 'unknown') + '</span></span>';
+    els.statsBar.innerHTML = html;
+  }
+
+  function renderResidual(items) {
+    if (!items || items.length === 0) {
+      els.residualList.innerHTML = '<div class="no-agents">Keine offenen Punkte</div>';
+      return;
+    }
+    var VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var r = items[i];
+      var safePriority = VALID_PRIORITIES.indexOf(r.priority) >= 0 ? r.priority : 'low';
+      html += '<div class="residual-item">'
+        + '<span class="priority-tag ' + safePriority + '">' + escapeHtml(r.priority || 'low') + '</span>'
+        + '<span class="residual-text">' + escapeHtml(r.item) + '</span>'
+        + '</div>';
+    }
+    els.residualList.innerHTML = html;
+  }
+
+  // ── Data Fetch ─────────────────────────────────────────────
+  function fetchData() {
+    fetch('./dashboard.json?_t=' + Date.now())
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (isOffline) {
+          isOffline = false;
+          els.offlineBadge.classList.remove('visible');
+          els.statusDot.classList.remove('offline');
+        }
+        currentData = data;
+        render(data);
+      })
+      .catch(function() {
+        if (!isOffline) {
+          isOffline = true;
+          els.offlineBadge.classList.add('visible');
+          els.statusDot.classList.add('offline');
+        }
+      });
+  }
+
+  function render(data) {
+    renderCurrentTask(data.currentTask);
+    renderAgents(data.activeAgents);
+    renderTimeline(data.pipeline);
+    renderCompleted(data.completedTasks);
+    renderStats(data.stats);
+    renderResidual(data.residualItems);
+  }
+
+  // ── Countdown & Refresh Loop ───────────────────────────────
+  function tick() {
+    countdown--;
+    if (countdown <= 0) {
+      countdown = REFRESH_INTERVAL;
+      fetchData();
+    }
+    els.countdown.textContent = 'Aktualisierung in ' + countdown + 's...';
+  }
+
+  // Initial fetch
+  fetchData();
+
+  // Start timer
+  timer = setInterval(tick, 1000);
+
+  // ── Keyboard ───────────────────────────────────────────────
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hidePopover();
+    }
+    // Manual refresh on R key
+    if (e.key === 'r' || e.key === 'R') {
+      countdown = REFRESH_INTERVAL;
+      fetchData();
+    }
+  });
+
+  // ── Cleanup ───────────────────────────────────────────────
+  window.addEventListener('beforeunload', function() { clearInterval(timer); });
+
+})();
+</script>
+</body>
+</html>

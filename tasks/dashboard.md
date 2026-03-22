@@ -1,42 +1,56 @@
 # Team Dashboard
 
-_Status: active_
+_Status: active_ · _Last updated: 2026-03-22_
 
 ## Current Task
-**TASK-003: Batch 3 — Files Tab → Nextcloud Integration**
-Rebuild files tab from ClickUp attachments to Nextcloud WebDAV browser.
+**TASK-006: Interactive Dashboard**
+Build an HTML/JS dashboard with timeline visualization, auto-refresh, live agent status.
 
 ## Active Agents
-reviewer-architect (pre-code review: real-time sync audit)
+None
 
-## Current Pipeline — TASK-005
+## Current Pipeline — TASK-006
 | Phase | Status | Agent | Notes |
 |---|---|---|---|
-| Task Framing | ✅ | Supervisor | Reliable real-time updates across entire portal |
-| Pre-Code Review | ✅ | reviewer-architect | 8 gaps found, fix order defined |
-| Plan | ✅ | Supervisor | 6 changes, plan in tasks/TASK-005-realtime-plan.md |
-| Implementation | ✅ | Supervisor + implementation-agent | DB config done, 5 files changed, build PASS |
-| Post-Code Review | ✅ | reviewer-architect | REVISE: 2 blocking (logging API, polling deps) |
-| QA Verification | ✅ | qa-agent | ACCEPT: build PASS, no leaks, no any |
-| Fix Blocking | ✅ | implementation-agent | All 4 issues fixed, build PASS |
-| Accept/Revise | ✅ | Supervisor | Accepted, committing |
-
-## Previous Pipeline — TASK-003
-| Phase | Status | Agent | Notes |
-|---|---|---|---|
-| Task Framing | ✅ | Supervisor | Nextcloud WebDAV, service account, upload + browse |
-| Pre-Code Review | ✅ | reviewer-architect | APPROVE WITH CONDITIONS — 2 blocking resolved |
-| Implementation | ✅ | implementation-agent | 7 new + 3 modified, build passes |
-| Post-Code Review | ✅ | reviewer-architect | APPROVE WITH CONDITIONS — 2 blocking + 2 non-blocking fixed |
-| QA Verification | ✅ | qa-agent | QA PASSED — all checks green |
+| Task Framing | ✅ | Supervisor | Plan written |
+| Plan | ✅ | Supervisor | tasks/TASK-006-dashboard-plan.md |
+| Implementation | ✅ | implementation-agent | dashboard.html (1060 lines) + dashboard.json created |
+| Post-Code Review | ✅ | reviewer-architect | REVISE: 1 blocking (file:// fetch) |
+| QA Verification | ✅ | qa-agent | ACCEPT |
+| Fix Blocking | ✅ | implementation-agent | All 5 findings fixed |
 | Accept/Revise | ✅ | Supervisor | Accepted |
 
+---
+
 ## Completed Tasks
-- **TASK-001**: Full documentation audit and update (2026-03-22)
-- **TASK-002**: Project panel redesign Batch 1+2 (2026-03-22). 3 commits, 21 files changed.
-- **TASK-004**: Account page (Konto) (2026-03-22). Profile, avatar, email, password, notifications, logout. Granular webhook notification prefs, SMTP setup. 22 files, +1317 lines.
+
+### TASK-006: Interactive Dashboard (2026-03-22)
+HTML timeline dashboard, auto-refresh 5s, dark dev theme, responsive.
+- `pending commit` · 2 files created (dashboard.html + dashboard.json)
+
+### TASK-005: Real-Time Updates (2026-03-22)
+DB Realtime publication, subscription fixes, 60s polling, profile_id filter.
+- `0e28a22` · 5 files + DB config
+
+### TASK-004: Account Page / Konto (2026-03-22)
+Profile, avatar, email/password, notifications, logout.
+- `6902a70` · 22 files, +1317 lines
+
+### TASK-003: Nextcloud Files Integration (2026-03-22)
+Nextcloud WebDAV: browse, upload, download, create folder.
+- `38ad640` · 12 files, +1443 lines
+
+### TASK-002: Project Panel Redesign (2026-03-22)
+5x dedup, comments, messaging, quick actions, activity timeline.
+- `26dede2`, `cac2444` · 21 files, 2 batches
+
+### TASK-001: Documentation Audit (2026-03-22)
+Full docs update, agent definitions, OpenClaw → Claude Code migration.
+- `3d1d54d` · 27 files
 
 ## Residual Items
-_(none yet)_
+- `StepDetail.tsx` 247 lines (needs extraction)
+- `UpdatesFeed.tsx` 170 lines (slightly over)
+- `raw_data` shape inconsistency between fetch paths
 
 Legend: ⬜ pending | 🔄 in progress | ✅ done | ❌ blocked | ⏭️ skipped
