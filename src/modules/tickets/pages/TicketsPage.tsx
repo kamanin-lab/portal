@@ -14,6 +14,7 @@ import { NewTicketDialog } from '../components/NewTicketDialog'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { CreditBalance } from '../components/CreditBalance'
 import { mapStatus } from '../lib/status-mapping'
 import { cn } from '@/shared/lib/utils'
 
@@ -84,6 +85,11 @@ export function TicketsPage() {
             Support
           </button>
         </div>
+      </div>
+
+      {/* Credit balance strip */}
+      <div className="mb-3 bg-surface border border-border rounded-[var(--r-md)] overflow-hidden">
+        <CreditBalance />
       </div>
 
       {/* Row 2: Filter chips */}

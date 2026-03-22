@@ -8,47 +8,35 @@ None — awaiting next assignment
 ## Active Agents
 None
 
-## Current Pipeline — TASK-009
+## Current Pipeline — TASK-010
 | Phase | Status | Agent | Notes |
 |---|---|---|---|
-| Task Framing | ✅ | Supervisor | Plan written |
-| Implementation | ✅ | implementation-agent | 3 changed + 1 created, build PASS |
-| Post-Code Review | ✅ | reviewer-architect | APPROVE (0 blocking) |
-| QA Verification | ✅ | qa-agent | REVISE (2 files > 150 lines) |
-| Fix | ✅ | implementation-agent | 4 files extracted, all < 150 lines |
+| Task Framing | ✅ | Supervisor | Brainstorming complete, spec written |
+| Spec Review | ✅ | reviewer-architect | 5 blocking found, all fixed in spec rev.2 |
+| Spec Fix + Plan | ✅ | Supervisor | Spec fixed, plan written, DB migrated |
+| DB Migration | ✅ | Supervisor | tables + RLS + Realtime + MBM seed (25 credits) |
+| Implementation | ✅ | implementation-agent | 10 modified + 4 created, build PASS, 77/77 tests |
+| Post-Code Review | ✅ | reviewer-architect | REVISE: 4 blocking |
+| QA Verification | ✅ | qa-agent | REVISE: 1 blocking (topup date) |
+| Fix Blocking | ✅ | implementation-agent | All 4 blocking fixed |
 | Accept/Revise | ✅ | Supervisor | Accepted |
 
 ---
 
 ## Completed Tasks
 
-### TASK-008: shadcn/ui Migration + Polish (2026-03-23)
-8 shadcn components, 48 files changed, component extraction, token unification.
-- `1657993`, `7a6aaaa` · 2 review cycles
+### TASK-009: File Management (2026-03-23)
+Upload + create folder in DateienPage.
+- `2b4fbd7` · 6 files
 
-### TASK-007: Nextcloud Folder Structure (2026-03-22)
-- `ff9f7e5` · 9 files
+### TASK-008: shadcn/ui Migration (2026-03-23)
+8 components, token unification, component extraction.
+- `1657993`, `7a6aaaa`
 
-### TASK-006: Interactive Dashboard (2026-03-22)
-- `2a6eb83`
-
-### TASK-005: Real-Time Updates (2026-03-22)
-- `0e28a22`, `159bb92`
-
-### TASK-004: Account Page (2026-03-22)
-- `6902a70`
-
-### TASK-003: Nextcloud Files (2026-03-22)
-- `38ad640`
-
-### TASK-002: Project Panel Redesign (2026-03-22)
-- `26dede2`, `cac2444`
-
-### TASK-001: Documentation Audit (2026-03-22)
-- `3d1d54d`
+### TASK-007–001: See previous dashboard entries.
 
 ## Residual Items
-- DynamicHero/PhaseNode custom buttons (intentional, not shadcn)
+- DynamicHero/PhaseNode custom buttons (intentional)
 - Empfehlungen page (future)
 - MBM file migration to Nextcloud
 

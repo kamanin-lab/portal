@@ -138,6 +138,7 @@ interface TransformedTask {
   url: string;
   list_id: string;
   list_name: string;
+  credits: number | null;
 }
 
 interface DiagnosticsData {
@@ -231,6 +232,18 @@ async function fetchAllTasksFromList(
   return allTasks;
 }
 
+// Extract Credits value from ClickUp custom fields
+function extractCredits(customFields: ClickUpCustomField[] | undefined): number | null {
+  if (!customFields || !Array.isArray(customFields)) return null;
+  const creditsFieldId = Deno.env.get("CLICKUP_CREDITS_FIELD_ID") || "";
+  const field = customFields.find(
+    (f) => (creditsFieldId && f.id === creditsFieldId) || f.name === "Credits"
+  );
+  if (!field || field.value === undefined || field.value === null) return null;
+  const num = Number(field.value);
+  return isNaN(num) ? null : num;
+}
+
 // Transform ClickUp task to our format
 function transformTask(task: ClickUpTask): TransformedTask {
   return {
@@ -261,6 +274,7 @@ function transformTask(task: ClickUpTask): TransformedTask {
     url: task.url,
     list_id: task.list.id,
     list_name: task.list.name,
+    credits: extractCredits(task.custom_fields),
   };
 }
 
@@ -525,6 +539,7 @@ Deno.serve(async (req) => {
             last_synced: new Date().toISOString(),
             is_visible: true,
             last_activity_at: task.last_activity_at,
+            credits: task.credits,
           }));
           
           const { error: batchError, count } = await supabaseService

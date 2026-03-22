@@ -1,3 +1,4 @@
+import { Zap } from 'lucide-react';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { TaskActions } from './TaskActions';
 import { TaskComments } from './TaskComments';
@@ -42,6 +43,12 @@ export function TaskDetail({ task, onRead }: Props) {
         )}
         {task.last_activity_at && (
           <span>{dict.labels.lastActivity}: {formatDate(task.last_activity_at)}</span>
+        )}
+        {task.credits != null && task.credits > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-amber-600 font-medium">
+            <Zap size={11} className="fill-amber-500 stroke-amber-600" />
+            {task.credits % 1 === 0 ? task.credits : task.credits.toFixed(1)} Credits
+          </span>
         )}
       </div>
 

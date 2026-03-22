@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { HelpCircle, Settings } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { CreditBalance } from '@/modules/tickets/components/CreditBalance'
 
 interface Props {
   expanded: boolean
@@ -9,6 +10,7 @@ interface Props {
 export function SidebarUtilities({ expanded }: Props) {
   return (
     <div className="py-1 flex flex-col gap-0.5">
+      <CreditBalance compact={!expanded} />
       <NavLink
         to="/hilfe"
         className={({ isActive }) => cn(

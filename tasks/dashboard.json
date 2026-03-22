@@ -1,9 +1,16 @@
 {
   "lastUpdated": "2026-03-23T03:30:00Z",
-  "status": "idle",
-  "currentTask": null,
-  "activeAgents": [],
-  "pipeline": [],
+  "status": "active",
+  "currentTask": { "id": "TASK-010", "title": "Credit System — Phase 1", "description": "Manual credit assignment, balance tracking, display in portal" },
+  "activeAgents": [{ "name": "reviewer-architect", "status": "working", "task": "Spec review" }],
+  "pipeline": [
+    { "phase": "Task Framing", "status": "done", "agent": "Supervisor", "notes": "Spec written" },
+    { "phase": "Spec Review", "status": "in_progress", "agent": "reviewer-architect", "notes": "" },
+    { "phase": "Plan", "status": "pending", "agent": "Supervisor", "notes": "" },
+    { "phase": "Implementation", "status": "pending", "agent": "implementation-agent", "notes": "" },
+    { "phase": "Post-Code Review", "status": "pending", "agent": "reviewer-architect", "notes": "" },
+    { "phase": "QA", "status": "pending", "agent": "qa-agent", "notes": "" }
+  ],
   "completedTasks": [
     {
       "id": "TASK-008",

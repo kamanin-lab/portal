@@ -52,6 +52,7 @@ Local mirror of ClickUp tasks. One row per (task, user) pair. Provides instant l
 | last_synced | timestamptz | DEFAULT now() | Last sync timestamp |
 | last_activity_at | timestamptz | | Timestamp of most recent activity (comment, status change) |
 | created_by_name | text | | First name of portal user who created the task (null for ClickUp-created tasks) |
+| credits | numeric | | Credit value assigned to this task in ClickUp (synced via webhook custom field handler). NULL means no credits assigned. |
 | created_by_user_id | uuid | | Supabase user ID of creator (null for ClickUp-created tasks) |
 | created_at | timestamptz | DEFAULT now() | Row creation timestamp |
 
@@ -214,6 +215,45 @@ Maps users to projects they can access. One row per (user, project) pair.
 **Unique Constraint:** `(profile_id, project_config_id)`
 
 **RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+
+---
+
+### 1.10 credit_packages
+
+Monthly credit allocations per client. One active package per user defines how many credits are topped up each month.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Package ID |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| package_name | text | NOT NULL | Human-readable package label (e.g., "Standard 10h") |
+| credits_per_month | numeric | NOT NULL | Number of credits added each month via `credit-topup` |
+| is_active | boolean | NOT NULL, DEFAULT true | Only active packages receive monthly top-ups |
+| started_at | date | NOT NULL, DEFAULT CURRENT_DATE | When this package began |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
+
+**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+
+---
+
+### 1.11 credit_transactions
+
+Ledger of all credit movements. Positive amounts are top-ups, negative amounts are deductions. Balance is computed as `SUM(amount)`.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Transaction ID |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| amount | numeric | NOT NULL | Credit amount (positive = top-up, negative = deduction) |
+| type | text | NOT NULL | Transaction type: `monthly_topup`, `task_deduction`, `manual_adjustment` |
+| task_id | text | | Related ClickUp task ID (for `task_deduction` type) |
+| task_name | text | | Task name at time of deduction (denormalized for display) |
+| description | text | | Human-readable description (e.g., "2026-03 Gutschrift", "Credits: 0 -> 5") |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Transaction timestamp |
+
+**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+
+**Realtime:** REPLICA IDENTITY FULL -- enables instant balance updates via Supabase Realtime subscriptions.
 
 ---
 

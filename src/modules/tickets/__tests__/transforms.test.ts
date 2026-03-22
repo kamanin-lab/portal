@@ -24,6 +24,7 @@ const rawDataFromClickUp = {
   url: 'https://app.clickup.com/t/cu-001',
   list_id: 'list-1',
   list_name: 'Webprojekte',
+  credits: null,
   created_by_name: null,
   created_by_user_id: null,
 } satisfies ClickUpTask;
@@ -46,6 +47,7 @@ const baseRow: CachedTask = {
   created_at: '2026-01-01T00:00:00Z',
   is_visible: true,
   last_activity_at: '2026-01-03T00:00:00Z',
+  credits: null,
   created_by_name: 'Tim',
   created_by_user_id: 'tm001',
   due_date: null,

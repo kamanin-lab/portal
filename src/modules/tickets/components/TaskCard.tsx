@@ -1,6 +1,7 @@
 import { User, CalendarDays } from 'lucide-react'
 import { StatusBadge } from '@/shared/components/common/StatusBadge'
 import { PriorityIcon } from './PriorityIcon'
+import { CreditBadge } from './CreditBadge'
 import { mapStatus } from '../lib/status-mapping'
 import type { ClickUpTask } from '../types/tasks'
 
@@ -56,6 +57,8 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
         <StatusBadge status={portalStatus} variant="ticket" size="sm" />
 
         <PriorityIcon priority={task.priority} size={13} showLabel />
+
+        <CreditBadge credits={task.credits} />
 
         {dueDate && (
           <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary">

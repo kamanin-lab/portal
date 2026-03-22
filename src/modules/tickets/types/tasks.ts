@@ -41,6 +41,7 @@ export interface ClickUpTask {
   url: string;
   list_id: string;
   list_name: string;
+  credits?: number | null;
   created_by_name?: string | null;
   created_by_user_id?: string | null;
   _optimistic?: boolean;
@@ -67,6 +68,7 @@ export interface CachedTask {
   created_at: string;
   is_visible: boolean;
   last_activity_at: string | null;
+  credits: number | null;
   created_by_name: string | null;
   created_by_user_id: string | null;
 }

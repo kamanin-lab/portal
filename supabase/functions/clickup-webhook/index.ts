@@ -1036,6 +1036,119 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle taskUpdated for custom field changes (Credits)
+    if (payload.event === "taskUpdated" && historyItem) {
+      if (historyItem.field === "custom_field" && taskId && isValidTaskId(taskId)) {
+        const fieldData = historyItem.data as {
+          field?: { id?: string; name?: string };
+          value?: unknown;
+          old_value?: unknown;
+        };
+
+        const creditsFieldId = Deno.env.get("CLICKUP_CREDITS_FIELD_ID") || "";
+        const fieldId = fieldData?.field?.id || "";
+        const fieldName = fieldData?.field?.name || "";
+
+        // Match by field ID (primary) or field name (fallback)
+        const isCreditsField = (creditsFieldId && fieldId === creditsFieldId) || fieldName === "Credits";
+
+        if (isCreditsField) {
+          const rawNew = fieldData?.value;
+          const rawOld = fieldData?.old_value;
+          const newValue = rawNew != null && !isNaN(Number(rawNew)) ? Number(rawNew) : null;
+          const oldValue = rawOld != null && !isNaN(Number(rawOld)) ? Number(rawOld) : null;
+
+          log.info("Credits custom field updated", { taskId, oldValue, newValue });
+
+          // Update task_cache.credits for all cached entries of this task
+          const { error: creditsUpdateError, count: creditsUpdateCount } = await supabase
+            .from("task_cache")
+            .update({ credits: newValue, last_synced: new Date().toISOString() })
+            .eq("clickup_id", taskId)
+            .select("clickup_id", { count: "exact" });
+
+          if (creditsUpdateError) {
+            log.error("Failed to update task_cache.credits", { taskId, error: creditsUpdateError.message });
+          } else {
+            log.info("Updated task_cache.credits", { taskId, newValue, rowsAffected: creditsUpdateCount ?? 0 });
+          }
+
+          // If credits cleared (null), skip transaction but still update task_cache above
+          if (newValue === null) {
+            log.info("Credits cleared to null, skipping transaction", { taskId });
+            return new Response(
+              JSON.stringify({ success: true, type: "credits_cleared" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          // Insert credit_transaction if value actually changed
+          const delta = newValue - (oldValue ?? 0);
+          if (delta !== 0) {
+            const amount = -delta; // negative = deduction, positive = refund
+
+            // Resolve profile_id from task_cache
+            const { data: taskCacheRows } = await supabase
+              .from("task_cache")
+              .select("profile_id, name")
+              .eq("clickup_id", taskId);
+
+            if (taskCacheRows && taskCacheRows.length > 0) {
+              const taskName = taskCacheRows[0].name || "Task";
+
+              for (const row of taskCacheRows) {
+                // Idempotency: check for duplicate transaction within last 60 seconds
+                const { data: existing } = await supabase
+                  .from("credit_transactions")
+                  .select("id")
+                  .eq("profile_id", row.profile_id)
+                  .eq("task_id", taskId)
+                  .eq("amount", amount)
+                  .gte("created_at", new Date(Date.now() - 60000).toISOString())
+                  .limit(1);
+
+                if (existing && existing.length > 0) {
+                  log.info("Duplicate credit transaction detected, skipping", { taskId, profileId: "[REDACTED]" });
+                  continue;
+                }
+
+                const { error: txError } = await supabase
+                  .from("credit_transactions")
+                  .insert({
+                    profile_id: row.profile_id,
+                    amount,
+                    type: "task_deduction",
+                    task_id: taskId,
+                    task_name: taskName,
+                    description: `Credits: ${oldValue} → ${newValue}`,
+                  });
+
+                if (txError) {
+                  log.error("Failed to insert credit_transaction", { taskId, error: txError.message });
+                } else {
+                  log.info("Credit transaction inserted", { taskId, amount });
+                }
+              }
+            } else {
+              log.warn("No task_cache entries found for credits transaction", { taskId });
+            }
+          }
+
+          return new Response(
+            JSON.stringify({ success: true, type: "credits_updated" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // Non-credits taskUpdated events for tickets are ignored
+      log.debug("taskUpdated event ignored (not credits field)", { taskId });
+      return new Response(
+        JSON.stringify({ message: "taskUpdated event ignored" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Handle comment posted events
     if (payload.event === "taskCommentPosted") {
       if (!historyItem || !historyItem.comment?.text_content) {
