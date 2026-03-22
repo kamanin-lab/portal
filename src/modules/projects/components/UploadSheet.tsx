@@ -1,40 +1,80 @@
-import { useState, useRef } from 'react'
-import { Upload } from 'lucide-react'
-import { toast } from 'sonner'
-import { SideSheet } from '@/shared/components/ui/SideSheet'
-import type { Project } from '../types/project'
+import { useState, useRef } from 'react';
+import { Upload, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { SideSheet } from '@/shared/components/ui/SideSheet';
+import type { Project } from '../types/project';
+import { useNextcloudFilesByPath, useUploadFileByPath, useCreateFolder } from '../hooks/useNextcloudFiles';
 
 interface UploadSheetProps {
-  project: Project
-  open: boolean
-  onClose: () => void
+  project: Project;
+  open: boolean;
+  onClose: () => void;
 }
 
 export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [selectedStepId, setSelectedStepId] = useState('')
-  const [note, setNote] = useState('')
-  const [isDragging, setIsDragging] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState('');
+  const [selectedSubfolder, setSelectedSubfolder] = useState('');
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const allSteps = project.chapters.flatMap(ch =>
-    ch.steps.map(s => ({ id: s.id, label: `${ch.title} — ${s.title}` }))
-  )
+  // Build chapter folder names
+  const chapterFolders = project.chapters.map((ch) => ({
+    label: ch.title,
+    value: `${String(ch.order).padStart(2, '0')}_${ch.title}`,
+  }));
+
+  // Load subfolders for selected chapter
+  const { files: chapterContents, isLoading: loadingSubfolders } = useNextcloudFilesByPath(
+    project.id,
+    selectedChapter,
+  );
+  const subfolders = chapterContents.filter((f) => f.type === 'folder');
+
+  // Upload target path
+  const uploadPath = selectedSubfolder
+    ? `${selectedChapter}/${selectedSubfolder}`
+    : selectedChapter;
+
+  const upload = useUploadFileByPath(project.id, uploadPath);
+  const createFolder = useCreateFolder(project.id);
 
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) setSelectedFile(file)
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) setSelectedFile(file);
   }
 
-  function handleUpload() {
-    if (!selectedFile) return
-    toast.success('Datei hochgeladen')
-    setSelectedFile(null)
-    setSelectedStepId('')
-    setNote('')
-    onClose()
+  async function handleUpload() {
+    if (!selectedFile || !selectedChapter) return;
+    try {
+      await upload.mutateAsync(selectedFile);
+      toast.success('Datei hochgeladen', { description: selectedFile.name });
+      setSelectedFile(null);
+      onClose();
+    } catch (err) {
+      toast.error('Upload fehlgeschlagen', {
+        description: (err as Error).message || 'Bitte erneut versuchen.',
+      });
+    }
+  }
+
+  async function handleCreateFolder() {
+    if (!newFolderName.trim() || !selectedChapter) return;
+    setIsCreatingFolder(true);
+    try {
+      const folderPath = `${selectedChapter}/${newFolderName.trim()}`;
+      await createFolder.mutateAsync(folderPath);
+      setSelectedSubfolder(newFolderName.trim());
+      setNewFolderName('');
+      toast.success('Ordner erstellt');
+    } catch {
+      toast.error('Ordner konnte nicht erstellt werden');
+    }
+    setIsCreatingFolder(false);
   }
 
   return (
@@ -47,7 +87,7 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
         <div className="flex flex-col gap-4">
           {/* Drop zone */}
           <div
-            onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
@@ -71,41 +111,71 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
               ref={inputRef}
               type="file"
               className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) setSelectedFile(f) }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) setSelectedFile(f); }}
             />
           </div>
 
-          {/* Step selector */}
+          {/* Chapter selector */}
           <div>
             <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
-              Schritt zuordnen (optional)
+              Ordner
             </label>
             <select
-              value={selectedStepId}
-              onChange={e => setSelectedStepId(e.target.value)}
+              value={selectedChapter}
+              onChange={(e) => { setSelectedChapter(e.target.value); setSelectedSubfolder(''); }}
               className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
             >
-              <option value="">— Keinem Schritt zuordnen —</option>
-              {allSteps.map(s => (
-                <option key={s.id} value={s.id}>{s.label}</option>
+              <option value="">{'\u2014 Ordner w\u00E4hlen \u2014'}</option>
+              {chapterFolders.map((cf) => (
+                <option key={cf.value} value={cf.value}>{cf.label}</option>
               ))}
             </select>
           </div>
 
-          {/* Note */}
-          <div>
-            <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
-              Notiz (optional)
-            </label>
-            <input
-              type="text"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="z. B. Finales Logo v3…"
-              className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
-            />
-          </div>
+          {/* Subfolder selector (only when chapter selected and has subfolders) */}
+          {selectedChapter && (
+            loadingSubfolders ? (
+              <div className="text-[12px] text-[var(--text-tertiary)]">Wird geladen...</div>
+            ) : subfolders.length > 0 ? (
+              <div>
+                <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
+                  Unterordner (optional)
+                </label>
+                <select
+                  value={selectedSubfolder}
+                  onChange={(e) => setSelectedSubfolder(e.target.value)}
+                  className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+                >
+                  <option value="">{'\u2014 Hauptordner \u2014'}</option>
+                  {subfolders.map((sf) => (
+                    <option key={sf.name} value={sf.name}>{sf.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null
+          )}
 
+          {/* Create subfolder */}
+          {selectedChapter && (
+            <div className="flex items-center gap-2">
+              <input
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); }}
+                placeholder="Neuer Unterordner..."
+                className="flex-1 px-[10px] py-[6px] text-[12px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+              />
+              <button
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim() || isCreatingFolder}
+                className="px-[10px] py-[6px] text-[11px] font-semibold text-[var(--accent)] border border-[var(--accent)] rounded-[var(--r-sm)] hover:bg-[var(--accent)] hover:text-white disabled:opacity-50 transition-colors"
+              >
+                {isCreatingFolder ? <Loader2 size={12} className="animate-spin" /> : 'Erstellen'}
+              </button>
+            </div>
+          )}
+
+          {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={onClose}
@@ -115,14 +185,15 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
             </button>
             <button
               onClick={handleUpload}
-              disabled={!selectedFile}
+              disabled={!selectedFile || !selectedChapter || upload.isPending}
               className="px-[16px] py-[8px] text-[13px] font-semibold text-white bg-[var(--accent)] rounded-[var(--r-sm)] hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 cursor-pointer"
             >
+              {upload.isPending ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null}
               Hochladen
             </button>
           </div>
         </div>
       </div>
     </SideSheet>
-  )
+  );
 }
