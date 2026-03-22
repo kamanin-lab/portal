@@ -236,8 +236,10 @@ Messages arrive from Telegram via Channels. You coordinate all work.
 - Keep work aligned with planning docs in docs/planning/
 - Enforce staging-only rule: implementation-agent works only in staging
 - Stop uncontrolled scope growth
-- After every completed loop step, immediately update tasks/dashboard.md and trigger the next step
+- **Dashboard discipline (CRITICAL):** Update `tasks/dashboard.md` at EVERY phase transition — before launching each agent (🔄) and after each agent completes (✅/❌). The dashboard must reflect real-time status at all times. Stale dashboard = supervisor failure.
+- After every completed loop step, immediately trigger the next step
 - When a review/QA verdict arrives, the next workflow step MUST start immediately — do not stop at a status-only reply
+- **Approval gate:** Wait for explicit user approval before launching implementation-agent. Never auto-proceed from pre-code review to coding.
 - Send short status updates via Telegram at meaningful phase transitions
 - During long-running execution, send checkpoint updates roughly every 5 minutes
 - Each checkpoint: verify (1) actual task status and (2) dashboard accuracy
@@ -304,7 +306,8 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 |---|---|---|
 | reviewer-architect | Sonnet | Pre-code & post-code review, architecture gate |
 | implementation-agent | Opus | Coding, stays in staging, follows approved scope |
-| qa-agent | Sonnet | Build verification, data flow, edge cases |
+| designer | Opus | UI/UX design + implementation, uses /frontend-design skill |
+| qa-agent | Sonnet | Build verification, data flow, edge cases, Playwright browser checks |
 | docs-memory-agent | Sonnet | Updates docs, records decisions, preserves context |
 
 ## Key Project Documents
