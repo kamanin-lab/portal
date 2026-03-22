@@ -3,28 +3,18 @@
 _Status: active_ · _Last updated: 2026-03-22_
 
 ## Current Task
-**TASK-007: Nextcloud Folder Structure + Portal Navigation**
-Standard client folder hierarchy, slugify normalization, sidebar Dateien + project submenu, browse-client action.
+None — awaiting next assignment
 
 ## Active Agents
 None
 
-## Current Pipeline — TASK-007
-| Phase | Status | Agent | Notes |
-|---|---|---|---|
-| Task Framing | ✅ | Supervisor | Brainstorming, spec rev.4 approved |
-| Spec Review | ✅ | reviewer-architect | 3 blocking security issues fixed |
-| Plan | ✅ | Supervisor | 5 items, 4 commits — TASK-007-implementation-plan.md |
-| Implementation | ✅ | implementation-agent | 5 created + 4 modified, build PASS |
-| DB Migration | ✅ | Supervisor | nextcloud_client_root column added |
-| Post-Code Review | ✅ | reviewer-architect | REVISE: 3 blocking |
-| QA Verification | ✅ | qa-agent | ACCEPT |
-| Fix Blocking | ✅ | implementation-agent | 3 blocking + 2 non-blocking fixed |
-| Accept/Revise | ✅ | Supervisor | Accepted |
-
 ---
 
 ## Completed Tasks
+
+### TASK-007: Nextcloud Folder Structure + Portal Navigation (2026-03-22)
+Standard client hierarchy (clients/_intern/team/portal), slugify, sidebar Dateien + project submenu.
+- `ff9f7e5` · 9 files, 2 review cycles
 
 ### TASK-006: Interactive Dashboard (2026-03-22)
 HTML timeline dashboard, auto-refresh 5s, dark theme, ideas section, responsive.

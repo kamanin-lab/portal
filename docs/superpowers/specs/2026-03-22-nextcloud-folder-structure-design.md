@@ -15,7 +15,7 @@ Current Nextcloud structure is chaotic — each client has a different layout. F
 ### Three-Level Access Model
 
 ```
-kunden/{client-slug}/
+clients/{client-slug}/
 ├── _intern/                  ← Owner-only (Yuri + future partners)
 │   ├── vertraege/            ← Contracts, NDAs, DPAs
 │   ├── buchhaltung/          ← Invoices, financial docs
@@ -223,14 +223,14 @@ Additionally, clicking "Projekte" folder in DateienPage shows all project folder
 
 ```sql
 ALTER TABLE profiles ADD COLUMN nextcloud_client_root text;
--- Example: "/kunden/mbm/portal"
+-- Example: "/clients/mbm/portal"
 -- Read via user-scoped client (user reads own row, no service-role needed)
 ```
 
 **Existing column stays:**
 
 ```
-project_config.nextcloud_root_path = "/kunden/mbm/portal/projekte/website-redesign"
+project_config.nextcloud_root_path = "/clients/mbm/portal/projekte/website-redesign"
 ```
 
 ---
@@ -241,23 +241,23 @@ project_config.nextcloud_root_path = "/kunden/mbm/portal/projekte/website-redesi
 
 | Current path | New path | Action |
 |---|---|---|
-| `MBM/01_DOC/BuHa/` | `kunden/mbm/_intern/buchhaltung/` | Move |
-| `MBM/FUREMA/`, client contracts | `kunden/mbm/_intern/vertraege/` | Move (client contracts ONLY) |
+| `MBM/01_DOC/BuHa/` | `clients/mbm/_intern/buchhaltung/` | Move |
+| `MBM/FUREMA/`, client contracts | `clients/mbm/_intern/vertraege/` | Move (client contracts ONLY) |
 | `MBM/MBM_dev/01_DOKU/` (freelancer contracts) | `_agentur/team-vertraege/` | Move (NOT in client folder) |
-| `MBM/MBM_dev/` (dev files, plugins, configs) | `kunden/mbm/team/dev/` | Move |
-| `MBM/MBM_dev/02_Archive/` | `kunden/mbm/team/archiv/` | Move |
-| `MBM/MBM_dev/Audit/` | `kunden/mbm/team/audit/` | Move |
-| `MBM/MBM_dev/Export-Templates/` | `kunden/mbm/team/export/` | Move |
-| `MBM/MBM_dev/LOGO-new/` | `kunden/mbm/portal/branding/` | Move |
-| `MBM/LOGO/` | `kunden/mbm/portal/branding/` | Move |
-| `MBM/AUDIT/` | `kunden/mbm/portal/dokumente/` | Move |
-| `MBM/MBM_dev/Legal documents for WLA Lite/` | `kunden/mbm/portal/dokumente/` | Move |
-| `MBM/2025-09-09_Meeting/` | `kunden/mbm/_intern/notizen/` | Move |
-| `MBM/projects/ERP/` | `kunden/mbm/portal/projekte/erp/` | Move |
+| `MBM/MBM_dev/` (dev files, plugins, configs) | `clients/mbm/team/dev/` | Move |
+| `MBM/MBM_dev/02_Archive/` | `clients/mbm/team/archiv/` | Move |
+| `MBM/MBM_dev/Audit/` | `clients/mbm/team/audit/` | Move |
+| `MBM/MBM_dev/Export-Templates/` | `clients/mbm/team/export/` | Move |
+| `MBM/MBM_dev/LOGO-new/` | `clients/mbm/portal/branding/` | Move |
+| `MBM/LOGO/` | `clients/mbm/portal/branding/` | Move |
+| `MBM/AUDIT/` | `clients/mbm/portal/dokumente/` | Move |
+| `MBM/MBM_dev/Legal documents for WLA Lite/` | `clients/mbm/portal/dokumente/` | Move |
+| `MBM/2025-09-09_Meeting/` | `clients/mbm/_intern/notizen/` | Move |
+| `MBM/projects/ERP/` | `clients/mbm/portal/projekte/erp/` | Move |
 
 ### Steps:
 
-1. Create folder structure in Nextcloud: `kunden/mbm/{_intern,team,portal}/`
+1. Create folder structure in Nextcloud: `clients/mbm/{_intern,team,portal}/`
 2. Create portal subfolders: `projekte/`, `aufgaben/`, `dokumente/`, `branding/`, `uploads/`
 3. Move files (Nextcloud web UI or WebDAV)
 4. **Rename existing chapter folders** to match slugified convention (`01_Konzept` → `01_konzept`)

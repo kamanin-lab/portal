@@ -1,24 +1,19 @@
 {
-  "lastUpdated": "2026-03-23T00:30:00Z",
-  "status": "active",
-  "currentTask": {
-    "id": "TASK-007",
-    "title": "Nextcloud Folder Structure + Portal Navigation",
-    "description": "Standard client folder hierarchy, slugify normalization, sidebar Dateien + project submenu, browse-client Edge Function"
-  },
-  "activeAgents": [
-    { "name": "Supervisor", "status": "working", "task": "Writing implementation plan" }
-  ],
-  "pipeline": [
-    { "phase": "Task Framing", "status": "done", "agent": "Supervisor", "notes": "Brainstorming complete, spec rev.4" },
-    { "phase": "Spec Review", "status": "done", "agent": "reviewer-architect", "notes": "3 blocking security fixes applied" },
-    { "phase": "Plan", "status": "in_progress", "agent": "Supervisor", "notes": "Writing implementation plan" },
-    { "phase": "Implementation", "status": "pending", "agent": "implementation-agent", "notes": "" },
-    { "phase": "Post-Code Review", "status": "pending", "agent": "reviewer-architect", "notes": "" },
-    { "phase": "QA Verification", "status": "pending", "agent": "qa-agent", "notes": "" },
-    { "phase": "Accept/Revise", "status": "pending", "agent": "Supervisor", "notes": "" }
-  ],
+  "lastUpdated": "2026-03-23T01:15:00Z",
+  "status": "idle",
+  "currentTask": null,
+  "activeAgents": [],
+  "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-007",
+      "title": "Nextcloud Folder Structure + Portal Navigation",
+      "date": "2026-03-22",
+      "commits": ["ff9f7e5"],
+      "summary": "Standard client folder hierarchy (clients/{slug}/_intern/team/portal), shared slugify(), sidebar Dateien + dynamic project submenu, browse-client + upload-task-file + download-client-file Edge Function actions, WorkspaceGuard on /dateien.",
+      "filesChanged": 9,
+      "reviewCycles": 2
+    },
     {
       "id": "TASK-006",
       "title": "Interactive Dashboard",
@@ -33,7 +28,7 @@
       "title": "Real-Time Updates",
       "date": "2026-03-22",
       "commits": ["0e28a22", "159bb92"],
-      "summary": "DB Realtime publication, subscription fixes, polling removed (flickering fix).",
+      "summary": "DB Realtime publication for 5 tables, subscription fixes (* events), polling removed (flickering fix).",
       "filesChanged": 5,
       "reviewCycles": 1
     },
@@ -78,7 +73,8 @@
     { "item": "StepDetail.tsx at 247 lines — exceeds 150-line rule", "priority": "low" },
     { "item": "UpdatesFeed.tsx at 170 lines — slightly over", "priority": "low" },
     { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" },
-    { "item": "Empfehlungen page — monthly reports + AI recommendations", "priority": "medium" }
+    { "item": "Empfehlungen page — monthly reports + AI recommendations", "priority": "medium" },
+    { "item": "MBM files migration to Nextcloud (local template ready)", "priority": "medium" }
   ],
   "ideas": [
     {
@@ -115,8 +111,8 @@
     }
   ],
   "stats": {
-    "totalCommits": 12,
-    "totalFilesChanged": 90,
+    "totalCommits": 14,
+    "totalFilesChanged": 98,
     "testsPassing": "77/77",
     "buildStatus": "clean"
   }
