@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { FolderOpen } from 'lucide-react';
-import type { Project, Chapter } from '../../types/project';
+import type { Project } from '../../types/project';
 import { useNextcloudFiles } from '../../hooks/useNextcloudFiles';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
 import { FolderCard } from './FolderCard';
 import { FileRow } from './FileRow';
-import { ChapterFiles } from './ChapterFiles';
+import { FolderView } from './FolderView';
 
 interface FilesPageProps {
   project: Project;
 }
 
 export function FilesPage({ project }: FilesPageProps) {
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [pathSegments, setPathSegments] = useState<string[]>([]);
+
+  function handleChapterClick(order: number, title: string) {
+    const padded = String(order).padStart(2, '0');
+    setPathSegments([`${padded}_${title}`]);
+  }
 
   return (
     <ContentContainer width="narrow">
@@ -23,17 +28,17 @@ export function FilesPage({ project }: FilesPageProps) {
           Dateien
         </h1>
 
-        {selectedChapter ? (
-          <ChapterFiles
+        {pathSegments.length > 0 ? (
+          <FolderView
             project={project}
-            chapter={selectedChapter}
-            onBack={() => setSelectedChapter(null)}
+            pathSegments={pathSegments}
+            onNavigate={setPathSegments}
           />
         ) : (
           <FolderGrid
             chapters={project.chapters}
             projectId={project.id}
-            onSelect={setSelectedChapter}
+            onSelect={handleChapterClick}
           />
         )}
       </div>
@@ -46,9 +51,9 @@ export function FilesPage({ project }: FilesPageProps) {
 // ---------------------------------------------------------------------------
 
 interface FolderGridProps {
-  chapters: Chapter[];
+  chapters: { id: string; title: string; order: number }[];
   projectId: string;
-  onSelect: (ch: Chapter) => void;
+  onSelect: (order: number, title: string) => void;
 }
 
 function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
@@ -73,7 +78,7 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
             title={ch.title}
             order={ch.order}
             isSelected={false}
-            onClick={() => onSelect(ch)}
+            onClick={() => onSelect(ch.order, ch.title)}
           />
         ))}
       </div>
