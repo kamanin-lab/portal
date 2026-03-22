@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
 import { Paperclip } from 'lucide-react';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Button } from '@/shared/components/ui/button';
 import type { FileData } from '../types/tasks';
 import { dict } from '../lib/dictionary';
 
@@ -48,36 +50,40 @@ export function CommentInput({ taskId: _taskId, onSend, isSending }: CommentInpu
           {attachments.map((f, i) => (
             <span key={i} className="text-[11px] bg-accent-light text-accent px-[8px] py-[3px] rounded-full flex items-center gap-[4px]">
               {f.name}
-              <button type="button" onClick={() => setAttachments(a => a.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100">×</button>
+              <button type="button" onClick={() => setAttachments(a => a.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100 cursor-pointer">x</button>
             </span>
           ))}
         </div>
       )}
       <div className="flex items-end gap-[8px]">
-        <textarea
+        <Textarea
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={dict.labels.typeMessage}
           rows={2}
-          className="flex-1 px-[12px] py-[8px] text-[13px] bg-surface border border-border rounded-[var(--r-sm)] outline-none focus:border-accent transition-colors resize-none"
+          className="flex-1 min-h-0"
         />
         <div className="flex flex-col gap-[6px] flex-shrink-0">
-          <button
+          <Button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            title="Datei anhängen"
-            className="p-[7px] border border-border rounded-[var(--r-sm)] text-text-tertiary hover:text-accent hover:border-accent transition-colors cursor-pointer"
+            title="Datei anhaengen"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
           >
             <Paperclip size={14} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={isSending || (!text.trim() && attachments.length === 0)}
-            className="px-[12px] py-[7px] text-[13px] font-semibold bg-accent text-white rounded-[var(--r-sm)] hover:bg-accent-hover transition-colors disabled:opacity-50 cursor-pointer whitespace-nowrap"
+            variant="accent"
+            size="sm"
+            className="font-semibold whitespace-nowrap"
           >
             {dict.actions.send}
-          </button>
+          </Button>
         </div>
       </div>
       <input

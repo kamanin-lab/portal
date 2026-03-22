@@ -7,6 +7,7 @@ interface FileTypeIconProps {
 
 /**
  * Returns an icon with background color based on MIME type or file extension.
+ * Colors use CSS custom properties from tokens.css (--file-* tokens).
  */
 export function FileTypeIcon({ mimeType, name }: FileTypeIconProps) {
   const ext = name?.split('.').pop()?.toLowerCase() ?? '';
@@ -16,38 +17,48 @@ export function FileTypeIcon({ mimeType, name }: FileTypeIconProps) {
   return (
     <div
       className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0"
-      style={{ background: cfg.bg, color: cfg.color }}
+      style={{ background: `var(${cfg.bgVar})`, color: `var(${cfg.colorVar})` }}
     >
       <Icon size={13} />
     </div>
   );
 }
 
-function resolveIcon(mime?: string, ext?: string) {
+interface IconConfig {
+  bgVar: string;
+  colorVar: string;
+  Icon: typeof FileText;
+}
+
+function resolveIcon(mime?: string, ext?: string): IconConfig {
   // PDF
   if (mime?.includes('pdf') || ext === 'pdf') {
-    return { bg: '#FEE2E2', color: '#DC2626', Icon: FileText };
+    return { bgVar: '--file-pdf-bg', colorVar: '--file-pdf', Icon: FileText };
+  }
+  // SVG (specific icon before generic images)
+  if (ext === 'svg') {
+    return { bgVar: '--file-svg-bg', colorVar: '--file-svg', Icon: Image };
   }
   // Images
-  if (mime?.startsWith('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'tiff'].includes(ext ?? '')) {
-    return { bg: '#DBEAFE', color: '#2563EB', Icon: Image };
+  if (mime?.startsWith('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext ?? '')) {
+    return { bgVar: '--file-image-bg', colorVar: '--file-image', Icon: Image };
   }
   // Spreadsheets
   if (mime?.includes('spreadsheet') || mime?.includes('excel') || ['xls', 'xlsx', 'csv'].includes(ext ?? '')) {
-    return { bg: '#D1FAE5', color: '#059669', Icon: FileSpreadsheet };
+    return { bgVar: '--file-spreadsheet-bg', colorVar: '--file-spreadsheet', Icon: FileSpreadsheet };
   }
   // Documents (Word, text)
   if (mime?.includes('word') || mime?.includes('document') || mime === 'text/plain' || ['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext ?? '')) {
-    return { bg: '#DBEAFE', color: '#1D4ED8', Icon: FileText };
+    return { bgVar: '--file-document-bg', colorVar: '--file-document', Icon: FileText };
   }
   // Video
   if (mime?.startsWith('video') || ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext ?? '')) {
-    return { bg: '#FEF3C7', color: '#D97706', Icon: Film };
+    return { bgVar: '--file-video-bg', colorVar: '--file-video', Icon: Film };
   }
   // Archives
   if (mime?.includes('zip') || mime?.includes('archive') || ['zip', 'rar', '7z', 'tar', 'gz'].includes(ext ?? '')) {
-    return { bg: '#E0E7FF', color: '#4338CA', Icon: FileArchive };
+    return { bgVar: '--file-archive-bg', colorVar: '--file-archive', Icon: FileArchive };
   }
   // Fallback
-  return { bg: '#F3F4F6', color: '#6B7280', Icon: File };
+  return { bgVar: '--file-default-bg', colorVar: '--file-default', Icon: File };
 }

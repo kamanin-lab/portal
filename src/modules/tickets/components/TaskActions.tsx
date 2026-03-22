@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '@/shared/components/common/ConfirmDialog';
+import { Button } from '@/shared/components/ui/button';
 import { useTaskActions } from '../hooks/useTaskActions';
 import { isTerminal } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
@@ -29,45 +30,51 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
   return (
     <div className="flex flex-col gap-[10px]">
       {needsAttention && (
-        <div className="flex items-center gap-[8px] p-[14px] bg-awaiting-bg border border-awaiting rounded-[var(--r-md)] border-opacity-40 flex-wrap">
+        <div className="flex items-center gap-[8px] p-[14px] bg-awaiting-bg border border-awaiting/40 rounded-[var(--r-md)] flex-wrap">
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold text-text-primary">{dict.labels.filterAttention}</div>
             <div className="text-[12px] text-text-secondary mt-[1px]">{dict.dialogs.descPlaceholder}</div>
           </div>
           <div className="flex items-center gap-[8px] flex-shrink-0">
-            <button
+            <Button
               onClick={() => run('approve')}
               disabled={isLoading}
-              className="px-[14px] py-[7px] text-[13px] font-semibold text-white bg-committed rounded-[var(--r-sm)] hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+              size="sm"
+              className="bg-committed hover:bg-committed/90 font-semibold"
             >
               {dict.actions.approve}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => run('request_changes')}
               disabled={isLoading}
-              className="px-[12px] py-[6px] text-[13px] text-text-secondary border border-border bg-surface rounded-[var(--r-sm)] hover:bg-surface-hover transition-colors disabled:opacity-50 cursor-pointer"
+              variant="outline"
+              size="sm"
             >
               {dict.actions.requestChanges}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       <div className="flex gap-[8px]">
-        <button
+        <Button
           onClick={() => setConfirm('put_on_hold')}
           disabled={isLoading}
-          className="px-[12px] py-[6px] text-[12px] text-text-secondary border border-border bg-surface rounded-[var(--r-sm)] hover:bg-surface-hover transition-colors disabled:opacity-50 cursor-pointer"
+          variant="outline"
+          size="sm"
+          className="text-[12px]"
         >
           {dict.actions.hold}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setConfirm('cancel')}
           disabled={isLoading}
-          className="px-[12px] py-[6px] text-[12px] text-text-secondary border border-border bg-surface rounded-[var(--r-sm)] hover:bg-surface-hover transition-colors disabled:opacity-50 cursor-pointer"
+          variant="outline"
+          size="sm"
+          className="text-[12px]"
         >
           {dict.actions.cancel}
-        </button>
+        </Button>
       </div>
 
       <ConfirmDialog

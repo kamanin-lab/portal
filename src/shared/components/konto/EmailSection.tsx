@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUpdateEmail } from '@/shared/hooks/useUpdateProfile'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 
 interface Props {
   currentEmail: string
@@ -19,7 +21,7 @@ export function EmailSection({ currentEmail }: Props) {
     const trimmed = newEmail.trim()
     if (!trimmed || trimmed === currentEmail) return
     if (!isValidEmail(trimmed)) {
-      toast.error('Ungültige E-Mail-Adresse.')
+      toast.error('Ungueltige E-Mail-Adresse.')
       return
     }
     updateEmail.mutate(trimmed, {
@@ -51,7 +53,7 @@ export function EmailSection({ currentEmail }: Props) {
 
         {confirmSent && (
           <p className="text-xs text-committed bg-committed-bg px-3 py-2 rounded-[8px]">
-            Wir haben eine Bestätigungsemail an Ihre aktuelle und neue Adresse gesendet.
+            Wir haben eine Bestaetigungsemail an Ihre aktuelle und neue Adresse gesendet.
           </p>
         )}
 
@@ -61,40 +63,40 @@ export function EmailSection({ currentEmail }: Props) {
               Neue E-Mail-Adresse
             </label>
             <div className="flex gap-2">
-              <input
+              <Input
                 id="new-email"
                 type="email"
                 value={newEmail}
                 onChange={e => setNewEmail(e.target.value)}
                 placeholder="neue@adresse.de"
-                className="flex-1 h-9 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
+                className="flex-1 bg-bg"
                 autoFocus
               />
-              <button
+              <Button
                 onClick={handleSave}
                 disabled={!newEmail.trim() || newEmail.trim() === currentEmail || updateEmail.isPending}
-                className="h-9 px-4 rounded-[8px] bg-accent text-white text-xs font-semibold hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                variant="accent"
+                size="sm"
               >
-                {updateEmail.isPending ? 'Senden...' : 'Ändern'}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="h-9 px-3 rounded-[8px] border border-border text-text-secondary text-xs font-medium hover:bg-surface-hover transition-colors"
-              >
+                {updateEmail.isPending ? 'Senden...' : 'Aendern'}
+              </Button>
+              <Button onClick={handleCancel} variant="outline" size="sm">
                 Abbrechen
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-text-tertiary">
-              Sie erhalten eine Bestätigungsemail an beide Adressen.
+              Sie erhalten eine Bestaetigungsemail an beide Adressen.
             </p>
           </div>
         ) : (
-          <button
+          <Button
             onClick={() => { setIsEditing(true); setConfirmSent(false) }}
-            className="text-xs text-accent hover:text-accent-hover transition-colors self-start"
+            variant="link"
+            size="sm"
+            className="text-xs p-0 h-auto self-start"
           >
-            E-Mail ändern
-          </button>
+            E-Mail aendern
+          </Button>
         )}
       </div>
     </section>

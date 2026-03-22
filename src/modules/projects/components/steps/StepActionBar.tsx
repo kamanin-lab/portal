@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTaskActions } from '@/modules/tickets/hooks/useTaskActions';
+import { Button } from '@/shared/components/ui/button';
+import { Textarea } from '@/shared/components/ui/textarea';
 
 interface StepActionBarProps {
   taskId: string;
@@ -22,7 +24,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
     },
     toastLabels: {
       approve:         { success: 'Schritt wurde freigegeben',     error: 'Freigabe fehlgeschlagen' },
-      request_changes: { success: 'Änderungen wurden angefordert', error: 'Änderungsanforderung fehlgeschlagen' },
+      request_changes: { success: 'Aenderungen wurden angefordert', error: 'Aenderungsanforderung fehlgeschlagen' },
     },
   });
 
@@ -45,69 +47,69 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
     isLoading || (activeAction === 'request_changes' && !commentText.trim());
 
   return (
-    <div className="p-[14px] bg-[var(--awaiting-bg)] border border-[var(--awaiting)] border-opacity-30 rounded-[var(--r-md)]">
+    <div className="p-[14px] bg-awaiting-bg border border-awaiting/30 rounded-[var(--r-md)]">
       <div className="flex items-center gap-[12px] flex-wrap">
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-[var(--text-primary)]">Bereit für Ihre Prüfung</div>
-          <div className="text-[12px] text-[var(--text-secondary)] mt-[2px]">
-            Bitte prüfen Sie das Dokument und geben Sie Ihr Feedback.
+          <div className="text-[13px] font-medium text-text-primary">Bereit fuer Ihre Pruefung</div>
+          <div className="text-[12px] text-text-secondary mt-[2px]">
+            Bitte pruefen Sie das Dokument und geben Sie Ihr Feedback.
           </div>
         </div>
         {!activeAction && (
           <div className="flex items-center gap-[8px] flex-shrink-0">
-            <button
+            <Button
               onClick={() => setActiveAction('approve')}
-              className="px-[14px] py-[7px] text-[13px] font-semibold text-white bg-[var(--committed)] rounded-[var(--r-sm)] hover:opacity-90 transition-opacity"
+              variant="accent"
+              size="sm"
+              className="bg-committed hover:bg-committed/90 font-semibold"
             >
               Freigeben
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveAction('request_changes')}
-              className="px-[12px] py-[6px] text-[13px] text-[var(--text-secondary)] border border-[var(--border)] bg-white rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors"
+              variant="outline"
+              size="sm"
             >
-              Änderungen anfragen
-            </button>
+              Aenderungen anfragen
+            </Button>
           </div>
         )}
       </div>
 
       {activeAction && (
         <div className="mt-[12px] flex flex-col gap-[10px]">
-          <textarea
+          <Textarea
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
             placeholder={
               activeAction === 'approve'
                 ? 'Optionaler Kommentar zur Freigabe...'
-                : 'Bitte beschreiben Sie die gewünschten Änderungen...'
+                : 'Bitte beschreiben Sie die gewuenschten Aenderungen...'
             }
             rows={3}
-            className="w-full px-[12px] py-[8px] text-[13px] bg-white border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors resize-none"
+            className="bg-white"
             autoFocus
           />
           <div className="flex items-center justify-end gap-[8px]">
-            <button
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="px-[12px] py-[6px] text-[13px] text-[var(--text-secondary)] border border-[var(--border)] bg-white rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
-            >
+            <Button onClick={handleCancel} disabled={isLoading} variant="outline" size="sm">
               Abbrechen
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSubmit}
               disabled={isSubmitDisabled}
-              className={`px-[14px] py-[7px] text-[13px] font-semibold text-white rounded-[var(--r-sm)] transition-opacity ${
+              size="sm"
+              className={`font-semibold ${
                 activeAction === 'approve'
-                  ? 'bg-[var(--committed)]'
-                  : 'bg-[var(--text-primary)]'
-              } ${isSubmitDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                  ? 'bg-committed hover:bg-committed/90'
+                  : 'bg-text-primary hover:bg-text-primary/90'
+              }`}
             >
               {isLoading
                 ? 'Wird gesendet...'
                 : activeAction === 'approve'
                   ? 'Freigeben'
-                  : 'Änderungen anfragen'}
-            </button>
+                  : 'Aenderungen anfragen'}
+            </Button>
           </div>
         </div>
       )}

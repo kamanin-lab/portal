@@ -1,12 +1,23 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-03-22_
+_Status: active_ · _Last updated: 2026-03-23_
 
 ## Current Task
 None — awaiting next assignment
 
 ## Active Agents
 None
+
+## Current Pipeline — TASK-008
+| Phase | Status | Agent | Notes |
+|---|---|---|---|
+| Task Framing | ✅ | Supervisor | Audit: 63 components, 7 shadcn candidates |
+| Plan | ✅ | Supervisor | 4 batches, 6 commits — TASK-008-implementation-plan.md |
+| Implementation | ✅ | implementation-agent | 32 changed + 16 created, build PASS |
+| Post-Code Review | ✅ | reviewer-architect | REVISE: 1 blocking (FileTypeIcon hex) |
+| QA Verification | ✅ | qa-agent | ACCEPT |
+| Fix Blocking | ✅ | implementation-agent | 8 files fixed (colors, tokens, umlaut, z-index) |
+| Accept/Revise | ✅ | Supervisor | Accepted |
 
 ---
 
@@ -42,8 +53,10 @@ Full docs update, agent definitions, OpenClaw → Claude Code migration.
 
 ## Residual Items
 - `StepDetail.tsx` 247 lines (needs extraction)
+- `NewTicketDialog.tsx` 243 lines (needs split)
 - `UpdatesFeed.tsx` 170 lines (slightly over)
 - `raw_data` shape inconsistency between fetch paths
-- Empfehlungen page (future — monthly reports + AI recommendations)
+- Empfehlungen page (future)
+- MBM file migration to Nextcloud (local template ready)
 
 Legend: ⬜ pending | 🔄 in progress | ✅ done | ❌ blocked | ⏭️ skipped

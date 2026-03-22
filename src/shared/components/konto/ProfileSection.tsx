@@ -4,6 +4,8 @@ import type { Profile } from '@/shared/types/common'
 import { useUpdateProfile } from '@/shared/hooks/useUpdateProfile'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { AvatarUpload } from './AvatarUpload'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 
 interface Props {
   profile: Profile
@@ -42,39 +44,39 @@ function EditableField({ id, label, value, fieldKey }: EditableFieldProps) {
       </label>
       {isEditing ? (
         <div className="flex gap-2">
-          <input
+          <Input
             id={id}
             type="text"
             value={localValue}
             onChange={e => setLocalValue(e.target.value)}
-            className="flex-1 h-9 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg"
             autoFocus
           />
-          <button
+          <Button
             onClick={handleSave}
             disabled={!hasChanges || updateProfile.isPending}
-            className="h-9 px-4 rounded-[8px] bg-accent text-white text-xs font-semibold hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            variant="accent"
+            size="sm"
           >
             {updateProfile.isPending ? 'Speichern...' : 'Speichern'}
-          </button>
-          <button
-            onClick={handleCancel}
-            className="h-9 px-3 rounded-[8px] border border-border text-text-secondary text-xs font-medium hover:bg-surface-hover transition-colors"
-          >
+          </Button>
+          <Button onClick={handleCancel} variant="outline" size="sm">
             Abbrechen
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="flex items-center gap-2">
           <span className="text-sm text-text-primary">
             {value || 'Nicht angegeben'}
           </span>
-          <button
+          <Button
             onClick={() => setIsEditing(true)}
-            className="text-xs text-accent hover:text-accent-hover transition-colors"
+            variant="link"
+            size="sm"
+            className="text-xs p-0 h-auto"
           >
             Bearbeiten
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { ProfileSection } from '@/shared/components/konto/ProfileSection'
 import { EmailSection } from '@/shared/components/konto/EmailSection'
 import { PasswordSection } from '@/shared/components/konto/PasswordSection'
 import { NotificationSection } from '@/shared/components/konto/NotificationSection'
+import { Button } from '@/shared/components/ui/button'
 
 export function KontoPage() {
   const { profile, signOut } = useAuth()
@@ -27,13 +28,15 @@ export function KontoPage() {
         <NotificationSection preferences={profile.notification_preferences} />
 
         <section className="bg-surface rounded-[14px] border border-border p-5">
-          <button
+          <Button
             onClick={signOut}
-            className="flex items-center gap-2 text-sm text-awaiting hover:text-awaiting/80 transition-colors"
+            variant="ghost"
+            size="sm"
+            className="text-awaiting hover:text-awaiting/80 hover:bg-transparent p-0"
           >
             <LogOut size={16} />
             Abmelden
-          </button>
+          </Button>
         </section>
       </div>
     </ContentContainer>

@@ -10,11 +10,11 @@ interface StatusBadgeProps {
 
 const TICKET_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   open:            { bg: 'var(--surface-active)', text: 'var(--text-secondary)', dot: 'var(--text-tertiary)' },
-  in_progress:     { bg: '#eff6ff', text: '#1d4ed8', dot: '#3b82f6' },
-  needs_attention: { bg: '#fff7ed', text: '#c2410c', dot: '#f59e0b' },
-  approved:        { bg: '#f0fdf4', text: '#15803d', dot: '#22c55e' },
+  in_progress:     { bg: 'var(--phase-2-light)', text: 'var(--phase-2-text)', dot: 'var(--phase-2)' },
+  needs_attention: { bg: 'var(--awaiting-bg)', text: 'var(--awaiting)', dot: 'var(--phase-3)' },
+  approved:        { bg: 'var(--committed-bg)', text: 'var(--committed)', dot: 'var(--committed)' },
   done:            { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
-  on_hold:         { bg: '#faf5ff', text: '#7e22ce', dot: '#a855f7' },
+  on_hold:         { bg: 'var(--phase-1-light)', text: 'var(--phase-1-text)', dot: 'var(--phase-1)' },
   cancelled:       { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
 };
 
@@ -27,7 +27,7 @@ const PROJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> 
 const TICKET_LABELS: Record<string, string> = {
   open:            'Offen',
   in_progress:     'In Bearbeitung',
-  needs_attention: 'Ihre Rückmeldung',
+  needs_attention: 'Ihre Rueckmeldung',
   approved:        'Freigegeben',
   done:            'Erledigt',
   on_hold:         'Pausiert',
@@ -35,7 +35,7 @@ const TICKET_LABELS: Record<string, string> = {
 };
 
 const PROJECT_LABELS: Record<string, string> = {
-  committed:       'Bestätigt',
+  committed:       'Bestaetigt',
   awaiting_input:  'Wartet auf Sie',
   upcoming_locked: 'Ausstehend',
 };

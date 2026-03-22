@@ -66,8 +66,8 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       eyebrowIcon: <AlertCircle size={12} />,
       title: `${project.tasksSummary.needsAttention} Aufgaben warten auf Sie`,
       description: 'Mindestens ein Schritt braucht Ihre Eingabe oder Freigabe. Öffnen Sie den Überblick oder schreiben Sie uns direkt, wenn etwas unklar ist.',
-      tint: '#FFFBEB',
-      phase: '#D97706',
+      tint: getPhaseColor(3).light,
+      phase: getPhaseColor(3).main,
       primaryCta: {
         label: 'Nachricht senden',
         onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),

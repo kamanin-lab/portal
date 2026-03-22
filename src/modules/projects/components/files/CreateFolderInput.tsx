@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FolderPlus, Loader2 } from 'lucide-react';
+import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
 
 interface CreateFolderInputProps {
   onSubmit: (name: string) => Promise<void>;
@@ -16,8 +18,8 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
   function validate(val: string): string {
     if (!val.trim()) return 'Name darf nicht leer sein';
     if (val.startsWith('.')) return 'Name darf nicht mit einem Punkt beginnen';
-    if (val.includes('..')) return 'Ungültiger Name';
-    if (INVALID_CHARS.test(val)) return 'Ungültige Zeichen im Namen';
+    if (val.includes('..')) return 'Ungueltiger Name';
+    if (INVALID_CHARS.test(val)) return 'Ungueltige Zeichen im Namen';
     return '';
   }
 
@@ -32,40 +34,44 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
 
   if (!isOpen) {
     return (
-      <button
+      <Button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-[6px] text-[12px] text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors mt-[8px]"
+        variant="ghost"
+        size="sm"
+        className="text-accent hover:text-accent-hover mt-[8px] p-0 h-auto text-[12px]"
       >
         <FolderPlus size={14} />
         Neuen Ordner erstellen
-      </button>
+      </Button>
     );
   }
 
   return (
     <>
       <div className="flex items-center gap-[8px] mt-[8px]">
-        <input
+        <Input
           autoFocus
           value={name}
           onChange={(e) => { setName(e.target.value); setError(''); }}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') setIsOpen(false); }}
           placeholder="Ordnername..."
-          className="flex-1 px-[10px] py-[6px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+          className="flex-1"
         />
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={isLoading || !name.trim()}
-          className="px-[12px] py-[6px] text-[12px] font-semibold text-white bg-[var(--accent)] rounded-[var(--r-sm)] hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
+          variant="accent"
+          size="sm"
         >
           {isLoading ? <Loader2 size={14} className="animate-spin" /> : 'Erstellen'}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => { setIsOpen(false); setName(''); setError(''); }}
-          className="px-[8px] py-[6px] text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          variant="ghost"
+          size="sm"
         >
           Abbrechen
-        </button>
+        </Button>
       </div>
       {error && <p className="text-[11px] text-red-500 mt-[4px]">{error}</p>}
     </>

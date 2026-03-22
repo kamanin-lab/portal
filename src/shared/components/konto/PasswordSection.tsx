@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { PASSWORD_RULES, validatePassword } from '@/shared/lib/password-validation'
 import { useUpdatePassword } from '@/shared/hooks/useUpdateProfile'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 
 export function PasswordSection() {
   const [isEditing, setIsEditing] = useState(false)
@@ -17,11 +19,11 @@ export function PasswordSection() {
 
   const handleSave = () => {
     if (!valid) {
-      toast.error('Passwort erfüllt nicht alle Anforderungen.')
+      toast.error('Passwort erfuellt nicht alle Anforderungen.')
       return
     }
     if (!passwordsMatch) {
-      toast.error('Passwörter stimmen nicht überein.')
+      toast.error('Passwoerter stimmen nicht ueberein.')
       return
     }
     updatePassword.mutate(password.trim(), {
@@ -53,12 +55,12 @@ export function PasswordSection() {
               <label htmlFor="new-password" className="text-xs font-medium text-text-secondary">
                 Neues Passwort
               </label>
-              <input
+              <Input
                 id="new-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="h-9 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
+                className="bg-bg"
                 autoFocus
               />
             </div>
@@ -87,44 +89,39 @@ export function PasswordSection() {
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="confirm-password" className="text-xs font-medium text-text-secondary">
-                Passwort bestätigen
+                Passwort bestaetigen
               </label>
-              <input
+              <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Passwort wiederholen"
-                className="h-9 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
+                className="bg-bg"
               />
               {confirmPassword.length > 0 && !passwordsMatch && (
-                <span className="text-xs text-awaiting">Passwörter stimmen nicht überein</span>
+                <span className="text-xs text-awaiting">Passwoerter stimmen nicht ueberein</span>
               )}
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={handleSave}
-                disabled={!canSubmit}
-                className="h-9 px-4 rounded-[8px] bg-accent text-white text-xs font-semibold hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-              >
-                {updatePassword.isPending ? 'Speichern...' : 'Passwort ändern'}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="h-9 px-3 rounded-[8px] border border-border text-text-secondary text-xs font-medium hover:bg-surface-hover transition-colors"
-              >
+              <Button onClick={handleSave} disabled={!canSubmit} variant="accent" size="sm">
+                {updatePassword.isPending ? 'Speichern...' : 'Passwort aendern'}
+              </Button>
+              <Button onClick={handleCancel} variant="outline" size="sm">
                 Abbrechen
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          <button
+          <Button
             onClick={() => setIsEditing(true)}
-            className="text-xs text-accent hover:text-accent-hover transition-colors self-start"
+            variant="link"
+            size="sm"
+            className="text-xs p-0 h-auto self-start"
           >
-            Passwort ändern
-          </button>
+            Passwort aendern
+          </Button>
         )}
       </div>
     </section>

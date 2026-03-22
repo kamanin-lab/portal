@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react'
+import { Input } from '@/shared/components/ui/input'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -11,17 +12,17 @@ export function TaskSearchBar({ value, onChange, className }: Props) {
   return (
     <div className={cn('relative flex items-center', className)}>
       <Search size={14} className="absolute left-3 text-text-tertiary pointer-events-none" />
-      <input
+      <Input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="Aufgaben suchen…"
-        className="w-full pl-8 pr-8 py-2 text-[13px] bg-surface border border-border rounded-[var(--r-md)] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent transition-colors"
+        placeholder="Aufgaben suchen..."
+        className="pl-8 pr-8 rounded-[var(--r-md)]"
       />
       {value && (
         <button
           onClick={() => onChange('')}
-          className="absolute right-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+          className="absolute right-2.5 text-text-tertiary hover:text-text-secondary transition-colors cursor-pointer"
         >
           <X size={14} />
         </button>

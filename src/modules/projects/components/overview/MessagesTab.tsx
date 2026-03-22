@@ -68,7 +68,7 @@ export function MessagesTab({ comments, isLoading }: MessagesTabProps) {
 function CommentFeedItem({ comment }: { comment: ProjectComment }) {
   const isTeam = !comment.isFromPortal;
   const initial = comment.authorName.charAt(0).toUpperCase();
-  const avatarBg = isTeam ? 'var(--accent)' : '#7C3AED';
+  const avatarBg = isTeam ? 'var(--accent)' : 'var(--phase-1)';
   const contextLabel = comment.chapterTitle
     ? `${comment.chapterTitle} \u2014 ${comment.stepTitle}`
     : comment.stepTitle;
@@ -78,7 +78,7 @@ function CommentFeedItem({ comment }: { comment: ProjectComment }) {
       {/* Avatar */}
       <div
         className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ background: avatarBg, color: '#fff', fontSize: '10px', fontWeight: 700 }}
+        style={{ background: avatarBg, color: 'var(--text-inverse)', fontSize: '10px', fontWeight: 700 }}
       >
         {initial}
       </div>

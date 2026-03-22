@@ -1,4 +1,5 @@
 import { linkifyText } from '@/shared/lib/linkify';
+import { UserAvatar } from './UserAvatar';
 
 interface MessageBubbleProps {
   role: 'team' | 'client';
@@ -37,7 +38,7 @@ export function MessageBubble({
     : 'var(--surface-active)';
 
   const bubbleColor = isClient
-    ? (clientBubbleStyle === 'solid' ? '#fff' : 'var(--accent)')
+    ? (clientBubbleStyle === 'solid' ? 'var(--text-inverse)' : 'var(--accent)')
     : 'var(--text-primary)';
 
   const bubbleBorderRadius = isClient ? '14px 4px 14px 14px' : '4px 14px 14px 14px';
@@ -51,23 +52,7 @@ export function MessageBubble({
       }}
     >
       {showAvatar && (
-        <div
-          style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            fontSize: '10px',
-            fontWeight: 700,
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            background: isClient ? '#7C3AED' : 'var(--accent)',
-          }}
-        >
-          {senderName.charAt(0).toUpperCase()}
-        </div>
+        <UserAvatar name={senderName} size="sm" />
       )}
       <div
         style={{

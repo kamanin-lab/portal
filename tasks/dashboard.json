@@ -1,16 +1,25 @@
 {
-  "lastUpdated": "2026-03-23T01:15:00Z",
+  "lastUpdated": "2026-03-23T03:30:00Z",
   "status": "idle",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
     {
+      "id": "TASK-008",
+      "title": "UI Component Unification — shadcn/ui Migration",
+      "date": "2026-03-23",
+      "commits": ["pending"],
+      "summary": "8 shadcn/ui components installed (Button, Badge, Input, Textarea, Tabs, Skeleton, Avatar, AlertDialog). 32 files changed, 16 created. Hardcoded colors replaced with CSS tokens. StepDetail 247→67 lines. NewTicketDialog 243→105 lines.",
+      "filesChanged": 48,
+      "reviewCycles": 2
+    },
+    {
       "id": "TASK-007",
       "title": "Nextcloud Folder Structure + Portal Navigation",
       "date": "2026-03-22",
       "commits": ["ff9f7e5"],
-      "summary": "Standard client folder hierarchy (clients/{slug}/_intern/team/portal), shared slugify(), sidebar Dateien + dynamic project submenu, browse-client + upload-task-file + download-client-file Edge Function actions, WorkspaceGuard on /dateien.",
+      "summary": "Standard client folder hierarchy, shared slugify(), sidebar Dateien + dynamic project submenu.",
       "filesChanged": 9,
       "reviewCycles": 2
     },
@@ -19,7 +28,7 @@
       "title": "Interactive Dashboard",
       "date": "2026-03-22",
       "commits": ["2a6eb83"],
-      "summary": "HTML/JS dashboard with timeline, auto-refresh 5s, dark theme, ideas section, responsive.",
+      "summary": "HTML/JS dashboard with timeline, auto-refresh 5s, dark theme, ideas section.",
       "filesChanged": 2,
       "reviewCycles": 1
     },
@@ -28,7 +37,7 @@
       "title": "Real-Time Updates",
       "date": "2026-03-22",
       "commits": ["0e28a22", "159bb92"],
-      "summary": "DB Realtime publication for 5 tables, subscription fixes (* events), polling removed (flickering fix).",
+      "summary": "DB Realtime publication, subscription fixes, polling removed.",
       "filesChanged": 5,
       "reviewCycles": 1
     },
@@ -37,7 +46,7 @@
       "title": "Account Page (Konto)",
       "date": "2026-03-22",
       "commits": ["6902a70"],
-      "summary": "Profile, avatar, email/password change, notification preferences, logout.",
+      "summary": "Profile, avatar, email/password, notification preferences, logout.",
       "filesChanged": 22,
       "reviewCycles": 1
     },
@@ -46,7 +55,7 @@
       "title": "Nextcloud Files Integration",
       "date": "2026-03-22",
       "commits": ["38ad640"],
-      "summary": "Replace ClickUp attachments with Nextcloud WebDAV. Browse, upload, download, create folder.",
+      "summary": "Nextcloud WebDAV: browse, upload, download, create folder.",
       "filesChanged": 12,
       "reviewCycles": 2
     },
@@ -55,7 +64,7 @@
       "title": "Project Panel Redesign",
       "date": "2026-03-22",
       "commits": ["26dede2", "cac2444"],
-      "summary": "5x CTA dedup, comment input, MessageSheet, aggregated Messages, quick actions, activity timeline.",
+      "summary": "5x CTA dedup, comment input, MessageSheet, quick actions, activity timeline.",
       "filesChanged": 21,
       "reviewCycles": 2
     },
@@ -64,17 +73,18 @@
       "title": "Documentation Audit",
       "date": "2026-03-22",
       "commits": ["3d1d54d"],
-      "summary": "Full docs update, planning docs, agent definitions, OpenClaw to Claude Code migration.",
+      "summary": "Full docs update, planning docs, agent definitions, migration.",
       "filesChanged": 27,
       "reviewCycles": 1
     }
   ],
   "residualItems": [
-    { "item": "StepDetail.tsx at 247 lines — exceeds 150-line rule", "priority": "low" },
-    { "item": "UpdatesFeed.tsx at 170 lines — slightly over", "priority": "low" },
+    { "item": "UploadSheet.tsx at 199 lines", "priority": "low" },
+    { "item": "HelpPage.tsx + TasksPage.tsx still have some hardcoded hex props", "priority": "low" },
+    { "item": "Test suite broken (pre-existing vitest init issue)", "priority": "medium" },
     { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" },
-    { "item": "Empfehlungen page — monthly reports + AI recommendations", "priority": "medium" },
-    { "item": "MBM files migration to Nextcloud (local template ready)", "priority": "medium" }
+    { "item": "Empfehlungen page (future)", "priority": "medium" },
+    { "item": "MBM file migration to Nextcloud", "priority": "medium" }
   ],
   "ideas": [
     {
@@ -83,7 +93,7 @@
       "status": "idea",
       "priority": "medium",
       "target": "Phase 5+",
-      "summary": "Автоматические email-напоминания клиентам о задачах в статусе Client Review"
+      "summary": "Автоматические email-напоминания о задачах в Client Review"
     },
     {
       "title": "Credit System (Task Credits)",
@@ -91,7 +101,7 @@
       "status": "idea",
       "priority": "high",
       "target": "Phase 4+",
-      "summary": "Кредитная система оценки задач — прозрачность для клиента по объёму работы"
+      "summary": "Кредитная система оценки задач"
     },
     {
       "title": "Per-Client Knowledge Base",
@@ -99,7 +109,7 @@
       "status": "planned",
       "priority": "high",
       "target": "Phase 4+",
-      "summary": "AI-обогащение контекстом клиента для персонализированных описаний и рекомендаций"
+      "summary": "AI-обогащение контекстом клиента"
     },
     {
       "title": "Proactive Recommendations",
@@ -107,13 +117,13 @@
       "status": "idea",
       "priority": "high",
       "target": "Phase 4+",
-      "summary": "Система проактивных рекомендаций на основе данных проекта и паттернов клиента"
+      "summary": "Проактивные рекомендации на основе данных проекта"
     }
   ],
   "stats": {
-    "totalCommits": 14,
-    "totalFilesChanged": 98,
-    "testsPassing": "77/77",
+    "totalCommits": 16,
+    "totalFilesChanged": 148,
+    "testsPassing": "pre-existing failure",
     "buildStatus": "clean"
   }
 }

@@ -95,7 +95,7 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
               isDragging
                 ? 'border-[var(--accent)] bg-[var(--accent-light)]'
                 : selectedFile
-                  ? 'border-[var(--committed)] bg-[#F0FDF4]'
+                  ? 'border-[var(--committed)] bg-committed-bg'
                   : 'border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-hover)]'
             }`}
           >

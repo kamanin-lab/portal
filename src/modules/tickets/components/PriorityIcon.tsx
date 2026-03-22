@@ -8,12 +8,12 @@ interface PriorityIconProps {
   className?: string
 }
 
-// Color classes per priority level
-const PRIORITY_COLOR: Record<string, string> = {
-  urgent: 'text-red-500',
-  high:   'text-orange-500',
-  normal: 'text-sky-500',
-  low:    'text-text-tertiary',
+// Color styles per priority level using CSS custom properties
+const PRIORITY_STYLE: Record<string, string> = {
+  urgent: 'var(--priority-urgent)',
+  high:   'var(--priority-high)',
+  normal: 'var(--priority-normal)',
+  low:    'var(--priority-low)',
 }
 
 // Volume-style bar count per priority
@@ -44,7 +44,7 @@ function VolumeIcon({ size, barCount }: { size: number; barCount: number }) {
           <rect
             key={i}
             x={x} y={y} width={barW} height={bh} rx={1}
-            fill={active ? 'currentColor' : 'currentColor'}
+            fill="currentColor"
             opacity={active ? 1 : 0.15}
           />
         )
@@ -55,7 +55,7 @@ function VolumeIcon({ size, barCount }: { size: number; barCount: number }) {
 
 export function PriorityIcon({ priority, size = 14, showLabel = false, className = '' }: PriorityIconProps) {
   const key = priority?.toLowerCase() ?? null
-  const colorClass = key ? (PRIORITY_COLOR[key] ?? 'text-text-tertiary') : 'text-text-tertiary'
+  const color = key ? (PRIORITY_STYLE[key] ?? 'var(--text-tertiary)') : 'var(--text-tertiary)'
   const label = key ? (PRIORITY_LABELS[key] ?? key) : null
 
   let icon: React.ReactNode
@@ -66,7 +66,7 @@ export function PriorityIcon({ priority, size = 14, showLabel = false, className
         className="font-bold leading-none select-none"
         style={{ fontSize: size * 0.75, letterSpacing: '-0.05em' }}
       >
-        –––
+        ---
       </span>
     )
   } else if (key === 'urgent') {
@@ -78,7 +78,7 @@ export function PriorityIcon({ priority, size = 14, showLabel = false, className
   }
 
   return (
-    <span className={`inline-flex items-center gap-1 ${colorClass} ${className}`}>
+    <span className={`inline-flex items-center gap-1 ${className}`} style={{ color }}>
       {icon}
       {showLabel && label && (
         <span className="text-[11px] font-medium leading-none">{label}</span>
