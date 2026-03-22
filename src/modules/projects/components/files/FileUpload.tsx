@@ -1,20 +1,23 @@
 import { useRef, useCallback, useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUploadFile } from '../../hooks/useNextcloudFiles';
+import { useUploadFile, useUploadFileByPath } from '../../hooks/useNextcloudFiles';
 
 interface FileUploadProps {
   projectConfigId: string;
   chapterSortOrder?: number;
+  subPath?: string;
   disabled?: boolean;
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
-export function FileUpload({ projectConfigId, chapterSortOrder, disabled }: FileUploadProps) {
+export function FileUpload({ projectConfigId, chapterSortOrder, subPath, disabled }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const upload = useUploadFile(projectConfigId, chapterSortOrder);
+  const uploadByChapter = useUploadFile(projectConfigId, chapterSortOrder);
+  const uploadByPath = useUploadFileByPath(projectConfigId, subPath ?? '');
+  const upload = subPath !== undefined ? uploadByPath : uploadByChapter;
 
   const handleFile = useCallback(
     async (file: File) => {
