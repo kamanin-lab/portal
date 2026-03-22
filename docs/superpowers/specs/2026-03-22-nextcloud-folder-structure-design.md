@@ -39,12 +39,31 @@ kunden/{client-slug}/
 │   │
 │   ├── dokumente/            ← Shared docs (scope of work, SOPs, guidelines)
 │   ├── branding/             ← Logos, fonts, brand guidelines, colors
+│   ├── empfehlungen/         ← Monthly reports + recommendations
+│   │   └── {YYYY-MM}_monatsbericht/  ← auto-created per month
 │   └── uploads/              ← General client uploads (not task-specific)
 ```
+
+### Empfehlungen (Monthly Recommendations — future)
+
+Each month the agency delivers:
+- Summary of completed work
+- Recommendations for next month (AI-assisted analysis in future)
+- Attached reports (PDF, screenshots, audit results)
+
+Folder: `portal/empfehlungen/{YYYY-MM}_monatsbericht/`
+Portal: dedicated "Empfehlungen" page (future — ClickUp tasks with tag "recommendation")
+This is a large future feature. For now: folder structure is ready, portal page is out of scope.
+
+### _intern contains ONLY client contracts
+
+`_intern/vertraege/` stores contracts **with the client** (Angebot, Vertrag, DPA with client).
+Freelancer/team contracts (Subcontractor agreements, DPAs with team members) belong in `_agentur/team-vertraege/` — NOT in the client folder, because one freelancer works across multiple clients.
 
 ### Team Folder Rationale (from file tree analysis)
 
 Patterns found across existing clients:
+
 - `MBM_dev/` → `team/dev/` (dev artifacts, plugin files, configs)
 - `MBM_dev/02_Archive/` → `team/archiv/` (old versions)
 - `MBM_dev/Audit/`, `PSM/ADS/` → `team/audit/` (audits, reports)
@@ -53,11 +72,11 @@ Patterns found across existing clients:
 
 ### Access Matrix
 
-| Who | `_intern/` | `team/` | `portal/` | How |
-|-----|-----------|---------|-----------|-----|
-| Owner (Yuri + partners) | Full | Full | Full | Nextcloud owner |
-| Team (freelancers) | No access | Full | Full | Nextcloud share on `team/` + `portal/` |
-| Client | No access | No access | Read + Upload | Portal Edge Function only |
+| Who                     | `_intern/` | `team/`   | `portal/`     | How                                    |
+| ----------------------- | ---------- | --------- | ------------- | -------------------------------------- |
+| Owner (Yuri + partners) | Full       | Full      | Full          | Nextcloud owner                        |
+| Team (freelancers)      | No access  | Full      | Full          | Nextcloud share on `team/` + `portal/` |
+| Client                  | No access  | No access | Read + Upload | Portal Edge Function only              |
 
 ---
 
@@ -69,26 +88,29 @@ ALL folder names derived from user input (chapter titles, task names, project na
 function slugify(input: string, maxLength = 60): string {
   return input
     .toLowerCase()
-    .replace(/[äÄ]/g, 'ae').replace(/[öÖ]/g, 'oe')
-    .replace(/[üÜ]/g, 'ue').replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')  // all non-alphanumeric → hyphens
-    .replace(/^-|-$/g, '')         // trim leading/trailing hyphens
-    .slice(0, maxLength);          // truncate long names
+    .replace(/[äÄ]/g, "ae")
+    .replace(/[öÖ]/g, "oe")
+    .replace(/[üÜ]/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-") // all non-alphanumeric → hyphens
+    .replace(/^-|-$/g, "") // trim leading/trailing hyphens
+    .slice(0, maxLength); // truncate long names
 }
 ```
 
 ### Where it applies:
 
-| Source | Input example | Output | Max length |
-|--------|-------------|--------|-----------|
-| `chapter_config.title` | "Konzept & Strategie" | `01_konzept-strategie` | 60 |
-| Task name (from client) | "Bitte Logo ändern!! 🙏" | `2026-03_bitte-logo-aendern` | 60 |
-| Project name | "Website Redesign 2026" | `website-redesign-2026` | 60 |
-| Client name | "MBM Möbel" | `mbm-moebel` | 40 |
+| Source                  | Input example            | Output                       | Max length |
+| ----------------------- | ------------------------ | ---------------------------- | ---------- |
+| `chapter_config.title`  | "Konzept & Strategie"    | `01_konzept-strategie`       | 60         |
+| Task name (from client) | "Bitte Logo ändern!! 🙏" | `2026-03_bitte-logo-aendern` | 60         |
+| Project name            | "Website Redesign 2026"  | `website-redesign-2026`      | 60         |
+| Client name             | "MBM Möbel"              | `mbm-moebel`                 | 40         |
 
 ### Task name normalization
 
 Client-written task names are often messy. The slug is built from `task_name`:
+
 1. `slugify(task_name, 50)` — lowercase, hyphens, truncated
 2. Prepend `{YYYY-MM}_` from `task_date` or current month
 3. Result: `2026-03_bitte-logo-aendern`
@@ -132,9 +154,17 @@ Change to list each project as a child:
 
 ```typescript
 projects: [
-  { path: '/projekte/website-redesign', label: 'Website Redesign', icon: 'folder-kanban' },
-  { path: '/projekte/shop-migration', label: 'Shop Migration', icon: 'folder-kanban' },
-]
+  {
+    path: "/projekte/website-redesign",
+    label: "Website Redesign",
+    icon: "folder-kanban",
+  },
+  {
+    path: "/projekte/shop-migration",
+    label: "Shop Migration",
+    icon: "folder-kanban",
+  },
+];
 ```
 
 Children are populated dynamically from `useProjects()` hook (already exists, returns `ProjectSummary[]`).
@@ -145,6 +175,7 @@ Children are populated dynamically from `useProjects()` hook (already exists, re
 **New page:** `src/modules/files/pages/DateienPage.tsx`
 
 Shows the client-level portal folder structure:
+
 - Folder cards for: Projekte, Aufgaben, Dokumente, Branding, Uploads
 - Click into any folder → breadcrumb navigation (reuse existing `FolderView` pattern)
 - Uses `browse-client` Edge Function action
@@ -163,9 +194,10 @@ Additionally, clicking "Projekte" folder in DateienPage shows all project folder
 1. **Shared `slugify()` function** — extracted to `_shared/slugify.ts`, used by all path-building logic
 
 2. **Chapter folder naming:** Replace hardcoded `{sort_order:02d}_{title}` with `slugify()`:
+
    ```typescript
    function buildChapterFolder(sortOrder: number, title: string): string {
-     return `${String(sortOrder).padStart(2, '0')}_${slugify(title)}`;
+     return `${String(sortOrder).padStart(2, "0")}_${slugify(title)}`;
    }
    ```
 
@@ -188,6 +220,7 @@ Additionally, clicking "Projekte" folder in DateienPage shows all project folder
 ## Database Changes
 
 **New column on `profiles`:**
+
 ```sql
 ALTER TABLE profiles ADD COLUMN nextcloud_client_root text;
 -- Example: "/kunden/mbm/portal"
@@ -195,6 +228,7 @@ ALTER TABLE profiles ADD COLUMN nextcloud_client_root text;
 ```
 
 **Existing column stays:**
+
 ```
 project_config.nextcloud_root_path = "/kunden/mbm/portal/projekte/website-redesign"
 ```
@@ -208,15 +242,21 @@ project_config.nextcloud_root_path = "/kunden/mbm/portal/projekte/website-redesi
 | Current path | New path | Action |
 |---|---|---|
 | `MBM/01_DOC/BuHa/` | `kunden/mbm/_intern/buchhaltung/` | Move |
-| `MBM/MBM_dev/01_DOKU/` | `kunden/mbm/_intern/vertraege/` | Move |
-| `MBM/MBM_dev/` (dev files) | `kunden/mbm/team/dev/` | Move |
+| `MBM/FUREMA/`, client contracts | `kunden/mbm/_intern/vertraege/` | Move (client contracts ONLY) |
+| `MBM/MBM_dev/01_DOKU/` (freelancer contracts) | `_agentur/team-vertraege/` | Move (NOT in client folder) |
+| `MBM/MBM_dev/` (dev files, plugins, configs) | `kunden/mbm/team/dev/` | Move |
 | `MBM/MBM_dev/02_Archive/` | `kunden/mbm/team/archiv/` | Move |
 | `MBM/MBM_dev/Audit/` | `kunden/mbm/team/audit/` | Move |
 | `MBM/MBM_dev/Export-Templates/` | `kunden/mbm/team/export/` | Move |
 | `MBM/MBM_dev/LOGO-new/` | `kunden/mbm/portal/branding/` | Move |
+| `MBM/LOGO/` | `kunden/mbm/portal/branding/` | Move |
 | `MBM/AUDIT/` | `kunden/mbm/portal/dokumente/` | Move |
+| `MBM/MBM_dev/Legal documents for WLA Lite/` | `kunden/mbm/portal/dokumente/` | Move |
+| `MBM/2025-09-09_Meeting/` | `kunden/mbm/_intern/notizen/` | Move |
+| `MBM/projects/ERP/` | `kunden/mbm/portal/projekte/erp/` | Move |
 
 ### Steps:
+
 1. Create folder structure in Nextcloud: `kunden/mbm/{_intern,team,portal}/`
 2. Create portal subfolders: `projekte/`, `aufgaben/`, `dokumente/`, `branding/`, `uploads/`
 3. Move files (Nextcloud web UI or WebDAV)
