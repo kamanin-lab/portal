@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, Upload } from 'lucide-react';
-import type { Project, ProjectQuickAction } from '../../types/project';
-import { interpretProjectOverview } from '../../lib/overview-interpretation';
+import type { ProjectQuickAction } from '../../types/project';
+import type { InterpretedProjectOverview } from '../../lib/overview-interpretation';
 
 interface QuickActionsProps {
-  project: Project;
+  overview: InterpretedProjectOverview;
   onOpenStep?: (stepId: string) => void;
   onOpenMessage?: () => void;
   onOpenUpload?: () => void;
@@ -23,9 +23,8 @@ interface QuickActionCardModel {
   onClick: () => void;
 }
 
-export function QuickActions({ project, onOpenStep, onOpenMessage, onOpenUpload, onCreateTask }: QuickActionsProps) {
+export function QuickActions({ overview, onOpenStep, onOpenMessage, onOpenUpload, onCreateTask }: QuickActionsProps) {
   const navigate = useNavigate();
-  const overview = interpretProjectOverview(project);
 
   const cards = overview.quickActions
     .filter(card => card.isEnabled)

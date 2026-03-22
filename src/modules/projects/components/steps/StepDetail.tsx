@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { ChevronRight, Upload } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import type { Project, Step } from '../../types/project';
 import { getStepById, getTasksForStep, taskStatusLabel } from '../../lib/helpers';
 import { getPhaseColor } from '../../lib/phase-colors';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { TaskComments } from '@/modules/tickets/components/TaskComments';
-import { useTaskActions } from '@/modules/tickets/hooks/useTaskActions';
+import { StepActionBar } from './StepActionBar';
 
 type DetailTab = 'overview' | 'files' | 'discussion';
 
@@ -104,43 +103,12 @@ interface OverviewTabProps {
 
 function OverviewTab({ step, project, expandedSections, onToggle }: OverviewTabProps) {
   const linkedTasks = getTasksForStep(step.id, project);
-  const queryClient = useQueryClient();
-  const { approveTask, requestChanges, isLoading: isActioning } = useTaskActions({
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', project.id] }),
-    toastLabels: {
-      approve:         { success: 'Schritt wurde freigegeben',     error: 'Freigabe fehlgeschlagen' },
-      request_changes: { success: 'Änderungen wurden angefordert', error: 'Änderungsanforderung fehlgeschlagen' },
-    },
-  });
 
   return (
     <div className="flex flex-col gap-[14px]">
       {/* Action bar for awaiting_input */}
       {step.status === 'awaiting_input' && (
-        <div className="flex items-center gap-[12px] p-[14px] bg-[var(--awaiting-bg)] border border-[var(--awaiting)] border-opacity-30 rounded-[var(--r-md)] flex-wrap">
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-medium text-[var(--text-primary)]">Bereit für Ihre Prüfung</div>
-            <div className="text-[12px] text-[var(--text-secondary)] mt-[2px]">
-              Bitte prüfen Sie das Dokument und geben Sie Ihr Feedback.
-            </div>
-          </div>
-          <div className="flex items-center gap-[8px] flex-shrink-0">
-            <button
-              onClick={() => approveTask(step.clickupTaskId)}
-              disabled={isActioning}
-              className={`px-[14px] py-[7px] text-[13px] font-semibold text-white bg-[var(--committed)] rounded-[var(--r-sm)] hover:opacity-90 transition-opacity ${isActioning ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              Freigeben
-            </button>
-            <button
-              onClick={() => requestChanges(step.clickupTaskId)}
-              disabled={isActioning}
-              className={`px-[12px] py-[6px] text-[13px] text-[var(--text-secondary)] border border-[var(--border)] bg-white rounded-[var(--r-sm)] hover:border-[var(--border)] hover:bg-[var(--surface-hover)] transition-colors ${isActioning ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              Änderungen anfragen
-            </button>
-          </div>
-        </div>
+        <StepActionBar taskId={step.clickupTaskId} projectId={project.id} />
       )}
 
       {/* Description */}

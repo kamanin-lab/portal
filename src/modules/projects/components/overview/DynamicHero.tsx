@@ -1,11 +1,13 @@
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import type { Project } from '../../types/project';
+import type { InterpretedProjectOverview } from '../../lib/overview-interpretation';
 import { getPhaseColor } from '../../lib/phase-colors';
-import { interpretProjectOverview } from '../../lib/overview-interpretation';
 
 interface DynamicHeroProps {
   project: Project;
+  overview: InterpretedProjectOverview;
   onOpenStep?: (stepId: string) => void;
   onOpenMessage?: () => void;
   onCreateTask?: () => void;
@@ -17,7 +19,7 @@ interface HeroContent {
   priority: HeroPriority;
   eyebrow: string;
   eyebrowPulse: boolean;
-  eyebrowIcon: React.ReactNode;
+  eyebrowIcon: ReactNode;
   title: string;
   description: string;
   tint: string;
@@ -27,9 +29,8 @@ interface HeroContent {
   summary?: string;
 }
 
-export function DynamicHero({ project, onOpenStep, onOpenMessage, onCreateTask }: DynamicHeroProps) {
+export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCreateTask }: DynamicHeroProps) {
   const navigate = useNavigate();
-  const overview = interpretProjectOverview(project);
   const primaryAttention = overview.primaryAttention;
   const upcomingStep = overview.nextMeaningfulStep?.step.status === 'upcoming_locked' ? overview.nextMeaningfulStep : null;
   const currentChapter = overview.currentChapter;
