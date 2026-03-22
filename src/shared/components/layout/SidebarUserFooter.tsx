@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom'
 import type { Profile } from '@/shared/types/common'
 
 interface Props {
@@ -11,9 +12,16 @@ export function SidebarUserFooter({ expanded, profile }: Props) {
     : profile?.email?.[0]?.toUpperCase() ?? '?'
 
   return (
-    <div className="flex items-center h-14 px-3 shrink-0">
-      <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
-        <span className="text-white text-xs font-semibold">{initials}</span>
+    <NavLink
+      to="/konto"
+      className="flex items-center h-14 px-3 shrink-0 transition-colors hover:bg-sidebar-hover"
+    >
+      <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0 overflow-hidden">
+        {profile?.avatar_url ? (
+          <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-white text-xs font-semibold">{initials}</span>
+        )}
       </div>
       {expanded && (
         <div className="ml-2.5 overflow-hidden">
@@ -25,6 +33,6 @@ export function SidebarUserFooter({ expanded, profile }: Props) {
           </p>
         </div>
       )}
-    </div>
+    </NavLink>
   )
 }

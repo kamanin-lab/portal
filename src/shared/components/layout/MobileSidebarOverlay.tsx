@@ -93,17 +93,21 @@ export function MobileSidebarOverlay({ open, onClose }: Props) {
         </nav>
 
         <div className="mx-4 h-px bg-white/10 shrink-0" />
-        <div className="flex items-center h-14 px-4 gap-3 shrink-0">
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">
-              {profile?.full_name?.[0]?.toUpperCase() ?? '?'}
-            </span>
+        <NavLink to="/konto" onClick={onClose} className="flex items-center h-14 px-4 gap-3 shrink-0 hover:bg-sidebar-hover transition-colors">
+          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-xs font-semibold">
+                {profile?.full_name?.[0]?.toUpperCase() ?? '?'}
+              </span>
+            )}
           </div>
           <div>
             <p className="text-white text-sm font-medium">{profile?.full_name ?? profile?.email}</p>
             <p className="text-text-sidebar text-xs">{profile?.company_name ?? 'Kunde'}</p>
           </div>
-        </div>
+        </NavLink>
       </aside>
     </>
   )

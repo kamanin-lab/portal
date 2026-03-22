@@ -17,7 +17,8 @@ User configuration and ClickUp mapping. One row per authenticated user.
 | full_name | text | | Display name |
 | company_name | text | | Client company name |
 | clickup_list_ids | jsonb | DEFAULT '[]' | Array of ClickUp List IDs assigned to this client (e.g., `["901305442177"]`) |
-| email_notifications | boolean | DEFAULT true | Whether to send email notifications |
+| email_notifications | boolean | DEFAULT true | Whether to send email notifications (legacy, kept for backward compat) |
+| notification_preferences | jsonb | DEFAULT '{"task_review": true, "task_completed": true, "team_comment": true, "support_response": true, "reminders": true}' | Granular per-type email notification preferences |
 | avatar_url | text | | Profile picture URL |
 | support_task_id | text | | ClickUp task ID used as dedicated support chat channel |
 | clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |

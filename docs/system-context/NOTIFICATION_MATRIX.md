@@ -42,13 +42,34 @@ All notifications are gated by the ClickUp custom field "Visible in client porta
 ## Email Delivery
 
 - Provider: Mailjet (via `send-mailjet-email` Edge Function)
-- Gated per user by `profiles.email_notifications` boolean
+- Gated per user by `profiles.notification_preferences` JSONB (granular per-type control)
+- Backward compat: if `notification_preferences` is null, falls back to `profiles.email_notifications` boolean
 - Email types and templates:
   - `task_review` — Task moved to Client Review
   - `task_completed` — Task moved to Done/Complete
   - `team_question` — Team comment on a regular task
   - `support_response` — Team reply in support chat
+  - `step_ready` — Project step moved to Client Review
+  - `project_reply` — Team reply on a project step
 - All emails include `firstName`, `taskName`, and `taskId` for deep linking
+
+### Granular Notification Preferences
+
+Users can control which email types they receive via the Account page (`/konto`). The preferences are stored in `profiles.notification_preferences` as a JSONB object.
+
+| Email Type (webhook sends) | JSONB Preference Key | UI Label (German) | Default |
+|---|---|---|---|
+| `task_review` | `task_review` | Aufgabe zur Prüfung bereit | ON |
+| `step_ready` | `task_review` | (same preference as task_review) | ON |
+| `task_completed` | `task_completed` | Aufgabe abgeschlossen | ON |
+| `team_question` | `team_comment` | Neue Nachricht vom Team | ON |
+| `project_reply` | `team_comment` | (same preference as team_comment) | ON |
+| `support_response` | `support_response` | Support-Antwort | ON |
+| _(no trigger yet)_ | `reminders` | Erinnerungen (coming soon) | ON |
+
+The webhook function uses `shouldSendEmail(profile, emailType)` to check the appropriate preference key. If the JSONB column is null (pre-migration users), it falls back to the legacy `email_notifications` boolean.
+
+In-app (bell) notifications are always sent regardless of email preferences.
 
 ## Automated Reminders
 

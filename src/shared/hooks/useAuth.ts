@@ -18,6 +18,13 @@ const STAGING_BYPASS_PROFILE: Profile = {
   company_name: 'KAMANIN',
   clickup_list_ids: null,
   email_notifications: true,
+  notification_preferences: {
+    task_review: true,
+    task_completed: true,
+    team_comment: true,
+    support_response: true,
+    reminders: true,
+  },
   avatar_url: null,
   support_task_id: null,
   clickup_chat_channel_id: null,
@@ -34,6 +41,7 @@ interface AuthContextValue {
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -139,10 +147,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }
 
+  const refreshProfile = useCallback(async () => {
+    const currentUser = user
+    if (currentUser) {
+      await loadProfile(currentUser.id)
+    }
+  }, [user, loadProfile])
+
   const value: AuthContextValue = {
     user, session, profile, isLoading,
     isAuthenticated: STAGING_AUTH_BYPASS ? true : !!session,
-    signIn, signInWithMagicLink, resetPassword, updatePassword, signOut,
+    signIn, signInWithMagicLink, resetPassword, updatePassword, signOut, refreshProfile,
   }
 
   return createElement(AuthContext.Provider, { value }, children)

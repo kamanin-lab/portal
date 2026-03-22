@@ -14,6 +14,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/nachrichten': 'Nachrichten',
   '/dateien': 'Dateien',
   '/hilfe': 'Hilfe',
+  '/konto': 'Konto',
 }
 
 function getTitle(pathname: string): string {

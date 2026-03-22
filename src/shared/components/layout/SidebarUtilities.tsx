@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle, Settings } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -20,6 +20,19 @@ export function SidebarUtilities({ expanded }: Props) {
         <HelpCircle size={18} className="shrink-0" />
         {expanded && (
           <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">Hilfe</span>
+        )}
+      </NavLink>
+      <NavLink
+        to="/konto"
+        className={({ isActive }) => cn(
+          'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
+          'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
+          isActive && 'bg-sidebar-active text-white'
+        )}
+      >
+        <Settings size={18} className="shrink-0" />
+        {expanded && (
+          <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">Konto</span>
         )}
       </NavLink>
     </div>

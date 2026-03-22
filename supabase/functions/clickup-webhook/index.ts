@@ -102,6 +102,33 @@ function sanitizeCommentText(text: string): string {
   return text.substring(0, 10000);
 }
 
+// Map email types to notification_preferences JSONB keys.
+// Falls back to email_notifications boolean for backward compat.
+const EMAIL_TYPE_TO_PREF_KEY: Record<string, string> = {
+  task_review: "task_review",
+  step_ready: "task_review",       // project step ready = same preference as task review
+  task_completed: "task_completed",
+  team_question: "team_comment",   // email type is team_question, pref key is team_comment
+  project_reply: "team_comment",   // project reply = same preference as team comment
+  support_response: "support_response",
+};
+
+function shouldSendEmail(
+  profile: { email_notifications?: boolean; notification_preferences?: Record<string, boolean> | null },
+  emailType: string,
+): boolean {
+  const prefKey = EMAIL_TYPE_TO_PREF_KEY[emailType];
+  const prefs = profile.notification_preferences;
+
+  // If granular preferences exist, use them
+  if (prefs && typeof prefs === "object" && prefKey && prefKey in prefs) {
+    return !!prefs[prefKey];
+  }
+
+  // Backward compat: fall back to boolean email_notifications
+  return profile.email_notifications !== false;
+}
+
 async function verifyWebhookSignature(
   body: string, 
   signature: string | null, 
@@ -600,7 +627,7 @@ Deno.serve(async (req) => {
             if (profileIds.length > 0) {
               const stepName = await getStepName();
               const isClientReview = statusAfter.toLowerCase() === "client review";
-              const notifType = isClientReview ? "step_ready" : "project_update";
+              const notifType = "status_change";
 
               const notifications = profileIds.map(pid => ({
                 profile_id: pid,
@@ -621,10 +648,10 @@ Deno.serve(async (req) => {
               if (isClientReview) {
                 const { data: profiles } = await supabase
                   .from("profiles")
-                  .select("id, email, full_name, email_notifications")
+                  .select("id, email, full_name, email_notifications, notification_preferences")
                   .in("id", profileIds);
                 for (const p of profiles || []) {
-                  if (p.email_notifications) {
+                  if (shouldSendEmail(p, "step_ready")) {
                     await sendMailjetEmail("step_ready", { email: p.email, name: p.full_name }, {
                       firstName: p.full_name?.split(" ")[0], stepName, taskId,
                     }, log);
@@ -689,7 +716,7 @@ Deno.serve(async (req) => {
 
           // Notifications + email
           const notifications = profileIds.map(pid => ({
-            profile_id: pid, type: "project_reply",
+            profile_id: pid, type: "team_reply",
             title: `Neue Nachricht zu ${stepName}`,
             message: `${firstName}: ${displayText.substring(0, 200)}${displayText.length > 200 ? "..." : ""}`,
             task_id: taskId, comment_id: commentId,
@@ -699,10 +726,10 @@ Deno.serve(async (req) => {
 
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, email, full_name, email_notifications")
+            .select("id, email, full_name, email_notifications, notification_preferences")
             .in("id", profileIds);
           for (const p of profiles || []) {
-            if (p.email_notifications) {
+            if (shouldSendEmail(p, "project_reply")) {
               await sendMailjetEmail("project_reply", { email: p.email, name: p.full_name }, {
                 firstName: p.full_name?.split(" ")[0], stepName,
                 teamMemberName: firstName, messagePreview: displayText.substring(0, 300),
@@ -811,7 +838,7 @@ Deno.serve(async (req) => {
           // Get profiles for notifications
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, email, full_name, email_notifications")
+            .select("id, email, full_name, email_notifications, notification_preferences")
             .in("id", profileIds);
 
           // Create in-app notifications
@@ -834,7 +861,7 @@ Deno.serve(async (req) => {
           // Send emails
           if (profiles) {
             for (const profile of profiles) {
-              if (profile.email_notifications) {
+              if (shouldSendEmail(profile, "task_review")) {
                 await sendMailjetEmail("task_review", {
                   email: profile.email,
                   name: profile.full_name,
@@ -887,7 +914,7 @@ Deno.serve(async (req) => {
             if (profileIds.length > 0) {
               const { data: profiles } = await supabase
                 .from("profiles")
-                .select("id, email, full_name, email_notifications")
+                .select("id, email, full_name, email_notifications, notification_preferences")
                 .in("id", profileIds);
 
               // Create in-app notifications
@@ -906,7 +933,7 @@ Deno.serve(async (req) => {
               // Send emails
               if (profiles) {
                 for (const profile of profiles) {
-                  if (profile.email_notifications) {
+                  if (shouldSendEmail(profile, "task_completed")) {
                     await sendMailjetEmail("task_completed", {
                       email: profile.email,
                       name: profile.full_name,
@@ -1081,7 +1108,7 @@ Deno.serve(async (req) => {
       // Check if this task is a support task for any profile
       const { data: supportProfiles, error: supportLookupError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, email_notifications")
+        .select("id, email, full_name, email_notifications, notification_preferences")
         .eq("support_task_id", normalizedTaskId);
 
       if (supportLookupError) {
@@ -1148,7 +1175,7 @@ Deno.serve(async (req) => {
         }
 
         // Send email notification for support response
-        if (profile.email_notifications) {
+        if (shouldSendEmail(profile, "support_response")) {
           await sendMailjetEmail("support_response", {
             email: profile.email,
             name: profile.full_name,
@@ -1198,7 +1225,7 @@ Deno.serve(async (req) => {
       // Get profiles
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, email, full_name, email_notifications")
+        .select("id, email, full_name, email_notifications, notification_preferences")
         .in("id", profileIds);
 
       // Create in-app notifications
@@ -1226,7 +1253,7 @@ Deno.serve(async (req) => {
       // Send email notification for team questions
       if (profiles) {
         for (const profile of profiles) {
-          if (!profile.email_notifications) {
+          if (!shouldSendEmail(profile, "team_question")) {
             log.debug(`Skipping email - notifications disabled for profile`);
             continue;
           }
