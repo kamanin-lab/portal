@@ -1,16 +1,30 @@
 {
-  "lastUpdated": "2026-03-22T23:45:00Z",
-  "status": "idle",
-  "currentTask": null,
-  "activeAgents": [],
-  "pipeline": [],
+  "lastUpdated": "2026-03-23T00:30:00Z",
+  "status": "active",
+  "currentTask": {
+    "id": "TASK-007",
+    "title": "Nextcloud Folder Structure + Portal Navigation",
+    "description": "Standard client folder hierarchy, slugify normalization, sidebar Dateien + project submenu, browse-client Edge Function"
+  },
+  "activeAgents": [
+    { "name": "Supervisor", "status": "working", "task": "Writing implementation plan" }
+  ],
+  "pipeline": [
+    { "phase": "Task Framing", "status": "done", "agent": "Supervisor", "notes": "Brainstorming complete, spec rev.4" },
+    { "phase": "Spec Review", "status": "done", "agent": "reviewer-architect", "notes": "3 blocking security fixes applied" },
+    { "phase": "Plan", "status": "in_progress", "agent": "Supervisor", "notes": "Writing implementation plan" },
+    { "phase": "Implementation", "status": "pending", "agent": "implementation-agent", "notes": "" },
+    { "phase": "Post-Code Review", "status": "pending", "agent": "reviewer-architect", "notes": "" },
+    { "phase": "QA Verification", "status": "pending", "agent": "qa-agent", "notes": "" },
+    { "phase": "Accept/Revise", "status": "pending", "agent": "Supervisor", "notes": "" }
+  ],
   "completedTasks": [
     {
       "id": "TASK-006",
       "title": "Interactive Dashboard",
       "date": "2026-03-22",
-      "commits": ["1e275a2"],
-      "summary": "HTML/JS dashboard with timeline visualization, auto-refresh 5s, dark theme, expandable tasks, ideas section, responsive.",
+      "commits": ["2a6eb83"],
+      "summary": "HTML/JS dashboard with timeline, auto-refresh 5s, dark theme, ideas section, responsive.",
       "filesChanged": 2,
       "reviewCycles": 1
     },
@@ -18,8 +32,8 @@
       "id": "TASK-005",
       "title": "Real-Time Updates",
       "date": "2026-03-22",
-      "commits": ["0e28a22"],
-      "summary": "DB Realtime publication for 5 tables, subscription fixes (* events), 60s polling fallback, profile_id filter, fetch-single-task cache write.",
+      "commits": ["0e28a22", "159bb92"],
+      "summary": "DB Realtime publication, subscription fixes, polling removed (flickering fix).",
       "filesChanged": 5,
       "reviewCycles": 1
     },
@@ -28,7 +42,7 @@
       "title": "Account Page (Konto)",
       "date": "2026-03-22",
       "commits": ["6902a70"],
-      "summary": "Profile, avatar, email/password change, notification preferences, logout. Granular webhook notification prefs.",
+      "summary": "Profile, avatar, email/password change, notification preferences, logout.",
       "filesChanged": 22,
       "reviewCycles": 1
     },
@@ -37,7 +51,7 @@
       "title": "Nextcloud Files Integration",
       "date": "2026-03-22",
       "commits": ["38ad640"],
-      "summary": "Replace ClickUp attachments with Nextcloud WebDAV. Browse, upload, download, create folder. New Edge Function nextcloud-files.",
+      "summary": "Replace ClickUp attachments with Nextcloud WebDAV. Browse, upload, download, create folder.",
       "filesChanged": 12,
       "reviewCycles": 2
     },
@@ -46,7 +60,7 @@
       "title": "Project Panel Redesign",
       "date": "2026-03-22",
       "commits": ["26dede2", "cac2444"],
-      "summary": "Eliminate 5x CTA duplication, comment input for approve/request-changes, functional MessageSheet, aggregated Messages tab, config-driven quick actions, activity timeline.",
+      "summary": "5x CTA dedup, comment input, MessageSheet, aggregated Messages, quick actions, activity timeline.",
       "filesChanged": 21,
       "reviewCycles": 2
     },
@@ -55,15 +69,16 @@
       "title": "Documentation Audit",
       "date": "2026-03-22",
       "commits": ["3d1d54d"],
-      "summary": "Full docs update. Planning docs, CLAUDE.md, agent definitions, OpenClaw to Claude Code migration.",
+      "summary": "Full docs update, planning docs, agent definitions, OpenClaw to Claude Code migration.",
       "filesChanged": 27,
       "reviewCycles": 1
     }
   ],
   "residualItems": [
-    { "item": "StepDetail.tsx at 247 lines -- exceeds 150-line component rule", "priority": "low" },
-    { "item": "UpdatesFeed.tsx at 170 lines -- slightly over limit", "priority": "low" },
-    { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" }
+    { "item": "StepDetail.tsx at 247 lines — exceeds 150-line rule", "priority": "low" },
+    { "item": "UpdatesFeed.tsx at 170 lines — slightly over", "priority": "low" },
+    { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" },
+    { "item": "Empfehlungen page — monthly reports + AI recommendations", "priority": "medium" }
   ],
   "ideas": [
     {
@@ -100,8 +115,8 @@
     }
   ],
   "stats": {
-    "totalCommits": 10,
-    "totalFilesChanged": 84,
+    "totalCommits": 12,
+    "totalFilesChanged": 90,
     "testsPassing": "77/77",
     "buildStatus": "clean"
   }

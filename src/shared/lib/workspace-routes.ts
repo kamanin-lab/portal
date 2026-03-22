@@ -1,6 +1,7 @@
 export const WORKSPACE_ROUTES: Record<string, string> = {
   tickets: '/tickets',
   projects: '/projekte',
+  files: '/dateien',
 }
 
 export const WORKSPACE_CHILDREN: Record<
@@ -12,6 +13,7 @@ export const WORKSPACE_CHILDREN: Record<
     { path: '/support', label: 'Support', icon: 'headset' },
   ],
   projects: [],
+  files: [],
 }
 
 export function getWorkspaceRoute(moduleKey: string): string {

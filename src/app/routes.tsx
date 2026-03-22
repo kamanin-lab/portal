@@ -13,7 +13,7 @@ const HilfePage = lazy(() => import('@/shared/pages/HilfePage').then(m => ({ def
 const NotFoundPage = lazy(() => import('@/shared/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
 const UebersichtPage = lazy(() => import('@/modules/projects/pages/UebersichtPage').then(m => ({ default: m.UebersichtPage })))
 const NachrichtenPage = lazy(() => import('@/modules/projects/pages/NachrichtenPage').then(m => ({ default: m.NachrichtenPage })))
-const DateienPage = lazy(() => import('@/modules/projects/pages/DateienPage').then(m => ({ default: m.DateienPage })))
+const DateienPage = lazy(() => import('@/modules/files/pages/DateienPage').then(m => ({ default: m.DateienPage })))
 const TicketsPage = lazy(() => import('@/modules/tickets/pages/TicketsPage').then(m => ({ default: m.TicketsPage })))
 const SupportPage = lazy(() => import('@/modules/tickets/pages/SupportPage').then(m => ({ default: m.SupportPage })))
 const KontoPage = lazy(() => import('@/shared/pages/KontoPage').then(m => ({ default: m.KontoPage })))
@@ -55,7 +55,7 @@ export function AppRoutes() {
         />
         <Route path="/aufgaben" element={<Navigate to="/tickets" replace />} />
         <Route path="/nachrichten" element={withRouteLoading(<NachrichtenPage />)} />
-        <Route path="/dateien" element={withRouteLoading(<DateienPage />)} />
+        <Route path="/dateien" element={withRouteLoading(<WorkspaceGuard moduleKey="files"><DateienPage /></WorkspaceGuard>)} />
         <Route path="/hilfe" element={withRouteLoading(<HilfePage />)} />
         <Route path="/konto" element={withRouteLoading(<KontoPage />)} />
       </Route>

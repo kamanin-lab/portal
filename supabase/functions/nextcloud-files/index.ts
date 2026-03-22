@@ -1,22 +1,31 @@
 /**
  * nextcloud-files — WebDAV proxy for Nextcloud file operations.
  *
- * Actions:
+ * Project-scoped actions (require project_config_id):
  *   list     — PROPFIND depth:1, returns NextcloudFile[]
  *   download — streams file bytes back to browser
  *   upload   — accepts multipart/form-data, PUTs file to Nextcloud
  *   mkdir    — recursive MKCOL, creates folder hierarchy
  *
+ * Client-root actions (use profiles.nextcloud_client_root):
+ *   browse-client      — PROPFIND on client portal root + optional sub_path
+ *   download-client-file — streams file from client root (no project_config_id needed)
+ *
+ * Hybrid actions (project_access auth + client-root path):
+ *   upload-task-file — auto-creates aufgaben/{YYYY-MM}_{slug}/ and PUTs file
+ *
  * Targeting:
- *   - chapter_sort_order — resolves to chapter folder (e.g. "01_Konzept")
- *   - sub_path           — arbitrary relative path within project root (overrides chapter)
+ *   - chapter_sort_order — resolves to chapter folder via buildChapterFolder()
+ *   - sub_path           — arbitrary relative path within project/client root
  *   - folder_path        — used by mkdir action only
+ *   - task_name/task_date — used by upload-task-file to build folder name
  *
  * Security:
- *   - Path sanitisation (reject "..", leading "/", control characters)
- *   - project_access check per user
- *   - nextcloud_root_path loaded from project_config
- *   - chapter folder name resolved from chapter_config
+ *   - Path sanitisation via isPathSafe() (reject "..", leading "/", control chars)
+ *   - project_access check per user (project-scoped actions)
+ *   - nextcloud_client_root derived from JWT (client-root actions)
+ *   - All resolved paths prefix-checked against their root
+ *   - Chapter folder names normalized via shared slugify()
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
@@ -25,6 +34,7 @@ import {
   getCorsHeaders,
   corsHeaders as defaultCorsHeaders,
 } from "../_shared/cors.ts";
+import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -178,9 +188,7 @@ async function resolveProjectContext(
       .maybeSingle();
 
     if (chapter) {
-      // Folder naming convention: "0X_Title"
-      const padded = String(chapter.sort_order).padStart(2, "0");
-      chapterFolder = `${padded}_${chapter.title.replace(/[/\\]/g, "_")}`;
+      chapterFolder = buildChapterFolder(chapter.sort_order, chapter.title);
     }
   }
 
@@ -259,6 +267,8 @@ Deno.serve(async (req) => {
     let uploadFile: File | null = null;
     let subPath: string | undefined;
     let folderPath: string | undefined;
+    let taskName: string | undefined;
+    let taskDate: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -270,6 +280,8 @@ Deno.serve(async (req) => {
       uploadFile = formData.get("file") as File | null;
       subPath = (formData.get("sub_path") as string) || undefined;
       folderPath = (formData.get("folder_path") as string) || undefined;
+      taskName = (formData.get("task_name") as string) || undefined;
+      taskDate = (formData.get("task_date") as string) || undefined;
     } else {
       const body = await req.json();
       action = body.action || "";
@@ -280,11 +292,24 @@ Deno.serve(async (req) => {
       filePath = body.file_path || undefined;
       subPath = body.sub_path || undefined;
       folderPath = body.folder_path || undefined;
+      taskName = body.task_name || undefined;
+      taskDate = body.task_date || undefined;
     }
 
-    if (!action || !projectConfigId) {
+    if (!action) {
       return new Response(
-        JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "action and project_config_id required", correlationId: requestId }),
+        JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "action required", correlationId: requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Actions that use profile-based client root instead of project_config_id
+    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file"];
+    const requiresProjectConfigId = !CLIENT_ROOT_ACTIONS.includes(action);
+
+    if (requiresProjectConfigId && !projectConfigId) {
+      return new Response(
+        JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "project_config_id required", correlationId: requestId }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -307,44 +332,57 @@ Deno.serve(async (req) => {
       );
     }
 
-    // --- Validate project_config_id format --------------------------------
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectConfigId)) {
-      return new Response(
-        JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid project_config_id", correlationId: requestId }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // --- Project-context-dependent validation (skip for client-root actions) ---
+    let ctx: ProjectContext | null = null;
+    let targetPath = "";
 
-    // --- Resolve project context ----------------------------------------
-    const { ctx, accessDenied } = await resolveProjectContext(
-      supabase, supabaseService, user.id, projectConfigId,
-      subPath ? undefined : chapterSortOrder, log,
-    );
+    if (requiresProjectConfigId) {
+      // Validate project_config_id format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectConfigId)) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid project_config_id", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
 
-    if (accessDenied) {
-      return new Response(
-        JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      // Resolve project context
+      const resolved = await resolveProjectContext(
+        supabase, supabaseService, user.id, projectConfigId,
+        subPath ? undefined : chapterSortOrder, log,
       );
-    }
 
-    if (!ctx) {
-      return new Response(
-        JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", correlationId: requestId }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      if (resolved.accessDenied) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!resolved.ctx) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      ctx = resolved.ctx;
+
+      // Build the target path
+      targetPath = ctx.rootPath;
+      if (subPath) {
+        targetPath = `${targetPath}/${subPath}`;
+      } else if (ctx.chapterFolder) {
+        targetPath = `${targetPath}/${ctx.chapterFolder}`;
+      }
     }
 
     const base = webdavBase(ncUrl, ncUser);
     const authHeaderNC = basicAuth(ncUser, ncPass);
 
-    // Build the target path
-    let targetPath = ctx.rootPath;
-    if (subPath) {
-      targetPath = `${targetPath}/${subPath}`;
-    } else if (ctx.chapterFolder) {
-      targetPath = `${targetPath}/${ctx.chapterFolder}`;
-    }
+    // ====================================================================
+    // Client-root actions are handled separately below (browse-client, upload-task-file).
+    // Project-based actions (list, download, upload, mkdir) require ctx.
+    // ====================================================================
 
     // ====================================================================
     // ACTION: list
@@ -396,8 +434,8 @@ Deno.serve(async (req) => {
         let relativePath = "";
         if (subPath) {
           relativePath = `${subPath}/${name}`;
-        } else if (ctx.chapterFolder) {
-          relativePath = `${ctx.chapterFolder}/${name}`;
+        } else if (ctx!.chapterFolder) {
+          relativePath = `${ctx!.chapterFolder}/${name}`;
         } else {
           relativePath = name;
         }
@@ -442,9 +480,9 @@ Deno.serve(async (req) => {
         );
       }
 
-      const fullPath = `${ctx.rootPath}/${filePath}`;
+      const fullPath = `${ctx!.rootPath}/${filePath}`;
       // Double-check the resolved path starts with the root (belt-and-suspenders)
-      if (!fullPath.startsWith(ctx.rootPath)) {
+      if (!fullPath.startsWith(ctx!.rootPath)) {
         log.warn("Path escape attempt", { fullPath });
         return new Response(
           JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid file path", correlationId: requestId }),
@@ -550,8 +588,8 @@ Deno.serve(async (req) => {
       let relativePath = "";
       if (subPath) {
         relativePath = `${subPath}/${fileName}`;
-      } else if (ctx.chapterFolder) {
-        relativePath = `${ctx.chapterFolder}/${fileName}`;
+      } else if (ctx!.chapterFolder) {
+        relativePath = `${ctx!.chapterFolder}/${fileName}`;
       } else {
         relativePath = fileName;
       }
@@ -588,7 +626,7 @@ Deno.serve(async (req) => {
 
       // Recursive creation: MKCOL each segment from root down
       const segments = folderPath.split("/");
-      let currentPath = ctx.rootPath;
+      let currentPath = ctx!.rootPath;
 
       for (const segment of segments) {
         currentPath = `${currentPath}/${segment}`;
@@ -624,6 +662,372 @@ Deno.serve(async (req) => {
           code: "OK",
           correlationId: requestId,
           data: { path: folderPath },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: browse-client
+    // ====================================================================
+    if (action === "browse-client") {
+      // Derive client root from the authenticated user's own profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for browse-client");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+
+      // Validate sub_path if provided (already validated above for non-browse-client,
+      // but browse-client may also arrive with sub_path)
+      if (subPath !== undefined && !isPathSafe(subPath)) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid sub_path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const browseTarget = subPath ? `${cleanClientRoot}/${subPath}` : cleanClientRoot;
+
+      // Prefix check: resolved path must stay within client root
+      if (!browseTarget.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in browse-client", { browseTarget });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const base = webdavBase(ncUrl, ncUser);
+      const authHeaderNC = basicAuth(ncUser, ncPass);
+      const davUrl = `${base}${encodePath(browseTarget)}/`;
+      log.info("browse-client PROPFIND", { davUrl });
+
+      const propfindResp = await fetch(davUrl, {
+        method: "PROPFIND",
+        headers: {
+          Authorization: authHeaderNC,
+          "Content-Type": "application/xml",
+          Depth: "1",
+        },
+        body: PROPFIND_BODY,
+      });
+
+      if (propfindResp.status === 404) {
+        log.info("Client folder not found, returning empty list");
+        return new Response(
+          JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { files: [] } }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!propfindResp.ok) {
+        const errText = await propfindResp.text();
+        log.error("browse-client PROPFIND failed", { status: propfindResp.status, body: errText.slice(0, 500) });
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", correlationId: requestId }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const xml = await propfindResp.text();
+      const entries = parsePropfindResponse(xml);
+
+      const files = entries.slice(1).map((e) => {
+        const segments = e.href.split("/").filter(Boolean);
+        const name = e.displayname || segments[segments.length - 1] || "";
+        const relativePath = subPath ? `${subPath}/${name}` : name;
+
+        return {
+          name,
+          path: relativePath,
+          type: e.isCollection ? "folder" as const : "file" as const,
+          mimeType: e.contentType || undefined,
+          size: e.contentLength,
+          lastModified: e.lastModified
+            ? new Date(e.lastModified).toISOString()
+            : new Date().toISOString(),
+        };
+      });
+
+      log.info("browse-client listed files", { count: files.length });
+
+      return new Response(
+        JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { files } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: download-client-file
+    // ====================================================================
+    if (action === "download-client-file") {
+      if (!filePath) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "file_path required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Security: validate file_path
+      if (!isPathSafe(filePath)) {
+        log.warn("Path traversal attempt blocked in download-client-file", { filePath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid file path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Derive client root from the authenticated user's profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for download-client-file");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+      const fullPath = `${cleanClientRoot}/${filePath}`;
+
+      // Prefix check: resolved path must stay within client root
+      if (!fullPath.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in download-client-file", { fullPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid file path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const davUrl = `${base}${encodePath(fullPath)}`;
+      log.info("download-client-file GET", { davUrl });
+
+      const fileResp = await fetch(davUrl, {
+        headers: { Authorization: authHeaderNC },
+      });
+
+      if (!fileResp.ok) {
+        log.error("download-client-file failed", { status: fileResp.status });
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "File not found", correlationId: requestId }),
+          { status: fileResp.status === 404 ? 404 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Stream the response back to the browser
+      const fileName = filePath.split("/").pop() || "download";
+      const responseHeaders = new Headers(corsHeaders);
+      responseHeaders.set("Content-Type", fileResp.headers.get("Content-Type") || "application/octet-stream");
+      responseHeaders.set("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
+      const cl = fileResp.headers.get("Content-Length");
+      if (cl) responseHeaders.set("Content-Length", cl);
+
+      log.info("download-client-file streaming", { fileName });
+
+      return new Response(fileResp.body, {
+        status: 200,
+        headers: responseHeaders,
+      });
+    }
+
+    // ====================================================================
+    // ACTION: upload-task-file
+    // ====================================================================
+    if (action === "upload-task-file") {
+      if (!uploadFile) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "file field required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!taskName) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "task_name required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // 50 MB limit
+      const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
+      if (uploadFile.size > MAX_UPLOAD_SIZE) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "FILE_TOO_LARGE", message: "Max 50 MB", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Build task slug
+      const taskSlug = slugify(taskName, 50);
+      if (!taskSlug) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "task_name produces empty slug", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Date prefix: use task_date or current month
+      let datePrefix: string;
+      if (taskDate) {
+        const d = new Date(taskDate);
+        if (isNaN(d.getTime())) {
+          return new Response(
+            JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid task_date", correlationId: requestId }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        datePrefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      } else {
+        const now = new Date();
+        datePrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      const taskFolderName = `${datePrefix}_${taskSlug}`;
+      const taskFolderPath = `aufgaben/${taskFolderName}`;
+
+      // Validate constructed path
+      if (!isPathSafe(taskFolderPath)) {
+        log.warn("Invalid task folder path", { taskFolderPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid task folder path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Derive client root from the user's profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for upload-task-file");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+      const fullFolderPath = `${cleanClientRoot}/${taskFolderPath}`;
+
+      // Prefix check
+      if (!fullFolderPath.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in upload-task-file", { fullFolderPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const base = webdavBase(ncUrl, ncUser);
+      const authHeaderNC = basicAuth(ncUser, ncPass);
+
+      // MKCOL: create aufgaben/ and the task folder (recursive)
+      const folderSegments = taskFolderPath.split("/");
+      let currentPath = cleanClientRoot;
+      for (const segment of folderSegments) {
+        currentPath = `${currentPath}/${segment}`;
+        const mkcolUrl = `${base}${encodePath(currentPath)}`;
+        const mkcolResp = await fetch(mkcolUrl, {
+          method: "MKCOL",
+          headers: { Authorization: authHeaderNC },
+        });
+        if (mkcolResp.status === 201) {
+          log.info("Task folder segment created", { segment });
+        } else if (mkcolResp.status === 405) {
+          log.info("Task folder segment exists", { segment });
+        } else if (!mkcolResp.ok) {
+          const errText = await mkcolResp.text();
+          log.error("MKCOL failed for task folder", { status: mkcolResp.status, body: errText.slice(0, 500) });
+          return new Response(
+            JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "Failed to create task folder", correlationId: requestId }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      // Sanitise filename
+      const fileName = uploadFile.name;
+      if (!isPathSafe(fileName)) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid file name", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // PUT file
+      const fullFilePath = `${fullFolderPath}/${fileName}`;
+      const davUrl = `${base}${encodePath(fullFilePath)}`;
+      log.info("upload-task-file PUT", { davUrl, size: uploadFile.size });
+
+      const putResp = await fetch(davUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: authHeaderNC,
+          "Content-Type": uploadFile.type || "application/octet-stream",
+        },
+        body: uploadFile.stream(),
+      });
+
+      if (!putResp.ok) {
+        const errText = await putResp.text();
+        log.error("upload-task-file PUT failed", { status: putResp.status, body: errText.slice(0, 500) });
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", correlationId: requestId }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      log.info("upload-task-file succeeded", { fileName, taskFolderPath });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          code: "OK",
+          correlationId: requestId,
+          data: { name: fileName, size: uploadFile.size, path: `${taskFolderPath}/${fileName}` },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );

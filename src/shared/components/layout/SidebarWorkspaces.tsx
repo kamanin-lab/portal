@@ -1,18 +1,21 @@
 import { NavLink } from 'react-router-dom'
-import { ClipboardList, FolderKanban, Headset, Box } from 'lucide-react'
+import { ClipboardList, Folder, FolderKanban, Headset, Box } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import type { ClientWorkspace } from '@/shared/hooks/useWorkspaces'
+import { useProjects } from '@/modules/projects/hooks/useProjects'
 import { WORKSPACE_ROUTES, WORKSPACE_CHILDREN } from '@/shared/lib/workspace-routes'
 
 const DEFAULT_WORKSPACES: ClientWorkspace[] = [
   { id: 'default-projects', profile_id: '', module_key: 'projects', display_name: 'Projekte', icon: 'folder-kanban', sort_order: 1, is_active: true, created_at: '' },
   { id: 'default-tickets', profile_id: '', module_key: 'tickets', display_name: 'Aufgaben', icon: 'clipboard-list', sort_order: 2, is_active: true, created_at: '' },
+  { id: 'default-files', profile_id: '', module_key: 'files', display_name: 'Dateien', icon: 'folder', sort_order: 3, is_active: true, created_at: '' },
 ]
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'clipboard-list': ClipboardList,
   'folder-kanban': FolderKanban,
+  'folder': Folder,
   'headset': Headset,
   'box': Box,
 }
@@ -34,6 +37,14 @@ function WorkspaceBadge({ count }: { count: number }) {
 
 export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props) {
   const visibleWorkspaces = workspaces.length > 0 ? workspaces : DEFAULT_WORKSPACES
+  const { projects } = useProjects()
+
+  // Build dynamic children for projects workspace
+  const projectChildren = projects.map((p) => ({
+    path: `/projekte?id=${p.id}`,
+    label: p.name,
+    icon: 'folder-kanban',
+  }))
 
   return (
     <div className="py-1">
@@ -45,7 +56,9 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
       {visibleWorkspaces.map((ws) => {
         const IconComp = ICON_MAP[ws.icon] ?? Box
         const rootPath = WORKSPACE_ROUTES[ws.module_key] ?? '/'
-        const children = WORKSPACE_CHILDREN[ws.module_key] ?? []
+        const staticChildren = WORKSPACE_CHILDREN[ws.module_key] ?? []
+        // For projects workspace, use dynamically populated children
+        const children = ws.module_key === 'projects' ? projectChildren : staticChildren
 
         return (
           <div key={ws.id}>
