@@ -49,16 +49,22 @@ function addDays(d: Date, n: number): Date {
   return new Date(d.getTime() + n * 86400000)
 }
 
-function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, activeFilters?: ActiveFilters): ClickUpTask[] {
+export function matchesTaskSearch(task: ClickUpTask, query: string): boolean {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return true
+
+  return [task.name, task.description, task.list_name]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .some(value => value.toLowerCase().includes(normalized))
+}
+
+export function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, activeFilters?: ActiveFilters): ClickUpTask[] {
   let result = tasks
 
-  // Text search
   if (query.trim()) {
-    const q = query.toLowerCase()
-    result = result.filter(t => t.name.toLowerCase().includes(q))
+    result = result.filter(t => matchesTaskSearch(t, query))
   }
 
-  // Status filter
   switch (filter) {
     case 'attention':   result = result.filter(t => mapStatus(t.status) === 'needs_attention'); break
     case 'open':        result = result.filter(t => mapStatus(t.status) === 'open'); break
@@ -72,7 +78,6 @@ function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, ac
 
   if (!activeFilters) return result
 
-  // Priority filter
   if (activeFilters.priorities.length > 0) {
     result = result.filter(t => {
       const p = (t.priority ?? 'none').toLowerCase()
@@ -80,7 +85,6 @@ function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, ac
     })
   }
 
-  // Date preset filter
   if (activeFilters.datePreset) {
     const now = new Date()
     result = result.filter(t => {

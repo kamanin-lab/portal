@@ -2,15 +2,42 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { TaskDetail } from './TaskDetail'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
+import { useSingleTask } from '../hooks/useSingleTask'
+import { useUnreadCounts } from '../hooks/useUnreadCounts'
+import { useAuth } from '@/shared/hooks/useAuth'
 
 interface Props {
   taskId: string | null
   onClose: () => void
 }
 
+function SheetMessage({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="flex h-full min-h-[280px] items-center justify-center px-6 py-10 text-center">
+      <div className="max-w-[340px] space-y-2">
+        <h2 className="text-[15px] font-semibold text-text-primary">{title}</h2>
+        <p className="text-sm leading-6 text-text-tertiary">{body}</p>
+      </div>
+    </div>
+  )
+}
+
 export function TaskDetailSheet({ taskId, onClose }: Props) {
-  const { data: tasks = [] } = useClickUpTasks()
-  const task = taskId ? tasks.find(t => t.clickup_id === taskId) : null
+  const { user } = useAuth()
+  const { markAsRead } = useUnreadCounts(user?.id)
+  const { data: tasks = [], isLoading: isTasksLoading, isError: isTasksError, error: tasksError } = useClickUpTasks()
+  const cachedTask = taskId ? tasks.find(t => t.clickup_id === taskId) : null
+  const fallbackTaskQuery = useSingleTask(taskId, !!taskId && !cachedTask && !isTasksLoading)
+
+  const task = cachedTask ?? fallbackTaskQuery.task
+  const isLoading = !!taskId && !task && (isTasksLoading || fallbackTaskQuery.isLoading)
+  const isError = !!taskId && !task && (isTasksError || (fallbackTaskQuery.isError && !fallbackTaskQuery.isNotFound))
+  const isNotFound = !!taskId && !task && !isLoading && !isError && fallbackTaskQuery.isNotFound
+  const errorMessage = tasksError instanceof Error
+    ? tasksError.message
+    : fallbackTaskQuery.error instanceof Error
+      ? fallbackTaskQuery.error.message
+      : null
 
   return (
     <Dialog.Root open={!!taskId} onOpenChange={open => { if (!open) onClose() }}>
@@ -24,7 +51,6 @@ export function TaskDetailSheet({ taskId, onClose }: Props) {
             {task?.name ?? 'Aufgabe'}
           </Dialog.Title>
 
-          {/* Close button */}
           <div className="flex items-center justify-end px-5 py-3 border-b border-border shrink-0">
             <Dialog.Close asChild>
               <button className="p-1.5 rounded-[var(--r-sm)] text-text-tertiary hover:text-text-primary hover:bg-surface-raised transition-colors">
@@ -33,14 +59,23 @@ export function TaskDetailSheet({ taskId, onClose }: Props) {
             </Dialog.Close>
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {task ? (
-              <TaskDetail task={task} onClose={onClose} />
+              <TaskDetail task={task} onClose={onClose} onRead={() => markAsRead(`task:${task.clickup_id}`)} />
+            ) : isLoading ? (
+              <SheetMessage title="Aufgabe wird geladen" body="Wir laden die aktuellen Aufgabendetails. Bitte einen Moment." />
+            ) : isError ? (
+              <SheetMessage
+                title="Aufgabe konnte nicht geladen werden"
+                body={errorMessage ?? 'Die Aufgabendetails sind gerade nicht verfügbar. Bitte versuchen Sie es erneut.'}
+              />
+            ) : isNotFound ? (
+              <SheetMessage
+                title="Aufgabe nicht gefunden"
+                body="Diese Aufgabe ist nicht mehr verfügbar oder für Ihr Portal nicht freigegeben."
+              />
             ) : (
-              <div className="flex items-center justify-center h-40 text-text-tertiary text-sm">
-                Aufgabe nicht gefunden
-              </div>
+              <SheetMessage title="Keine Aufgabe ausgewählt" body="Waehlen Sie eine Aufgabe aus, um die Details zu sehen." />
             )}
           </div>
         </Dialog.Content>

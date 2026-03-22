@@ -78,11 +78,12 @@ Start here:
 - `docs/STATUS.md`
 - `docs/REPOSITORY_MAP.md`
 
-Planning documents created outside the repo currently live in:
-- `C:/Users/upan/.openclaw/workspace/portal-planning/`
+Planning and strategy:
+- `docs/planning/` — strategic planning documents (domain model, delivery rules, product gap list, team operating model)
 
-Historical root planning docs moved out of the active root:
-- `archive/legacy-reference/root-planning/`
+Agent and skill definitions:
+- `.claude/agents/` — agent role definitions (docs-memory, implementation, QA, reviewer-architect)
+- `.claude/skills/` — reusable skill packages (e.g. clickup-api reference)
 
 ## Local development
 
@@ -115,6 +116,8 @@ npm run lint
 This repository still contains some historical layers and documentation drift from earlier phases.
 That is expected at the current stage.
 The immediate goal is **clarity first**, not destructive cleanup.
+
+Documentation consolidation is actively in progress (Phase 4). Planning docs have been moved into the repo at `docs/planning/`, agent definitions live at `.claude/agents/`, and historical root planning docs have been retired from `archive/legacy-reference/root-planning/`.
 
 ## Near-term goals
 

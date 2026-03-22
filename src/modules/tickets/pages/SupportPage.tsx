@@ -10,7 +10,7 @@ export function SupportPage() {
   return (
     <div className="h-[calc(100vh-52px)] md:h-screen flex flex-col">
       <ContentContainer width="narrow" className="flex-1 flex flex-col min-h-0">
-        <SupportChat onRead={() => markAsRead('support')} />
+        <SupportChat active onRead={() => markAsRead('support')} />
       </ContentContainer>
     </div>
   );

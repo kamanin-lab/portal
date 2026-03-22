@@ -22,6 +22,10 @@ export function getNextUpcomingStep(project: Project): StepWithChapter | null {
 export function getCurrentChapter(project: Project): Chapter | null {
   const next = getNextCheckpoint(project);
   if (next) return next.chapter;
+
+  const firstIncompleteChapter = project.chapters.find(chapter => !isChapterCompleted(chapter));
+  if (firstIncompleteChapter) return firstIncompleteChapter;
+
   return project.chapters[project.chapters.length - 1] ?? null;
 }
 

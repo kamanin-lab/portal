@@ -201,3 +201,28 @@
 - Replaced blank `WorkspaceGuard` loading state with a proper loading shell
 - Replaced imperative login redirect side-effect with declarative `<Navigate>`
 - Improved Inbox and MeineAufgaben loading / empty states
+
+## Phase 4: Project Memory & Integration Hardening — 2026-03-20+
+
+### Project Memory Foundation
+- Created `manage-project-memory` Edge Function for project memory CRUD operations
+- Added project memory batch 1 foundation (client memory visibility and persistence)
+- Hardened client memory visibility rules and internal memory authoring path
+- Restored internal memory authoring path after browser verification flow changes
+
+### ClickUp Integration Hardening
+- Unified and hardened ClickUp public thread routing across Edge Functions
+- Unified project webhook phase resolution
+- Hardened shared ClickUp contract between Edge Functions
+- Added ClickUp integration documentation for Phase 4
+
+### Project Panel
+- Shipped project panel batch 1 foundation (`feat(projects): ship project panel batch 1 foundation`)
+
+### Developer Tooling & Documentation
+- Added Playwright MCP browser testing setup
+- Added Context Hub references for core frontend stack (React, Tailwind, Vite, Vitest)
+- Added local Supabase reference documentation (`docs/reference/supabase-context-hub/`)
+- Agent team migrated to Claude Code native (`.claude/agents/`)
+- Planning docs moved into repository (`docs/planning/`)
+- Documentation audit and consolidation in progress

@@ -77,5 +77,5 @@ Container: /home/deno/functions (edge-runtime v1.67.4)
 4. Restart edge-runtime container
 5. Verify: `curl -s http://<edge-runtime-IP>:9000/<function-name>`
 
-### 12 Functions + main router
-fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message
+### 13 Functions + main router
+fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory

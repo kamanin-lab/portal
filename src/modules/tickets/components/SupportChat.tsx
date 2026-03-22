@@ -8,22 +8,25 @@ import { dict } from '../lib/dictionary';
 
 interface SupportChatProps {
   onRead?: () => void;
+  active?: boolean;
 }
 
-export function SupportChat({ onRead }: SupportChatProps) {
-  const { comments, isLoading, sendMessage, isSending, isConfigured, supportTaskId } = useSupportTaskChat();
+export function SupportChat({ onRead, active = true }: SupportChatProps) {
+  const { comments, isLoading, error, sendMessage, isSending, isConfigured, supportTaskId } = useSupportTaskChat();
   const calledOnRead = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && !calledOnRead.current) {
-      calledOnRead.current = true;
-      onRead?.();
-    }
-  }, [isLoading, onRead]);
+    calledOnRead.current = false;
+  }, [supportTaskId, active]);
+
+  useEffect(() => {
+    if (!active || !isConfigured || isLoading || error || calledOnRead.current) return;
+    calledOnRead.current = true;
+    onRead?.();
+  }, [active, error, isConfigured, isLoading, onRead]);
 
   return (
     <div className="flex flex-col h-full p-[24px] max-[768px]:p-[16px]">
-      {/* Header */}
       <div className="flex items-center gap-[10px] mb-[20px] pb-[14px] border-b border-border">
         <h1 className="text-[1.2rem] font-semibold text-text-primary tracking-[-0.02em] flex-1">
           {dict.labels.supportTitle}
@@ -34,7 +37,6 @@ export function SupportChat({ onRead }: SupportChatProps) {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 flex flex-col gap-[10px] overflow-y-auto mb-[16px]" style={{ scrollbarWidth: 'thin' }}>
         {!isConfigured ? (
           <EmptyState message={dict.labels.noComments} />
@@ -59,7 +61,6 @@ export function SupportChat({ onRead }: SupportChatProps) {
         )}
       </div>
 
-      {/* Input */}
       {isConfigured && supportTaskId && (
         <CommentInput
           taskId={supportTaskId}

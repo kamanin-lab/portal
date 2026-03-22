@@ -13,16 +13,19 @@ interface TaskCommentsProps {
 }
 
 export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: TaskCommentsProps) {
-  const { data: comments = [], isLoading } = useTaskComments(taskId);
+  const { data: comments = [], isLoading, error } = useTaskComments(taskId);
   const { mutateAsync: postComment, isPending: isSending } = usePostComment();
   const calledOnRead = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && comments.length >= 0 && !calledOnRead.current) {
-      calledOnRead.current = true;
-      onRead?.();
-    }
-  }, [isLoading, comments.length, onRead]);
+    calledOnRead.current = false;
+  }, [taskId]);
+
+  useEffect(() => {
+    if (isLoading || error || calledOnRead.current) return;
+    calledOnRead.current = true;
+    onRead?.();
+  }, [error, isLoading, onRead]);
 
   async function handleSend(text: string, files?: import('../types/tasks').FileData[]) {
     await postComment({ taskId, comment: text, files });

@@ -10,7 +10,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 
 ## Stack
 
-- **Frontend:** React 18 + TypeScript, Vite, Tailwind CSS v3, shadcn/ui, Lucide React, React Router v6
+- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, Lucide React, React Router v7
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
@@ -50,7 +50,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/DECISIONS.md` | Architecture Decision Records |
 | `docs/CHANGELOG.md` | What changed, when, why |
 | `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
-| `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts |
+| `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
@@ -62,6 +62,10 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 npm run dev          # Vite dev server
 npm run build        # Production build
 npm run preview      # Preview production build
+npm run test         # Run tests (Vitest)
+npm run test:watch   # Tests in watch mode
+npm run test:coverage # Tests with coverage report
+npm run lint         # ESLint
 npx supabase gen types typescript --project-id [id] > src/shared/types/database.ts
 ```
 
@@ -70,57 +74,88 @@ npx supabase gen types typescript --project-id [id] > src/shared/types/database.
 ```
 PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 ├── CLAUDE.md
+├── .claude/
+│   ├── agents/                 # Agent role definitions
+│   │   ├── docs-memory-agent.md
+│   │   ├── implementation-agent.md
+│   │   ├── qa-agent.md
+│   │   └── reviewer-architect.md
+│   ├── skills/                 # Skills (e.g., clickup-api/)
+│   └── settings.json
 ├── docs/
 │   ├── SPEC.md                 # Design tokens, component specs, status mapping
 │   ├── ARCHITECTURE.md         # System architecture
 │   ├── DECISIONS.md            # ADR log
 │   ├── CHANGELOG.md
-│   └── ideas/                  # Future feature proposals
-│       └── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
+│   ├── ideas/                  # Future feature proposals
+│   │   └── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
+│   ├── planning/               # Domain model, delivery rules, product gaps
+│   │   ├── current-state-map.md
+│   │   ├── delivery-rules.md
+│   │   ├── domain-model-v1.md
+│   │   ├── product-gap-list.md
+│   │   └── team-operating-model-v1.md
+│   ├── reference/              # API docs, context-hub caches
+│   │   ├── context-hub/
+│   │   └── supabase-context-hub/
+│   └── system-context/         # Architectural source-of-truth docs
+│       ├── DATABASE_SCHEMA.md
+│       ├── NOTIFICATION_MATRIX.md
+│       ├── PRODUCT_VISION.md
+│       ├── STATUS_TRANSITION_MATRIX.md
+│       ├── SYSTEM_CONSTRAINTS.md
+│       └── TECH_CONTEXT.md
+├── tasks/
+│   ├── dashboard.md            # Current team status (keep updated!)
+│   └── task-template.md
 ├── src/
-│   ├── app/                    # App.tsx, routes.tsx, providers.tsx
+│   ├── app/                    # ProtectedRoute.tsx, routes.tsx
 │   ├── shared/
-│   │   ├── components/ui/      # shadcn/ui
+│   │   ├── components/ui/      # SideSheet (shadcn/ui base)
 │   │   ├── components/layout/  # AppShell, Sidebar, MobileHeader, BottomNav
-│   │   ├── components/common/  # Badge, StatusDot, EmptyState
-│   │   ├── hooks/              # useAuth, useProfile, useRealtime, useBreakpoint
-│   │   ├── lib/                # supabase.ts, constants.ts, utils.ts, linkify.tsx
+│   │   ├── components/common/  # ConfirmDialog, EmptyState, LoadingSkeleton, MessageBubble, StatusBadge
+│   │   ├── hooks/              # useAuth, useBreakpoint, useWorkspaces
+│   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts
 │   │   ├── styles/tokens.css   # CSS custom properties
-│   │   └── types/              # database.ts (generated), common.ts
+│   │   └── types/              # common.ts
 │   ├── modules/
 │   │   ├── projects/           # Project Experience module
 │   │   │   ├── components/     # overview/, steps/, tasks/, files/, messages/, help/
-│   │   │   ├── hooks/          # useProject, useChapterHelpers, useHeroPriority
-│   │   │   ├── lib/            # phase-colors, mock-data, helpers
+│   │   │   ├── hooks/          # useProject, useProjects, useProjectMemory, useChapterHelpers, useHeroPriority
+│   │   │   ├── lib/            # helpers, transforms-project, phase-colors, step-status-mapping, memory-access, memory-store, overview-interpretation, mock-data
 │   │   │   ├── types/          # project.ts
-│   │   │   └── pages/          # ProjectPage.tsx
+│   │   │   └── pages/          # UebersichtPage, NachrichtenPage, DateienPage
 │   │   └── tickets/            # Tasks/Support module (Phase 3.5)
 │   │       ├── components/     # TaskCard, TaskList, TaskDetail, TaskActions,
-│   │       │                   # TaskFilters, TaskSearchBar, SyncIndicator,
-│   │       │                   # NewTaskButton, TaskDetailSheet, TaskComments,
-│   │       │                   # NewTicketDialog, PriorityIcon
-│   │       ├── hooks/          # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts
-│   │       ├── lib/            # status-mapping, status-dictionary, transforms, dictionary
+│   │       │                   # TaskFilters, TaskFilterPanel, TaskSearchBar,
+│   │       │                   # SyncIndicator, NewTaskButton, TaskDetailSheet,
+│   │       │                   # TaskComments, NewTicketDialog, PriorityIcon,
+│   │       │                   # SupportChat, SupportSheet, CommentInput,
+│   │       │                   # NotificationBell
+│   │       ├── hooks/          # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts, useCreateTask, useSingleTask, useSupportTaskChat
+│   │       ├── lib/            # status-mapping, status-dictionary, transforms, dictionary, logger
 │   │       ├── types/          # tasks.ts
 │   │       └── pages/          # TicketsPage (Sheet-based), SupportPage
 │   └── main.tsx
 ├── supabase/
 │   └── functions/              # Edge Functions (deployed via volume mount to Coolify)
 │       ├── main/index.ts       # Router — dispatches requests to worker functions
-│       ├── _shared/            # cors.ts, logger.ts, utils.ts, emailCopy.ts
-│       ├── fetch-clickup-tasks/
-│       ├── fetch-task-comments/
-│       ├── fetch-single-task/
-│       ├── post-task-comment/
-│       ├── update-task-status/
-│       ├── clickup-webhook/
-│       ├── fetch-project-tasks/
-│       ├── send-mailjet-email/
-│       ├── create-clickup-task/
+│       ├── _shared/            # cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts
 │       ├── auth-email/
+│       ├── clickup-webhook/
+│       ├── create-clickup-task/
+│       ├── fetch-clickup-tasks/
+│       ├── fetch-project-tasks/
+│       ├── fetch-single-task/
+│       ├── fetch-task-comments/
+│       ├── manage-project-memory/
+│       ├── post-task-comment/
 │       ├── send-feedback/
-│       └── send-support-message/
-├── tailwind.config.ts
+│       ├── send-mailjet-email/
+│       ├── send-support-message/
+│       └── update-task-status/
+├── vite.config.ts
+├── vitest.config.ts
 └── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 ```
 
@@ -178,7 +213,7 @@ Tool for fetching LLM-optimized API docs on demand instead of guessing from trai
 - **Skill:** `~/.claude/skills/get-api-docs/SKILL.md` (global)
 - **Usage:** Before writing code against an external API → `chub search [api]` → `chub get [id] --lang js`
 - **Add gotchas:** `chub annotate [id] "note"` (overwrites — combine all notes for same ID into one call)
-- **Available for our stack:** `supabase/client` (v2.76.1) — includes our portal-specific annotations
+- **Available for our stack:** `supabase/client` (v2.99.0) — includes our portal-specific annotations
 - **Not available (yet):** React, Tailwind, ClickUp, Mailjet, Vite — registry is growing
 
 ## Docs Update Protocol
@@ -188,3 +223,94 @@ After ANY structural change:
 2. Update this CLAUDE.md if project-level context changed
 3. Add entry to `docs/DECISIONS.md` for architecture decisions
 4. Add entry to `docs/CHANGELOG.md`
+
+## Supervisor Role (Lead Session)
+
+This session acts as the Supervisor for the PORTAL agent team.
+Messages arrive from Telegram via Channels. You coordinate all work.
+
+### Core Rules
+- Frame tasks clearly before execution using the task template
+- Keep work aligned with planning docs in docs/planning/
+- Enforce staging-only rule: implementation-agent works only in staging
+- Stop uncontrolled scope growth
+- After every completed loop step, immediately update tasks/dashboard.md and trigger the next step
+- When a review/QA verdict arrives, the next workflow step MUST start immediately — do not stop at a status-only reply
+- Send short status updates via Telegram at meaningful phase transitions
+- During long-running execution, send checkpoint updates roughly every 5 minutes
+- Each checkpoint: verify (1) actual task status and (2) dashboard accuracy
+- Only escalate to Yuri for serious architectural decisions, true blockers, or explicit approval boundaries
+- Never remain in passive status-explaining mode when the process has a clear next action
+- Actively supervise parallel work: do not forget the main task during side conversations
+
+### Must NOT Do
+- Skip review just to move faster
+- Treat first implementation as automatically acceptable
+- Allow direct implementation in the original repo
+- Let silent multi-hour drift happen (this is a serious supervisor failure)
+
+## Handoff Rules
+
+### Standard Sequence
+1. Supervisor frames the task (using task template)
+2. reviewer-architect critiques the plan (pre-code review)
+3. implementation-agent executes scoped work
+4. reviewer-architect reviews the result (post-code review)
+5. qa-agent verifies behavior and regressions
+6. Supervisor decides accept / revise
+7. docs-memory-agent updates source-of-truth when needed
+
+### Minimum Handoff Content
+Each handoff to an agent MUST include:
+- Task goal
+- In-scope changes
+- Out-of-scope changes
+- Affected files/modules
+- Constraints / references to consult
+- Known risks
+- Required outputs
+
+### Flow Discipline
+- When one step finishes and the next is clear → move immediately
+- Update dashboard right away
+- Trigger the next agent right away
+- Do NOT wait for user if no new approval is required
+- Do NOT let the process stall because of delayed status sync
+- After verdict, launch the next step — status reporting alone is not enough
+
+### Revision Rule
+If review or QA finds blocking issues → work returns for another loop.
+No task is complete until the Supervisor accepts it.
+
+## Telegram Communication Format
+
+When sending status via Channels (Telegram):
+- 📋 **Plan ready**: [brief summary]. Approve?
+- 🔍 **Pre-code review**: [verdict]. [key concerns if any]
+- ⚙️ **Implementation done**: [X files changed]. Running review...
+- 🔍 **Post-code review**: [X blocking, Y non-blocking]. [verdict]
+- ✅ **QA passed**: [summary]. Push to GitHub?
+- 🚀 **Deployed** to portal.kamanin.at
+- ❌ **Problem**: [description]. How to proceed?
+- ⏳ **Checkpoint**: [current phase], [% done], [next step]
+
+Keep messages concise. Yuri manages from phone — no walls of text.
+
+## Available Agents
+
+| Agent | Model | Role |
+|---|---|---|
+| reviewer-architect | Sonnet | Pre-code & post-code review, architecture gate |
+| implementation-agent | Opus | Coding, stays in staging, follows approved scope |
+| qa-agent | Sonnet | Build verification, data flow, edge cases |
+| docs-memory-agent | Sonnet | Updates docs, records decisions, preserves context |
+
+## Key Project Documents
+- `docs/system-context/SYSTEM_CONSTRAINTS.md` — non-negotiable architectural rules
+- `docs/system-context/TECH_CONTEXT.md` — full stack documentation
+- `docs/system-context/STATUS_TRANSITION_MATRIX.md` — allowed status changes + notifications
+- `docs/system-context/NOTIFICATION_MATRIX.md` — email/bell trigger rules
+- `docs/system-context/PRODUCT_VISION.md` — product direction
+- `docs/system-context/DATABASE_SCHEMA.md` — database schema reference
+- `docs/planning/` — domain model, delivery rules, product gaps
+- `tasks/dashboard.md` — current team status (keep updated!)

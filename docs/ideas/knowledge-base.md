@@ -2,6 +2,15 @@
 
 > Status: Planned | Priority: High | Target: Phase 4+
 
+## Strategic Direction (from OpenClaw planning)
+
+- Shared client/account memory model is a required future direction, not an optional nice-to-have.
+- Portal memory = structured operational memory inside the product.
+- Broader client memory = documents, spreadsheets, old site content, emails/exports, media, and other project artifacts.
+- Nextcloud is intended as the main external storage layer for the broader client information corpus.
+- Evolve from profile-scoped approximation toward a true shared client/account model.
+- Support memory shared across multiple client-side users/profiles and multiple projects.
+
 ## Problem
 
 AI enrichment (`why_it_matters`, `what_becomes_fixed`) sends only task name + description to Claude — no client context. Result: generic boilerplate texts regardless of client industry, goals, or audience.

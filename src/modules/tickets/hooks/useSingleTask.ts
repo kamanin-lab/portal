@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import { createLogger } from '../lib/logger';
 import type { ClickUpTask } from '../types/tasks';
@@ -10,38 +10,49 @@ interface FetchSingleTaskResponse {
   message?: string;
 }
 
-// Fetches a single task by ClickUp task ID via Edge Function.
-// Used for deep-link access (e.g., links from email notifications).
-export function useSingleTask() {
-  const fetchSingleTask = useCallback(async (taskId: string): Promise<ClickUpTask | null> => {
-    if (!taskId || !/^[a-zA-Z0-9]+$/.test(taskId)) {
-      log.error('Invalid task ID format');
-      return null;
-    }
+class SingleTaskNotFoundError extends Error {
+  constructor(message = 'Task not found') {
+    super(message);
+    this.name = 'SingleTaskNotFoundError';
+  }
+}
 
-    try {
-      const { data, error } = await supabase.functions.invoke<FetchSingleTaskResponse>(
-        'fetch-single-task',
-        { body: { taskId } }
-      );
+async function fetchSingleTask(taskId: string): Promise<ClickUpTask> {
+  if (!taskId || !/^[a-zA-Z0-9]+$/.test(taskId)) {
+    throw new Error('Invalid task ID format');
+  }
 
-      if (error) {
-        log.error('Failed to fetch single task', { error: error.message });
-        return null;
-      }
+  const { data, error } = await supabase.functions.invoke<FetchSingleTaskResponse>(
+    'fetch-single-task',
+    { body: { taskId } }
+  );
 
-      if (!data?.task) {
-        log.info('Task not found or no access', { message: data?.message });
-        return null;
-      }
+  if (error) {
+    log.error('Failed to fetch single task', { error: error.message, taskId });
+    throw new Error(error.message || 'Failed to fetch task');
+  }
 
-      log.info('Fetched task', { name: data.task.name });
-      return data.task;
-    } catch (err) {
-      log.error('Failed to fetch single task', { error: (err as Error).message });
-      return null;
-    }
-  }, []);
+  if (!data?.task) {
+    log.info('Task not found or no access', { taskId, message: data?.message });
+    throw new SingleTaskNotFoundError(data?.message || 'Task not found');
+  }
 
-  return { fetchSingleTask };
+  log.info('Fetched task', { taskId, name: data.task.name });
+  return data.task;
+}
+
+export function useSingleTask(taskId: string | null, enabled = true) {
+  const query = useQuery({
+    queryKey: ['single-task', taskId],
+    queryFn: () => fetchSingleTask(taskId!),
+    enabled: enabled && !!taskId,
+    staleTime: 1000 * 60,
+    retry: false,
+  });
+
+  return {
+    ...query,
+    task: query.data ?? null,
+    isNotFound: query.error instanceof SingleTaskNotFoundError,
+  };
 }
