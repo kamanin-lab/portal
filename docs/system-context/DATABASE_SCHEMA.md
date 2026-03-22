@@ -163,6 +163,60 @@ Support chat message storage. Each message corresponds to a comment on the user'
 
 ---
 
+### 1.7 project_config
+
+Project configuration. Maps a portal project to its ClickUp list and Nextcloud folder.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Project config ID |
+| clickup_list_id | text | NOT NULL | ClickUp List ID for this project |
+| clickup_phase_field_id | text | | Custom field ID used to map tasks to chapters/phases |
+| name | text | NOT NULL | Project display name |
+| type | text | NOT NULL | Project type label (e.g., "Website") |
+| client_name | text | NOT NULL | Client company name |
+| client_initials | text | NOT NULL | Short initials for avatar badges |
+| start_date | date | | Project start date |
+| target_date | date | | Target completion date |
+| is_active | boolean | DEFAULT true | Whether the project is active |
+| general_message_task_id | text | | ClickUp task ID for general project messages |
+| nextcloud_root_path | text | | WebDAV path to the project root folder in Nextcloud (e.g., `/01_OPUS/Company/projects/ProjectName`). Used by `nextcloud-files` Edge Function. NULL means files are not yet configured. |
+
+---
+
+### 1.8 chapter_config
+
+Chapter (phase) configuration for projects. Each project has 1-N chapters ordered by `sort_order`.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Chapter config ID |
+| project_config_id | uuid | NOT NULL, FK -> project_config(id) | Parent project |
+| clickup_cf_option_id | text | | ClickUp custom field option ID for phase mapping |
+| title | text | NOT NULL | Chapter display title (e.g., "Konzept") |
+| sort_order | integer | NOT NULL | Display order (1-based). Also used to build Nextcloud folder prefix (e.g., `01_Konzept`) |
+| narrative | string | NOT NULL | Description shown when chapter is current |
+| next_narrative | string | NOT NULL | Description shown when chapter is next |
+| is_active | boolean | DEFAULT true | Whether this chapter is active |
+
+---
+
+### 1.9 project_access
+
+Maps users to projects they can access. One row per (user, project) pair.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) | User |
+| project_config_id | uuid | NOT NULL, FK -> project_config(id) | Project |
+
+**Unique Constraint:** `(profile_id, project_config_id)`
+
+**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+
+---
+
 ## 2. Edge Functions
 
 All Edge Functions are deployed with `verify_jwt = false` in `supabase/config.toml` and perform manual JWT verification internally via `supabase.auth.getUser(token)`.
@@ -606,6 +660,45 @@ Supabase Auth email hook. Intercepts auth emails (magic link, password reset, si
 
 ---
 
+### 2.12 nextcloud-files
+
+WebDAV proxy for Nextcloud file operations. Provides list, download, and upload actions for project files.
+
+| Property | Value |
+|----------|-------|
+| **Method** | POST |
+| **Auth** | Bearer token (user JWT) |
+| **Input** | JSON body or multipart/form-data (for upload) |
+| **Output** | `{ ok, code, correlationId, data? }` |
+
+**Secrets Used:**
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXTCLOUD_URL` — Nextcloud instance URL (e.g., `https://cloud.kamanin.at`)
+- `NEXTCLOUD_USER` — Service account username
+- `NEXTCLOUD_PASS` — Service account password
+
+**Actions:**
+
+| Action | Input | Description |
+|--------|-------|-------------|
+| `list` | `{ action: "list", project_config_id, chapter_sort_order? }` | PROPFIND depth:1, returns `NextcloudFile[]` |
+| `download` | `{ action: "download", project_config_id, file_path }` | Streams file bytes back to browser |
+| `upload` | FormData: `action`, `project_config_id`, `chapter_sort_order?`, `file` | PUTs file to Nextcloud via WebDAV |
+
+**Security:**
+- Path traversal prevention: rejects `..`, leading `/`, and paths escaping `nextcloud_root_path`
+- Project access verified via `project_access` table (user must have access to the project)
+- `nextcloud_root_path` loaded from `project_config` (returns `NEXTCLOUD_NOT_CONFIGURED` if null)
+- Chapter folder name resolved from `chapter_config.sort_order` + `chapter_config.title`
+
+**Error Codes:**
+- `NEXTCLOUD_NOT_CONFIGURED` — project has no `nextcloud_root_path` set (HTTP 200, non-error for UI)
+- `NEXTCLOUD_ERROR` — upstream Nextcloud error (HTTP 502)
+- `FOLDER_NOT_FOUND` — target folder does not exist in Nextcloud (HTTP 409)
+- `FILE_TOO_LARGE` — upload exceeds 50 MB limit (HTTP 400)
+
+---
+
 ## 3. Shared Utilities (`_shared/`)
 
 ### 3.1 cors.ts
@@ -689,7 +782,10 @@ Complete list of required secrets across all Edge Functions.
 | `CLICKUP_WORKSPACE_ID` | create-clickup-task | Workspace ID for Chat v3 API notifications |
 | `MAILJET_API_KEY` | send-mailjet-email, auth-email, send-feedback | Mailjet API key |
 | `MAILJET_API_SECRET` | send-mailjet-email, auth-email, send-feedback | Mailjet API secret |
+| `NEXTCLOUD_URL` | nextcloud-files | Nextcloud instance URL (e.g., `https://cloud.kamanin.at`) |
+| `NEXTCLOUD_USER` | nextcloud-files | Nextcloud service account username |
+| `NEXTCLOUD_PASS` | nextcloud-files | Nextcloud service account password |
 
 **Auto-injected by Supabase:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
-**Manual configuration required:** `CLICKUP_API_TOKEN`, `CLICKUP_VISIBLE_FIELD_ID`, `CLICKUP_WEBHOOK_SECRET`, `CLICKUP_WORKSPACE_ID`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`
+**Manual configuration required:** `CLICKUP_API_TOKEN`, `CLICKUP_VISIBLE_FIELD_ID`, `CLICKUP_WEBHOOK_SECRET`, `CLICKUP_WORKSPACE_ID`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `NEXTCLOUD_URL`, `NEXTCLOUD_USER`, `NEXTCLOUD_PASS`

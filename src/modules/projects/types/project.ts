@@ -1,3 +1,13 @@
+/** File entry returned by the Nextcloud WebDAV proxy Edge Function. */
+export interface NextcloudFile {
+  name: string;
+  path: string;          // relative to project root
+  type: 'file' | 'folder';
+  mimeType?: string;
+  size: number;          // bytes
+  lastModified: string;  // ISO date string
+}
+
 export type StepStatus = 'committed' | 'awaiting_input' | 'upcoming_locked';
 export type ChapterStatus = 'completed' | 'current' | 'upcoming';
 export type UpdateType = 'file' | 'status' | 'message';
