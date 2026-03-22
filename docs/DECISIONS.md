@@ -116,6 +116,20 @@
 - Edge Function `nextcloud-files` gains `sub_path` (list/upload) and `mkdir` action.
 - Semantically cleaner: Nextcloud IS the file system; the portal navigates it directly.
 
+## ADR-013: shadcn/ui adopted selectively (not full library)
+**Date:** 2026-03-22
+**Status:** Accepted
+
+**Context:** The portal needed standardized UI primitives (buttons, inputs, tabs, skeletons, dialogs) that were previously hand-rolled with inconsistent styling and accessibility. Installing the full shadcn/ui library upfront would add unnecessary components and complicate the token customization surface.
+
+**Decision:** Install shadcn/ui components selectively — only the 8 components actively needed: Button, Badge, Input, Textarea, Tabs, Skeleton, Avatar, AlertDialog. All component styling is driven by portal CSS tokens defined in `tokens.css`. Shadcn component source is not modified directly; customization goes through CSS custom properties only.
+
+**Consequences:**
+- Consistent accessible primitives across all new UI surfaces without dependency bloat.
+- Adding a new shadcn component in future requires a deliberate install step — prevents accidental full-library pulls.
+- Portal token system (`tokens.css`) becomes the single customization layer for both shadcn components and custom components.
+- `UserAvatar` created as a thin shadcn Avatar wrapper with initials fallback, establishing the pattern for future wrapper components.
+
 ## ADR-011: Meine Aufgaben as dedicated page (not redirect)
 **Date:** 2026-03-13
 **Status:** Accepted

@@ -229,6 +229,32 @@
 
 ---
 
+## TASK-008: shadcn/ui Migration — 2026-03-22
+
+### shadcn/ui Components Installed
+- Installed 8 base components selectively: Button, Badge, Input, Textarea, Tabs, Skeleton, Avatar, AlertDialog
+- Components installed into `src/shared/components/ui/` via shadcn CLI
+- All components customized via portal CSS tokens — no shadcn defaults overridden directly
+
+### Components Refactored
+- `ConfirmDialog` — migrated to shadcn AlertDialog
+- `LoadingSkeleton` — migrated to shadcn Skeleton
+- `StepDetail` — migrated to shadcn Tabs
+- `NewTicketDialog` — migrated to shadcn Input, Textarea, Button
+- `UpdatesFeed` — migrated to shadcn Badge
+
+### New Components
+- `UserAvatar` (`src/shared/components/common/UserAvatar.tsx`) — shadcn Avatar wrapper with initials fallback and portal token styling
+
+### Design Token Additions (`tokens.css`)
+- `--destructive`, `--destructive-foreground` — destructive action color (AlertDialog confirm)
+- `--file-*` — file type icon color tokens
+- `--priority-*` — priority level color tokens
+- `--surface-raised` — elevated surface color (cards, sheets)
+
+### Hardcoded Color Cleanup
+- Replaced all hardcoded hex/Tailwind color classes with CSS custom property references across refactored components
+
 ## Phase 4: Project Memory & Integration Hardening — 2026-03-20+
 
 ### Project Memory Foundation

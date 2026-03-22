@@ -11,6 +11,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 ## Stack
 
 - **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, Lucide React, React Router v7
+- **UI primitives:** shadcn/ui is the standard for new UI building blocks (Button, Input, Tabs, Badge, Skeleton, Avatar, AlertDialog, Textarea, etc.). Install selectively — only components actually needed. Customize via portal CSS tokens, not by overriding shadcn defaults directly.
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
@@ -30,6 +31,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 9. **Sidebar is 3-zone Linear-style** — Global / Workspaces (from `client_workspaces`) / Utilities
 10. **Task detail is a Sheet** — URL-based state `?taskId=xxx`, no separate `/tickets/:id` route
 11. **`ContentContainer width="narrow"` on all app pages** — Every page uses `<ContentContainer width="narrow">` as its width wrapper (`max-w-4xl`, centered). Exception: login/auth pages and full-viewport layouts. Never use `width="wide"` or inline `max-w-*` on page roots.
+12. **shadcn/ui for all new UI primitives** — Use shadcn/ui components (Button, Input, Tabs, Badge, Skeleton, Avatar, AlertDialog, Textarea) instead of building raw HTML equivalents. Style via portal tokens in `tokens.css`, not by modifying shadcn component source.
 
 ## Modules
 
