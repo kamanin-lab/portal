@@ -5,10 +5,12 @@
  *   list     — PROPFIND depth:1, returns NextcloudFile[]
  *   download — streams file bytes back to browser
  *   upload   — accepts multipart/form-data, PUTs file to Nextcloud
+ *   mkdir    — recursive MKCOL, creates folder hierarchy
  *
  * Targeting:
  *   - chapter_sort_order — resolves to chapter folder (e.g. "01_Konzept")
  *   - sub_path           — arbitrary relative path within project root (overrides chapter)
+ *   - folder_path        — used by mkdir action only
  *
  * Security:
  *   - Path sanitisation (reject "..", leading "/", control characters)
@@ -256,6 +258,7 @@ Deno.serve(async (req) => {
     let filePath: string | undefined;
     let uploadFile: File | null = null;
     let subPath: string | undefined;
+    let folderPath: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -266,6 +269,7 @@ Deno.serve(async (req) => {
       filePath = (formData.get("file_path") as string) || undefined;
       uploadFile = formData.get("file") as File | null;
       subPath = (formData.get("sub_path") as string) || undefined;
+      folderPath = (formData.get("folder_path") as string) || undefined;
     } else {
       const body = await req.json();
       action = body.action || "";
@@ -275,6 +279,7 @@ Deno.serve(async (req) => {
         : undefined;
       filePath = body.file_path || undefined;
       subPath = body.sub_path || undefined;
+      folderPath = body.folder_path || undefined;
     }
 
     if (!action || !projectConfigId) {
@@ -557,6 +562,68 @@ Deno.serve(async (req) => {
           code: "OK",
           correlationId: requestId,
           data: { name: fileName, size: uploadFile.size, path: relativePath },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: mkdir
+    // ====================================================================
+    if (action === "mkdir") {
+      if (!folderPath) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "folder_path required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!isPathSafe(folderPath)) {
+        log.warn("Invalid folder_path", { folderPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid folder path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Recursive creation: MKCOL each segment from root down
+      const segments = folderPath.split("/");
+      let currentPath = ctx.rootPath;
+
+      for (const segment of segments) {
+        currentPath = `${currentPath}/${segment}`;
+        const davUrl = `${base}${encodePath(currentPath)}`;
+
+        log.info("MKCOL", { davUrl });
+
+        const mkcolResp = await fetch(davUrl, {
+          method: "MKCOL",
+          headers: { Authorization: authHeaderNC },
+        });
+
+        if (mkcolResp.status === 201) {
+          log.info("Folder created", { segment });
+        } else if (mkcolResp.status === 405) {
+          // Folder already exists — idempotent success
+          log.info("Folder already exists", { segment });
+        } else if (!mkcolResp.ok) {
+          const errText = await mkcolResp.text();
+          log.error("MKCOL failed", { status: mkcolResp.status, body: errText.slice(0, 500) });
+          return new Response(
+            JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "Failed to create folder", correlationId: requestId }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      log.info("mkdir complete", { folderPath });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          code: "OK",
+          correlationId: requestId,
+          data: { path: folderPath },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
