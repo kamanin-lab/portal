@@ -1,23 +1,19 @@
 {
-  "lastUpdated": "2026-03-22T22:00:00Z",
-  "status": "active",
-  "currentTask": {
-    "id": "TASK-006",
-    "title": "Interactive Dashboard",
-    "description": "Build HTML/JS dashboard with timeline visualization and auto-refresh"
-  },
-  "activeAgents": [
-    { "name": "implementation-agent", "status": "working", "task": "Building dashboard HTML + JSON" }
-  ],
-  "pipeline": [
-    { "phase": "Task Framing", "status": "done", "agent": "Supervisor", "notes": "Plan written" },
-    { "phase": "Plan", "status": "done", "agent": "Supervisor", "notes": "TASK-006-dashboard-plan.md" },
-    { "phase": "Implementation", "status": "in_progress", "agent": "implementation-agent", "notes": "Building HTML dashboard" },
-    { "phase": "Post-Code Review", "status": "pending", "agent": "reviewer-architect", "notes": "" },
-    { "phase": "QA Verification", "status": "pending", "agent": "qa-agent", "notes": "" },
-    { "phase": "Accept/Revise", "status": "pending", "agent": "Supervisor", "notes": "" }
-  ],
+  "lastUpdated": "2026-03-22T23:45:00Z",
+  "status": "idle",
+  "currentTask": null,
+  "activeAgents": [],
+  "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-006",
+      "title": "Interactive Dashboard",
+      "date": "2026-03-22",
+      "commits": ["1e275a2"],
+      "summary": "HTML/JS dashboard with timeline visualization, auto-refresh 5s, dark theme, expandable tasks, ideas section, responsive.",
+      "filesChanged": 2,
+      "reviewCycles": 1
+    },
     {
       "id": "TASK-005",
       "title": "Real-Time Updates",
@@ -69,9 +65,43 @@
     { "item": "UpdatesFeed.tsx at 170 lines -- slightly over limit", "priority": "low" },
     { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" }
   ],
+  "ideas": [
+    {
+      "title": "Client Review Reminder Emails",
+      "file": "client-review-reminders.md",
+      "status": "idea",
+      "priority": "medium",
+      "target": "Phase 5+",
+      "summary": "Автоматические email-напоминания клиентам о задачах в статусе Client Review"
+    },
+    {
+      "title": "Credit System (Task Credits)",
+      "file": "credit-system.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Phase 4+",
+      "summary": "Кредитная система оценки задач — прозрачность для клиента по объёму работы"
+    },
+    {
+      "title": "Per-Client Knowledge Base",
+      "file": "knowledge-base.md",
+      "status": "planned",
+      "priority": "high",
+      "target": "Phase 4+",
+      "summary": "AI-обогащение контекстом клиента для персонализированных описаний и рекомендаций"
+    },
+    {
+      "title": "Proactive Recommendations",
+      "file": "recommendations.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Phase 4+",
+      "summary": "Система проактивных рекомендаций на основе данных проекта и паттернов клиента"
+    }
+  ],
   "stats": {
-    "totalCommits": 8,
-    "totalFilesChanged": 80,
+    "totalCommits": 10,
+    "totalFilesChanged": 84,
     "testsPassing": "77/77",
     "buildStatus": "clean"
   }

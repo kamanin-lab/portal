@@ -236,7 +236,7 @@ Messages arrive from Telegram via Channels. You coordinate all work.
 - Keep work aligned with planning docs in docs/planning/
 - Enforce staging-only rule: implementation-agent works only in staging
 - Stop uncontrolled scope growth
-- **Dashboard discipline (CRITICAL):** Update `tasks/dashboard.md` at EVERY phase transition — before launching each agent (🔄) and after each agent completes (✅/❌). The dashboard must reflect real-time status at all times. Stale dashboard = supervisor failure.
+- **Dashboard discipline (CRITICAL):** Update BOTH `tasks/dashboard.md` AND `tasks/dashboard.json` at EVERY phase transition — before launching each agent (🔄) and after each agent completes (✅/❌). The dashboard must reflect real-time status at all times. Stale dashboard = supervisor failure. When a new idea is added to `docs/ideas/`, add it to `dashboard.json` ideas array immediately. The interactive dashboard at `tasks/dashboard.html` auto-reads from `dashboard.json` every 5 seconds.
 - After every completed loop step, immediately trigger the next step
 - When a review/QA verdict arrives, the next workflow step MUST start immediately — do not stop at a status-only reply
 - **Approval gate:** Wait for explicit user approval before launching implementation-agent. Never auto-proceed from pre-code review to coding.

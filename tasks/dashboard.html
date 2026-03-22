@@ -583,6 +583,63 @@
     line-height: 1.4;
   }
 
+  /* ── Ideas ────────────────────────────────────────────────── */
+  .ideas-section {
+    margin-bottom: 16px;
+  }
+
+  .idea-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+
+  .idea-item:last-child { border-bottom: none; }
+
+  .idea-status {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .idea-status.idea     { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .idea-status.planned  { background: rgba(63,185,80,0.15); color: var(--done); }
+  .idea-status.building { background: rgba(210,153,34,0.15); color: var(--progress); }
+
+  .idea-title {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.8rem;
+    flex: 1;
+  }
+
+  .idea-meta {
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .idea-summary {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+
+  .idea-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
   /* ── Footer ───────────────────────────────────────────────── */
   .footer {
     text-align: center;
@@ -723,6 +780,12 @@
   <div class="residual-section">
     <div class="card-label">Offene Punkte</div>
     <div id="residualList"></div>
+  </div>
+
+  <!-- Ideas -->
+  <div class="ideas-section">
+    <div class="card-label">Ideen &amp; Roadmap</div>
+    <div id="ideasList"></div>
   </div>
 
   <!-- Footer -->
@@ -1013,6 +1076,31 @@
     els.residualList.innerHTML = html;
   }
 
+  // ── Ideas Render ───────────────────────────────────────────
+  function renderIdeas(ideas) {
+    var el = document.getElementById('ideasList');
+    if (!el) return;
+    if (!ideas || ideas.length === 0) {
+      el.innerHTML = '<div class="no-agents">Keine Ideen dokumentiert</div>';
+      return;
+    }
+    var VALID_STATUSES = ['idea', 'planned', 'building'];
+    var html = '';
+    for (var i = 0; i < ideas.length; i++) {
+      var idea = ideas[i];
+      var safeStatus = VALID_STATUSES.indexOf(idea.status) >= 0 ? idea.status : 'idea';
+      html += '<div class="idea-item">'
+        + '<span class="idea-status ' + safeStatus + '">' + escapeHtml(idea.status || 'idea') + '</span>'
+        + '<div class="idea-row">'
+        + '<span class="idea-title">' + escapeHtml(idea.title) + '</span>'
+        + '<span class="idea-summary">' + escapeHtml(idea.summary || '') + '</span>'
+        + '</div>'
+        + '<span class="idea-meta">' + escapeHtml(idea.priority || '') + ' · ' + escapeHtml(idea.target || '') + '</span>'
+        + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
   // ── Data Fetch ─────────────────────────────────────────────
   function fetchData() {
     fetch('./dashboard.json?_t=' + Date.now())
@@ -1045,6 +1133,7 @@
     renderCompleted(data.completedTasks);
     renderStats(data.stats);
     renderResidual(data.residualItems);
+    renderIdeas(data.ideas);
   }
 
   // ── Countdown & Refresh Loop ───────────────────────────────
