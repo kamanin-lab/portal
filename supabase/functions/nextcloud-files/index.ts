@@ -8,8 +8,10 @@
  *   mkdir    — recursive MKCOL, creates folder hierarchy
  *
  * Client-root actions (use profiles.nextcloud_client_root):
- *   browse-client      — PROPFIND on client portal root + optional sub_path
+ *   browse-client        — PROPFIND on client portal root + optional sub_path
  *   download-client-file — streams file from client root (no project_config_id needed)
+ *   upload-client-file   — accepts multipart/form-data, PUTs file to client root + optional sub_path
+ *   mkdir-client         — recursive MKCOL under client root, accepts folder_path
  *
  * Hybrid actions (project_access auth + client-root path):
  *   upload-task-file — auto-creates aufgaben/{YYYY-MM}_{slug}/ and PUTs file
@@ -304,7 +306,7 @@ Deno.serve(async (req) => {
     }
 
     // Actions that use profile-based client root instead of project_config_id
-    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file"];
+    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file", "upload-client-file", "mkdir-client"];
     const requiresProjectConfigId = !CLIENT_ROOT_ACTIONS.includes(action);
 
     if (requiresProjectConfigId && !projectConfigId) {
@@ -860,6 +862,221 @@ Deno.serve(async (req) => {
         status: 200,
         headers: responseHeaders,
       });
+    }
+
+    // ====================================================================
+    // ACTION: upload-client-file
+    // ====================================================================
+    if (action === "upload-client-file") {
+      if (!uploadFile) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "file field required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // 50 MB limit
+      const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
+      if (uploadFile.size > MAX_UPLOAD_SIZE) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "FILE_TOO_LARGE", message: "Max 50 MB", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Derive client root from the authenticated user's profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for upload-client-file");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+
+      // Validate sub_path if provided
+      if (subPath !== undefined && !isPathSafe(subPath)) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid sub_path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const uploadTarget = subPath ? `${cleanClientRoot}/${subPath}` : cleanClientRoot;
+
+      // Prefix check: resolved path must stay within client root
+      if (!uploadTarget.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in upload-client-file", { uploadTarget });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Sanitise filename
+      const fileName = uploadFile.name;
+      if (!isPathSafe(fileName)) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid file name", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const fullFilePath = `${uploadTarget}/${fileName}`;
+      const davUrl = `${base}${encodePath(fullFilePath)}`;
+
+      log.info("upload-client-file PUT", { davUrl, size: uploadFile.size });
+
+      const putResp = await fetch(davUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: authHeaderNC,
+          "Content-Type": uploadFile.type || "application/octet-stream",
+        },
+        body: uploadFile.stream(),
+      });
+
+      if (!putResp.ok) {
+        const errText = await putResp.text();
+        log.error("upload-client-file PUT failed", { status: putResp.status, body: errText.slice(0, 500) });
+
+        if (putResp.status === 409) {
+          return new Response(
+            JSON.stringify({ ok: false, code: "FOLDER_NOT_FOUND", message: "Target folder does not exist in Nextcloud", correlationId: requestId }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", correlationId: requestId }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const relativePath = subPath ? `${subPath}/${fileName}` : fileName;
+      log.info("upload-client-file succeeded", { fileName });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          code: "OK",
+          correlationId: requestId,
+          data: { name: fileName, size: uploadFile.size, path: relativePath },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: mkdir-client
+    // ====================================================================
+    if (action === "mkdir-client") {
+      if (!folderPath) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "folder_path required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!isPathSafe(folderPath)) {
+        log.warn("Invalid folder_path in mkdir-client", { folderPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid folder path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Derive client root from the authenticated user's profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for mkdir-client");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+      const fullFolderPath = `${cleanClientRoot}/${folderPath}`;
+
+      // Prefix check: resolved path must stay within client root
+      if (!fullFolderPath.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in mkdir-client", { fullFolderPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Recursive creation: MKCOL each segment from client root down
+      const segments = folderPath.split("/");
+      let currentPath = cleanClientRoot;
+
+      for (const segment of segments) {
+        currentPath = `${currentPath}/${segment}`;
+        const davUrl = `${base}${encodePath(currentPath)}`;
+
+        log.info("mkdir-client MKCOL", { davUrl });
+
+        const mkcolResp = await fetch(davUrl, {
+          method: "MKCOL",
+          headers: { Authorization: authHeaderNC },
+        });
+
+        if (mkcolResp.status === 201) {
+          log.info("Client folder created", { segment });
+        } else if (mkcolResp.status === 405) {
+          // Folder already exists — idempotent success
+          log.info("Client folder already exists", { segment });
+        } else if (!mkcolResp.ok) {
+          const errText = await mkcolResp.text();
+          log.error("mkdir-client MKCOL failed", { status: mkcolResp.status, body: errText.slice(0, 500) });
+          return new Response(
+            JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "Failed to create folder", correlationId: requestId }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      log.info("mkdir-client complete", { folderPath });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          code: "OK",
+          correlationId: requestId,
+          data: { path: folderPath },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ====================================================================

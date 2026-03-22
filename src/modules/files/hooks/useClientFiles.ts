@@ -107,3 +107,73 @@ export async function downloadClientFile(filePath: string): Promise<void> {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// ---------------------------------------------------------------------------
+// Upload helper for client-root files (non-hook, used by action bar)
+// ---------------------------------------------------------------------------
+
+/**
+ * Upload a file to the client's Nextcloud root (optionally into a sub-path).
+ * Uses the upload-client-file Edge Function action which derives the root
+ * from the authenticated user's profiles.nextcloud_client_root.
+ */
+export async function uploadClientFile(subPath: string, file: File): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Nicht authentifiziert');
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+
+  const formData = new FormData();
+  formData.append('action', 'upload-client-file');
+  if (subPath) {
+    formData.append('sub_path', subPath);
+  }
+  formData.append('file', file);
+
+  const resp = await fetch(`${supabaseUrl}/functions/v1/nextcloud-files`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: formData,
+  });
+
+  if (!resp.ok) {
+    let message = 'Upload fehlgeschlagen';
+    try {
+      const err = await resp.json();
+      message = err.message || err.code || message;
+    } catch {
+      // keep default message
+    }
+    throw new Error(message);
+  }
+
+  const result = await resp.json();
+  if (!result.ok) {
+    throw new Error(result.message || result.code || 'Upload fehlgeschlagen');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Create-folder helper for client-root (non-hook, used by action bar)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a folder under the client's Nextcloud root.
+ * Uses the mkdir-client Edge Function action which derives the root
+ * from the authenticated user's profiles.nextcloud_client_root.
+ */
+export async function createClientFolder(folderPath: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('nextcloud-files', {
+    body: {
+      action: 'mkdir-client',
+      folder_path: folderPath,
+    },
+  });
+
+  if (error) throw new Error(error.message || 'Verbindungsfehler');
+  if (!data?.ok) {
+    throw new Error(data?.message || data?.code || 'Ordner konnte nicht erstellt werden');
+  }
+}
