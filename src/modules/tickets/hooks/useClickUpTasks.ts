@@ -146,7 +146,7 @@ export function useClickUpTasks() {
     const channel = supabase
       .channel(`task-cache-updates-${userId}`)
       .on('postgres_changes', {
-        event: 'UPDATE',
+        event: '*',
         schema: 'public',
         table: 'task_cache',
         filter: `profile_id=eq.${userId}`,
@@ -178,39 +178,50 @@ export function useClickUpTasks() {
       await updateTaskCache(tasks);
       return tasks;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30_000, // 30 seconds — Realtime handles freshness, this is fallback
+    refetchOnWindowFocus: true,
   });
 
-  const dataLen = query.data?.length ?? 0;
-  const dataUpdatedAt = query.dataUpdatedAt;
+  const hasData = (query.data?.length ?? 0) > 0;
 
-  // Background refresh — runs once per session after initial cache load
+  // Background refresh — immediate on first load, then periodic every 60s as fallback
   useEffect(() => {
-    if (dataLen === 0 || isRefreshingRef.current || hasRefreshedRef.current || query.isError) return;
-    hasRefreshedRef.current = true;
-    isRefreshingRef.current = true;
-    log.info('Starting background refresh');
+    if (!hasData || query.isError) return;
 
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+    const doRefresh = () => {
+      if (isRefreshingRef.current || !isMountedRef.current) return;
+      isRefreshingRef.current = true;
+      log.info('Starting background refresh');
 
-    fetchClickUpTasks(false)
-      .then(async ({ tasks }) => {
-        if (controller.signal.aborted || !isMountedRef.current) return;
-        await updateTaskCache(tasks);
-        if (!controller.signal.aborted && isMountedRef.current) {
-          queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
-        }
-      })
-      .catch((error) => {
-        if (controller.signal.aborted) return;
-        log.error('Background refresh failed', { error: error.message });
-        hasRefreshedRef.current = false;
-      })
-      .finally(() => { isRefreshingRef.current = false; });
-  }, [dataLen, dataUpdatedAt, query.isError, queryClient]);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      fetchClickUpTasks(false)
+        .then(async ({ tasks }) => {
+          if (controller.signal.aborted || !isMountedRef.current) return;
+          await updateTaskCache(tasks);
+          if (!controller.signal.aborted && isMountedRef.current) {
+            queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
+          }
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) return;
+          log.error('Background refresh failed', { error: error.message });
+        })
+        .finally(() => { isRefreshingRef.current = false; });
+    };
+
+    // First refresh immediately (once per mount)
+    if (!hasRefreshedRef.current) {
+      hasRefreshedRef.current = true;
+      doRefresh();
+    }
+
+    // Then every 60 seconds as fallback
+    const interval = setInterval(doRefresh, 60_000);
+    return () => clearInterval(interval);
+  }, [hasData, query.isError, queryClient]);
 
   const forceRefresh = useCallback(async (debug = true) => {
     abortControllerRef.current?.abort();

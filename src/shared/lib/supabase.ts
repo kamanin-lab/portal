@@ -13,4 +13,18 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     autoRefreshToken: true,
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 })
+
+if (import.meta.env.DEV) {
+  const diagChannel = supabase.channel('dev-diagnostics');
+  diagChannel.subscribe((status) => {
+    if (status === 'SUBSCRIBED') console.log('[Realtime] Connected');
+    if (status === 'CLOSED') console.warn('[Realtime] Disconnected');
+    if (status === 'CHANNEL_ERROR') console.error('[Realtime] Channel error');
+  });
+}

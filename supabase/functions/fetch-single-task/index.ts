@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { isTaskVisible } from "../_shared/clickup-contract.ts";
+import { parseClickUpTimestamp } from "../_shared/utils.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -308,6 +309,39 @@ Deno.serve(async (req) => {
       list_id: task.list.id,
       list_name: task.list.name,
     };
+
+    // Write to task_cache so Realtime subscribers pick up the update
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseServiceKey) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const { error: upsertError } = await supabaseAdmin
+        .from("task_cache")
+        .upsert({
+          clickup_id: task.id,
+          profile_id: user.id,
+          name: task.name,
+          description: task.description || "",
+          status: task.status.status,
+          status_color: task.status.color,
+          priority: task.priority?.priority || null,
+          priority_color: task.priority?.color || null,
+          due_date: task.due_date ? new Date(parseInt(task.due_date)).toISOString() : null,
+          time_estimate: task.time_estimate || null,
+          clickup_url: task.url,
+          list_id: task.list.id,
+          list_name: task.list.name,
+          raw_data: transformedTask,
+          last_synced: new Date().toISOString(),
+          is_visible: true,
+          last_activity_at: parseClickUpTimestamp(task.date_updated).toISOString(),
+        }, { onConflict: "clickup_id,profile_id" });
+
+      if (upsertError) {
+        log.error("Failed to upsert task_cache", { error: upsertError.message });
+      } else {
+        log.debug("task_cache updated for single task");
+      }
+    }
 
     log.info("Successfully fetched task", { name: task.name });
 

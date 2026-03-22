@@ -141,23 +141,34 @@ export function useProject(explicitProjectId?: string) {
     queryKey: ['project', projectId],
     queryFn: () => fetchProjectData(projectId),
     enabled: !!projectId && !!user,
-    staleTime: 1000 * 60 * 15, // 15 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30_000, // 30 seconds — Realtime handles freshness, this is fallback
+    refetchOnWindowFocus: true,
   });
 
-  // Background refresh — invoke Edge Function once per session
+  // Background refresh — immediate on first load, then periodic every 60s as fallback
   useEffect(() => {
-    if (!query.data || hasRefreshedRef.current || query.isError || !user) return;
-    hasRefreshedRef.current = true;
+    if (!query.data || query.isError || !user || !projectId) return;
 
-    supabase.functions
-      .invoke('fetch-project-tasks')
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-      })
-      .catch(() => {
-        hasRefreshedRef.current = false;
-      });
+    const doRefresh = () => {
+      supabase.functions
+        .invoke('fetch-project-tasks', { body: { projectId } })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+        })
+        .catch((err: Error) => {
+          console.warn('[Project] Background refresh failed:', err.message);
+        });
+    };
+
+    // First refresh immediately (once per mount)
+    if (!hasRefreshedRef.current) {
+      hasRefreshedRef.current = true;
+      doRefresh();
+    }
+
+    // Then every 60 seconds as fallback
+    const interval = setInterval(doRefresh, 60_000);
+    return () => clearInterval(interval);
   }, [query.data, query.isError, user, projectId, queryClient]);
 
   return {

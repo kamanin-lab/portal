@@ -7,9 +7,21 @@ _Status: active_
 Rebuild files tab from ClickUp attachments to Nextcloud WebDAV browser.
 
 ## Active Agents
-_(none — TASK-003 complete, awaiting commit)_
+reviewer-architect (pre-code review: real-time sync audit)
 
-## Pipeline Status — TASK-003
+## Current Pipeline — TASK-005
+| Phase | Status | Agent | Notes |
+|---|---|---|---|
+| Task Framing | ✅ | Supervisor | Reliable real-time updates across entire portal |
+| Pre-Code Review | ✅ | reviewer-architect | 8 gaps found, fix order defined |
+| Plan | ✅ | Supervisor | 6 changes, plan in tasks/TASK-005-realtime-plan.md |
+| Implementation | ✅ | Supervisor + implementation-agent | DB config done, 5 files changed, build PASS |
+| Post-Code Review | ✅ | reviewer-architect | REVISE: 2 blocking (logging API, polling deps) |
+| QA Verification | ✅ | qa-agent | ACCEPT: build PASS, no leaks, no any |
+| Fix Blocking | ✅ | implementation-agent | All 4 issues fixed, build PASS |
+| Accept/Revise | ✅ | Supervisor | Accepted, committing |
+
+## Previous Pipeline — TASK-003
 | Phase | Status | Agent | Notes |
 |---|---|---|---|
 | Task Framing | ✅ | Supervisor | Nextcloud WebDAV, service account, upload + browse |

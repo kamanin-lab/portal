@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/shared/lib/supabase';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { Project } from '../types/project';
 
 export interface ProjectComment {
@@ -66,6 +67,8 @@ async function fetchAllProjectComments(
 
 export function useProjectComments(project: Project | null) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,7 +87,7 @@ export function useProjectComments(project: Project | null) {
 
   // Realtime subscription on comment_cache for project task IDs
   useEffect(() => {
-    if (!projectId || taskIds.length === 0) return;
+    if (!projectId || taskIds.length === 0 || !userId) return;
 
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
@@ -96,6 +99,7 @@ export function useProjectComments(project: Project | null) {
         event: 'INSERT',
         schema: 'public',
         table: 'comment_cache',
+        filter: `profile_id=eq.${userId}`,
       }, (payload) => {
         const newTaskId = (payload.new as { task_id?: string }).task_id;
         if (!newTaskId || !taskIds.includes(newTaskId)) return;
@@ -121,7 +125,7 @@ export function useProjectComments(project: Project | null) {
     };
     // taskIds serialized as projectId — changes when project data changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, queryClient]);
+  }, [projectId, userId, queryClient]);
 
   return query;
 }
