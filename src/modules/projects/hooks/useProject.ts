@@ -141,34 +141,25 @@ export function useProject(explicitProjectId?: string) {
     queryKey: ['project', projectId],
     queryFn: () => fetchProjectData(projectId),
     enabled: !!projectId && !!user,
-    staleTime: 30_000, // 30 seconds — Realtime handles freshness, this is fallback
+    staleTime: 1000 * 60 * 5, // 5 minutes — Realtime handles live updates
     refetchOnWindowFocus: true,
   });
 
-  // Background refresh — immediate on first load, then periodic every 60s as fallback
+  // Background refresh — once per mount to catch up on missed changes
   useEffect(() => {
     if (!query.data || query.isError || !user || !projectId) return;
+    if (hasRefreshedRef.current) return;
+    hasRefreshedRef.current = true;
 
-    const doRefresh = () => {
-      supabase.functions
-        .invoke('fetch-project-tasks', { body: { projectId } })
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-        })
-        .catch((err: Error) => {
-          console.warn('[Project] Background refresh failed:', err.message);
-        });
-    };
-
-    // First refresh immediately (once per mount)
-    if (!hasRefreshedRef.current) {
-      hasRefreshedRef.current = true;
-      doRefresh();
-    }
-
-    // Then every 60 seconds as fallback
-    const interval = setInterval(doRefresh, 60_000);
-    return () => clearInterval(interval);
+    supabase.functions
+      .invoke('fetch-project-tasks', { body: { projectId } })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      })
+      .catch((err: Error) => {
+        hasRefreshedRef.current = false;
+        console.warn('[Project] Background refresh failed:', err.message);
+      });
   }, [query.data, query.isError, user, projectId, queryClient]);
 
   return {

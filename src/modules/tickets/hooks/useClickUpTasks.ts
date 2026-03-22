@@ -178,49 +178,39 @@ export function useClickUpTasks() {
       await updateTaskCache(tasks);
       return tasks;
     },
-    staleTime: 30_000, // 30 seconds — Realtime handles freshness, this is fallback
+    staleTime: 1000 * 60 * 5, // 5 minutes — Realtime handles live updates
     refetchOnWindowFocus: true,
   });
 
   const hasData = (query.data?.length ?? 0) > 0;
 
-  // Background refresh — immediate on first load, then periodic every 60s as fallback
+  // Background refresh — once per mount to catch up on missed changes
   useEffect(() => {
     if (!hasData || query.isError) return;
+    if (hasRefreshedRef.current) return;
 
-    const doRefresh = () => {
-      if (isRefreshingRef.current || !isMountedRef.current) return;
-      isRefreshingRef.current = true;
-      log.info('Starting background refresh');
+    hasRefreshedRef.current = true;
+    isRefreshingRef.current = true;
+    log.info('Starting background refresh');
 
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      fetchClickUpTasks(false)
-        .then(async ({ tasks }) => {
-          if (controller.signal.aborted || !isMountedRef.current) return;
-          await updateTaskCache(tasks);
-          if (!controller.signal.aborted && isMountedRef.current) {
-            queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
-          }
-        })
-        .catch((error) => {
-          if (controller.signal.aborted) return;
-          log.error('Background refresh failed', { error: error.message });
-        })
-        .finally(() => { isRefreshingRef.current = false; });
-    };
-
-    // First refresh immediately (once per mount)
-    if (!hasRefreshedRef.current) {
-      hasRefreshedRef.current = true;
-      doRefresh();
-    }
-
-    // Then every 60 seconds as fallback
-    const interval = setInterval(doRefresh, 60_000);
-    return () => clearInterval(interval);
+    fetchClickUpTasks(false)
+      .then(async ({ tasks }) => {
+        if (controller.signal.aborted || !isMountedRef.current) return;
+        await updateTaskCache(tasks);
+        if (!controller.signal.aborted && isMountedRef.current) {
+          queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
+        }
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        hasRefreshedRef.current = false;
+        log.error('Background refresh failed', { error: error.message });
+      })
+      .finally(() => { isRefreshingRef.current = false; });
   }, [hasData, query.isError, queryClient]);
 
   const forceRefresh = useCallback(async (debug = true) => {
