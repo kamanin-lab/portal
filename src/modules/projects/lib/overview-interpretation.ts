@@ -3,6 +3,7 @@ import type {
   Project,
   ProjectAttentionItem,
   ProjectQuickAction,
+  QuickActionConfigRow,
   Step,
   StepWithChapter,
   Update,
@@ -132,7 +133,33 @@ function buildNextStepSummary(nextMeaningfulStep: StepWithChapter | null): strin
   return `Als Nächstes relevant: „${step.title}“ in ${chapter.title}.`;
 }
 
-function buildQuickActions(project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
+/** Map a config row key to a destinationKind */
+function resolveDestinationKind(row: QuickActionConfigRow): ProjectQuickAction['destinationKind'] {
+  if (row.url) return 'external_link';
+  switch (row.key) {
+    case 'send-message': return 'general_message';
+    case 'upload-file': return 'files';
+    default: return 'external_link';
+  }
+}
+
+/** Build quick actions from DB config rows */
+function buildQuickActionsFromConfig(rows: QuickActionConfigRow[]): ProjectQuickAction[] {
+  return rows.map(row => ({
+    key: row.key,
+    label: row.label,
+    subtitle: row.subtitle,
+    iconToken: row.icon,
+    destinationKind: resolveDestinationKind(row),
+    count: null,
+    isEnabled: row.is_enabled,
+    sortOrder: row.sort_order,
+    url: row.url,
+  }));
+}
+
+/** Hardcoded fallback when no DB config exists */
+function buildQuickActionsFallback(project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
   return [
     {
       key: 'primary-cta',
@@ -141,7 +168,7 @@ function buildQuickActions(project: Project, primaryAttention: ProjectAttentionI
         ? `Jetzt relevant: ${primaryAttention.title}`
         : `${project.tasksSummary.total} Aufgaben insgesamt`,
       iconToken: 'primary_cta',
-      destinationKind: primary_ctaDestinationKind(primaryAttention),
+      destinationKind: primaryAttention ? 'primary_cta' : 'create_task',
       count: primaryAttention ? 1 : null,
       isEnabled: true,
       sortOrder: 10,
@@ -169,8 +196,11 @@ function buildQuickActions(project: Project, primaryAttention: ProjectAttentionI
   ];
 }
 
-function primary_ctaDestinationKind(primaryAttention: ProjectAttentionItem | null): 'primary_cta' | 'create_task' {
-  return primaryAttention ? 'primary_cta' : 'create_task';
+function buildQuickActions(project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
+  if (project.quickActionsConfig && project.quickActionsConfig.length > 0) {
+    return buildQuickActionsFromConfig(project.quickActionsConfig);
+  }
+  return buildQuickActionsFallback(project, primaryAttention);
 }
 
 export function interpretProjectOverview(project: Project): InterpretedProjectOverview {

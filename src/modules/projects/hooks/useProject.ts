@@ -9,6 +9,7 @@ import type {
   ChapterConfigRow,
   ProjectTaskCacheRow,
   StepEnrichmentRow,
+  QuickActionConfigRow,
 } from '../types/project';
 
 // Resolve user's first project when no projectId is provided
@@ -74,12 +75,21 @@ async function fetchProjectData(projectId: string): Promise<Project | null> {
     }
   }
 
+  // 6. Quick actions config
+  const { data: quickActions } = await supabase
+    .from('project_quick_actions')
+    .select('*')
+    .eq('project_config_id', projectId)
+    .eq('is_enabled', true)
+    .order('sort_order');
+
   return transformToProject(
     config as ProjectConfigRow,
     (chapters || []) as ChapterConfigRow[],
     (tasks || []) as ProjectTaskCacheRow[],
     enrichments,
     commentCounts,
+    (quickActions || []) as QuickActionConfigRow[],
   );
 }
 

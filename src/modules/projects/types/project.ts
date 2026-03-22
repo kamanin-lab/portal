@@ -17,6 +17,8 @@ export interface Update {
   time: string;
   type: UpdateType;
   rawStatus?: string;
+  /** ISO timestamp for reliable sorting (display string may be localized) */
+  rawTimestamp?: string;
 }
 
 export interface FileItem {
@@ -152,6 +154,7 @@ export interface Project {
   updates: Update[];
   teamWorkingOn: TeamWorkingOn;
   chapters: Chapter[];
+  quickActionsConfig?: QuickActionConfigRow[];
 }
 
 export interface StepWithChapter {
@@ -177,9 +180,23 @@ export interface ProjectQuickAction {
   key: string;
   label: string;
   subtitle: string;
-  iconToken: 'primary_cta' | 'general_message' | 'files' | 'create_task';
-  destinationKind: 'primary_cta' | 'general_message' | 'files' | 'create_task';
+  iconToken: string;
+  destinationKind: 'primary_cta' | 'general_message' | 'files' | 'create_task' | 'external_link';
   count?: number | null;
   isEnabled: boolean;
   sortOrder: number;
+  url?: string | null;
+}
+
+/** Row from the project_quick_actions Supabase table */
+export interface QuickActionConfigRow {
+  id: string;
+  project_config_id: string;
+  key: string;
+  label: string;
+  subtitle: string;
+  icon: string;
+  url: string | null;
+  sort_order: number;
+  is_enabled: boolean;
 }

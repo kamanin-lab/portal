@@ -1,6 +1,7 @@
 import type {
   Project, Chapter, Step, FileItem, Update, ProjectTask,
   ProjectConfigRow, ChapterConfigRow, ProjectTaskCacheRow, StepEnrichmentRow,
+  QuickActionConfigRow,
 } from '../types/project';
 import { mapStepStatus } from './step-status-mapping';
 
@@ -101,6 +102,7 @@ export function transformToProject(
   tasks: ProjectTaskCacheRow[],
   enrichments: StepEnrichmentRow[],
   commentCounts: Record<string, number>,
+  quickActionsConfig?: QuickActionConfigRow[],
 ): Project {
   const enrichmentMap = new Map<string, StepEnrichmentRow>();
   for (const e of enrichments) {
@@ -205,6 +207,7 @@ export function transformToProject(
       time: formatDate(t.last_activity_at) || '',
       type: 'status' as const,
       rawStatus: t.status,
+      rawTimestamp: t.last_activity_at || undefined,
     }));
 
   return {
@@ -233,5 +236,8 @@ export function transformToProject(
         : '',
     },
     chapters: projectChapters,
+    quickActionsConfig: quickActionsConfig && quickActionsConfig.length > 0
+      ? quickActionsConfig
+      : undefined,
   };
 }
