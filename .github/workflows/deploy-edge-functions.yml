@@ -1,0 +1,101 @@
+name: Deploy Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed functions
+        id: changed
+        shell: bash
+        run: |
+          set -e
+
+          # For manual trigger or first push, deploy everything
+          BEFORE="${{ github.event.before }}"
+          if [[ "$BEFORE" =~ ^0{40}$ ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Full deploy (manual trigger or initial push)"
+            CHANGED=$(ls -1 supabase/functions | grep -v '^_shared$' | grep -v '^main$' | tr '\n' ' ')
+            SHARED_CHANGED=true
+          else
+            # Detect which function folders changed
+            CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" \
+              | grep '^supabase/functions/' \
+              | awk -F/ '{print $3}' \
+              | sort -u \
+              | grep -v '^_shared$' \
+              | grep -v '^main$' \
+              | grep -v '^$' \
+              | tr '\n' ' ' || true)
+
+            # Check if _shared or main changed (need full sync)
+            SHARED_CHANGED=false
+            if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -q '^supabase/functions/_shared/\|^supabase/functions/main/'; then
+              SHARED_CHANGED=true
+            fi
+          fi
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "shared_changed=$SHARED_CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed functions: $CHANGED"
+          echo "Shared changed: $SHARED_CHANGED"
+
+      - name: Setup SSH
+        if: steps.changed.outputs.changed != '' || steps.changed.outputs.shared_changed == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy _shared and main (if changed)
+        if: steps.changed.outputs.shared_changed == 'true'
+        run: |
+          scp -i ~/.ssh/deploy_key -r \
+            supabase/functions/_shared \
+            supabase/functions/main \
+            ${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:${{ secrets.DEPLOY_FUNCTIONS_PATH }}/
+
+      - name: Deploy changed functions
+        if: steps.changed.outputs.changed != ''
+        shell: bash
+        run: |
+          set -e
+          for fn in ${{ steps.changed.outputs.changed }}; do
+            if [ -d "supabase/functions/$fn" ]; then
+              echo "Deploying: $fn"
+              scp -i ~/.ssh/deploy_key -r \
+                "supabase/functions/$fn" \
+                "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:${{ secrets.DEPLOY_FUNCTIONS_PATH }}/"
+            fi
+          done
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+      - name: Summary
+        run: |
+          echo "### Edge Functions Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.changed.outputs.shared_changed }}" == "true" ]]; then
+            echo "- **_shared/** and **main/** synced" >> $GITHUB_STEP_SUMMARY
+          fi
+          for fn in ${{ steps.changed.outputs.changed }}; do
+            echo "- **$fn/**" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Nothing to deploy
+        if: steps.changed.outputs.changed == '' && steps.changed.outputs.shared_changed != 'true'
+        run: echo "No Edge Function changes detected — skipping deploy."

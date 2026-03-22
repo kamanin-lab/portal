@@ -63,13 +63,9 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
     );
   }
 
-  if (error) {
-    return <EmptyState message="Dateien konnten nicht geladen werden. Bitte erneut versuchen." />;
-  }
-
   return (
     <>
-      {/* Phase folder cards */}
+      {/* Phase folder cards — always visible regardless of Nextcloud status */}
       <div className="grid grid-cols-4 gap-[10px] mb-[20px] max-[768px]:grid-cols-2">
         {chapters.map((ch) => (
           <FolderCard
@@ -83,7 +79,11 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
       </div>
 
       {/* Root-level files (if any) */}
-      {isLoading ? (
+      {error ? (
+        <p className="text-[13px] text-[var(--text-tertiary)]">
+          Dateien konnten nicht geladen werden.
+        </p>
+      ) : isLoading ? (
         <LoadingSkeleton lines={3} height="40px" />
       ) : rootFiles.filter((f) => f.type === 'file').length > 0 ? (
         <>
