@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { MemoryDraft, MemoryEntry } from '../../types/memory';
 import { SideSheet } from '@/shared/components/ui/SideSheet';
+import { Button } from '@/shared/components/ui/button';
 
 interface MemoryEntrySheetProps {
   open: boolean;
@@ -102,16 +103,15 @@ export function MemoryEntrySheet({ open, onClose, onSubmit, initialEntry, isSavi
         </div>
 
         <div className="flex justify-end gap-[10px] border-t border-[var(--border)] px-[20px] py-[16px]">
-          <button type="button" onClick={onClose} className="px-[14px] py-[8px] text-[13px] rounded-[var(--r-sm)] border border-[var(--border)] bg-white hover:bg-[var(--surface-hover)]">
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={isSaving || !title.trim() || !body.trim()}
-            className="px-[14px] py-[8px] text-[13px] font-semibold rounded-[var(--r-sm)] bg-[var(--text-primary)] text-white disabled:opacity-60"
           >
             {isSaving ? 'Saving…' : initialEntry ? 'Save changes' : 'Create memory'}
-          </button>
+          </Button>
         </div>
       </form>
     </SideSheet>

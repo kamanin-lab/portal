@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { SideSheet } from '@/shared/components/ui/SideSheet';
+import { Button } from '@/shared/components/ui/button';
 import { usePostComment } from '@/modules/tickets/hooks/useTaskComments';
 import type { Project } from '../types/project';
 
@@ -111,20 +112,12 @@ export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              onClick={handleClose}
-              disabled={isSending}
-              className="px-[14px] py-[8px] text-[13px] text-[var(--text-secondary)] border border-[var(--border)] bg-[var(--surface)] rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer disabled:opacity-50"
-            >
+            <Button variant="outline" onClick={handleClose} disabled={isSending}>
               Abbrechen
-            </button>
-            <button
-              onClick={handleSend}
-              disabled={!canSend}
-              className="px-[16px] py-[8px] text-[13px] font-semibold text-white bg-[var(--accent)] rounded-[var(--r-sm)] hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 cursor-pointer"
-            >
+            </Button>
+            <Button variant="accent" onClick={handleSend} disabled={!canSend}>
               {isSending ? 'Wird gesendet...' : 'Senden'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

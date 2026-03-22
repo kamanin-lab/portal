@@ -1,6 +1,7 @@
 import { MessageSquare, Phone, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
+import { getPhaseColor } from '../../lib/phase-colors';
 
 export function ProjectHelpPage() {
   const navigate = useNavigate();
@@ -20,24 +21,21 @@ export function ProjectHelpPage() {
           icon={<MessageSquare size={18} />}
           title="Nachricht senden"
           sub="Direkter Chat mit dem Projektteam"
-          accent="#7C3AED"
-          bg="#F5F3FF"
+          phaseIndex={1}
           onClick={() => navigate('/nachrichten')}
         />
         <ContactCard
           icon={<Mail size={18} />}
           title="E-Mail schreiben"
           sub="projekt@kamanin.at"
-          accent="#2563EB"
-          bg="#EFF6FF"
+          phaseIndex={2}
           onClick={() => window.location.href = 'mailto:projekt@kamanin.at'}
         />
         <ContactCard
           icon={<Phone size={18} />}
           title="Anrufen"
           sub="Mo – Fr, 9:00 – 17:00 Uhr"
-          accent="#D97706"
-          bg="#FFFBEB"
+          phaseIndex={3}
           onClick={() => window.location.href = 'tel:+43662000000'}
         />
       </div>
@@ -50,12 +48,13 @@ interface ContactCardProps {
   icon: React.ReactNode;
   title: string;
   sub: string;
-  accent: string;
-  bg: string;
+  phaseIndex: 1 | 2 | 3 | 4;
   onClick: () => void;
 }
 
-function ContactCard({ icon, title, sub, accent, bg, onClick }: ContactCardProps) {
+function ContactCard({ icon, title, sub, phaseIndex, onClick }: ContactCardProps) {
+  const colors = getPhaseColor(phaseIndex);
+
   return (
     <button
       onClick={onClick}
@@ -63,7 +62,7 @@ function ContactCard({ icon, title, sub, accent, bg, onClick }: ContactCardProps
     >
       <div
         className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-        style={{ background: bg, color: accent }}
+        style={{ background: colors.light, color: colors.main }}
       >
         {icon}
       </div>

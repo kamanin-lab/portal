@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
+import { Button } from '@/shared/components/ui/button';
 import { linkifyText } from '@/shared/lib/linkify';
 import type { ProjectComment } from '../../hooks/useProjectComments';
 
@@ -54,12 +55,14 @@ export function MessagesTab({ comments, isLoading }: MessagesTabProps) {
         <CommentFeedItem key={comment.id} comment={comment} />
       ))}
       {hasMore && (
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-          className="mt-[8px] px-[14px] py-[7px] text-[12.5px] font-medium text-[var(--text-secondary)] border border-[var(--border)] bg-white/60 rounded-[var(--r-sm)] self-center transition-all duration-150 hover:bg-white hover:border-[var(--text-tertiary)] cursor-pointer"
+          className="mt-[8px] self-center"
         >
           Mehr anzeigen
-        </button>
+        </Button>
       )}
     </div>
   );

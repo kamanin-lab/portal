@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { Project, ProjectTask } from '../../types/project';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
+import { getPhaseColor } from '../../lib/phase-colors';
 
 interface TasksPageProps {
   project: Project;
@@ -32,8 +33,8 @@ export function TasksPage({ project }: TasksPageProps) {
         <TaskGroup
           label="In Bearbeitung"
           count={inProgress.length}
-          headerColor="#2563EB"
-          headerBg="#EFF6FF"
+          headerColor={getPhaseColor(2).main}
+          headerBg={getPhaseColor(2).light}
           tasks={inProgress}
           project={project}
         />
@@ -91,7 +92,7 @@ function TaskGroup({ label, count, headerColor, headerBg, tasks, project }: Task
               <div className="flex items-start gap-[10px]">
                 <span
                   className="w-[8px] h-[8px] rounded-full mt-[5px] flex-shrink-0"
-                  style={{ background: task.status === 'needs-attention' ? 'var(--awaiting)' : '#2563EB' }}
+                  style={{ background: task.status === 'needs-attention' ? 'var(--awaiting)' : getPhaseColor(2).main }}
                 />
                 <div>
                   <div className="text-[13px] font-medium text-[var(--text-primary)] leading-[1.4]">
