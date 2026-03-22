@@ -6,8 +6,12 @@
  *   download — streams file bytes back to browser
  *   upload   — accepts multipart/form-data, PUTs file to Nextcloud
  *
+ * Targeting:
+ *   - chapter_sort_order — resolves to chapter folder (e.g. "01_Konzept")
+ *   - sub_path           — arbitrary relative path within project root (overrides chapter)
+ *
  * Security:
- *   - Path sanitisation (reject "..", leading "/")
+ *   - Path sanitisation (reject "..", leading "/", control characters)
  *   - project_access check per user
  *   - nextcloud_root_path loaded from project_config
  *   - chapter folder name resolved from chapter_config
@@ -30,7 +34,7 @@ function isPathSafe(p: string): boolean {
   if (p.startsWith("/")) return false;
   // Split on both / and \ to catch Windows-style injections
   const segments = p.split(/[/\\]/);
-  return !segments.some((s) => s === ".." || s === "." || s.includes("%") || s.includes("\0"));
+  return !segments.some((s) => s === ".." || s === "." || s.includes("%") || s.includes("\0") || /[\x00-\x1f\x7f]/.test(s));
 }
 
 /** Build WebDAV base URL once. */
@@ -251,6 +255,7 @@ Deno.serve(async (req) => {
     let chapterSortOrder: number | undefined;
     let filePath: string | undefined;
     let uploadFile: File | null = null;
+    let subPath: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -260,6 +265,7 @@ Deno.serve(async (req) => {
       chapterSortOrder = cso !== null && cso !== "" ? parseInt(cso as string, 10) : undefined;
       filePath = (formData.get("file_path") as string) || undefined;
       uploadFile = formData.get("file") as File | null;
+      subPath = (formData.get("sub_path") as string) || undefined;
     } else {
       const body = await req.json();
       action = body.action || "";
@@ -268,6 +274,7 @@ Deno.serve(async (req) => {
         ? Number(body.chapter_sort_order)
         : undefined;
       filePath = body.file_path || undefined;
+      subPath = body.sub_path || undefined;
     }
 
     if (!action || !projectConfigId) {
@@ -287,6 +294,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Validate sub_path -------------------------------------------------
+    if (subPath !== undefined && !isPathSafe(subPath)) {
+      return new Response(
+        JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid sub_path", correlationId: requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // --- Validate project_config_id format --------------------------------
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectConfigId)) {
       return new Response(
@@ -297,7 +312,8 @@ Deno.serve(async (req) => {
 
     // --- Resolve project context ----------------------------------------
     const { ctx, accessDenied } = await resolveProjectContext(
-      supabase, supabaseService, user.id, projectConfigId, chapterSortOrder, log,
+      supabase, supabaseService, user.id, projectConfigId,
+      subPath ? undefined : chapterSortOrder, log,
     );
 
     if (accessDenied) {
@@ -319,7 +335,9 @@ Deno.serve(async (req) => {
 
     // Build the target path
     let targetPath = ctx.rootPath;
-    if (ctx.chapterFolder) {
+    if (subPath) {
+      targetPath = `${targetPath}/${subPath}`;
+    } else if (ctx.chapterFolder) {
       targetPath = `${targetPath}/${ctx.chapterFolder}`;
     }
 
@@ -371,7 +389,9 @@ Deno.serve(async (req) => {
 
         // Relative path: from project root
         let relativePath = "";
-        if (ctx.chapterFolder) {
+        if (subPath) {
+          relativePath = `${subPath}/${name}`;
+        } else if (ctx.chapterFolder) {
           relativePath = `${ctx.chapterFolder}/${name}`;
         } else {
           relativePath = name;
@@ -523,7 +543,9 @@ Deno.serve(async (req) => {
       log.info("Upload succeeded", { fileName });
 
       let relativePath = "";
-      if (ctx.chapterFolder) {
+      if (subPath) {
+        relativePath = `${subPath}/${fileName}`;
+      } else if (ctx.chapterFolder) {
         relativePath = `${ctx.chapterFolder}/${fileName}`;
       } else {
         relativePath = fileName;
