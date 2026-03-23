@@ -1160,38 +1160,41 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Auto-deduct credits on completion
-        const { data: cachedTaskForCredits } = await supabase
+        // Auto-deduct credits on completion — check ALL profiles that have this task
+        const { data: cachedTasksForCredits } = await supabase
           .from("task_cache")
           .select("credits, profile_id, name")
           .eq("clickup_id", taskId)
-          .limit(1)
-          .maybeSingle();
+          .gt("credits", 0);
 
-        if (cachedTaskForCredits?.credits && cachedTaskForCredits.credits > 0) {
+        for (const cachedTaskForCredits of (cachedTasksForCredits || [])) {
           // BLOCKING 2 fix: Only deduct if approval was given (credit_approved marker exists)
           const { data: approvalMarker } = await supabase
             .from("credit_transactions")
             .select("id")
             .eq("task_id", taskId)
             .eq("type", "credit_approved")
+            .eq("profile_id", cachedTaskForCredits.profile_id)
             .limit(1)
             .maybeSingle();
 
           if (!approvalMarker) {
-            log.info("Skipping credit deduction — no approval marker found", { taskId });
-          } else {
-            // Idempotency: check for existing task_deduction for this task
-            const { data: existingDeduction } = await supabase
-              .from("credit_transactions")
-              .select("id")
-              .eq("task_id", taskId)
-              .eq("type", "task_deduction")
-              .limit(1)
-              .maybeSingle();
+            log.info("Skipping credit deduction — no approval marker found", { taskId, profileId: cachedTaskForCredits.profile_id });
+            continue;
+          }
 
-            if (!existingDeduction) {
-              const { error: deductionError } = await supabase
+          // Idempotency: check for existing task_deduction for this task+profile
+          const { data: existingDeduction } = await supabase
+            .from("credit_transactions")
+            .select("id")
+            .eq("task_id", taskId)
+            .eq("type", "task_deduction")
+            .eq("profile_id", cachedTaskForCredits.profile_id)
+            .limit(1)
+            .maybeSingle();
+
+          if (!existingDeduction) {
+            const { error: deductionError } = await supabase
                 .from("credit_transactions")
                 .insert({
                   profile_id: cachedTaskForCredits.profile_id,
