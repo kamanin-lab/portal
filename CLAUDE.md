@@ -228,6 +228,12 @@ After ANY structural change:
 3. Add entry to `docs/DECISIONS.md` for architecture decisions
 4. Add entry to `docs/CHANGELOG.md`
 
+### Ideas — Auto-Capture
+- During ANY task, if you discover something that should be built but is out of scope — **immediately** create a file in `docs/ideas/` and add to `dashboard.json` ideas array
+- Don't wait for user to suggest it. If you see a gap, a missing feature, a better approach — write it down
+- Tag with priority: `high` (blocks other work), `medium` (would improve quality), `low` (nice to have)
+- This is how the project stays alive even when the user is not actively guiding
+
 ### Ideas Lifecycle
 - When an idea from `docs/ideas/` is **implemented**: mark the file with `Status: IMPLEMENTED (TASK-XXX, date)` and **remove it from `dashboard.json` ideas array**
 - When a new idea is added to `docs/ideas/`: add it to `dashboard.json` ideas array immediately
