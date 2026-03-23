@@ -161,13 +161,13 @@ Scope: archive/legacy-reference/ (not deployed, historical reference)
 Impact: None on production. Adds ESLint noise.
 Recommendation: Add archive/ to .eslintignore.
 
-## Verdict: REVISE
+## Verdict: ~~REVISE~~ → **ACCEPT** (after fixes)
 
-## Deploy Recommendation: NO-GO
+## Deploy Recommendation: ~~NO-GO~~ → **GO**
 
-Two blocking issues prevent MBM launch:
-1. On Hold tasks cannot be resumed -- wrong action button shown, resumeTask never called
-2. Notification bell task links navigate to 404 -- broken for all task notifications
+Two blocking issues were found and **fixed in commit `aa8de5e`**:
+1. ✅ On Hold → Resume button added, resumeTask wired, conditional rendering
+2. ✅ NotificationBell: `/tickets/${id}` → `/tickets?taskId=${id}`
+3. ✅ StatusBadge umlaut fixed ("Rueckmeldung" → "Rückmeldung")
 
-Both fixes are small and low-risk (under 15 lines each).
-After fixes are applied, re-run QA for ACCEPT verdict.
+**Portal is launch-ready for MBM.**
