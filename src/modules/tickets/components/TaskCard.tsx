@@ -13,9 +13,7 @@ interface Props {
 }
 
 function getPreview(task: ClickUpTask): string {
-  const text = task.description?.trim()
-  if (text) return text.slice(0, 90) + (text.length > 90 ? '...' : '')
-  return 'Keine Vorschau verfügbar.'
+  return task.description?.trim() || 'Keine Vorschau verfügbar.'
 }
 
 function formatDueDate(date: string | null): string | null {
@@ -41,53 +39,63 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
   const preview = getPreview(task)
   const dueDate = formatDueDate(task.due_date)
   const borderColor = STATUS_BORDER_COLORS[portalStatus] ?? 'var(--border)'
+  const hasDescription = Boolean(task.description?.trim())
 
   return (
     <motion.div
+      className="h-[152px]"
       whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <button
         onClick={() => onTaskClick(task.clickup_id)}
-        className="w-full text-left bg-surface border border-border rounded-[var(--r-md)] shadow-sm px-4 py-4 hover:bg-surface-hover transition-colors duration-[120ms] cursor-pointer"
-        style={{ borderLeftWidth: '3px', borderLeftColor: borderColor }}
+        className="flex w-full h-full text-left bg-surface border border-border rounded-[var(--r-md)] shadow-sm overflow-hidden hover:bg-surface-hover transition-colors duration-[120ms] cursor-pointer"
       >
-        {/* Title row */}
-        <div className="flex items-start gap-2 mb-1.5">
-          <span className="flex-1 text-[14px] font-semibold text-text-primary leading-snug">
+        {/* Status left border */}
+        <div
+          className="w-[3px] shrink-0 rounded-l-[var(--r-md)]"
+          style={{ background: borderColor }}
+        />
+
+        {/* Card content */}
+        <div className="flex-1 flex flex-col min-w-0 px-4 py-3.5">
+          {/* Title — max 2 lines */}
+          <h3 className="text-[14px] font-semibold text-text-primary leading-snug line-clamp-2">
             {task.name}
             {unreadCount > 0 && (
               <span className="inline-flex items-center justify-center ml-2 min-w-[18px] h-[18px] px-[5px] rounded-full bg-cta text-white text-[10px] font-bold align-middle">
                 {unreadCount}
               </span>
             )}
-          </span>
-        </div>
+          </h3>
 
-        {/* Preview text */}
-        <p className="text-[13px] text-text-secondary leading-relaxed mb-2.5 line-clamp-2">
-          {preview}
-        </p>
+          {/* Description — max 2 lines, flex-1 fills remaining space */}
+          <p className={`text-[13px] leading-relaxed line-clamp-2 mt-1 flex-1 ${
+            hasDescription ? 'text-text-secondary' : 'text-text-tertiary italic'
+          }`}>
+            {preview}
+          </p>
 
-        {/* Meta row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <StatusBadge status={portalStatus} variant="ticket" size="sm" />
+          {/* Meta row — always at bottom */}
+          <div className="flex items-center gap-2 flex-wrap mt-auto pt-1">
+            <StatusBadge status={portalStatus} variant="ticket" size="sm" />
 
-          <PriorityIcon priority={task.priority} size={13} showLabel />
+            <PriorityIcon priority={task.priority} size={13} showLabel />
 
-          <CreditBadge credits={task.credits} />
+            <CreditBadge credits={task.credits} />
 
-          {dueDate && (
-            <span className="inline-flex items-center gap-1 text-[12px] text-text-tertiary">
-              <CalendarDays size={12} />
-              {dueDate}
+            {dueDate && (
+              <span className="inline-flex items-center gap-1 text-[12px] text-text-tertiary">
+                <CalendarDays size={12} />
+                {dueDate}
+              </span>
+            )}
+
+            <span className="flex items-center gap-1 text-[12px] text-text-tertiary ml-auto">
+              <User size={12} />
+              Team
             </span>
-          )}
-
-          <span className="flex items-center gap-1 text-[12px] text-text-tertiary ml-auto">
-            <User size={12} />
-            Team
-          </span>
+          </div>
         </div>
       </button>
     </motion.div>

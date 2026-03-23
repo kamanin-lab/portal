@@ -22,7 +22,7 @@ export function TaskList({ tasks, isLoading, filter, taskUnread, searchQuery = '
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <LoadingSkeleton lines={3} height="100px" />
+        <LoadingSkeleton lines={3} height="152px" />
       </div>
     )
   }

@@ -3,10 +3,10 @@
 _Status: active_ · _Last updated: 2026-03-23_
 
 ## Current Task
-None — awaiting next assignment
+**TASK-014: Fix Task Card Heights — Equal Size Grid**
 
 ## Active Agents
-None
+implementation-agent (fixing card heights)
 
 ## Current Pipeline — TASK-013
 | Phase | Status | Agent | Notes |
