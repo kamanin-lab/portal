@@ -224,6 +224,7 @@ Deno.serve(async (req) => {
         .from("task_cache")
         .select("status")
         .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
         .limit(1)
         .maybeSingle();
 
