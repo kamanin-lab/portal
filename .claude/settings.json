@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention', 'Claude Code')\""
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const p=require('path').join(process.cwd(),'tasks','dashboard.json');try{const s=fs.statSync(p);const mins=Math.round((Date.now()-s.mtime.getTime())/60000);if(mins>15){console.error('⏰ dashboard.json is '+mins+' min stale. Update it now if phase changed.');}}catch(e){}\""
+          }
+        ]
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const p=require('path').join(process.cwd(),'tasks','dashboard.json');try{const d=JSON.parse(fs.readFileSync(p,'utf8'));const mins=Math.round((Date.now()-new Date(d.lastUpdated).getTime())/60000);console.log('DASHBOARD STATUS: Last updated '+mins+' min ago. Status: '+d.status+'. Current task: '+(d.currentTask?d.currentTask.id+' — '+d.currentTask.title:'none')+'. RULE: Update dashboard.json at EVERY phase transition.');}catch(e){console.log('⚠️ No dashboard.json found. Create tasks/dashboard.json before doing any work.');}\""
+          }
+        ]
+      }
+    ],
+
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const p=require('path').join(process.cwd(),'tasks','dashboard.json');try{const s=fs.statSync(p);const mins=Math.round((Date.now()-s.mtime.getTime())/60000);if(mins>30){console.log('⚠️  DASHBOARD STALE ('+mins+' min). You MUST update tasks/dashboard.json NOW before stopping. Update: lastUpdated, status, currentTask, activeAgents, pipeline. This is a BLOCKING requirement.');}else{console.log('✅ Dashboard OK (updated '+mins+' min ago)');}}catch(e){console.log('❌ tasks/dashboard.json NOT FOUND. Create it before stopping.');}\""
+          }
+        ]
+      }
+    ]
+  }
+}

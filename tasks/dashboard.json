@@ -1,17 +1,28 @@
 {
-  "lastUpdated": "2026-03-23T03:30:00Z",
-  "status": "active",
-  "currentTask": { "id": "TASK-010", "title": "Credit System — Phase 1", "description": "Manual credit assignment, balance tracking, display in portal" },
-  "activeAgents": [{ "name": "reviewer-architect", "status": "working", "task": "Spec review" }],
-  "pipeline": [
-    { "phase": "Task Framing", "status": "done", "agent": "Supervisor", "notes": "Spec written" },
-    { "phase": "Spec Review", "status": "in_progress", "agent": "reviewer-architect", "notes": "" },
-    { "phase": "Plan", "status": "pending", "agent": "Supervisor", "notes": "" },
-    { "phase": "Implementation", "status": "pending", "agent": "implementation-agent", "notes": "" },
-    { "phase": "Post-Code Review", "status": "pending", "agent": "reviewer-architect", "notes": "" },
-    { "phase": "QA", "status": "pending", "agent": "qa-agent", "notes": "" }
-  ],
+  "lastUpdated": "2026-03-23T05:30:00Z",
+  "status": "idle",
+  "currentTask": null,
+  "activeAgents": [],
+  "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-010",
+      "title": "Credit System Phase 1",
+      "date": "2026-03-23",
+      "commits": ["13e69b2"],
+      "summary": "Credits on tasks, balance in sidebar/tickets, webhook sync, monthly top-up cron, 3 packages (10/25/50).",
+      "filesChanged": 14,
+      "reviewCycles": 2
+    },
+    {
+      "id": "TASK-009",
+      "title": "File Management — Upload + Create Folder",
+      "date": "2026-03-23",
+      "commits": ["2b4fbd7"],
+      "summary": "Upload + mkdir in DateienPage with client-root Edge Function actions.",
+      "filesChanged": 6,
+      "reviewCycles": 2
+    },
     {
       "id": "TASK-008",
       "title": "UI Component Unification — shadcn/ui Migration",
@@ -119,6 +130,14 @@
       "summary": "AI-обогащение контекстом клиента"
     },
     {
+      "title": "Admin Dashboard (Operator Panel)",
+      "file": "admin-dashboard.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Phase 5",
+      "summary": "UI для управления клиентами, пакетами, проектами, кредитами — замена ручной работы в Supabase"
+    },
+    {
       "title": "Proactive Recommendations",
       "file": "recommendations.md",
       "status": "idea",
@@ -128,9 +147,9 @@
     }
   ],
   "stats": {
-    "totalCommits": 16,
-    "totalFilesChanged": 148,
-    "testsPassing": "pre-existing failure",
+    "totalCommits": 19,
+    "totalFilesChanged": 168,
+    "testsPassing": "77/77",
     "buildStatus": "clean"
   }
 }
