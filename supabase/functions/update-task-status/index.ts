@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
       // Read credits from task_cache
       const { data: taskCacheRow } = await supabaseAdmin
         .from("task_cache")
-        .select("credits")
+        .select("credits, name")
         .eq("clickup_id", taskId)
         .eq("profile_id", userId)
         .limit(1)
@@ -405,22 +405,28 @@ Deno.serve(async (req) => {
         log.error("Failed to post auto-comment for credit approval", { status: autoCommentResp.status });
       }
 
-      // BLOCKING 2 fix: Insert credit_approved marker so completion handler knows approval happened
-      const { error: markerError } = await supabaseAdmin
-        .from("credit_transactions")
-        .insert({
-          profile_id: userId,
-          amount: 0,
-          type: "credit_approved",
-          task_id: taskId,
-          task_name: null,
-          description: `Kostenfreigabe erteilt (${credits} Credits)`,
-        });
+      // Deduct credits immediately on approval (not on COMPLETE)
+      if (credits > 0) {
+        const { error: deductError } = await supabaseAdmin
+          .from("credit_transactions")
+          .insert({
+            profile_id: userId,
+            amount: -credits,
+            type: "task_deduction",
+            task_id: taskId,
+            task_name: taskCacheRow?.name || null,
+            description: `${credits} Credits — Kostenfreigabe erteilt`,
+          });
 
-      if (markerError) {
-        log.error("Failed to insert credit_approved marker", { error: markerError.message });
-      } else {
-        log.info("Credit approval marker inserted", { taskId, credits });
+        if (deductError) {
+          if (deductError.message?.includes("duplicate") || deductError.message?.includes("unique")) {
+            log.info("Credit deduction already exists (idempotent)", { taskId });
+          } else {
+            log.error("Failed to deduct credits on approval", { error: deductError.message });
+          }
+        } else {
+          log.info("Credits deducted on approval", { taskId, amount: -credits });
+        }
       }
     }
 

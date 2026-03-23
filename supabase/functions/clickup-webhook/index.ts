@@ -1160,66 +1160,10 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Auto-deduct credits on completion — check ALL profiles that have this task
-        const { data: cachedTasksForCredits } = await supabase
-          .from("task_cache")
-          .select("credits, profile_id, name")
-          .eq("clickup_id", taskId)
-          .gt("credits", 0);
+        // Credits are deducted at approval time (approve_credits action), not on completion.
+        // No auto-deduction needed here.
+        // Legacy code removed — see TASK-013 for context.
 
-        for (const cachedTaskForCredits of (cachedTasksForCredits || [])) {
-          // BLOCKING 2 fix: Only deduct if approval was given (credit_approved marker exists)
-          const { data: approvalMarker } = await supabase
-            .from("credit_transactions")
-            .select("id")
-            .eq("task_id", taskId)
-            .eq("type", "credit_approved")
-            .eq("profile_id", cachedTaskForCredits.profile_id)
-            .limit(1)
-            .maybeSingle();
-
-          if (!approvalMarker) {
-            log.info("Skipping credit deduction — no approval marker found", { taskId, profileId: cachedTaskForCredits.profile_id });
-            continue;
-          }
-
-          // Idempotency: check for existing task_deduction for this task+profile
-          const { data: existingDeduction } = await supabase
-            .from("credit_transactions")
-            .select("id")
-            .eq("task_id", taskId)
-            .eq("type", "task_deduction")
-            .eq("profile_id", cachedTaskForCredits.profile_id)
-            .limit(1)
-            .maybeSingle();
-
-          if (!existingDeduction) {
-            const { error: deductionError } = await supabase
-                .from("credit_transactions")
-                .insert({
-                  profile_id: cachedTaskForCredits.profile_id,
-                  amount: -cachedTaskForCredits.credits,
-                  type: "task_deduction",
-                  task_id: taskId,
-                  task_name: cachedTaskForCredits.name,
-                  description: `${cachedTaskForCredits.credits} Credits für "${cachedTaskForCredits.name}"`,
-                });
-
-              // BLOCKING 3 fix: If insert fails due to unique constraint, treat as idempotent success
-              if (deductionError) {
-                if (deductionError.message?.includes("duplicate") || deductionError.message?.includes("unique")) {
-                  log.info("Credit deduction race condition caught by unique constraint, skipping", { taskId });
-                } else {
-                  log.error("Failed to auto-deduct credits on completion", { taskId, error: deductionError.message });
-                }
-              } else {
-                log.info("Credits auto-deducted on task completion", { taskId, amount: -cachedTaskForCredits.credits });
-              }
-            } else {
-              log.info("Credit deduction already exists for task, skipping", { taskId });
-            }
-          }
-        }
       }
 
       // Handle task started (IN PROGRESS) notification — bell only, no email
