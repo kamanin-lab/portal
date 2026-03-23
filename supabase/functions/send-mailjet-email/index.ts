@@ -15,9 +15,14 @@ interface EmailRequest {
     | "message_digest"
     | "team_question"
     | "support_response"
+    | "step_ready"
+    | "project_reply"
     | "magic_link"
     | "password_reset"
-    | "email_confirmation";
+    | "email_confirmation"
+    | "signup"
+    | "invite"
+    | "email_change";
   to: {
     email: string;
     name?: string;
@@ -26,6 +31,7 @@ interface EmailRequest {
     locale?: "de" | "en";
     firstName?: string;
     taskName?: string;
+    stepName?: string;
     taskId?: string;
     tasks?: TaskDigestItem[];
     actionUrl?: string;
@@ -100,6 +106,45 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
             <a href="${taskUrl}" class="button">${copy.cta}</a>
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "step_ready": {
+      const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
+      const stepUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(stepName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <a href="${stepUrl}" class="button">${copy.cta}</a>
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "project_reply": {
+      const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
+      const stepUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const teamMemberName = data.teamMemberName || (locale === "de" ? "Ihr Tech-Team" : "Your tech team");
+      const messagePreview = data.messagePreview || "";
+      const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(teamMemberName, stepName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <div class="message-box">
+              <p class="text" style="font-style: italic; margin: 0;">"${messagePreview}${messagePreview.length >= 300 ? "..." : ""}"</p>
+            </div>
+            <a href="${stepUrl}" class="button">${copy.cta}</a>
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -225,6 +270,54 @@ function generateEmailHtml(
     }
 
     case "email_confirmation": {
+      const actionUrl = data.actionUrl || portalUrl;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
+      return {
+        subject: copy.subject as string,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${copy.body as string}</p>
+            <a href="${actionUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "signup": {
+      const actionUrl = data.actionUrl || portalUrl;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
+      return {
+        subject: copy.subject as string,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${copy.body as string}</p>
+            <a href="${actionUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "invite": {
+      const actionUrl = data.actionUrl || portalUrl;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
+      return {
+        subject: copy.subject as string,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${copy.body as string}</p>
+            <a href="${actionUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "email_change": {
       const actionUrl = data.actionUrl || portalUrl;
       const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {

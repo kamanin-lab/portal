@@ -626,26 +626,28 @@ Deno.serve(async (req) => {
             const profileIds = await getProjectProfileIds();
             if (profileIds.length > 0) {
               const stepName = await getStepName();
-              const isClientReview = statusAfter.toLowerCase() === "client review";
+              const statusLower = statusAfter.toLowerCase();
+              const isClientReview = statusLower === "client review";
+              const isComplete = isDoneStatus(statusAfter);
+              const isWorkStarted = isInProgressStatus(statusAfter);
+              const statusBefore = historyItem.before?.status || "";
               const notifType = "status_change";
 
-              const notifications = profileIds.map(pid => ({
-                profile_id: pid,
-                type: notifType,
-                title: isClientReview ? `${stepName} ist bereit für Ihre Prüfung` : `Status-Update: ${stepName}`,
-                message: isClientReview
-                  ? `Ihr Schritt „${stepName}" wartet auf Ihre Prüfung.`
-                  : `Der Status von „${stepName}" wurde auf „${statusAfter}" geändert.`,
-                task_id: taskId,
-                project_config_id: projectConfigId,
-                clickup_task_id: taskId,
-                is_read: false,
-              }));
-              await supabase.from("notifications").insert(notifications);
-              log.info("Project notifications created", { count: notifications.length, type: notifType });
-
-              // Email for step_ready
+              // --- CLIENT REVIEW: bell + step_ready email ---
               if (isClientReview) {
+                const notifications = profileIds.map(pid => ({
+                  profile_id: pid,
+                  type: notifType,
+                  title: `${stepName} ist bereit für Ihre Prüfung`,
+                  message: `Ihr Schritt „${stepName}" wartet auf Ihre Prüfung.`,
+                  task_id: taskId,
+                  project_config_id: projectConfigId,
+                  clickup_task_id: taskId,
+                  is_read: false,
+                }));
+                await supabase.from("notifications").insert(notifications);
+                log.info("Project step_ready notifications created", { count: notifications.length });
+
                 const { data: profiles } = await supabase
                   .from("profiles")
                   .select("id, email, full_name, email_notifications, notification_preferences")
@@ -657,6 +659,94 @@ Deno.serve(async (req) => {
                     }, log);
                   }
                 }
+              }
+
+              // --- COMPLETION: bell + task_completed email (deduplicated) ---
+              else if (isComplete) {
+                // Deduplicate: check if completion notification already exists
+                const { data: existingNotif } = await supabase
+                  .from("notifications")
+                  .select("id")
+                  .eq("task_id", taskId)
+                  .eq("type", "status_change")
+                  .ilike("title", "%abgeschlossen%")
+                  .not("project_config_id", "is", null)
+                  .limit(1);
+
+                if (existingNotif && existingNotif.length > 0) {
+                  log.info("Project completion notification already sent, skipping", { taskId });
+                } else {
+                  const notifications = profileIds.map(pid => ({
+                    profile_id: pid,
+                    type: notifType,
+                    title: `${stepName} ist abgeschlossen`,
+                    message: `Ihr Projektschritt „${stepName}" wurde erfolgreich abgeschlossen.`,
+                    task_id: taskId,
+                    project_config_id: projectConfigId,
+                    clickup_task_id: taskId,
+                    is_read: false,
+                  }));
+                  await supabase.from("notifications").insert(notifications);
+                  log.info("Project completion notifications created", { count: notifications.length });
+
+                  const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("id, email, full_name, email_notifications, notification_preferences")
+                    .in("id", profileIds);
+                  for (const p of profiles || []) {
+                    if (shouldSendEmail(p, "task_completed")) {
+                      await sendMailjetEmail("task_completed", { email: p.email, name: p.full_name }, {
+                        firstName: p.full_name?.split(" ")[0], taskName: stepName, taskId,
+                      }, log);
+                    }
+                  }
+                }
+              }
+
+              // --- WORK STARTED: bell only, no email (deduplicated) ---
+              else if (isWorkStarted && !isInProgressStatus(statusBefore)) {
+                // Deduplicate: check if work-started notification already exists
+                const { data: existingStarted } = await supabase
+                  .from("notifications")
+                  .select("id")
+                  .eq("task_id", taskId)
+                  .eq("type", "status_change")
+                  .ilike("title", "%begonnen%")
+                  .not("project_config_id", "is", null)
+                  .limit(1);
+
+                if (existingStarted && existingStarted.length > 0) {
+                  log.info("Project work-started notification already sent, skipping", { taskId });
+                } else {
+                  const notifications = profileIds.map(pid => ({
+                    profile_id: pid,
+                    type: notifType,
+                    title: `Arbeit an ${stepName} hat begonnen`,
+                    message: `Die Arbeit an Ihrem Projektschritt „${stepName}" hat begonnen.`,
+                    task_id: taskId,
+                    project_config_id: projectConfigId,
+                    clickup_task_id: taskId,
+                    is_read: false,
+                  }));
+                  await supabase.from("notifications").insert(notifications);
+                  log.info("Project work-started notifications created", { count: notifications.length });
+                }
+              }
+
+              // --- Other status changes: generic bell notification ---
+              else {
+                const notifications = profileIds.map(pid => ({
+                  profile_id: pid,
+                  type: notifType,
+                  title: `Status-Update: ${stepName}`,
+                  message: `Der Status von „${stepName}" wurde auf „${statusAfter}" geändert.`,
+                  task_id: taskId,
+                  project_config_id: projectConfigId,
+                  clickup_task_id: taskId,
+                  is_read: false,
+                }));
+                await supabase.from("notifications").insert(notifications);
+                log.info("Project status notifications created", { count: notifications.length, status: statusAfter });
               }
             }
           }
@@ -731,7 +821,7 @@ Deno.serve(async (req) => {
           for (const p of profiles || []) {
             if (shouldSendEmail(p, "project_reply")) {
               await sendMailjetEmail("project_reply", { email: p.email, name: p.full_name }, {
-                firstName: p.full_name?.split(" ")[0], stepName,
+                firstName: p.full_name?.split(" ")[0], stepName, taskId,
                 teamMemberName: firstName, messagePreview: displayText.substring(0, 300),
               }, log);
             }
@@ -886,7 +976,7 @@ Deno.serve(async (req) => {
           .select("id")
           .eq("task_id", taskId)
           .eq("type", "status_change")
-          .ilike("title", "%completed%")
+          .ilike("title", "%abgeschlossen%")
           .limit(1);
 
         if (existingNotif && existingNotif.length > 0) {
@@ -965,7 +1055,7 @@ Deno.serve(async (req) => {
             .select("id")
             .eq("task_id", taskId)
             .eq("type", "status_change")
-            .ilike("title", "%started%")
+            .ilike("title", "%begonnen%")
             .limit(1);
 
           if (existingStartedNotif && existingStartedNotif.length > 0) {

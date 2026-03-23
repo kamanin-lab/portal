@@ -1,10 +1,28 @@
 {
-  "lastUpdated": "2026-03-23T08:00:00Z",
+  "lastUpdated": "2026-03-23T11:00:00Z",
   "status": "idle",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-012",
+      "title": "Project Email Notifications",
+      "date": "2026-03-23",
+      "commits": ["pending"],
+      "summary": "Added step_ready + project_reply email templates, completion + work-started handlers. Fixed dedup English keywords, missing taskId, EmailRequest type union.",
+      "filesChanged": 3,
+      "reviewCycles": 2
+    },
+    {
+      "id": "TASK-011",
+      "title": "Design Polish",
+      "date": "2026-03-23",
+      "commits": ["20aaec7"],
+      "summary": "Typography, Motion animations, Hugeicons sidebar, credit tokens, TaskList extraction.",
+      "filesChanged": 14,
+      "reviewCycles": 2
+    },
     {
       "id": "QA-001",
       "title": "Full Playwright QA + Bug Fixes",
@@ -147,8 +165,8 @@
     }
   ],
   "stats": {
-    "totalCommits": 19,
-    "totalFilesChanged": 168,
+    "totalCommits": 22,
+    "totalFilesChanged": 185,
     "testsPassing": "77/77",
     "buildStatus": "clean"
   }

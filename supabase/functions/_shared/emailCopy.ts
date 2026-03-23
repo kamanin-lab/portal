@@ -10,6 +10,8 @@ export type EmailType =
   | "message_digest"
   | "team_question"
   | "support_response"
+  | "step_ready"
+  | "project_reply"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -63,6 +65,44 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string) =>
         `"<strong>${taskName}</strong>" is ready for your review.`,
       cta: "View in portal",
+    },
+  },
+
+  step_ready: {
+    de: {
+      subject: (stepName: string) => `${stepName} — Ihre Prüfung ist erforderlich`,
+      title: "Projektschritt bereit zur Prüfung",
+      greeting: greetDe,
+      body: (stepName: string) =>
+        `Der Projektschritt „<strong>${stepName}</strong>" ist bereit für Ihre Prüfung. Bitte sehen Sie sich die Ergebnisse an und geben Sie Ihr Feedback.`,
+      cta: "Schritt öffnen",
+    },
+    en: {
+      subject: (stepName: string) => `${stepName} — Your review is required`,
+      title: "Project step ready for review",
+      greeting: greetEn,
+      body: (stepName: string) =>
+        `The project step "<strong>${stepName}</strong>" is ready for your review. Please review the deliverables and share your feedback.`,
+      cta: "Open step",
+    },
+  },
+
+  project_reply: {
+    de: {
+      subject: (stepName: string) => `Neue Nachricht zu ${stepName}`,
+      title: "Neue Nachricht zu Ihrem Projektschritt",
+      greeting: greetDe,
+      body: (teamMemberName: string, stepName: string) =>
+        `${teamMemberName} hat eine Nachricht zu „<strong>${stepName}</strong>" hinterlassen:`,
+      cta: "Nachricht ansehen",
+    },
+    en: {
+      subject: (stepName: string) => `New message about ${stepName}`,
+      title: "New message on your project step",
+      greeting: greetEn,
+      body: (teamMemberName: string, stepName: string) =>
+        `${teamMemberName} left a message about "<strong>${stepName}</strong>":`,
+      cta: "View message",
     },
   },
 
