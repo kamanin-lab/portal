@@ -13,7 +13,7 @@ interface Props {
 }
 
 function getPreview(task: ClickUpTask): string {
-  return task.description?.trim() || 'Keine Vorschau verfügbar.'
+  return task.description?.trim() || 'Keine Beschreibung verfügbar.'
 }
 
 function formatDueDate(date: string | null): string | null {
@@ -69,15 +69,18 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
             )}
           </h3>
 
-          {/* Description — max 2 lines, flex-1 fills remaining space */}
-          <p className={`text-[13px] leading-relaxed line-clamp-2 mt-1 flex-1 ${
+          {/* Description — strict 2 lines max */}
+          <p className={`text-[13px] leading-[1.4] line-clamp-2 mt-1 overflow-hidden ${
             hasDescription ? 'text-text-secondary' : 'text-text-tertiary italic'
           }`}>
             {preview}
           </p>
 
+          {/* Spacer pushes meta to bottom */}
+          <div className="flex-1" />
+
           {/* Meta row — always at bottom */}
-          <div className="flex items-center gap-2 flex-wrap mt-auto pt-1">
+          <div className="flex items-center gap-2 flex-wrap pt-1">
             <StatusBadge status={portalStatus} variant="ticket" size="sm" />
 
             <PriorityIcon priority={task.priority} size={13} showLabel />
