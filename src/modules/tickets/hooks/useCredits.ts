@@ -45,11 +45,9 @@ export function useCredits(): UseCreditsResult {
     queryKey: ['credit-balance', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('get_credit_balance', { p_profile_id: user!.id })
-        .single();
+        .rpc('get_credit_balance', { p_profile_id: user!.id });
       if (error) {
-        // RPC not available — return 0 balance, log warning
-        console.warn('[Credits] get_credit_balance RPC not available, showing 0');
+        console.warn('[Credits] get_credit_balance RPC error:', error.message);
         return 0;
       }
       return Number(data) || 0;
