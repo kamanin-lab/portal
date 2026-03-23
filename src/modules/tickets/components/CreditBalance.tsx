@@ -15,9 +15,9 @@ function formatPackageName(name: string | null): string {
 function getBalanceColor(balance: number, creditsPerMonth: number | null): string {
   if (!creditsPerMonth || creditsPerMonth <= 0) return 'text-text-secondary';
   const ratio = balance / creditsPerMonth;
-  if (ratio > 0.5) return 'text-emerald-600';
-  if (ratio >= 0.2) return 'text-amber-600';
-  return 'text-red-600';
+  if (ratio > 0.5) return 'text-credit-ok';
+  if (ratio >= 0.2) return 'text-credit-warn';
+  return 'text-credit-low';
 }
 
 export function CreditBalance({ compact = false }: Props) {
@@ -40,19 +40,22 @@ export function CreditBalance({ compact = false }: Props) {
   if (compact) {
     return (
       <div
-        className="flex items-center justify-center h-10 mx-1.5"
+        className="flex flex-col items-center justify-center h-12 mx-1.5"
         title={`${displayBalance} Credits verfügbar - ${formatPackageName(packageName)} - ${creditsPerMonth}/Monat`}
       >
-        <Zap size={16} className={cn('fill-current', balanceColor)} />
+        <Zap size={20} className={cn('fill-current', balanceColor)} />
+        <span className={cn('text-[9px] font-semibold leading-none mt-0.5', balanceColor)}>
+          {displayBalance}
+        </span>
       </div>
     );
   }
 
   return (
     <div className="px-4 py-2.5 flex items-center gap-2 text-[12px]">
-      <Zap size={14} className={cn('shrink-0 fill-current', balanceColor)} />
+      <Zap size={16} className={cn('shrink-0 fill-current', balanceColor)} />
       <div className="min-w-0">
-        <span className={cn('font-semibold', balanceColor)}>
+        <span className={cn('font-bold', balanceColor)}>
           {displayBalance} Credits
         </span>
         <span className="text-text-tertiary ml-1">

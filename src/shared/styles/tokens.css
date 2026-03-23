@@ -12,8 +12,8 @@
 
   /* Text */
   --text-primary: #333333;
-  --text-secondary: #555555;
-  --text-tertiary: #999999;
+  --text-secondary: #444444;
+  --text-tertiary: #777777;
   --text-inverse: #FAFAF9;
   --text-sidebar: #A8A0C4;
   --text-sidebar-active: #FFFFFF;
@@ -74,6 +74,11 @@
   --file-svg-bg: #EDE9FE;
   --file-default: #6B7280;
   --file-default-bg: #F3F4F6;
+
+  /* Credit */
+  --credit-ok: #059669;
+  --credit-warn: #D97706;
+  --credit-low: #DC2626;
 
   /* Destructive */
   --destructive: #DC2626;

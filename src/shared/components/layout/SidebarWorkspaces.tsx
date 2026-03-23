@@ -1,9 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { ClipboardList, Folder, FolderKanban, Headset, Box } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  ClipboardIcon,
+  Folder01Icon,
+  DashboardSquare01Icon,
+  CustomerServiceIcon,
+} from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import type { ClientWorkspace } from '@/shared/hooks/useWorkspaces'
 import { useProjects } from '@/modules/projects/hooks/useProjects'
 import { WORKSPACE_ROUTES, WORKSPACE_CHILDREN } from '@/shared/lib/workspace-routes'
+import type { IconSvgElement } from '@hugeicons/react'
 
 const DEFAULT_WORKSPACES: ClientWorkspace[] = [
   { id: 'default-projects', profile_id: '', module_key: 'projects', display_name: 'Projekte', icon: 'folder-kanban', sort_order: 1, is_active: true, created_at: '' },
@@ -11,13 +18,12 @@ const DEFAULT_WORKSPACES: ClientWorkspace[] = [
   { id: 'default-files', profile_id: '', module_key: 'files', display_name: 'Dateien', icon: 'folder', sort_order: 3, is_active: true, created_at: '' },
 ]
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  'clipboard-list': ClipboardList,
-  'folder-kanban': FolderKanban,
-  'folder': Folder,
-  'headset': Headset,
-  'box': Box,
+const ICON_MAP: Record<string, IconSvgElement> = {
+  'clipboard-list': ClipboardIcon,
+  'folder-kanban': DashboardSquare01Icon,
+  'folder': Folder01Icon,
+  'headset': CustomerServiceIcon,
+  'box': DashboardSquare01Icon,
 }
 
 interface Props {
@@ -54,7 +60,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
         </div>
       )}
       {visibleWorkspaces.map((ws) => {
-        const IconComp = ICON_MAP[ws.icon] ?? Box
+        const iconObj = ICON_MAP[ws.icon] ?? DashboardSquare01Icon
         const rootPath = WORKSPACE_ROUTES[ws.module_key] ?? '/'
         const staticChildren = WORKSPACE_CHILDREN[ws.module_key] ?? []
         // For projects workspace, use dynamically populated children
@@ -71,14 +77,14 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
                 isActive && 'bg-sidebar-active text-white'
               )}
             >
-              <IconComp size={18} />
+              <HugeiconsIcon icon={iconObj} size={20} className="shrink-0" />
               {expanded && (
                 <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">{ws.display_name}</span>
               )}
             </NavLink>
 
             {expanded && children.map((child) => {
-              const ChildIcon = ICON_MAP[child.icon] ?? Box
+              const childIconObj = ICON_MAP[child.icon] ?? DashboardSquare01Icon
               const badge = child.path === '/support' ? supportUnread : 0
               return (
                 <NavLink
@@ -90,7 +96,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
                     isActive && 'bg-sidebar-active text-white'
                   )}
                 >
-                  <ChildIcon size={15} className="shrink-0" />
+                  <HugeiconsIcon icon={childIconObj} size={15} className="shrink-0" />
                   <span className="ml-2.5 whitespace-nowrap overflow-hidden flex-1">{child.label}</span>
                   <WorkspaceBadge count={badge} />
                 </NavLink>

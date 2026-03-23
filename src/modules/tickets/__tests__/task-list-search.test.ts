@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { filterTasks, matchesTaskSearch } from '../components/TaskList'
+import { filterTasks, matchesTaskSearch } from '../lib/task-list-utils'
 import type { ClickUpTask } from '../types/tasks'
 
 function makeTask(overrides: Partial<ClickUpTask>): ClickUpTask {

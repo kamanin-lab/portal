@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { HelpCircle, Settings } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { HelpCircleIcon, Settings02Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { CreditBalance } from '@/modules/tickets/components/CreditBalance'
 
@@ -19,7 +20,7 @@ export function SidebarUtilities({ expanded }: Props) {
           isActive && 'bg-sidebar-active text-white'
         )}
       >
-        <HelpCircle size={18} className="shrink-0" />
+        <HugeiconsIcon icon={HelpCircleIcon} size={20} className="shrink-0" />
         {expanded && (
           <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">Hilfe</span>
         )}
@@ -32,7 +33,7 @@ export function SidebarUtilities({ expanded }: Props) {
           isActive && 'bg-sidebar-active text-white'
         )}
       >
-        <Settings size={18} className="shrink-0" />
+        <HugeiconsIcon icon={Settings02Icon} size={20} className="shrink-0" />
         {expanded && (
           <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">Konto</span>
         )}

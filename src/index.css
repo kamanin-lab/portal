@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source inline("align-middle bg-accent-light bg-border bg-border-light border-awaiting border-border-light items-end left-3 mb-2 my-1 pb-2 pl-8 pointer-events-none pr-8 pt-1 top-full tracking-wide w-44 w-64 whitespace-pre-wrap z-10 z-20 -top-[2px] -right-[2px] right-2.5 mt-[1px] mt-[8px] mb-[14px] ml-2 h-3.5 h-4 h-[18px] h-[calc(100vh-52px)] w-3.5 w-4 max-w-[280px] max-w-[600px] min-w-[18px] grid-cols-1 border-accent/30 border-amber-500 bg-amber-500 bg-committed bg-white/25 p-[6px] p-[7px] px-2 px-2.5 px-[5px] py-1.5 py-[3px] py-[16px] pt-[8px] pt-[12px] pb-1 text-[16px] text-orange-500 text-red-500 text-sky-500 shadow-lg shadow-sm outline placeholder:text-text-tertiary hover:border-accent hover:bg-cta-hover hover:text-accent hover:opacity-100 hover:shadow-md max-[768px]:p-4 md:h-screen md:grid-cols-2 bg-destructive hover:bg-destructive-hover bg-red-100 text-red-700 bg-cta hover:bg-accent-hover bg-accent text-text-tertiary bg-surface-active bg-surface-raised z-[51] focus-visible:ring-accent/40 data-[state=active]:text-text-primary data-[state=active]:border-b-text-primary data-[state=active]:font-semibold border-b-transparent");
+@source inline("align-middle bg-accent-light bg-border bg-border-light border-awaiting border-border-light items-end left-3 mb-2 my-1 pb-2 pl-8 pointer-events-none pr-8 pt-1 top-full tracking-wide w-44 w-64 whitespace-pre-wrap z-10 z-20 -top-[2px] -right-[2px] right-2.5 mt-[1px] mt-[8px] mb-[14px] ml-2 h-3.5 h-4 h-[18px] h-[calc(100vh-52px)] w-3.5 w-4 max-w-[280px] max-w-[600px] min-w-[18px] grid-cols-1 border-accent/30 border-amber-500 bg-amber-500 bg-committed bg-white/25 p-[6px] p-[7px] px-2 px-2.5 px-[5px] py-1.5 py-[3px] py-[16px] pt-[8px] pt-[12px] pb-1 text-[16px] text-orange-500 text-red-500 text-sky-500 shadow-lg shadow-sm outline placeholder:text-text-tertiary hover:border-accent hover:bg-cta-hover hover:text-accent hover:opacity-100 hover:shadow-md max-[768px]:p-4 md:h-screen md:grid-cols-2 bg-destructive hover:bg-destructive-hover bg-red-100 text-red-700 bg-cta hover:bg-accent-hover bg-accent text-text-tertiary bg-surface-active bg-surface-raised z-[51] focus-visible:ring-accent/40 data-[state=active]:text-text-primary data-[state=active]:border-b-text-primary data-[state=active]:font-semibold border-b-transparent text-credit-ok text-credit-warn text-credit-low fill-credit-warn stroke-credit-warn");
 @import "./shared/styles/tokens.css";
 
 @layer base {
@@ -73,6 +73,10 @@
   --color-phase-4-light: var(--phase-4-light);
   --color-phase-4-mid: var(--phase-4-mid);
   --color-phase-4-text: var(--phase-4-text);
+
+  --color-credit-ok: var(--credit-ok);
+  --color-credit-warn: var(--credit-warn);
+  --color-credit-low: var(--credit-low);
 
   --color-destructive: var(--destructive);
   --color-destructive-hover: var(--destructive-hover);

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { Inbox, ClipboardCheck } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { InboxIcon, TaskDone01Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -29,7 +30,7 @@ export function SidebarGlobalNav({ expanded, inboxCount, attentionCount }: Props
         )}
       >
         <div className="relative shrink-0">
-          <Inbox size={18} />
+          <HugeiconsIcon icon={InboxIcon} size={20} />
           {!expanded && inboxCount > 0 && (
             <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-cta text-white text-[8px] font-bold flex items-center justify-center leading-none">
               {inboxCount > 99 ? '99+' : inboxCount}
@@ -53,7 +54,7 @@ export function SidebarGlobalNav({ expanded, inboxCount, attentionCount }: Props
         )}
       >
         <div className="relative shrink-0">
-          <ClipboardCheck size={18} />
+          <HugeiconsIcon icon={TaskDone01Icon} size={20} />
           {!expanded && attentionCount > 0 && (
             <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-cta text-white text-[8px] font-bold flex items-center justify-center leading-none">
               {attentionCount > 99 ? '99+' : attentionCount}
