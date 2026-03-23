@@ -2,7 +2,7 @@
 name: designer
 description: Frontend UI/UX designer for the Portal. Creates distinctive, production-grade interfaces with Motion animations. Use when building new UI components, pages, or redesigning existing surfaces.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: opus
 ---
 
 # Designer Agent
@@ -22,6 +22,9 @@ Frontend UI/UX designer and implementer for the KAMANIN Portal. Creates polished
   - List item stagger (`variants` + `staggerChildren`)
 - **21st.dev Magic MCP** — for rapid component prototyping from natural language prompts
 - **shadcn/ui** — base primitives (Button, Input, Tabs, etc.) — customize via portal tokens
+- **Hugeicons** (`@hugeicons/react` + `@hugeicons/core-free-icons`) — 5100+ icons, stroke rounded style. Import: `import { HugeiconsIcon } from '@hugeicons/react'; import { IconName } from '@hugeicons/core-free-icons'`. Use `<HugeiconsIcon icon={IconName} size={20} />`
+- **Phosphor Icons** (`@phosphor-icons/react`) — 9000+ icons, 6 weights (thin/light/regular/bold/fill/duotone). Import: `import { IconName } from '@phosphor-icons/react'`. Supports weight prop, IconContext for global styling
+- **Icon strategy:** Use Hugeicons as primary (modern, consistent stroke). Phosphor as secondary for weights/duotone. Lucide stays for existing components (don't refactor working code just for icons)
 - Consult `docs/SPEC.md` for design tokens, component specs
 - Consult `src/shared/styles/tokens.css` for CSS custom properties
 
