@@ -1,6 +1,8 @@
 # Feature Idea: Кредитная система оценки задач (Task Credit System)
 
-> Status: Idea | Priority: High | Target: Phase 4+
+> Status: **IMPLEMENTED** (TASK-010, 2026-03-23) | Phase 1 shipped
+> Spec: `docs/superpowers/specs/2026-03-23-credit-system-design.md`
+> Remaining: Phase 2 (AI estimation), Phase 3 (budgets/limits/reports)
 
 ## Проблема
 

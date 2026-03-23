@@ -97,12 +97,11 @@
     }
   ],
   "residualItems": [
-    { "item": "UploadSheet.tsx at 199 lines", "priority": "low" },
-    { "item": "HelpPage.tsx + TasksPage.tsx still have some hardcoded hex props", "priority": "low" },
-    { "item": "Test suite broken (pre-existing vitest init issue)", "priority": "medium" },
     { "item": "raw_data shape inconsistency between fetch paths", "priority": "medium" },
-    { "item": "Empfehlungen page (future)", "priority": "medium" },
-    { "item": "MBM file migration to Nextcloud", "priority": "medium" }
+    { "item": "Empfehlungen page — monthly reports + AI recommendations", "priority": "medium" },
+    { "item": "MBM file migration to Nextcloud (local template ready)", "priority": "medium" },
+    { "item": "Credit System Phase 2 — AI auto-estimation", "priority": "low" },
+    { "item": "Credit System Phase 3 — budgets, limits, reports", "priority": "low" }
   ],
   "ideas": [
     {
@@ -112,14 +111,6 @@
       "priority": "medium",
       "target": "Phase 5+",
       "summary": "Автоматические email-напоминания о задачах в Client Review"
-    },
-    {
-      "title": "Credit System (Task Credits)",
-      "file": "credit-system.md",
-      "status": "idea",
-      "priority": "high",
-      "target": "Phase 4+",
-      "summary": "Кредитная система оценки задач"
     },
     {
       "title": "Per-Client Knowledge Base",

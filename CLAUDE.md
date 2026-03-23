@@ -228,6 +228,12 @@ After ANY structural change:
 3. Add entry to `docs/DECISIONS.md` for architecture decisions
 4. Add entry to `docs/CHANGELOG.md`
 
+### Ideas Lifecycle
+- When an idea from `docs/ideas/` is **implemented**: mark the file with `Status: IMPLEMENTED (TASK-XXX, date)` and **remove it from `dashboard.json` ideas array**
+- When a new idea is added to `docs/ideas/`: add it to `dashboard.json` ideas array immediately
+- Partially implemented ideas: update status to `in_progress`, keep in dashboard with updated summary
+- Ideas with remaining phases (e.g., Phase 2/3): keep the file for future reference, but remove from dashboard ideas (it's now a residual/roadmap item, not an idea)
+
 ## Supervisor Role (Lead Session)
 
 This session acts as the Supervisor for the PORTAL agent team.
