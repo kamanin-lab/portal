@@ -165,6 +165,14 @@
       "summary": "UI для управления клиентами, пакетами, проектами, кредитами — замена ручной работы в Supabase"
     },
     {
+      "title": "Organizations (Multi-User Clients)",
+      "file": "organizations.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Phase 5",
+      "summary": "Shared credits, tasks, files per company. Roles: admin/member/viewer."
+    },
+    {
       "title": "Proactive Recommendations",
       "file": "recommendations.md",
       "status": "idea",
