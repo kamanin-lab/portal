@@ -9,13 +9,14 @@ interface StatusBadgeProps {
 }
 
 const TICKET_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  open:            { bg: 'var(--surface-active)', text: 'var(--text-secondary)', dot: 'var(--text-tertiary)' },
-  in_progress:     { bg: 'var(--phase-2-light)', text: 'var(--phase-2-text)', dot: 'var(--phase-2)' },
-  needs_attention: { bg: 'var(--awaiting-bg)', text: 'var(--awaiting)', dot: 'var(--phase-3)' },
-  approved:        { bg: 'var(--committed-bg)', text: 'var(--committed)', dot: 'var(--committed)' },
-  done:            { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
-  on_hold:         { bg: 'var(--phase-1-light)', text: 'var(--phase-1-text)', dot: 'var(--phase-1)' },
-  cancelled:       { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
+  open:               { bg: 'var(--surface-active)', text: 'var(--text-secondary)', dot: 'var(--text-tertiary)' },
+  in_progress:        { bg: 'var(--phase-2-light)', text: 'var(--phase-2-text)', dot: 'var(--phase-2)' },
+  needs_attention:    { bg: 'var(--awaiting-bg)', text: 'var(--awaiting)', dot: 'var(--phase-3)' },
+  awaiting_approval:  { bg: 'var(--credit-approval-bg)', text: 'var(--credit-approval-text)', dot: 'var(--credit-approval)' },
+  approved:           { bg: 'var(--committed-bg)', text: 'var(--committed)', dot: 'var(--committed)' },
+  done:               { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
+  on_hold:            { bg: 'var(--phase-1-light)', text: 'var(--phase-1-text)', dot: 'var(--phase-1)' },
+  cancelled:          { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
 };
 
 const PROJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -25,13 +26,14 @@ const PROJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> 
 };
 
 const TICKET_LABELS: Record<string, string> = {
-  open:            'Offen',
-  in_progress:     'In Bearbeitung',
-  needs_attention: 'Ihre Rückmeldung',
-  approved:        'Freigegeben',
-  done:            'Erledigt',
-  on_hold:         'Pausiert',
-  cancelled:       'Abgebrochen',
+  open:               'Offen',
+  in_progress:        'In Bearbeitung',
+  needs_attention:    'Ihre Rückmeldung',
+  awaiting_approval:  'Kostenfreigabe',
+  approved:           'Freigegeben',
+  done:               'Erledigt',
+  on_hold:            'Pausiert',
+  cancelled:          'Abgebrochen',
 };
 
 const PROJECT_LABELS: Record<string, string> = {

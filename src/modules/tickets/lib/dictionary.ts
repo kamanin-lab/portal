@@ -3,13 +3,14 @@
 
 export const dict = {
   statuses: {
-    open:             'Offen',
-    in_progress:      'In Bearbeitung',
-    needs_attention:  'Ihre Rückmeldung',
-    approved:         'Freigegeben',
-    done:             'Erledigt',
-    on_hold:          'Pausiert',
-    cancelled:        'Abgebrochen',
+    open:               'Offen',
+    in_progress:        'In Bearbeitung',
+    needs_attention:    'Ihre Rückmeldung',
+    awaiting_approval:  'Kostenfreigabe',
+    approved:           'Freigegeben',
+    done:               'Erledigt',
+    on_hold:            'Pausiert',
+    cancelled:          'Abgebrochen',
   },
   actions: {
     approve:          'Freigeben',
@@ -76,6 +77,10 @@ export const dict = {
     taskCreated:             'Anfrage erfolgreich erstellt!',
     taskCreateError:         'Anfrage konnte nicht erstellt werden',
     connectionError:         'Verbindungsfehler. Bitte erneut versuchen.',
+    creditApproveSuccess:    'Kostenfreigabe erteilt',
+    creditApproveError:      'Kostenfreigabe fehlgeschlagen',
+    creditDeclineSent:       'Ihre Rückmeldung wurde gesendet',
+    creditDeclineError:      'Rückmeldung konnte nicht gesendet werden',
   },
 } as const;
 

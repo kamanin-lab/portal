@@ -25,6 +25,7 @@ const ACTION_TOASTS: Record<TaskAction, { success: string; error: string }> = {
   put_on_hold:      { success: dict.toasts.holdSuccess,           error: dict.toasts.holdError },
   resume:           { success: dict.toasts.resumeSuccess,         error: dict.toasts.resumeError },
   cancel:           { success: dict.toasts.cancelSuccess,         error: dict.toasts.cancelError },
+  approve_credits:  { success: dict.toasts.creditApproveSuccess,  error: dict.toasts.creditApproveError },
 };
 
 async function updateTaskStatus({ taskId, action, comment }: UpdateTaskStatusParams): Promise<UpdateTaskStatusResponse> {
@@ -69,6 +70,7 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
     putOnHold:       (taskId: string, comment?: string) => performAction(taskId, 'put_on_hold', comment),
     resumeTask:      (taskId: string, comment?: string) => performAction(taskId, 'resume', comment),
     cancelTask:      (taskId: string, comment?: string) => performAction(taskId, 'cancel', comment),
+    approveCredits:  (taskId: string) => performAction(taskId, 'approve_credits'),
     performAction,
     isLoading: mutation.isPending,
     isError:   mutation.isError,

@@ -30,8 +30,10 @@ export function TaskList({ tasks, isLoading, filter, taskUnread, searchQuery = '
   const filtered = filterTasks(tasks, filter, searchQuery, activeFilters)
 
   const sorted = [...filtered].sort((a, b) => {
-    const aNeeds = mapStatus(a.status) === 'needs_attention'
-    const bNeeds = mapStatus(b.status) === 'needs_attention'
+    const aStatus = mapStatus(a.status)
+    const bStatus = mapStatus(b.status)
+    const aNeeds = aStatus === 'needs_attention' || aStatus === 'awaiting_approval'
+    const bNeeds = bStatus === 'needs_attention' || bStatus === 'awaiting_approval'
     if (aNeeds && !bNeeds) return -1
     if (bNeeds && !aNeeds) return 1
     const aTime = a.last_activity_at ?? a.updated_at

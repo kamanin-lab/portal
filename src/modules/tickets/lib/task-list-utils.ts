@@ -53,7 +53,7 @@ export function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: str
   }
 
   switch (filter) {
-    case 'attention':   result = result.filter(t => mapStatus(t.status) === 'needs_attention'); break
+    case 'attention':   result = result.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }); break
     case 'open':        result = result.filter(t => mapStatus(t.status) === 'open'); break
     case 'in_progress': result = result.filter(t => mapStatus(t.status) === 'in_progress'); break
     case 'approved':    result = result.filter(t => mapStatus(t.status) === 'approved'); break

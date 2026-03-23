@@ -111,6 +111,7 @@ const EMAIL_TYPE_TO_PREF_KEY: Record<string, string> = {
   team_question: "team_comment",   // email type is team_question, pref key is team_comment
   project_reply: "team_comment",   // project reply = same preference as team comment
   support_response: "support_response",
+  credit_approval: "task_review",  // credit approval = same preference as task review
 };
 
 function shouldSendEmail(
@@ -221,6 +222,12 @@ function isReviewStatus(status: string): boolean {
 function isDoneStatus(status: string): boolean {
   const statusLower = status.toLowerCase();
   return statusLower.includes("done") || statusLower.includes("complete") || statusLower.includes("closed");
+}
+
+// Check if status indicates "Awaiting Approval" (credit approval needed)
+function isAwaitingApprovalStatus(status: string): boolean {
+  const statusLower = status.toLowerCase();
+  return statusLower === "awaiting approval";
 }
 
 // Check if status indicates "In Progress"
@@ -966,6 +973,118 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Handle AWAITING APPROVAL status — credit approval needed
+      if (statusAfter && isAwaitingApprovalStatus(statusAfter) && taskId && isValidTaskId(taskId)) {
+        log.info(`Task moved to awaiting approval`, { taskId, status: statusAfter });
+
+        const clickupApiToken = Deno.env.get("CLICKUP_API_TOKEN");
+        if (clickupApiToken) {
+          const taskInfo = await fetchTaskForVisibilityCheck(taskId, clickupApiToken, log);
+          if (taskInfo?.visible) {
+            const taskName = taskInfo.name;
+            const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
+
+            if (profileIds.length > 0) {
+              // Read credits from task_cache
+              let { data: cachedTaskCredits } = await supabase
+                .from("task_cache")
+                .select("credits")
+                .eq("clickup_id", taskId)
+                .limit(1)
+                .maybeSingle();
+
+              let credits = cachedTaskCredits?.credits ?? 0;
+
+              // BLOCKING 4 fix: If credits are missing from cache, fetch from ClickUp API
+              if (!credits || credits <= 0) {
+                log.warn("Credits not in cache for AWAITING APPROVAL notification, fetching from ClickUp", { taskId });
+                const creditsFieldId = Deno.env.get("CLICKUP_CREDITS_FIELD_ID") || "";
+                if (creditsFieldId) {
+                  try {
+                    const taskDetailResp = await fetchWithTimeout(
+                      `https://api.clickup.com/api/v2/task/${taskId}`,
+                      {
+                        headers: {
+                          Authorization: clickupApiToken,
+                          "Content-Type": "application/json",
+                        },
+                      }
+                    );
+                    if (taskDetailResp.ok) {
+                      const taskDetail = await taskDetailResp.json();
+                      const creditsField = (taskDetail.custom_fields || []).find(
+                        (f: { id: string }) => f.id === creditsFieldId
+                      );
+                      if (creditsField?.value != null && !isNaN(Number(creditsField.value))) {
+                        credits = Number(creditsField.value);
+                        log.info("Credits fetched from ClickUp API for notification", { taskId, credits });
+
+                        // Also update cache so subsequent reads are consistent
+                        await supabase
+                          .from("task_cache")
+                          .update({ credits, last_synced: new Date().toISOString() })
+                          .eq("clickup_id", taskId);
+                      }
+                    }
+                  } catch (fetchErr) {
+                    log.error("Failed to fetch credits from ClickUp for notification", { taskId, error: String(fetchErr) });
+                  }
+                }
+
+                // If credits are still missing after fetch attempt, skip notification
+                if (!credits || credits <= 0) {
+                  log.warn("Skipping credit approval notification — credits not available", { taskId });
+                  return new Response(
+                    JSON.stringify({ success: true, message: "Credits not available, notification skipped" }),
+                    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                  );
+                }
+              }
+
+              const creditsStr = credits > 0 ? ` (${credits} Credits)` : "";
+
+              // Create bell notifications
+              const notifications = profileIds.map(profileId => ({
+                profile_id: profileId,
+                type: "status_change",
+                title: `Kostenfreigabe: ${taskName}`,
+                message: `Aufgabe "${taskName}" erfordert Ihre Kostenfreigabe${creditsStr}.`,
+                task_id: taskId,
+                is_read: false,
+              }));
+              await supabase.from("notifications").insert(notifications);
+              log.info("Created awaiting approval notifications", { count: notifications.length });
+
+              // Update task activity
+              const eventTimestamp = parseClickUpTimestamp(historyItem.date);
+              await updateTaskActivity(supabase, taskId, eventTimestamp, log);
+
+              // Send emails
+              const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, email, full_name, email_notifications, notification_preferences")
+                .in("id", profileIds);
+
+              if (profiles) {
+                for (const profile of profiles) {
+                  if (shouldSendEmail(profile, "credit_approval")) {
+                    await sendMailjetEmail("credit_approval", {
+                      email: profile.email,
+                      name: profile.full_name,
+                    }, {
+                      firstName: profile.full_name?.split(" ")[0],
+                      taskName,
+                      taskId,
+                      credits: String(credits),
+                    }, log);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Handle task completion notifications (done/completed, not cancelled)
       if (statusAfter && isDoneStatus(statusAfter) && taskId && isValidTaskId(taskId)) {
         log.info(`Task moved to done status`, { taskId, status: statusAfter });
@@ -1038,6 +1157,64 @@ Deno.serve(async (req) => {
             }
           } else {
             log.info(`Task not visible in portal - skipping completion notification`, { taskId });
+          }
+        }
+
+        // Auto-deduct credits on completion
+        const { data: cachedTaskForCredits } = await supabase
+          .from("task_cache")
+          .select("credits, profile_id, name")
+          .eq("clickup_id", taskId)
+          .limit(1)
+          .maybeSingle();
+
+        if (cachedTaskForCredits?.credits && cachedTaskForCredits.credits > 0) {
+          // BLOCKING 2 fix: Only deduct if approval was given (credit_approved marker exists)
+          const { data: approvalMarker } = await supabase
+            .from("credit_transactions")
+            .select("id")
+            .eq("task_id", taskId)
+            .eq("type", "credit_approved")
+            .limit(1)
+            .maybeSingle();
+
+          if (!approvalMarker) {
+            log.info("Skipping credit deduction — no approval marker found", { taskId });
+          } else {
+            // Idempotency: check for existing task_deduction for this task
+            const { data: existingDeduction } = await supabase
+              .from("credit_transactions")
+              .select("id")
+              .eq("task_id", taskId)
+              .eq("type", "task_deduction")
+              .limit(1)
+              .maybeSingle();
+
+            if (!existingDeduction) {
+              const { error: deductionError } = await supabase
+                .from("credit_transactions")
+                .insert({
+                  profile_id: cachedTaskForCredits.profile_id,
+                  amount: -cachedTaskForCredits.credits,
+                  type: "task_deduction",
+                  task_id: taskId,
+                  task_name: cachedTaskForCredits.name,
+                  description: `${cachedTaskForCredits.credits} Credits für "${cachedTaskForCredits.name}"`,
+                });
+
+              // BLOCKING 3 fix: If insert fails due to unique constraint, treat as idempotent success
+              if (deductionError) {
+                if (deductionError.message?.includes("duplicate") || deductionError.message?.includes("unique")) {
+                  log.info("Credit deduction race condition caught by unique constraint, skipping", { taskId });
+                } else {
+                  log.error("Failed to auto-deduct credits on completion", { taskId, error: deductionError.message });
+                }
+              } else {
+                log.info("Credits auto-deducted on task completion", { taskId, amount: -cachedTaskForCredits.credits });
+              }
+            } else {
+              log.info("Credit deduction already exists for task, skipping", { taskId });
+            }
           }
         }
       }

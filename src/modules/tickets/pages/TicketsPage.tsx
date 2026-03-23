@@ -5,7 +5,7 @@ import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { TaskFilters, type TaskFilter } from '../components/TaskFilters'
 import { TaskList } from '../components/TaskList'
 import { TaskSearchBar } from '../components/TaskSearchBar'
-import { SyncIndicator } from '../components/SyncIndicator'
+// SyncIndicator removed — realtime handles updates
 import { NewTaskButton } from '../components/NewTaskButton'
 import { TaskDetailSheet } from '../components/TaskDetailSheet'
 import { TaskFilterPanel, type ActiveFilters } from '../components/TaskFilterPanel'
@@ -27,7 +27,7 @@ export function TicketsPage() {
   const [supportOpen, setSupportOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ priorities: [], datePreset: null })
 
-  const { data: tasks = [], isLoading, isFetching, dataUpdatedAt, forceRefresh } = useClickUpTasks()
+  const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
   const { taskUnread } = useUnreadCounts(user?.id)
 
@@ -37,7 +37,7 @@ export function TicketsPage() {
   // Auto-select "Ihre Rückmeldung" filter when tasks in client review exist
   useEffect(() => {
     if (!isLoading && tasks.length > 0) {
-      const hasAttention = tasks.some(t => mapStatus(t.status) === 'needs_attention')
+      const hasAttention = tasks.some(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; })
       if (hasAttention && filter === 'all') setFilter('attention')
     }
   }, [isLoading, tasks]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -63,8 +63,6 @@ export function TicketsPage() {
       return next
     }, { replace: true })
   }
-
-  const lastSynced = dataUpdatedAt ? new Date(dataUpdatedAt) : null
 
   return (
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
@@ -97,13 +95,8 @@ export function TicketsPage() {
         <TaskFilters active={filter} onChange={setFilter} tasks={tasks} />
       </div>
 
-      {/* Row 3: Sync indicator + Filter button */}
-      <div className="flex items-center justify-between mb-4">
-        <SyncIndicator
-          lastSyncedAt={lastSynced}
-          isSyncing={isFetching}
-          onSync={forceRefresh}
-        />
+      {/* Row 3: Filter button */}
+      <div className="flex items-center justify-end mb-4">
         <div className="relative">
           <button
             onClick={() => setFilterPanelOpen(v => !v)}

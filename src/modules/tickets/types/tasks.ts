@@ -5,6 +5,7 @@ export type TaskStatus =
   | 'open'
   | 'in_progress'
   | 'needs_attention'
+  | 'awaiting_approval'
   | 'approved'
   | 'done'
   | 'on_hold'
@@ -135,7 +136,7 @@ export interface CreateTaskInput {
 }
 
 // Task actions available to the client
-export type TaskAction = 'approve' | 'request_changes' | 'put_on_hold' | 'resume' | 'cancel';
+export type TaskAction = 'approve' | 'request_changes' | 'put_on_hold' | 'resume' | 'cancel' | 'approve_credits';
 
 // Notification from the notifications table
 export interface Notification {

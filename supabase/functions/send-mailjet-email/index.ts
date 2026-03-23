@@ -17,6 +17,7 @@ interface EmailRequest {
     | "support_response"
     | "step_ready"
     | "project_reply"
+    | "credit_approval"
     | "magic_link"
     | "password_reset"
     | "email_confirmation"
@@ -38,6 +39,7 @@ interface EmailRequest {
     token?: string;
     teamMemberName?: string;
     messagePreview?: string;
+    credits?: string;
   };
 }
 
@@ -98,6 +100,24 @@ function generateEmailHtml(
       const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <a href="${taskUrl}" class="button">${copy.cta}</a>
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "credit_approval": {
+      const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
+      const credits = data.credits || "0";
+      const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const subject = typeof copy.subject === "function" ? copy.subject(taskName, credits) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName, credits) : copy.body;
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>

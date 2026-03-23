@@ -12,6 +12,7 @@ export type EmailType =
   | "support_response"
   | "step_ready"
   | "project_reply"
+  | "credit_approval"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -64,6 +65,25 @@ export const EMAIL_COPY: EmailCopyDict = {
       greeting: greetEn,
       body: (taskName: string) =>
         `"<strong>${taskName}</strong>" is ready for your review.`,
+      cta: "View in portal",
+    },
+  },
+
+  credit_approval: {
+    de: {
+      subject: (taskName: string, credits: string) => `Kostenfreigabe für ${taskName} — ${credits} Credits`,
+      title: "Kostenfreigabe erforderlich",
+      greeting: greetDe,
+      body: (taskName: string, credits: string) =>
+        `Die Aufgabe „<strong>${taskName}</strong>" wurde mit <strong>${credits} Credits</strong> bewertet und wartet auf Ihre Freigabe.`,
+      cta: "Im Portal ansehen",
+    },
+    en: {
+      subject: (taskName: string, credits: string) => `Credit approval for ${taskName} — ${credits} credits`,
+      title: "Credit approval required",
+      greeting: greetEn,
+      body: (taskName: string, credits: string) =>
+        `The task "<strong>${taskName}</strong>" has been estimated at <strong>${credits} credits</strong> and is awaiting your approval.`,
       cta: "View in portal",
     },
   },

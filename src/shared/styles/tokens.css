@@ -79,6 +79,9 @@
   --credit-ok: #059669;
   --credit-warn: #D97706;
   --credit-low: #DC2626;
+  --credit-approval: #F59E0B;
+  --credit-approval-bg: #FEF3C7;
+  --credit-approval-text: #B45309;
 
   /* Destructive */
   --destructive: #DC2626;

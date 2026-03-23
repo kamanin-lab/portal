@@ -12,10 +12,12 @@
 | APPROVED        | Approved             | Yes            | No            |
 | COMPLETE        | Done                 | Yes            | No            |
 | ON HOLD         | On Hold              | Yes            | No            |
+| AWAITING APPROVAL | Kostenfreigabe    | Yes            | No            |
 | CANCELED        | Cancelled            | Yes            | No            |
 
 Notes:
 - INTERNAL REVIEW and REWORK are distinct statuses in ClickUp but both map to "In Progress" in the portal. Clients never see the internal review/rework cycle.
+- AWAITING APPROVAL is used for credit-based approval. The client must accept or decline the estimated credits before work begins.
 - Portal status is derived at render time from the ClickUp status stored in `task_cache.status`. It is never stored as a separate field.
 
 ## Allowed Transitions
@@ -32,6 +34,17 @@ Notes:
 | REWORK          | IN PROGRESS      | Team action        | No                     | None (invisible)         |
 | IN PROGRESS     | CLIENT REVIEW    | Team action        | No                     | Email + Bell             |
 | APPROVED        | COMPLETE         | Team action        | No                     | Email + Bell             |
+
+### Credit Approval
+
+| From (ClickUp)     | To (ClickUp)         | Trigger                  | Client Action Required | Notification Type |
+|---------------------|----------------------|--------------------------|------------------------|-------------------|
+| TO DO               | AWAITING APPROVAL    | Team sets credits        | No                     | Email + Bell      |
+| AWAITING APPROVAL   | TO DO                | Client accepts credits   | Yes                    | None              |
+| AWAITING APPROVAL   | AWAITING APPROVAL    | Client declines (comment)| Yes                    | None              |
+| COMPLETE            | —                    | Auto-deduction           | No                     | None              |
+
+When a task reaches COMPLETE, credits are auto-deducted from the client's balance (idempotent: one deduction per task).
 
 ### Hold and Cancel
 
@@ -52,6 +65,7 @@ When a client resumes a task from On Hold, the ClickUp status is set to TO DO (p
 | Open                 | —                            | Put on Hold, Cancel      |
 | In Progress          | —                            | Put on Hold, Cancel      |
 | Needs Your Attention | Approve, Request Changes     | Put on Hold, Cancel      |
+| Kostenfreigabe       | Akzeptieren, Ablehnen        | Put on Hold, Cancel      |
 | Approved             | —                            | Put on Hold, Cancel      |
 | Done                 | —                            | —                        |
 | On Hold              | —                            | Resume, Cancel           |
@@ -64,13 +78,15 @@ Notes:
 
 ## Action to ClickUp Status Mapping
 
-| Portal Action   | ClickUp Status Set | Edge Function        |
-|-----------------|--------------------|-----------------------|
-| Approve         | APPROVED           | update-task-status    |
-| Request Changes | REWORK             | update-task-status    |
-| Put on Hold     | ON HOLD            | update-task-status    |
-| Resume          | TO DO              | update-task-status    |
-| Cancel          | CANCELED           | update-task-status    |
+| Portal Action    | ClickUp Status Set   | Edge Function        |
+|------------------|----------------------|-----------------------|
+| Approve          | APPROVED             | update-task-status    |
+| Request Changes  | REWORK               | update-task-status    |
+| Approve Credits  | TO DO                | update-task-status    |
+| Decline Credits  | (stays AWAITING APPROVAL) | post-task-comment |
+| Put on Hold      | ON HOLD              | update-task-status    |
+| Resume           | TO DO                | update-task-status    |
+| Cancel           | CANCELED             | update-task-status    |
 
 All actions support an optional comment that is posted to ClickUp alongside the status change.
 

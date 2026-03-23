@@ -62,7 +62,7 @@ async function fetchWithRetry(
   throw lastError || new Error('Request failed after retries');
 }
 
-const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel"];
+const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel", "approve_credits"];
 
 function isValidTaskId(taskId: string): boolean {
   return /^[a-zA-Z0-9]+$/.test(taskId) && taskId.length <= 50;
@@ -217,6 +217,30 @@ Deno.serve(async (req) => {
 
     log.info("Updating task with action", { action });
 
+    // BLOCKING 1 fix: approve_credits requires task to be in AWAITING APPROVAL status
+    if (action === "approve_credits") {
+      const supabaseService = createClient(supabaseUrl, supabaseServiceKey!);
+      const { data: cached } = await supabaseService
+        .from("task_cache")
+        .select("status")
+        .eq("clickup_id", taskId)
+        .limit(1)
+        .maybeSingle();
+
+      const currentStatus = cached?.status?.toLowerCase() || "";
+      if (!currentStatus.includes("awaiting approval")) {
+        log.error("approve_credits called on task not in AWAITING APPROVAL", { currentStatus });
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            code: "INVALID_TRANSITION",
+            message: "approve_credits is only allowed when task is in AWAITING APPROVAL status",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const taskResponse = await fetchWithRetry(
       `https://api.clickup.com/api/v2/task/${taskId}`,
       {
@@ -310,6 +334,95 @@ Deno.serve(async (req) => {
     const updatedTask = await updateResponse.json();
     log.info("Task status updated successfully");
 
+    // Auto-comment for approve_credits action
+    if (action === "approve_credits") {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!);
+
+      // Read credits from task_cache
+      const { data: taskCacheRow } = await supabaseAdmin
+        .from("task_cache")
+        .select("credits")
+        .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
+        .limit(1)
+        .maybeSingle();
+
+      const credits = taskCacheRow?.credits ?? 0;
+      const autoCommentText = `Kostenfreigabe erteilt (${credits} Credits)`;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const fullName = profile?.full_name || userEmail?.split("@")[0] || "Client";
+      const firstName = fullName.split(" ")[0];
+      const clickupAutoComment = `${fullName} (via Client Portal):\n\n${autoCommentText}`;
+
+      const threadResolution = await resolveActivePublicThread(taskId, clickupApiToken, log);
+      const autoEndpoint = threadResolution.rootId
+        ? `https://api.clickup.com/api/v2/comment/${threadResolution.rootId}/reply`
+        : `https://api.clickup.com/api/v2/task/${taskId}/comment`;
+
+      const autoCommentResp = await fetchWithRetry(autoEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: clickupApiToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          comment_text: clickupAutoComment,
+          notify_all: false,
+        }),
+      }, 2, log);
+
+      if (autoCommentResp.ok) {
+        const autoCommentData = await autoCommentResp.json();
+        log.info("Auto-comment posted for credit approval");
+
+        await supabaseAdmin
+          .from("comment_cache")
+          .upsert({
+            clickup_comment_id: autoCommentData.id,
+            task_id: taskId,
+            profile_id: userId,
+            comment_text: clickupAutoComment,
+            display_text: autoCommentText,
+            author_id: 0,
+            author_name: firstName,
+            author_email: userEmail,
+            author_avatar: null,
+            clickup_created_at: new Date().toISOString(),
+            last_synced: new Date().toISOString(),
+            is_from_portal: true,
+          }, {
+            onConflict: "clickup_comment_id,profile_id",
+          });
+      } else {
+        await autoCommentResp.text();
+        log.error("Failed to post auto-comment for credit approval", { status: autoCommentResp.status });
+      }
+
+      // BLOCKING 2 fix: Insert credit_approved marker so completion handler knows approval happened
+      const { error: markerError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          profile_id: userId,
+          amount: 0,
+          type: "credit_approved",
+          task_id: taskId,
+          task_name: null,
+          description: `Kostenfreigabe erteilt (${credits} Credits)`,
+        });
+
+      if (markerError) {
+        log.error("Failed to insert credit_approved marker", { error: markerError.message });
+      } else {
+        log.info("Credit approval marker inserted", { taskId, credits });
+      }
+    }
+
     if (comment && typeof comment === 'string' && comment.trim()) {
       log.debug("Posting comment to task");
 
@@ -401,6 +514,7 @@ Deno.serve(async (req) => {
       put_on_hold: "Task has been put on hold",
       resume: "Task has been moved to Open",
       cancel: "Task has been cancelled",
+      approve_credits: "Credits have been approved",
     };
 
     return new Response(

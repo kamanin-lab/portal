@@ -1,6 +1,7 @@
 import { Zap } from 'lucide-react';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { TaskActions } from './TaskActions';
+import { CreditApproval } from './CreditApproval';
 import { TaskComments } from './TaskComments';
 import { mapStatus } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
@@ -57,6 +58,11 @@ export function TaskDetail({ task, onRead }: Props) {
         <p className="text-[13.5px] text-text-secondary leading-[1.6] mb-5 whitespace-pre-wrap">
           {task.description}
         </p>
+      )}
+
+      {/* Credit Approval */}
+      {portalStatus === 'awaiting_approval' && task.credits != null && task.credits > 0 && (
+        <CreditApproval taskId={task.clickup_id} credits={task.credits} taskName={task.name} />
       )}
 
       {/* Actions */}

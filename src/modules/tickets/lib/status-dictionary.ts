@@ -1,5 +1,6 @@
 export const STATUS_LABELS: Record<string, string> = {
   needs_attention: 'Ihre Rückmeldung',
+  awaiting_approval: 'Kostenfreigabe',
   open: 'Offen',
   in_progress: 'In Bearbeitung',
   approved: 'Freigegeben',
@@ -30,6 +31,7 @@ export function mapClickUpStatus(clickupStatus: string): string {
   if (s === 'to do') return 'open'
   if (s === 'in progress' || s === 'internal review' || s === 'rework') return 'in_progress'
   if (s === 'client review') return 'needs_attention'
+  if (s === 'awaiting approval') return 'awaiting_approval'
   if (s === 'approved') return 'approved'
   if (s === 'complete' || s === 'done' || s === 'closed') return 'done'
   if (s === 'on hold') return 'on_hold'

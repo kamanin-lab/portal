@@ -17,7 +17,7 @@ function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
   return tasks.filter(t => {
     const s = mapStatus(t.status)
     switch (filter) {
-      case 'attention':   return s === 'needs_attention'
+      case 'attention':   return s === 'needs_attention' || s === 'awaiting_approval'
       case 'open':        return s === 'open'
       case 'in_progress': return s === 'in_progress'
       case 'approved':    return s === 'approved'

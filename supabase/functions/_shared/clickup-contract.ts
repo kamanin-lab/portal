@@ -212,6 +212,7 @@ const STATUS_ALIASES: Record<string, string[]> = {
   put_on_hold: ["on hold", "On Hold", "ON HOLD"],
   resume: ["to do", "To Do", "TO DO"],
   cancel: ["canceled", "Canceled", "CANCELED", "cancelled", "Cancelled", "CANCELLED"],
+  approve_credits: ["to do", "To Do", "TO DO"],
 };
 
 export function getStatusAliases(action: string): string[] {
