@@ -11,12 +11,20 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 ## Stack
 
 - **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, Lucide React, React Router v7
+- **Animation:** Motion (v12, successor to Framer Motion) — use `import { motion } from "motion/react"` for GPU-accelerated animations, layout transitions, scroll effects, spring physics
 - **UI primitives:** shadcn/ui is the standard for new UI building blocks (Button, Input, Tabs, Badge, Skeleton, Avatar, AlertDialog, Textarea, etc.). Install selectively — only components actually needed. Customize via portal CSS tokens, not by overriding shadcn defaults directly.
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
-- **Deploy:** Vercel (frontend), Coolify → self-hosted Supabase (backend + Edge Functions)
+- **Deploy:** Vercel CLI (frontend), Coolify → self-hosted Supabase (backend + Edge Functions), GitHub CLI for PRs
 - **Fonts:** DM Sans (UI) + DM Mono (code/metadata)
+
+### Design Tools (available to all agents)
+- **Motion** (`motion/react`) — animations, transitions, layout effects. Use for: page transitions, hero animations, card hovers, loading states, scroll-triggered reveals. Import: `import { motion, AnimatePresence } from "motion/react"`
+- **21st.dev Magic MCP** — generates production React/TS components from natural language. Use for: rapid prototyping of new UI components. Available as MCP tool.
+- **ui-ux-pro-max skill** — AI design system generator (67 styles, 161 palettes, 57 font pairings). Use for: design system decisions, color palette generation, typography pairing. Auto-activates on UI/UX tasks.
+- **shadcn/ui** — base component library. Use for: all standard UI primitives (buttons, inputs, tabs, dialogs)
+- **Frontend Design skill** (`/frontend-design`) — creates distinctive production interfaces. Use for: page-level design work.
 
 ## Architecture Rules (non-negotiable)
 
