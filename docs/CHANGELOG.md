@@ -229,7 +229,45 @@
 
 ---
 
-## TASK-008: shadcn/ui Migration — 2026-03-22
+## TASK-010: Credit System Phase 1 — 2026-03-23
+
+### Database
+- Created `credit_packages` table — monthly allocation per client (package_name, credits_per_month, is_active, started_at)
+- Created `credit_transactions` table — full ledger (amount, type: monthly_topup/task_deduction/manual_adjustment, task_id, task_name, description)
+- Added `credits` column to `task_cache` — synced via ClickUp webhook custom field handler
+- Both tables: RLS + REPLICA IDENTITY FULL for Realtime subscriptions
+- Seeded initial package for MBM (25 credits/month) and one monthly_topup transaction
+
+### Edge Functions
+- Added `credit-topup` Edge Function — monthly cron job (via pg_cron): reads active packages, inserts monthly_topup transactions, logs result
+- Updated `clickup-webhook` — handles credit custom field changes: reads numeric value, diffs against task_cache.credits, inserts task_deduction transaction
+
+### Frontend Components
+- `CreditBalance.tsx` — badge showing current balance (SUM of credit_transactions), shown in Sidebar Utilities zone
+- `CreditBadge.tsx` — inline credit cost indicator on TaskCard and TaskDetail
+- `useCredits.ts` hook — fetches balance + transaction history via Supabase, Realtime-subscribed
+
+### Post-Code Review Fixes (4 blocking)
+- Credit balance now derived from transaction ledger SUM (not denormalized column)
+- topup date format standardized (YYYY-MM)
+- Webhook deduction guards against NULL/non-numeric credit values
+- CreditBalance hidden when balance is zero or NULL (not shown to unconfigured clients)
+
+---
+
+## TASK-009: File Management — 2026-03-23
+
+### New Functionality in DateienPage
+- Upload files directly from DateienPage (not only from project-context UploadSheet)
+- Create new folders inline from DateienPage
+- Integrated with `useUploadFileByPath` and `useCreateFolder` hooks
+- Breadcrumb-aware: upload/mkdir targets the currently browsed path
+
+### Files Changed: 6
+
+---
+
+## TASK-008: shadcn/ui Migration — 2026-03-23
 
 ### shadcn/ui Components Installed
 - Installed 8 base components selectively: Button, Badge, Input, Textarea, Tabs, Skeleton, Avatar, AlertDialog
@@ -254,6 +292,131 @@
 
 ### Hardcoded Color Cleanup
 - Replaced all hardcoded hex/Tailwind color classes with CSS custom property references across refactored components
+
+---
+
+## TASK-007: Nextcloud Folder Structure + Portal Navigation — 2026-03-22
+
+### Shared Utilities
+- Created `supabase/functions/_shared/slugify.ts` — German-aware slug generation (umlaut normalization, kebab-case)
+
+### Edge Function: nextcloud-files
+- Chapter folder naming now uses `slugify()` — `01_Konzept`, `02_Design`, etc.
+- Client folder structure: `clients/{slug}/` hierarchy enforced
+
+### Frontend: Files Module (`src/modules/files/`)
+- Created `src/modules/files/` as a standalone module (separate from projects files)
+- `DateienPage.tsx` — client-level file browser using client root from `profiles.nextcloud_client_root`
+- `ClientFolderView.tsx` — generic folder browser with breadcrumbs and drill-down
+- `ClientFileRow.tsx` — file row with type icon, size, download link
+- `ClientActionBar.tsx` — toolbar (upload, create folder)
+- `useClientFiles.ts` hook — reads from `profiles.nextcloud_client_root`, calls `nextcloud-files`
+
+### Sidebar
+- "Dateien" sidebar entry now routes to the client-level `DateienPage` (not project-scoped files)
+- `profiles.nextcloud_client_root` column drives the file root path per user
+
+### Files Changed: 12+
+
+---
+
+## TASK-006: Interactive Dashboard — 2026-03-22
+
+- Created HTML-based project dashboard with visual timeline (`tasks/dashboard.md` format established)
+- Dashboard shows task pipeline, completed tasks, residual items
+- Timeline view for multi-phase project tracking
+
+---
+
+## TASK-005: Real-Time Updates — 2026-03-22
+
+### Database
+- Verified and enabled Supabase Realtime publication for: `task_cache`, `comment_cache`, `notifications`, `project_task_cache`
+- Set REPLICA IDENTITY FULL on all Realtime-enabled tables
+
+### Frontend
+- Removed all manual polling intervals from hooks
+- Supabase client initialized with proper Realtime channel options (reconnect, heartbeat)
+- Task subscriptions broadened from UPDATE-only to INSERT + UPDATE + DELETE
+- Project data now subscribes via `project_task_cache` Realtime channel
+- Added 30s fallback polling (React Query `staleTime`) for Realtime failure recovery
+
+---
+
+## TASK-004: Account Page / Konto — 2026-03-22
+
+- Created `/konto` route and `KontoPage.tsx`
+- Profile display: name, email, company, avatar initials
+- Notification preferences panel — granular per-type toggles (task_review, task_completed, team_comment, support_response, reminders)
+- Email notification master toggle
+- Password change flow (Supabase Auth `updateUser`)
+- Magic link re-send option
+- All German UI; form validation with error toasts
+- Files Changed: 22
+
+---
+
+## TASK-003: Nextcloud Files Integration — 2026-03-22
+
+### Edge Function: nextcloud-files
+- WebDAV `PROPFIND` for folder listing
+- WebDAV `PUT` for file upload
+- WebDAV `GET` for file download (proxied)
+- WebDAV `MKCOL` for folder creation (recursive — creates full tree)
+- Path safety validation (no traversal, no control characters)
+- `sub_path` parameter for arbitrary path navigation within project root
+- `folder_path` parameter for `mkdir` action
+
+### New Components (projects module)
+- `FolderView.tsx` — generic folder browser with breadcrumbs, drill-down, inline folder creation, upload integration
+- `CreateFolderInput.tsx` — inline folder name input with client-side validation
+- `UploadSheet.tsx` (rewritten) — folder/subfolder selection replaces step-binding UI
+
+### Modified Components
+- `FilesPage.tsx` — replaced `selectedChapter` state with `pathSegments[]` for path-based navigation
+- `FileUpload.tsx` — accepts `subPath` prop to route uploads to the active browsed path
+
+### Deleted
+- `ChapterFiles.tsx` — replaced entirely by `FolderView.tsx`
+
+### New Hooks
+- `useNextcloudFilesByPath` — path-based file listing
+- `useUploadFileByPath` — path-based upload mutation
+- `useCreateFolder` — folder creation mutation
+
+### Files Changed: 12
+
+---
+
+## TASK-002: Project Panel Redesign — 2026-03-22
+
+### Batch 1: Layout Deduplication + Foundation
+- Deduplicated layout: single `ContentContainer` wrapper pattern enforced across all project pages
+- Removed duplicate max-width wrappers from all project sub-pages
+- Established `width="narrow"` as the standard (`max-w-4xl`, centered) — CLAUDE.md rule 11
+
+### Batch 2: Comments, Messaging, Quick Actions, Activity Timeline
+- `TaskComments.tsx` — threaded comment display with author avatars, timestamps, portal-vs-team distinction
+- `SupportChat.tsx` — chat-style message interface for support tasks
+- `SupportSheet.tsx` — slide-over sheet wrapping SupportChat
+- Quick actions panel — configurable action buttons with counter pills
+- Activity timeline — chronological project event feed
+- Files Changed: 21 total (2 batches)
+
+---
+
+## TASK-001: Documentation Audit — 2026-03-22
+
+- Full audit of all project documentation: 27 files reviewed
+- Identified and resolved inconsistencies between ARCHITECTURE.md, SPEC.md, CLAUDE.md, and actual codebase
+- Added missing `docs/planning/` directory and populated with domain model, delivery rules, product gap list, team operating model, current state map
+- Agent team definitions moved to `.claude/agents/` (Claude Code native format)
+- Planning docs moved into repository for persistence
+- Context Hub references added for React, Tailwind, Vite, Vitest (`docs/reference/context-hub/`)
+- Supabase reference documentation added (`docs/reference/supabase-context-hub/`)
+- Files Audited: 27
+
+---
 
 ## Phase 4: Project Memory & Integration Hardening — 2026-03-20+
 

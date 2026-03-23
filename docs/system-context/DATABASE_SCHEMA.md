@@ -22,6 +22,7 @@ User configuration and ClickUp mapping. One row per authenticated user.
 | avatar_url | text | | Profile picture URL |
 | support_task_id | text | | ClickUp task ID used as dedicated support chat channel |
 | clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |
+| nextcloud_client_root | text | | WebDAV path to the client's root folder in Nextcloud (e.g., `/clients/muster-gmbh/`). Used by `nextcloud-files` Edge Function for the client-level file browser. NULL means files are not yet configured for this client. |
 
 **RLS Policy:** Users can read/update only their own row (`auth.uid() = id`).
 

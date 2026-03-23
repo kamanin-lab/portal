@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"const fs=require('fs');const p=require('path').join(process.cwd(),'tasks','dashboard.json');try{const s=fs.statSync(p);const mins=Math.round((Date.now()-s.mtime.getTime())/60000);if(mins>30){console.log('⚠️  DASHBOARD STALE ('+mins+' min). You MUST update tasks/dashboard.json NOW before stopping. Update: lastUpdated, status, currentTask, activeAgents, pipeline. This is a BLOCKING requirement.');}else{console.log('✅ Dashboard OK (updated '+mins+' min ago)');}}catch(e){console.log('❌ tasks/dashboard.json NOT FOUND. Create it before stopping.');}\""
+            "command": "node -e \"const fs=require('fs');const path=require('path');const cwd=process.cwd();const checks=[];const db=path.join(cwd,'tasks','dashboard.json');try{const s=fs.statSync(db);const m=Math.round((Date.now()-s.mtime.getTime())/60000);if(m>30)checks.push('⚠️ dashboard.json STALE ('+m+' min)');else checks.push('✅ dashboard.json OK');}catch(e){checks.push('❌ dashboard.json MISSING');}const cl=path.join(cwd,'docs','CHANGELOG.md');try{const s=fs.statSync(cl);const m=Math.round((Date.now()-s.mtime.getTime())/60000);if(m>120)checks.push('⚠️ CHANGELOG.md not updated this session — update if task completed');else checks.push('✅ CHANGELOG.md OK');}catch(e){checks.push('❌ CHANGELOG.md MISSING');}console.log('SESSION END CHECK:\\n'+checks.join('\\n'));\""
           }
         ]
       }

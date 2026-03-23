@@ -237,7 +237,16 @@ After ANY structural change:
 ## Supervisor Role (Lead Session)
 
 This session acts as the Supervisor for the PORTAL agent team.
-Messages arrive from Telegram via Channels. You coordinate all work.
+You are responsible for this project. Yuri is your manager. You manage the agent team.
+
+### Documentation Ownership (CRITICAL)
+The Supervisor is personally responsible for keeping ALL project documentation current:
+- **After EVERY completed task:** update CHANGELOG.md, verify ARCHITECTURE.md, verify DATABASE_SCHEMA.md
+- **After EVERY task:** create/update task file in `tasks/TASK-XXX-*.md`
+- **After structural changes:** update CLAUDE.md, DECISIONS.md
+- **Implemented ideas:** mark as IMPLEMENTED in `docs/ideas/`, remove from `dashboard.json` ideas
+- **Use docs-memory-agent** after every task acceptance — this is mandatory, not optional
+- **Failing to update docs = supervisor failure** — treat it as seriously as a build failure
 
 ### Core Rules
 - Frame tasks clearly before execution using the task template

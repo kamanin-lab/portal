@@ -6,22 +6,33 @@
 Browser → Supabase Auth → profiles table
 Browser → React Query → task_cache (Supabase)
 Browser → React Query → comment_cache (Supabase)
-Browser → Supabase Realtime → live updates
+Browser → React Query → credit_transactions (Supabase)  ← credit balance
+Browser → Supabase Realtime → live updates (task_cache, comment_cache, notifications, credit_transactions)
 Browser → Edge Functions → ClickUp API (proxied)
+Browser → Edge Functions → Nextcloud WebDAV (proxied)   ← file management
 ClickUp Webhook → Edge Function → task_cache update
+ClickUp Webhook → Edge Function → credit deduction (credit custom field change)
+pg_cron (monthly) → credit-topup Edge Function → credit_transactions insert
 ```
 
 ## Key Constraints
-- UI reads ONLY from cache tables (task_cache, comment_cache)
+- UI reads ONLY from cache tables (task_cache, comment_cache) for ClickUp data
 - ClickUp API never called from browser
+- Nextcloud WebDAV never called from browser — all file ops proxied through `nextcloud-files` Edge Function
 - RLS on all tables — profile_id filter
-- Realtime subscriptions debounced 300ms, fallback 30s polling
+- Realtime subscriptions debounced 300ms, fallback 30s polling via React Query staleTime
 
 ## Module Structure
 - `src/shared/` — auth, layout, hooks, lib, types
 - `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
-- `src/modules/tickets/` — Tasks/Support (live Supabase: task_cache, comment_cache)
+- `src/modules/tickets/` — Tasks/Support + Credit display (live Supabase: task_cache, comment_cache, credit_transactions)
+- `src/modules/files/` — Client file browser (Nextcloud WebDAV via nextcloud-files Edge Function, root from profiles.nextcloud_client_root)
 - `src/app/` — routing, providers
+
+## Sidebar Zones (Linear-style)
+1. **Global** — Inbox, Meine Aufgaben
+2. **Workspaces** — dynamic from `client_workspaces` table (module_key → route)
+3. **Utilities** — Hilfe, Konto, CreditBalance badge (hidden when no package configured)
 
 ## Task Creation (Dual Mode)
 ```
@@ -49,10 +60,23 @@ fetch-project-tasks Edge Function (triggered on first project page load)
 Supabase Auth — email/password + magic link
 Profile auto-created via `on_auth_user_created` trigger on `auth.users`
 
-## Supabase
+## Data Sources
+
+### Supabase (primary)
 - URL: https://portal.db.kamanin.at
 - Project: self-hosted (PostgreSQL 15.8) on Coolify
-- Tables: profiles, task_cache, comment_cache, notifications, read_receipts, project_config, chapter_config, project_task_cache, step_enrichment, project_access, client_workspaces
+- Tables: profiles, task_cache, comment_cache, notifications, read_receipts, project_config, chapter_config, project_task_cache, step_enrichment, project_access, client_workspaces, credit_packages, credit_transactions
+
+### Nextcloud (file storage)
+- Source of truth for all project and client files
+- Accessed exclusively via `nextcloud-files` Edge Function (WebDAV)
+- Client root: `profiles.nextcloud_client_root` (per-user path, e.g., `/clients/muster-gmbh/`)
+- Project root: `project_config.nextcloud_root_path`
+- Three-level access: `_intern/` (internal only), `team/` (KAMANIN team), `portal/` (client-visible)
+
+### ClickUp (task management)
+- All access proxied through Edge Functions (API token server-side only)
+- Webhook events flow: ClickUp → `clickup-webhook` Edge Function → task_cache + credit_transactions
 
 ## Edge Functions Deployment (self-hosted)
 
@@ -77,5 +101,15 @@ Container: /home/deno/functions (edge-runtime v1.67.4)
 4. Restart edge-runtime container
 5. Verify: `curl -s http://<edge-runtime-IP>:9000/<function-name>`
 
-### 13 Functions + main router
-fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory
+### 15 Functions + main router
+fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory, nextcloud-files, credit-topup
+
+#### nextcloud-files
+Actions: `list` (PROPFIND), `upload` (PUT), `download` (GET proxy), `mkdir` (MKCOL, recursive).
+Parameters: `project_config_id` or direct path; `sub_path` for subfolder navigation; `folder_path` for mkdir target.
+Path safety: rejects `..` traversal and control characters.
+
+#### credit-topup
+Triggered by pg_cron on a monthly schedule.
+Reads all active `credit_packages`, inserts `monthly_topup` transactions into `credit_transactions`.
+Also callable manually for backfill.
