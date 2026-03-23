@@ -12,7 +12,7 @@ export function NotificationBell() {
 
   function handleNotificationClick(id: string, taskId: string | null) {
     markAsRead([id]);
-    if (taskId) navigate(`/tickets/${taskId}`);
+    if (taskId) navigate(`/tickets?taskId=${taskId}`);
   }
 
   return (

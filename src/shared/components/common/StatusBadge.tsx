@@ -27,7 +27,7 @@ const PROJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> 
 const TICKET_LABELS: Record<string, string> = {
   open:            'Offen',
   in_progress:     'In Bearbeitung',
-  needs_attention: 'Ihre Rueckmeldung',
+  needs_attention: 'Ihre Rückmeldung',
   approved:        'Freigegeben',
   done:            'Erledigt',
   on_hold:         'Pausiert',

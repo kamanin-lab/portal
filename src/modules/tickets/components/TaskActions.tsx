@@ -12,18 +12,20 @@ interface TaskActionsProps {
 }
 
 export function TaskActions({ taskId, status }: TaskActionsProps) {
-  const { approveTask, requestChanges, putOnHold, cancelTask, isLoading } = useTaskActions();
+  const { approveTask, requestChanges, putOnHold, resumeTask, cancelTask, isLoading } = useTaskActions();
   const [confirm, setConfirm] = useState<TaskAction | null>(null);
 
   if (isTerminal(status as import('../types/tasks').TaskStatus)) return null;
 
   const needsAttention = status === 'needs_attention';
+  const isOnHold = status === 'on_hold';
 
   async function run(action: TaskAction) {
     setConfirm(null);
     if (action === 'approve') await approveTask(taskId);
     else if (action === 'request_changes') await requestChanges(taskId);
     else if (action === 'put_on_hold') await putOnHold(taskId);
+    else if (action === 'resume') await resumeTask(taskId);
     else if (action === 'cancel') await cancelTask(taskId);
   }
 
@@ -57,15 +59,27 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
       )}
 
       <div className="flex gap-[8px]">
-        <Button
-          onClick={() => setConfirm('put_on_hold')}
-          disabled={isLoading}
-          variant="outline"
-          size="sm"
-          className="text-[12px]"
-        >
-          {dict.actions.hold}
-        </Button>
+        {isOnHold ? (
+          <Button
+            onClick={() => run('resume')}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="text-[12px]"
+          >
+            {dict.actions.resume}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setConfirm('put_on_hold')}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="text-[12px]"
+          >
+            {dict.actions.hold}
+          </Button>
+        )}
         <Button
           onClick={() => setConfirm('cancel')}
           disabled={isLoading}

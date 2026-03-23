@@ -1,29 +1,26 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-03-23_
+_Status: idle_ · _Last updated: 2026-03-23_
 
 ## Current Task
-None — awaiting next assignment
+None — Yuri sleeping, QA fixes committed
 
 ## Active Agents
 None
 
-## Current Pipeline — TASK-010
-| Phase | Status | Agent | Notes |
-|---|---|---|---|
-| Task Framing | ✅ | Supervisor | Brainstorming complete, spec written |
-| Spec Review | ✅ | reviewer-architect | 5 blocking found, all fixed in spec rev.2 |
-| Spec Fix + Plan | ✅ | Supervisor | Spec fixed, plan written, DB migrated |
-| DB Migration | ✅ | Supervisor | tables + RLS + Realtime + MBM seed (25 credits) |
-| Implementation | ✅ | implementation-agent | 10 modified + 4 created, build PASS, 77/77 tests |
-| Post-Code Review | ✅ | reviewer-architect | REVISE: 4 blocking |
-| QA Verification | ✅ | qa-agent | REVISE: 1 blocking (topup date) |
-| Fix Blocking | ✅ | implementation-agent | All 4 blocking fixed |
-| Accept/Revise | ✅ | Supervisor | Accepted |
-
 ---
 
 ## Completed Tasks
+
+### QA-001: Full Playwright Test + Fixes (2026-03-23)
+Full portal click-through. Found 2 blocking bugs, fixed immediately.
+- On Hold tasks: added Resume button (was showing Pause on already-paused tasks)
+- NotificationBell: fixed 404 navigation (`/tickets/id` → `/tickets?taskId=id`)
+- StatusBadge umlaut: "Rueckmeldung" → "Rückmeldung"
+
+### TASK-010: Credit System Phase 1 (2026-03-23)
+Credits on tasks, balance in sidebar, webhook sync, monthly cron.
+- `13e69b2` · 14 files, 2 review cycles
 
 ### TASK-009: File Management (2026-03-23)
 Upload + create folder in DateienPage.
@@ -33,11 +30,25 @@ Upload + create folder in DateienPage.
 8 components, token unification, component extraction.
 - `1657993`, `7a6aaaa`
 
-### TASK-007–001: See previous dashboard entries.
+### TASK-007–001: See git log for details.
+
+## Launch Readiness — MBM
+- [x] Tasks (tickets) — working
+- [x] Credits — working (pending ClickUp field ID in Coolify)
+- [x] Support chat — working
+- [x] Login/auth — working
+- [x] Real-time updates — working
+- [x] Mobile — working
+- [x] On Hold / Resume — fixed
+- [x] Notification links — fixed
+- [ ] DNS change to portal domain (Yuri action)
+- [ ] CLICKUP_CREDITS_FIELD_ID in Coolify (Yuri action)
 
 ## Residual Items
-- DynamicHero/PhaseNode custom buttons (intentional)
+- raw_data shape inconsistency between fetch paths
 - Empfehlungen page (future)
 - MBM file migration to Nextcloud
+- Credit System Phase 2 — AI estimation
+- Credit System Phase 3 — budgets, limits, reports
 
 Legend: ⬜ pending | 🔄 in progress | ✅ done | ❌ blocked | ⏭️ skipped
