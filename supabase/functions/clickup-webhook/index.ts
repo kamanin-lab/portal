@@ -893,7 +893,30 @@ Deno.serve(async (req) => {
     // Handle task status updates
     if (payload.event === "taskStatusUpdated" && historyItem) {
       const statusAfter = historyItem.after?.status;
-      
+
+      // CRITICAL: Update task_cache status FIRST, before any notification logic.
+      // Notification handlers below may early-return (visibility checks, missing tokens, etc.),
+      // but the cache must always reflect the latest ClickUp status for Realtime to work.
+      if (taskId && isValidTaskId(taskId) && statusAfter) {
+        const eventTimestamp = parseClickUpTimestamp(historyItem.date);
+        const { error: cacheUpdateError, count } = await supabase
+          .from("task_cache")
+          .update({
+            status: statusAfter,
+            status_color: historyItem.after?.color || null,
+            last_activity_at: eventTimestamp.toISOString(),
+            last_synced: new Date().toISOString(),
+          })
+          .eq("clickup_id", taskId)
+          .select("clickup_id", { count: "exact" });
+
+        if (cacheUpdateError) {
+          log.warn("Failed to update task_cache status", { taskId, error: cacheUpdateError.message });
+        } else {
+          log.info("Updated task_cache status", { taskId, status: statusAfter, color: historyItem.after?.color, rowsAffected: count ?? 0 });
+        }
+      }
+
       if (statusAfter && isReviewStatus(statusAfter) && taskId && isValidTaskId(taskId)) {
         log.info(`Task moved to review status`, { taskId, status: statusAfter });
         
@@ -1223,26 +1246,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // For ALL status changes (not just review), update task_cache so Realtime pushes to frontend
-      if (taskId && isValidTaskId(taskId) && statusAfter) {
-        const eventTimestamp = parseClickUpTimestamp(historyItem.date);
-        const { error: cacheUpdateError, count } = await supabase
-          .from("task_cache")
-          .update({
-            status: statusAfter,
-            status_color: historyItem.after?.color || null,
-            last_activity_at: eventTimestamp.toISOString(),
-            last_synced: new Date().toISOString(),
-          })
-          .eq("clickup_id", taskId)
-          .select("clickup_id", { count: "exact" });
-
-        if (cacheUpdateError) {
-          log.warn("Failed to update task_cache status", { taskId, error: cacheUpdateError.message });
-        } else {
-          log.info("Updated task_cache status", { taskId, status: statusAfter, rowsAffected: count ?? 0 });
-        }
-      }
+      // task_cache status update already happened at the top of this handler.
 
       return new Response(
         JSON.stringify({ success: true }),
