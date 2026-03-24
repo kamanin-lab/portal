@@ -89,32 +89,15 @@ export function useProjectComments(project: Project | null) {
   useEffect(() => {
     if (!projectId || taskIds.length === 0 || !userId) return;
 
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    const channel = supabase
-      .channel(`project-comments-${projectId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comment_cache',
-        filter: `profile_id=eq.${userId}`,
-      }, (payload) => {
-        const newTaskId = (payload.new as { task_id?: string }).task_id;
-        if (!newTaskId || !taskIds.includes(newTaskId)) return;
-
-        // Debounce invalidation 300ms per architecture rules
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['project-comments', projectId] });
-        }, 300);
-      })
-      .subscribe();
-
-    channelRef.current = channel;
+    // Polling for project comments every 15s.
+    // comment_cache Realtime subscriptions cause "mismatch" errors on self-hosted
+    // Supabase which poison the WebSocket and break other Realtime channels.
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['project-comments', projectId] });
+    }, 15000);
 
     return () => {
+      clearInterval(interval);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

@@ -116,7 +116,7 @@ export function MeineAufgabenPage() {
       ))}
 
       {/* Task detail sheet */}
-      <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} />
+      <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />
     </ContentContainer>
   )
 }

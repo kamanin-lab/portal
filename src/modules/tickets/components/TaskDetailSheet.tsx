@@ -1,14 +1,17 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { TaskDetail } from './TaskDetail'
-import { useClickUpTasks } from '../hooks/useClickUpTasks'
 import { useSingleTask } from '../hooks/useSingleTask'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
+import type { ClickUpTask } from '../types/tasks'
 
 interface Props {
   taskId: string | null
   onClose: () => void
+  /** Pre-loaded tasks from parent — avoids duplicate Realtime subscriptions */
+  tasks?: ClickUpTask[]
+  isTasksLoading?: boolean
 }
 
 function SheetMessage({ title, body }: { title: string; body: string }) {
@@ -22,22 +25,19 @@ function SheetMessage({ title, body }: { title: string; body: string }) {
   )
 }
 
-export function TaskDetailSheet({ taskId, onClose }: Props) {
+export function TaskDetailSheet({ taskId, onClose, tasks = [], isTasksLoading = false }: Props) {
   const { user } = useAuth()
   const { markAsRead } = useUnreadCounts(user?.id)
-  const { data: tasks = [], isLoading: isTasksLoading, isError: isTasksError, error: tasksError } = useClickUpTasks()
   const cachedTask = taskId ? tasks.find(t => t.clickup_id === taskId) : null
   const fallbackTaskQuery = useSingleTask(taskId, !!taskId && !cachedTask && !isTasksLoading)
 
   const task = cachedTask ?? fallbackTaskQuery.task
   const isLoading = !!taskId && !task && (isTasksLoading || fallbackTaskQuery.isLoading)
-  const isError = !!taskId && !task && (isTasksError || (fallbackTaskQuery.isError && !fallbackTaskQuery.isNotFound))
+  const isError = !!taskId && !task && (fallbackTaskQuery.isError && !fallbackTaskQuery.isNotFound)
   const isNotFound = !!taskId && !task && !isLoading && !isError && fallbackTaskQuery.isNotFound
-  const errorMessage = tasksError instanceof Error
-    ? tasksError.message
-    : fallbackTaskQuery.error instanceof Error
-      ? fallbackTaskQuery.error.message
-      : null
+  const errorMessage = fallbackTaskQuery.error instanceof Error
+    ? fallbackTaskQuery.error.message
+    : null
 
   return (
     <Dialog.Root open={!!taskId} onOpenChange={open => { if (!open) onClose() }}>

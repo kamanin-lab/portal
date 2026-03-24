@@ -3,10 +3,11 @@
 _Status: active_ · _Last updated: 2026-03-23_
 
 ## Current Task
-**TASK-014: Fix Task Card Heights — Equal Size Grid**
+**TASK-016: Fix Ticket Realtime — CHANNEL_ERROR persists**
+Compare working project Realtime vs broken ticket Realtime. Find root cause.
 
 ## Active Agents
-implementation-agent (fixing card heights)
+reviewer-architect (comparing project vs ticket Realtime)
 
 ## Current Pipeline — TASK-013
 | Phase | Status | Agent | Notes |

@@ -49,3 +49,16 @@ schema.sql
 # Debug scripts
 debug-clickup-task.cjs
 get-clickup-fields.cjs
+
+.vercel
+.vite/
+
+# Local-only directories (not for repo)
+MBM/
+coverage/
+screenshots/
+supabase/.temp/
+
+# Temp task scripts
+tasks/*.js
+tasks/session.json

@@ -78,6 +78,13 @@ npm run test:watch   # Tests in watch mode
 npm run test:coverage # Tests with coverage report
 npm run lint         # ESLint
 npx supabase gen types typescript --project-id [id] > src/shared/types/database.ts
+
+# Post-code review (GPT-5.4-mini via OpenRouter)
+node scripts/openrouter-review.cjs                  # all uncommitted changes
+node scripts/openrouter-review.cjs --staged         # staged only
+node scripts/openrouter-review.cjs --branch main    # diff vs branch
+node scripts/openrouter-review.cjs -o review.md     # output to file
+node scripts/openrouter-review.cjs --context "..."  # add task context
 ```
 
 ## Project Structure
@@ -166,9 +173,11 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │       ├── send-mailjet-email/
 │       ├── send-support-message/
 │       └── update-task-status/
+├── scripts/
+│   └── openrouter-review.cjs   # Post-code review via GPT-5.4-mini (OpenRouter API)
 ├── vite.config.ts
 ├── vitest.config.ts
-└── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+└── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, OPENROUTER_API_KEY
 ```
 
 ## Status Mapping (ClickUp → Portal)
@@ -195,6 +204,27 @@ Secondary actions (Put on Hold, Cancel) available on all non-terminal states.
 | task_cache empty on first login | Show loading skeleton → trigger `fetch-clickup-tasks` → populate |
 | Webhook down (stale data) | Portal works with cached data. Manual refresh button triggers full sync |
 | Comment post fails | Revert optimistic update, show error toast |
+
+## Post-Code Review (OpenRouter)
+
+Post-code review is performed by GPT-5.4-mini via OpenRouter API, replacing the Claude reviewer-architect for this step. This provides an independent second opinion from a different model family.
+
+- **Script:** `scripts/openrouter-review.cjs`
+- **Model:** `openai/gpt-5.4-mini` (configurable via `REVIEW_MODEL` env var)
+- **Auth:** `OPENROUTER_API_KEY` in `.env.local` (OpenRouter API key, not OpenAI)
+- **Architecture context:** baked into the script's system prompt (portal stack, rules, review points)
+- **Output format:** matches reviewer-architect format — `[BLOCKING/NON-BLOCKING/FOLLOW-UP]` issues + verdict
+- **Sandbox:** read-only, does not modify files
+- **When Codex CLI OAuth limit resets:** can switch to `codex exec review` as an alternative runner (Codex CLI v0.116.0 already installed + OAuth authenticated)
+
+### When to use
+- After implementation-agent completes work (step 4 in Standard Sequence)
+- Supervisor runs `node scripts/openrouter-review.cjs` and evaluates the verdict
+- If REVISE: send blocking issues back to implementation-agent for another loop
+- If APPROVE: proceed to qa-agent
+
+### Pre-code review remains on Claude
+reviewer-architect (Claude Sonnet) still handles pre-code review because it needs full agent context (reading files, checking architecture docs, interactive reasoning). OpenRouter script is fire-and-forget on a diff.
 
 ## API Reference Rules
 
@@ -288,9 +318,9 @@ The Supervisor is personally responsible for keeping ALL project documentation c
 
 ### Standard Sequence
 1. Supervisor frames the task (using task template)
-2. reviewer-architect critiques the plan (pre-code review)
+2. reviewer-architect critiques the plan (pre-code review) — Claude Sonnet agent
 3. implementation-agent executes scoped work
-4. reviewer-architect reviews the result (post-code review)
+4. **OpenRouter post-code review** — `node scripts/openrouter-review.cjs` (GPT-5.4-mini, independent second opinion)
 5. qa-agent verifies behavior and regressions
 6. Supervisor decides accept / revise
 7. docs-memory-agent updates source-of-truth when needed
@@ -335,7 +365,8 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 
 | Agent | Model | Role |
 |---|---|---|
-| reviewer-architect | Sonnet | Pre-code & post-code review, architecture gate |
+| reviewer-architect | Sonnet | **Pre-code review only**, architecture gate |
+| **openrouter-review** | **GPT-5.4-mini (OpenRouter)** | **Post-code review** — independent second opinion via `scripts/openrouter-review.cjs` |
 | implementation-agent | Opus | Coding, stays in staging, follows approved scope |
 | designer | Opus | UI/UX design + implementation, uses /frontend-design skill |
 | qa-agent | Sonnet | Build verification, data flow, edge cases, Playwright browser checks |

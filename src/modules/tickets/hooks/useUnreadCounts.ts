@@ -1,12 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { createLogger } from '../lib/logger';
+import { useEffect, useCallback } from 'react';
 import type { UnreadCounts } from '../types/tasks';
 
 export type { UnreadCounts };
 
-const log = createLogger('useUnreadCounts');
 
 interface ReadReceipt {
   context_type: string;
@@ -21,7 +19,7 @@ async function fetchUnreadCounts(userId: string): Promise<UnreadCounts> {
     .eq('id', userId)
     .maybeSingle();
 
-  if (profileError) log.error('Failed to fetch profile', { error: profileError.message });
+  if (profileError) console.warn('Failed to fetch profile', { error: profileError.message });
 
   const supportTaskId = profile?.support_task_id ?? null;
 
@@ -50,7 +48,7 @@ async function fetchUnreadCounts(userId: string): Promise<UnreadCounts> {
     if (supportLastRead) q = q.gt('clickup_created_at', supportLastRead);
 
     const { count, error } = await q;
-    if (error) log.error('Failed to fetch support unread', { error: error.message });
+    if (error) console.warn('Failed to fetch support unread', { error: error.message });
     supportCount = count ?? 0;
   }
 
@@ -61,7 +59,7 @@ async function fetchUnreadCounts(userId: string): Promise<UnreadCounts> {
     .eq('profile_id', userId)
     .eq('is_from_portal', false);
 
-  if (commentsError) log.error('Failed to fetch task comments', { error: commentsError.message });
+  if (commentsError) console.warn('Failed to fetch task comments', { error: commentsError.message });
 
   const taskCounts: Record<string, number> = {};
   comments?.forEach((c: { task_id: string; clickup_created_at: string }) => {
@@ -94,110 +92,31 @@ async function markContextAsRead(userId: string, contextType: string): Promise<v
         .eq('profile_id', userId).eq('is_read', false).eq('task_id', taskId);
     }
   } catch (err) {
-    log.error('Notification cross-sync failed', { error: String(err) });
+    console.warn('Notification cross-sync failed', { error: String(err) });
   }
 }
 
 export function useUnreadCounts(userId: string | undefined) {
   const queryClient = useQueryClient();
-  const supportChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const commentsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const receiptsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const invalidationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  const [supportTaskId, setSupportTaskId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from('profiles').select('support_task_id').eq('id', userId).maybeSingle()
-      .then(({ data }) => setSupportTaskId(data?.support_task_id ?? null));
-  }, [userId]);
 
   const query = useQuery({
     queryKey: ['unread-counts', userId],
     queryFn: () => fetchUnreadCounts(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 15, // 15 seconds — polling-based, no Realtime
   });
 
+  // Polling every 15 seconds for unread counts.
+  // Realtime subscriptions on comment_cache cause "mismatch" errors on self-hosted
+  // Supabase which poison the entire WebSocket connection and break task_cache Realtime.
+  // Polling is reliable and 15s is acceptable UX for badge counts.
   useEffect(() => {
     if (!userId) return;
-
-    [supportChannelRef, commentsChannelRef, receiptsChannelRef].forEach(ref => {
-      if (ref.current) { supabase.removeChannel(ref.current); ref.current = null; }
-    });
-
-    if (supportTaskId) {
-      supportChannelRef.current = supabase
-        .channel(`unread-support-task-${supportTaskId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comment_cache', filter: `task_id=eq.${supportTaskId}` },
-          (payload) => {
-            const c = payload.new as { is_from_portal: boolean };
-            if (!c.is_from_portal) {
-              queryClient.setQueryData(['unread-counts', userId], (old: UnreadCounts | undefined) =>
-                old ? { ...old, support: old.support + 1 } : { support: 1, tasks: {} }
-              );
-            }
-          })
-        .subscribe((status, error) => {
-          if (status === 'SUBSCRIBED') setConnectionStatus('connected');
-          else if (status === 'CHANNEL_ERROR') {
-            log.error('Support realtime error', { error: error?.message });
-            setConnectionStatus('error');
-          }
-        });
-    }
-
-    commentsChannelRef.current = supabase
-      .channel(`unread-comments-${userId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comment_cache', filter: `profile_id=eq.${userId}` },
-        (payload) => {
-          const c = payload.new as { task_id: string; is_from_portal: boolean };
-          if (supportTaskId && c.task_id === supportTaskId) return;
-          if (!c.is_from_portal) {
-            queryClient.setQueryData(['unread-counts', userId], (old: UnreadCounts | undefined) =>
-              old
-                ? { ...old, tasks: { ...old.tasks, [c.task_id]: (old.tasks[c.task_id] ?? 0) + 1 } }
-                : { support: 0, tasks: { [c.task_id]: 1 } }
-            );
-          }
-        })
-      .subscribe((status, error) => {
-        if (status === 'SUBSCRIBED') setConnectionStatus('connected');
-        else if (status === 'CHANNEL_ERROR') {
-          log.error('Comments realtime error', { error: error?.message });
-          setConnectionStatus('error');
-        }
-      });
-
-    receiptsChannelRef.current = supabase
-      .channel(`unread-receipts-${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'read_receipts', filter: `profile_id=eq.${userId}` },
-        () => {
-          if (invalidationTimeoutRef.current) clearTimeout(invalidationTimeoutRef.current);
-          invalidationTimeoutRef.current = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] });
-          }, 300);
-        })
-      .subscribe();
-
-    return () => {
-      [supportChannelRef, commentsChannelRef, receiptsChannelRef].forEach(ref => {
-        if (ref.current) { supabase.removeChannel(ref.current); ref.current = null; }
-      });
-      if (invalidationTimeoutRef.current) clearTimeout(invalidationTimeoutRef.current);
-    };
-  }, [userId, supportTaskId, queryClient]);
-
-  // Fallback polling when realtime fails
-  useEffect(() => {
-    if (connectionStatus === 'error' && userId) {
-      const interval = setInterval(() => {
-        queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] });
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [connectionStatus, userId, queryClient]);
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] });
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [userId, queryClient]);
 
   // Refresh on tab focus
   useEffect(() => {

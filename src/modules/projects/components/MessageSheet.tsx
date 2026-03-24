@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { SideSheet } from '@/shared/components/ui/SideSheet';
-import { Button } from '@/shared/components/ui/button';
 import { usePostComment } from '@/modules/tickets/hooks/useTaskComments';
+import { CommentInput } from '@/modules/tickets/components/CommentInput';
 import type { Project } from '../types/project';
 
 interface MessageSheetProps {
@@ -17,7 +17,6 @@ interface DestinationOption {
 
 export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
   const [selectedTaskId, setSelectedTaskId] = useState('');
-  const [message, setMessage] = useState('');
   const { mutateAsync: postComment, isPending: isSending } = usePostComment();
 
   const destinations = useMemo(() => {
@@ -43,31 +42,24 @@ export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
     return options;
   }, [project]);
 
-  function resetForm() {
-    setSelectedTaskId('');
-    setMessage('');
-  }
-
-  async function handleSend() {
-    if (!selectedTaskId || !message.trim() || isSending) return;
+  const handleSend = useCallback(async (text: string) => {
+    if (!selectedTaskId || !text.trim() || isSending) return;
 
     try {
-      await postComment({ taskId: selectedTaskId, comment: message.trim() });
-      resetForm();
+      await postComment({ taskId: selectedTaskId, comment: text.trim() });
+      setSelectedTaskId('');
       onClose();
     } catch {
       // usePostComment hook already shows error toast on failure
     }
-  }
+  }, [selectedTaskId, isSending, postComment, onClose]);
 
   function handleClose() {
     if (!isSending) {
-      resetForm();
+      setSelectedTaskId('');
       onClose();
     }
   }
-
-  const canSend = selectedTaskId && message.trim().length > 0 && !isSending;
 
   return (
     <SideSheet open={open} onClose={handleClose} title="Nachricht senden">
@@ -102,22 +94,13 @@ export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
             <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
               Nachricht
             </label>
-            <textarea
-              value={message}
-              onChange={e => setMessage(e.target.value)}
+            <CommentInput
+              onSend={handleSend}
+              isSending={isSending}
               placeholder="Ihre Nachricht..."
-              rows={6}
-              className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors resize-none"
+              showAttachment={false}
+              minRows={4}
             />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={handleClose} disabled={isSending}>
-              Abbrechen
-            </Button>
-            <Button variant="accent" onClick={handleSend} disabled={!canSend}>
-              {isSending ? 'Wird gesendet...' : 'Senden'}
-            </Button>
           </div>
         </div>
       </div>

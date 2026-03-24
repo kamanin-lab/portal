@@ -139,12 +139,16 @@ export function useClickUpTasks() {
     };
   }, []);
 
-  // Realtime subscription — debounced 300ms per architecture spec
+  // Realtime subscription — matches the working pattern from useProject.ts
+  // Key differences vs previous broken version:
+  // 1. No status callback on .subscribe() (matches working project pattern)
+  // 2. No payload logging in the change handler (simpler, less overhead)
+  // 3. Channel name uses unique prefix to avoid any collision
   useEffect(() => {
     if (!userId) return;
 
     const channel = supabase
-      .channel(`task-cache-updates-${userId}`)
+      .channel(`task-cache-${userId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -153,8 +157,7 @@ export function useClickUpTasks() {
       }, () => {
         if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
         realtimeDebounceRef.current = setTimeout(() => {
-          log.info('Realtime update — invalidating task query');
-          queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
+          queryClient.refetchQueries({ queryKey: ['clickup-tasks'] });
         }, 300);
       })
       .subscribe();
@@ -163,6 +166,17 @@ export function useClickUpTasks() {
       supabase.removeChannel(channel);
       if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
     };
+  }, [userId, queryClient]);
+
+  // Polling fallback — 30s interval ensures data stays fresh even if Realtime
+  // channel fails (CHANNEL_ERROR on self-hosted Supabase). Matches architecture
+  // spec: "Fallback to 30s polling via React Query staleTime"
+  useEffect(() => {
+    if (!userId) return;
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
+    }, 30000);
+    return () => clearInterval(interval);
   }, [userId, queryClient]);
 
   const query = useQuery({

@@ -126,7 +126,7 @@ export function useProject(explicitProjectId?: string) {
       }, () => {
         if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
         realtimeDebounceRef.current = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+          queryClient.refetchQueries({ queryKey: ['project', projectId] });
         }, 300);
       })
       .subscribe();

@@ -1,9 +1,8 @@
-import { useState, useRef } from 'react';
-import { Paperclip } from 'lucide-react';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { Button } from '@/shared/components/ui/button';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion } from 'motion/react';
 import type { FileData } from '../types/tasks';
 import { dict } from '../lib/dictionary';
+import { AttachmentList, InputToolbar } from './CommentInputParts';
 
 async function fileToBase64(file: File): Promise<FileData> {
   return new Promise((resolve, reject) => {
@@ -18,18 +17,50 @@ async function fileToBase64(file: File): Promise<FileData> {
 }
 
 interface CommentInputProps {
-  taskId: string;
+  taskId?: string;
   onSend: (text: string, files?: FileData[]) => Promise<void>;
   isSending: boolean;
+  placeholder?: string;
+  showAttachment?: boolean;
+  minRows?: number;
+  maxRows?: number;
 }
 
-export function CommentInput({ taskId: _taskId, onSend, isSending }: CommentInputProps) {
+const LINE_HEIGHT = 20;
+const PADDING_Y = 24;
+
+export function CommentInput({
+  taskId: _taskId,
+  onSend,
+  isSending,
+  placeholder,
+  showAttachment = true,
+  minRows = 3,
+  maxRows = 8,
+}: CommentInputProps) {
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const minHeight = minRows * LINE_HEIGHT + PADDING_Y;
+  const maxHeight = maxRows * LINE_HEIGHT + PADDING_Y;
+
+  const adjustHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = `${minHeight}px`;
+    const scrollH = el.scrollHeight;
+    el.style.height = `${Math.min(Math.max(scrollH, minHeight), maxHeight)}px`;
+  }, [minHeight, maxHeight]);
+
+  useEffect(() => {
+    adjustHeight();
+  }, [text, adjustHeight]);
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!text.trim() && attachments.length === 0) return;
     const files = await Promise.all(attachments.map(fileToBase64));
     await onSend(text.trim(), files.length > 0 ? files : undefined);
@@ -39,53 +70,59 @@ export function CommentInput({ taskId: _taskId, onSend, isSending }: CommentInpu
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      void handleSubmit(e as unknown as React.FormEvent);
+      e.preventDefault();
+      void handleSubmit();
     }
   }
 
+  function removeAttachment(index: number) {
+    setAttachments(a => a.filter((_, j) => j !== index));
+  }
+
+  const canSend = text.trim().length > 0 || attachments.length > 0;
+
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border-light pt-[12px]">
-      {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-[6px] mb-[8px]">
-          {attachments.map((f, i) => (
-            <span key={i} className="text-[11px] bg-accent-light text-accent px-[8px] py-[3px] rounded-full flex items-center gap-[4px]">
-              {f.name}
-              <button type="button" onClick={() => setAttachments(a => a.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100 cursor-pointer">x</button>
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="flex items-end gap-[8px]">
-        <Textarea
+    <form onSubmit={handleSubmit} className="pt-[12px]">
+      <motion.div
+        animate={{
+          borderColor: isFocused ? 'var(--accent)' : 'var(--border)',
+          boxShadow: isFocused
+            ? '0 0 0 3px rgba(43, 24, 120, 0.08)'
+            : '0 0 0 0px rgba(43, 24, 120, 0)',
+        }}
+        transition={{ duration: 0.2 }}
+        className="border rounded-[var(--r-md)] bg-surface overflow-hidden"
+      >
+        <textarea
+          ref={textareaRef}
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={dict.labels.typeMessage}
-          rows={2}
-          className="flex-1 min-h-0"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={placeholder ?? dict.labels.typeMessage}
+          disabled={isSending}
+          style={{
+            minHeight: `${minHeight}px`,
+            maxHeight: `${maxHeight}px`,
+            lineHeight: `${LINE_HEIGHT}px`,
+          }}
+          className="w-full px-[14px] py-[12px] text-[13px] text-text-primary placeholder:text-text-tertiary bg-transparent border-none outline-none resize-none disabled:opacity-50"
         />
-        <div className="flex flex-col gap-[6px] flex-shrink-0">
-          <Button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            title="Datei anhaengen"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-          >
-            <Paperclip size={14} />
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSending || (!text.trim() && attachments.length === 0)}
-            variant="accent"
-            size="sm"
-            className="font-semibold whitespace-nowrap"
-          >
-            {dict.actions.send}
-          </Button>
-        </div>
-      </div>
+
+        {attachments.length > 0 && (
+          <AttachmentList attachments={attachments} onRemove={removeAttachment} />
+        )}
+
+        <InputToolbar
+          showAttachment={showAttachment}
+          canSend={canSend}
+          isSending={isSending}
+          onAttachClick={() => fileInputRef.current?.click()}
+          onSubmit={() => void handleSubmit()}
+        />
+      </motion.div>
+
       <input
         ref={fileInputRef}
         type="file"

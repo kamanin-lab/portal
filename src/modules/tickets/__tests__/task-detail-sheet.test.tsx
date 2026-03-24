@@ -4,13 +4,8 @@ import { TaskDetailSheet } from '../components/TaskDetailSheet'
 import type { ClickUpTask } from '../types/tasks'
 
 const mocks = vi.hoisted(() => ({
-  clickUpTasks: vi.fn(),
   singleTask: vi.fn(),
   markAsRead: vi.fn(),
-}))
-
-vi.mock('../hooks/useClickUpTasks', () => ({
-  useClickUpTasks: () => mocks.clickUpTasks(),
 }))
 
 vi.mock('../hooks/useSingleTask', () => ({
@@ -54,12 +49,6 @@ function makeTask(overrides: Partial<ClickUpTask> = {}): ClickUpTask {
 
 beforeEach(() => {
   mocks.markAsRead.mockReset()
-  mocks.clickUpTasks.mockReturnValue({
-    data: [],
-    isLoading: false,
-    isError: false,
-    error: null,
-  })
   mocks.singleTask.mockReturnValue({
     task: null,
     isLoading: false,
@@ -79,41 +68,27 @@ describe('TaskDetailSheet', () => {
       error: null,
     })
 
-    render(<TaskDetailSheet taskId="task-1" onClose={() => {}} />)
+    render(<TaskDetailSheet taskId="task-1" onClose={() => {}} tasks={[]} />)
 
     expect(screen.getByTestId('task-detail')).toHaveTextContent('Recovered from fallback')
   })
 
-  test('shows explicit loading state while detail data is loading', () => {
-    mocks.clickUpTasks.mockReturnValue({
-      data: [],
-      isLoading: true,
-      isError: false,
-      error: null,
-    })
-
-    render(<TaskDetailSheet taskId="task-1" onClose={() => {}} />)
+  test('shows explicit loading state while tasks are loading from parent', () => {
+    render(<TaskDetailSheet taskId="task-1" onClose={() => {}} tasks={[]} isTasksLoading={true} />)
 
     expect(screen.getByText('Aufgabe wird geladen')).toBeInTheDocument()
   })
 
-  test('shows explicit error state when task loading fails', () => {
-    mocks.clickUpTasks.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: true,
-      error: new Error('Backend unavailable'),
-    })
-
+  test('shows explicit error state when single-task fallback fails', () => {
     mocks.singleTask.mockReturnValue({
       task: null,
       isLoading: false,
-      isError: false,
+      isError: true,
       isNotFound: false,
-      error: null,
+      error: new Error('Backend unavailable'),
     })
 
-    render(<TaskDetailSheet taskId="task-500" onClose={() => {}} />)
+    render(<TaskDetailSheet taskId="task-500" onClose={() => {}} tasks={[]} />)
 
     expect(screen.getByText('Aufgabe konnte nicht geladen werden')).toBeInTheDocument()
     expect(screen.getByText('Backend unavailable')).toBeInTheDocument()
@@ -128,8 +103,16 @@ describe('TaskDetailSheet', () => {
       error: new Error('Task not found'),
     })
 
-    render(<TaskDetailSheet taskId="task-404" onClose={() => {}} />)
+    render(<TaskDetailSheet taskId="task-404" onClose={() => {}} tasks={[]} />)
 
     expect(screen.getByText('Aufgabe nicht gefunden')).toBeInTheDocument()
+  })
+
+  test('renders task from parent tasks prop when available', () => {
+    const parentTasks = [makeTask({ clickup_id: 'task-42', name: 'From parent cache' })]
+
+    render(<TaskDetailSheet taskId="task-42" onClose={() => {}} tasks={parentTasks} />)
+
+    expect(screen.getByTestId('task-detail')).toHaveTextContent('From parent cache')
   })
 })

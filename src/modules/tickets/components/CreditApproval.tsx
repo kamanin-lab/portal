@@ -81,7 +81,7 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
               variant="outline"
               size="sm"
             >
-              Ablehnen
+              Besprechen
             </Button>
           </motion.div>
         ) : (

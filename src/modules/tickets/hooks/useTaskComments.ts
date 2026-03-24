@@ -74,7 +74,6 @@ async function postTaskComment(
 export function useTaskComments(taskId: string | null) {
   const queryClient = useQueryClient();
   const backgroundRefreshRef = useRef(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const taskIdRef = useRef<string | null>(taskId);
 
   useEffect(() => { taskIdRef.current = taskId; }, [taskId]);
@@ -138,33 +137,13 @@ export function useTaskComments(taskId: string | null) {
   // Realtime subscription for instant new comments
   useEffect(() => {
     if (!taskId) return;
-    if (channelRef.current) supabase.removeChannel(channelRef.current);
-
-    const channel = supabase
-      .channel(`task-comments-${taskId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comment_cache',
-        filter: `task_id=eq.${taskId}`,
-      }, (payload) => {
-        log.debug('Realtime: new comment');
-        const newComment = transformCachedComment(payload.new as CachedComment);
-        queryClient.setQueryData(['task-comments', taskId], (old: TaskComment[] | undefined) => {
-          if (!old) return [newComment];
-          if (old.some(c => c.id === newComment.id)) return old;
-          return [newComment, ...old];
-        });
-      })
-      .subscribe();
-
-    channelRef.current = channel;
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
+    // Polling for comments every 10s.
+    // comment_cache Realtime subscriptions cause "mismatch" errors on self-hosted
+    // Supabase which poison the WebSocket and break task_cache Realtime.
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['task-comments', taskId] });
+    }, 10000);
+    return () => clearInterval(interval);
   }, [taskId, queryClient]);
 
   return {

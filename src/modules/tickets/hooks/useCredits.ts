@@ -70,7 +70,7 @@ export function useCredits(): UseCreditsResult {
       }, () => {
         if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
         realtimeDebounceRef.current = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['credit-balance', user.id] });
+          queryClient.refetchQueries({ queryKey: ['credit-balance', user.id] });
         }, 300);
       })
       .subscribe();

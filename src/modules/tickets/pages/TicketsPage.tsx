@@ -136,7 +136,7 @@ export function TicketsPage() {
       />
 
       {/* Sheet: task detail (URL-based) */}
-      <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} />
+      <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />
 
       {/* Sheet: support chat */}
       <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
