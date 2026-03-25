@@ -60,7 +60,7 @@ const AUTH_TYPE_MAP: Record<string, string> = {
   invite: "invite",
 };
 
-function generateEmailHtml(type: string, actionUrl: string, firstName?: string): { subject: string; html: string } {
+function generateEmailHtml(type: string, actionUrl: string, firstName?: string, newEmail?: string | null): { subject: string; html: string } {
   const emailType = AUTH_TYPE_MAP[type] || type;
   // Default locale is German
   const copy = getEmailCopy(emailType as any, "de");
@@ -77,6 +77,11 @@ function generateEmailHtml(type: string, actionUrl: string, firstName?: string):
   const bodyText = typeof copy.body === "function" ? (copy.body as Function)(firstName) : copy.body;
   const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
 
+  // For email_change, show the new email address in the email
+  const newEmailHtml = (emailType === "email_change" && newEmail)
+    ? `<p class="text" style="background: #f9f9f9; border-radius: 8px; padding: 12px 16px; font-weight: 500;">Neue E-Mail-Adresse: <strong>${newEmail}</strong></p>`
+    : "";
+
   return {
     subject: typeof copy.subject === "function" ? copy.subject() : copy.subject as string,
     html: `
@@ -90,6 +95,7 @@ function generateEmailHtml(type: string, actionUrl: string, firstName?: string):
             <h1 class="title">${copy.title}</h1>
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
+            ${newEmailHtml}
             <a href="${actionUrl}" class="button">${copy.cta}</a>
             ${notesHtml}
           </div>
@@ -179,8 +185,9 @@ Deno.serve(async (req) => {
     const actionUrl = `${apiUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(portalUrl)}`;
 
     const firstName = user.user_metadata?.full_name?.split(" ")[0];
+    const newEmail = user.new_email || null;
 
-    const { subject, html } = generateEmailHtml(email_action_type, actionUrl, firstName);
+    const { subject, html } = generateEmailHtml(email_action_type, actionUrl, firstName, newEmail);
 
     const result = await sendMailjetEmail(user.email, subject, html);
 

@@ -53,7 +53,7 @@ export function EmailSection({ currentEmail }: Props) {
 
         {confirmSent && (
           <p className="text-xs text-committed bg-committed-bg px-3 py-2 rounded-[8px]">
-            Wir haben eine Bestätigungsemail an Ihre aktuelle und neue Adresse gesendet.
+            Wir haben eine Bestätigungsemail an Ihre aktuelle Adresse gesendet.
           </p>
         )}
 
