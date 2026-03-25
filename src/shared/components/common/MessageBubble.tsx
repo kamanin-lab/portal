@@ -41,7 +41,7 @@ export function MessageBubble({
     ? (clientBubbleStyle === 'solid' ? 'var(--text-inverse)' : 'var(--accent)')
     : 'var(--text-primary)';
 
-  const bubbleBorderRadius = isClient ? '14px 4px 14px 14px' : '4px 14px 14px 14px';
+  const bubbleBorderRadius = isClient ? '16px 3px 16px 16px' : '3px 16px 16px 16px';
 
   return (
     <div
@@ -80,7 +80,7 @@ export function MessageBubble({
         </div>
         <div
           style={{
-            padding: '8px 12px',
+            padding: '10px 16px',
             borderRadius: bubbleBorderRadius,
             background: bubbleBg,
             color: bubbleColor,

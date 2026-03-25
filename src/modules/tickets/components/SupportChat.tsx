@@ -37,7 +37,7 @@ export function SupportChat({ onRead, active = true }: SupportChatProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col gap-[10px] overflow-y-auto mb-[16px]" style={{ scrollbarWidth: 'thin' }}>
+      <div className="flex-1 flex flex-col gap-[14px] px-1 overflow-y-auto mb-[16px]" style={{ scrollbarWidth: 'thin' }}>
         {!isConfigured ? (
           <EmptyState message={dict.labels.noComments} />
         ) : isLoading ? (

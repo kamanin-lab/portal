@@ -42,7 +42,7 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
       ) : comments.length === 0 ? (
         <EmptyState message={dict.labels.noComments} />
       ) : (
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-[14px] px-1">
           {[...comments].reverse().map(comment => {
             const isClient = comment.isFromPortal;
             return (
