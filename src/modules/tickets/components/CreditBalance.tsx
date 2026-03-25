@@ -8,8 +8,10 @@ interface Props {
 
 function formatPackageName(name: string | null): string {
   if (!name) return '';
+  // Strip hour suffixes like "10h", "25h" from package names
+  const cleaned = name.replace(/\s*\d+h\b/gi, '').trim();
   const map: Record<string, string> = { small: 'Small', medium: 'Medium', large: 'Large' };
-  return map[name.toLowerCase()] ?? name;
+  return map[cleaned.toLowerCase()] ?? cleaned;
 }
 
 function getBalanceColor(balance: number, creditsPerMonth: number | null): string {
