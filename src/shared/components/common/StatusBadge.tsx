@@ -14,7 +14,7 @@ const TICKET_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   needs_attention:    { bg: 'var(--awaiting-bg)', text: 'var(--awaiting)', dot: 'var(--phase-3)' },
   awaiting_approval:  { bg: 'var(--credit-approval-bg)', text: 'var(--credit-approval-text)', dot: 'var(--credit-approval)' },
   approved:           { bg: 'var(--committed-bg)', text: 'var(--committed)', dot: 'var(--committed)' },
-  done:               { bg: 'var(--surface-active)', text: 'var(--text-tertiary)', dot: 'var(--text-tertiary)' },
+  done:               { bg: '#F0FDF4', text: '#6B9B7A', dot: '#86EFAC' },
   on_hold:            { bg: 'var(--phase-1-light)', text: 'var(--phase-1-text)', dot: 'var(--phase-1)' },
   cancelled:          { bg: '#FEF2F2', text: '#EF4444', dot: '#EF4444' },
 };
