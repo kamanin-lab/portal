@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Check, Lock, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
@@ -8,10 +9,18 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 
 export function PasswordSection() {
+  const [searchParams] = useSearchParams()
   const [isEditing, setIsEditing] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const updatePassword = useUpdatePassword()
+
+  // Auto-open form when redirected from password recovery link
+  useEffect(() => {
+    if (searchParams.get('action') === 'change-password') {
+      setIsEditing(true)
+    }
+  }, [searchParams])
 
   const { valid, results } = validatePassword(password)
   const passwordsMatch = password.trim() !== '' && password.trim() === confirmPassword.trim()

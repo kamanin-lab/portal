@@ -100,6 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
       if (event === 'INITIAL_SESSION') return
+      if (event === 'PASSWORD_RECOVERY') {
+        // Recovery link clicked — redirect to account page with password form open
+        window.location.href = '/konto?action=change-password'
+        return
+      }
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -130,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${window.location.origin}/konto?action=change-password`,
     })
     return { error: error as Error | null }
   }
