@@ -85,6 +85,14 @@
   --color-border-light: var(--border-light);
 }
 
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes phase-pulse {
   0%, 100% { box-shadow: 0 0 0 4px rgba(43,24,120,0.12); }
   50% { box-shadow: 0 0 0 7px rgba(43,24,120,0.06); }
