@@ -78,6 +78,22 @@ Profile auto-created via `on_auth_user_created` trigger on `auth.users`
 - All access proxied through Edge Functions (API token server-side only)
 - Webhook events flow: ClickUp → `clickup-webhook` Edge Function → task_cache + credit_transactions
 
+## Frontend Deployment (Vercel)
+
+Frontend deploys to Vercel from the `main` branch automatically on push.
+
+- **Production URL:** https://portal.kamanin.at (custom domain, DNS A → 76.76.21.21)
+- **Preview URLs:** every PR / feature branch gets an auto-generated Vercel preview URL (replaces the old staging branch)
+- **`vercel.json`:** SPA rewrites for client-side routing + auth proxy (`/auth/v1/*` → `https://portal.db.kamanin.at/auth/v1/*`)
+- **Env vars (all 3 environments):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MEMORY_OPERATOR_EMAILS`
+- **Magic link** disabled until GoTrue SMTP is configured on the self-hosted instance
+
+### Deploy commands
+```bash
+vercel             # preview deploy
+vercel --prod      # production deploy (or just push to main)
+```
+
 ## Edge Functions Deployment (self-hosted)
 
 Supabase CLI does NOT work with self-hosted instances. Edge Functions are deployed via **volume mount**.

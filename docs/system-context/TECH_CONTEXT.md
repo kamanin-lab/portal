@@ -2,18 +2,26 @@
 
 ## 1. System Overview
 
-KAMANIN Client Portal is a React-based web application that serves as a controlled projection layer over ClickUp. ClickUp remains the internal source of truth for task management and team communication. The portal exposes a simplified, responsibility-based interface to agency clients, allowing them to view task status, approve deliverables, communicate with the team, and receive targeted notifications — all without direct ClickUp access. The stack consists of a Lovable-generated React/Vite frontend, Supabase for authentication, database, and serverless functions, and ClickUp as the upstream data provider connected via API and webhooks.
+KAMANIN Client Portal is a React-based web application that serves as a controlled projection layer over ClickUp. ClickUp remains the internal source of truth for task management and team communication. The portal exposes a simplified, responsibility-based interface to agency clients, allowing them to view task status, approve deliverables, communicate with the team, and receive targeted notifications — all without direct ClickUp access.
+
+**Production:** https://portal.kamanin.at (live as of 2026-03-25). First production client: MBM (Nadin Bonin).
+
+The stack consists of a React 19/Vite frontend deployed on Vercel, Supabase for authentication, database, and serverless functions, and ClickUp as the upstream data provider connected via API and webhooks.
 
 ## 2. High-Level Architecture
 
 ### Frontend
 
-- React 18 with TypeScript, built via Vite
-- Generated and maintained through the Lovable platform
+- React 19 with TypeScript, built via Vite
 - TanStack React Query for server state management
 - Supabase Realtime subscriptions for live updates
-- Tailwind CSS with a custom design system (shadcn/ui components)
-- React Router for client-side routing
+- Tailwind CSS v4 with a custom design system (shadcn/ui components)
+- React Router v7 for client-side routing
+- Motion v12 (`motion/react`) for animations
+- **Deployed on Vercel** — auto-deploys from `main` branch to https://portal.kamanin.at
+  - `vercel.json`: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth
+  - Feature branches get Vercel preview URLs (replaces staging branch)
+  - Magic link disabled until GoTrue SMTP is configured on self-hosted Supabase
 
 ### Supabase Backend
 
@@ -73,7 +81,7 @@ KAMANIN Client Portal is a React-based web application that serves as a controll
 ### ClickUp Webhooks
 
 - Registered manually via ClickUp API (`POST /team/{team_id}/webhook`)
-- Endpoint: `https://yuezkvaasmfakxoqldmh.supabase.co/functions/v1/clickup-webhook`
+- Endpoint: `https://portal.db.kamanin.at/functions/v1/clickup-webhook`
 - Subscribed events: `taskStatusUpdated`, `taskCommentPosted`
 - Optional signature verification via `CLICKUP_WEBHOOK_SECRET` (HMAC SHA-256)
 - Rate limited: 100 events per 60 seconds per webhook ID

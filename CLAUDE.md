@@ -1,8 +1,8 @@
 # KAMANIN Client Portal
 
-> Current working rule: this repository is the **staging implementation copy**.
-> Original reference repo copy remains untouched at `G:/01_OPUS/Projects/PORTAL`.
-> Historical reference code has been moved under `archive/legacy-reference/`.
+> This is the **canonical production repository** at `G:/01_OPUS/Projects/PORTAL`.
+> Frontend is live at https://portal.kamanin.at (auto-deployed from `main` via Vercel).
+> Historical reference code lives under `archive/legacy-reference/`.
 
 ## What This Is
 
@@ -16,7 +16,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
-- **Deploy:** Vercel CLI (frontend), Coolify → self-hosted Supabase (backend + Edge Functions), GitHub CLI for PRs
+- **Deploy:** Vercel (frontend, auto-deploy from `main` → portal.kamanin.at), Coolify → self-hosted Supabase (backend + Edge Functions), GitHub CLI for PRs
 - **Fonts:** DM Sans (UI) + DM Mono (code/metadata)
 
 ### Design Tools (available to all agents)
@@ -66,6 +66,8 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `supabase/functions/nextcloud-files/` | WebDAV proxy: list (`sub_path`), download, upload (`sub_path`), mkdir (`folder_path`) |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
 | `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
+| `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache |
+| `vercel.json` | SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint |
 
 ## Commands
 
@@ -78,6 +80,13 @@ npm run test:watch   # Tests in watch mode
 npm run test:coverage # Tests with coverage report
 npm run lint         # ESLint
 npx supabase gen types typescript --project-id [id] > src/shared/types/database.ts
+
+# Client onboarding
+npx tsx scripts/onboard-client.ts --config client.json
+
+# Vercel deploy
+vercel             # preview deploy (feature branch)
+vercel --prod      # manual production deploy (or push to main)
 
 # Post-code review (GPT-5.4-mini via OpenRouter)
 node scripts/openrouter-review.cjs                  # all uncommitted changes
@@ -174,7 +183,9 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │       ├── send-support-message/
 │       └── update-task-status/
 ├── scripts/
-│   └── openrouter-review.cjs   # Post-code review via GPT-5.4-mini (OpenRouter API)
+│   ├── openrouter-review.cjs   # Post-code review via GPT-5.4-mini (OpenRouter API)
+│   └── onboard-client.ts       # Client onboarding automation (auth user + profile + workspaces + credits)
+├── vercel.json                 # SPA rewrites + /auth/v1/* proxy to self-hosted Supabase
 ├── vite.config.ts
 ├── vitest.config.ts
 └── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, OPENROUTER_API_KEY
@@ -311,8 +322,8 @@ The Supervisor is personally responsible for keeping ALL project documentation c
 ### Must NOT Do
 - Skip review just to move faster
 - Treat first implementation as automatically acceptable
-- Allow direct implementation in the original repo
 - Let silent multi-hour drift happen (this is a serious supervisor failure)
+- Push breaking changes directly to `main` without a PR (it auto-deploys to production)
 
 ## Handoff Rules
 

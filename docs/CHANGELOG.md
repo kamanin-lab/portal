@@ -418,6 +418,42 @@
 
 ---
 
+## 2026-03-25 — Production Launch, Vercel Deploy, MBM Onboarding, UI Polish
+
+### Infrastructure
+- **Vercel deployment** — frontend deployed to Vercel; auto-deploys from `main` branch
+  - `vercel.json`: SPA rewrites + auth proxy (`/auth/v1/*` → `portal.db.kamanin.at`)
+  - Env vars set for all 3 Vercel environments: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MEMORY_OPERATOR_EMAILS`
+  - Custom domain `portal.kamanin.at` → DNS A record → 76.76.21.21
+  - No staging branch; Vercel preview deploys on PRs serve as staging
+- **Repo consolidation** — `PORTAL_staging` renamed to `PORTAL` (single canonical repo)
+- **Branch strategy**: `main` = production; feature branches get Vercel preview URLs automatically
+- **`scripts/onboard-client.ts`** — automated client onboarding script
+  - Creates auth user, profile, workspaces, credit package, project access, triggers task sync
+  - Usage: `npx tsx scripts/onboard-client.ts --config client.json`
+
+### First Production Client: MBM
+- User: Nadin Bonin (nadin.bonin@mbm-moebel.de)
+- Profile ID: f304b042-d408-4d39-874c-d53b7aa7adaf
+- ClickUp list: 901519301126 — Support task: 86c81kdgk
+- Credit package: Small (10 credits/month)
+- Active modules: tickets, support (projects not yet configured)
+- 15 legacy tasks migrated from Lovable portal; `created_by_name = 'Nadin'` applied
+
+### UI Fixes & Polish
+- **Filter row** — filter chips and filter button merged into a single row (were on separate lines)
+- **Sidebar** — tickets and support are now flat direct links (no submenus)
+- **TaskCard** — `created_by_name` from DB shown instead of hardcoded "Team"
+- **Message bubbles** — padding 8×12→10×16, tail corner 4px→3px, gap between messages 10→14px; applied consistently to TaskComments, SupportChat, MessagesPage
+- **Credit balance** — strips hour suffix from package name ("Small 10h" → "Small")
+- **`scrollbar-hide` utility** added to `index.css` for Tailwind v4
+- **Login page** — placeholder "K" square replaced with official KAMANIN colour icon SVG
+- **Favicon** — replaced `vite.svg` with KAMANIN colour icon (cropped)
+- **Page title** — "kamanin-portal" → "KAMANIN Portal"
+- **Magic link** — hidden on login page until GoTrue SMTP is configured
+
+---
+
 ## Phase 4: Project Memory & Integration Hardening — 2026-03-20+
 
 ### Project Memory Foundation

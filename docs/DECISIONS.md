@@ -203,3 +203,33 @@
 **Decision:** All cache and notification tables must be explicitly added to the `supabase_realtime` publication with `REPLICA IDENTITY FULL`. Polling intervals are removed from all hooks. React Query `staleTime` acts as the sole fallback (30s), ensuring Realtime failure degrades gracefully without active polling loops.
 
 **Consequences:** Instant UI updates on webhook-driven changes. Cleaner hook code. Tables requiring Realtime: `task_cache`, `comment_cache`, `notifications`, `project_task_cache`, `credit_transactions`. Any new cache table added to the schema must also be enrolled in the publication.
+
+## ADR-020: Vercel for frontend hosting (no staging branch)
+**Date:** 2026-03-25
+**Status:** Accepted
+
+**Context:** Frontend was run locally only. Production deployment needed. Options: self-hosted on Coolify alongside Supabase, or Vercel. Coolify would add operational complexity; Vercel offers zero-config React/Vite deploys with automatic preview environments per PR.
+
+**Decision:** Deploy frontend to Vercel. `main` branch = production (portal.kamanin.at). Feature branches and PRs automatically get Vercel preview URLs — these serve as the staging environment, replacing the previously planned separate staging branch. `vercel.json` adds SPA rewrites and an `/auth/v1/*` proxy to the self-hosted Supabase auth endpoint (needed because GoTrue cookies require same-origin).
+
+**Consequences:** Zero-config CI/CD. No staging branch to maintain. Every PR gets an isolated preview URL for QA. Auth proxy in `vercel.json` is critical — must be kept in sync if Supabase URL changes.
+
+## ADR-021: Client onboarding script (`scripts/onboard-client.ts`)
+**Date:** 2026-03-25
+**Status:** Accepted
+
+**Context:** Onboarding a new client required 6+ manual Supabase SQL steps (create user, profile row, workspace rows, credit package, project access, trigger sync). Error-prone and undocumented.
+
+**Decision:** Create `scripts/onboard-client.ts` — a typed TypeScript script that accepts a JSON config file and executes all onboarding steps atomically. Steps: create Supabase Auth user, insert profile, insert client_workspaces rows, insert credit_packages row, insert project_access row, call fetch-clickup-tasks to prime the cache.
+
+**Consequences:** Repeatable, auditable onboarding. Config file acts as a record of each client's setup. First run: MBM (Nadin Bonin). Run with: `npx tsx scripts/onboard-client.ts --config client.json`.
+
+## ADR-022: Repo consolidation — PORTAL_staging → PORTAL (single repo)
+**Date:** 2026-03-25
+**Status:** Accepted
+
+**Context:** The project ran as two copies: `PORTAL` (reference, untouched) and `PORTAL_staging` (working copy). This was originally meant to protect the reference but it created confusion about which copy was canonical and where to run commands.
+
+**Decision:** Rename `PORTAL_staging` to `PORTAL`. Single repo, single working directory. The "staging" concept is now handled by Vercel preview URLs (per PR). The old CLAUDE.md note about staging copy is no longer accurate.
+
+**Consequences:** CLAUDE.md header note about staging copy removed. All agent instructions now point to `G:/01_OPUS/Projects/PORTAL` as the sole working directory. Historical reference material remains under `archive/legacy-reference/` within the repo.

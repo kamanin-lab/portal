@@ -1,29 +1,34 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-03-23_
+_Status: active_ · _Last updated: 2026-03-25_
 
-## Current Task
-**TASK-016: Fix Ticket Realtime — CHANNEL_ERROR persists**
-Compare working project Realtime vs broken ticket Realtime. Find root cause.
+## Current State
+**Portal is LIVE at https://portal.kamanin.at**
+First production client: MBM (Nadin Bonin). Auto-deploys from `main` via Vercel.
 
-## Active Agents
-reviewer-architect (comparing project vs ticket Realtime)
+## Open Items
+- Magic link login hidden — GoTrue SMTP needs configuration on self-hosted Supabase
+- MBM modules: tickets + support active; projects not yet configured
 
-## Current Pipeline — TASK-013
-| Phase | Status | Agent | Notes |
-|---|---|---|---|
-| Brainstorming | ✅ | Supervisor | Workflow defined with user |
-| Spec + Plan | ✅ | Supervisor | 6 items, TASK-013-plan.md |
-| Implementation | ✅ | implementation-agent | All 6 items verified, tokens fixed |
-| Post-Code Review | ✅ | OpenRouter (GPT-5.4-mini) | REVISE: 5 blocking |
-| Fix Blocking | ✅ | implementation-agent | 5 fixes: guards, marker, unique index, cache fallback |
-| Accept/Revise | ✅ | Supervisor | Accepted |
-
----
+## Completed Today (2026-03-25)
+| Item | Notes |
+|---|---|
+| Vercel deployment | `main` → portal.kamanin.at, preview URLs on PRs |
+| Repo consolidation | PORTAL_staging → PORTAL (single canonical repo) |
+| Onboarding script | `scripts/onboard-client.ts` |
+| MBM onboarded | First production client |
+| Filter row fix | Chips + button on single row |
+| Sidebar flat links | Tickets + support no longer have submenus |
+| TaskCard creator | Shows `created_by_name` from DB |
+| Message bubble polish | Padding, tail, gap applied to all 3 chat surfaces |
+| Credit balance label | Strips hour suffix from package name |
+| scrollbar-hide utility | Added to index.css for Tailwind v4 |
+| Login KAMANIN icon | Official SVG replaces placeholder |
+| Favicon | KAMANIN colour icon |
+| Page title | "KAMANIN Portal" |
+| Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
-### TASK-012: Project Email Notifications (2026-03-23)
-- `3d20b41` · 3 files
-### TASK-011–001: See git log.
+### TASK-016 and prior: See git log and CHANGELOG.md.
 
 Legend: ⬜ pending | 🔄 in progress | ✅ done | ❌ blocked | ⏭️ skipped

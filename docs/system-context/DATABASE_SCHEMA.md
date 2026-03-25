@@ -258,6 +258,28 @@ Ledger of all credit movements. Positive amounts are top-ups, negative amounts a
 
 ---
 
+### 1.12 client_workspaces
+
+Active module registry per client. Controls which navigation items appear in the sidebar and which routes are accessible via WorkspaceGuard.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| module_key | text | NOT NULL | Module identifier (e.g., `tickets`, `support`, `projects`) |
+| display_name | text | NOT NULL | German label shown in sidebar (e.g., "Aufgaben") |
+| icon | text | | Icon name from Lucide React |
+| sort_order | integer | NOT NULL, DEFAULT 0 | Display order within Workspaces zone |
+| is_active | boolean | NOT NULL, DEFAULT true | Only active rows appear in sidebar |
+
+**Unique Constraint:** `(profile_id, module_key)` — one row per module per user.
+
+**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+
+**Usage:** `useWorkspaces()` hook fetches active rows. `WorkspaceGuard` redirects to `/inbox` if the required `module_key` is not active for the current user.
+
+---
+
 ## 2. Edge Functions
 
 All Edge Functions are deployed with `verify_jwt = false` in `supabase/config.toml` and perform manual JWT verification internally via `supabase.auth.getUser(token)`.
