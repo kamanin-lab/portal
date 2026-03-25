@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { cn } from '@/shared/lib/utils'
-import logo from '@/assets/KAMANIN-logo-dark.svg'
+import logo from '@/assets/KAMANIN-icon-colour.svg'
 
 type Mode = 'signin' | 'magic' | 'reset'
 
