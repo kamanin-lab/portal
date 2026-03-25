@@ -20,8 +20,10 @@ const DEFAULT_WORKSPACES: ClientWorkspace[] = [
 
 const ICON_MAP: Record<string, IconSvgElement> = {
   'clipboard-list': ClipboardIcon,
+  'check-square': ClipboardIcon,
   'folder-kanban': DashboardSquare01Icon,
   'folder': Folder01Icon,
+  'headphones': CustomerServiceIcon,
   'headset': CustomerServiceIcon,
   'box': DashboardSquare01Icon,
 }
@@ -65,12 +67,12 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
         const staticChildren = WORKSPACE_CHILDREN[ws.module_key] ?? []
         // For projects workspace, use dynamically populated children
         const children = ws.module_key === 'projects' ? projectChildren : staticChildren
+        const badge = ws.module_key === 'support' ? supportUnread : 0
 
         return (
           <div key={ws.id}>
             <NavLink
               to={rootPath}
-              end
               className={({ isActive }) => cn(
                 'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
                 'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
@@ -79,13 +81,15 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
             >
               <HugeiconsIcon icon={iconObj} size={20} className="shrink-0" />
               {expanded && (
-                <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">{ws.display_name}</span>
+                <>
+                  <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex-1">{ws.display_name}</span>
+                  <WorkspaceBadge count={badge} />
+                </>
               )}
             </NavLink>
 
             {expanded && children.map((child) => {
               const childIconObj = ICON_MAP[child.icon] ?? DashboardSquare01Icon
-              const badge = child.path === '/support' ? supportUnread : 0
               return (
                 <NavLink
                   key={child.path}
@@ -98,7 +102,6 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
                 >
                   <HugeiconsIcon icon={childIconObj} size={15} className="shrink-0" />
                   <span className="ml-2.5 whitespace-nowrap overflow-hidden flex-1">{child.label}</span>
-                  <WorkspaceBadge count={badge} />
                 </NavLink>
               )
             })}

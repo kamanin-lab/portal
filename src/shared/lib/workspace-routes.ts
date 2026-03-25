@@ -1,5 +1,6 @@
 export const WORKSPACE_ROUTES: Record<string, string> = {
   tickets: '/tickets',
+  support: '/support',
   projects: '/projekte',
   files: '/dateien',
 }
@@ -8,10 +9,8 @@ export const WORKSPACE_CHILDREN: Record<
   string,
   Array<{ path: string; label: string; icon: string }>
 > = {
-  tickets: [
-    { path: '/tickets', label: 'Aufgaben', icon: 'clipboard-list' },
-    { path: '/support', label: 'Support', icon: 'headset' },
-  ],
+  tickets: [],
+  support: [],
   projects: [],
   files: [],
 }

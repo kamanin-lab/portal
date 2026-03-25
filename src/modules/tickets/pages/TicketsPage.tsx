@@ -90,14 +90,12 @@ export function TicketsPage() {
         <CreditBalance />
       </div>
 
-      {/* Row 2: Filter chips */}
-      <div className="mb-3">
-        <TaskFilters active={filter} onChange={setFilter} tasks={tasks} />
-      </div>
-
-      {/* Row 3: Filter button */}
-      <div className="flex items-center justify-end mb-4">
-        <div className="relative">
+      {/* Row 2: Filter chips + Filter button */}
+      <div className="flex items-center gap-1.5 mb-4">
+        <div className="flex-1 min-w-0">
+          <TaskFilters active={filter} onChange={setFilter} tasks={tasks} />
+        </div>
+        <div className="relative shrink-0">
           <button
             onClick={() => setFilterPanelOpen(v => !v)}
             className={cn(

@@ -96,7 +96,7 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
 
             <span className="flex items-center gap-1 text-[12px] text-text-tertiary ml-auto">
               <User size={12} />
-              Team
+              {task.created_by_name || 'Team'}
             </span>
           </div>
         </div>
