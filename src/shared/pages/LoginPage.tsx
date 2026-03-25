@@ -65,7 +65,7 @@ export function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="KAMANIN" className="h-8 w-auto mb-3" />
+          <img src={logo} alt="KAMANIN" className="h-14 w-auto mb-3" />
           <p className="text-text-tertiary text-sm">Ihr Projektportal</p>
         </div>
 
