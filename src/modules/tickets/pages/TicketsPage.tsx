@@ -20,7 +20,7 @@ import { cn } from '@/shared/lib/utils'
 
 export function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filter, setFilter] = useState<TaskFilter>('all')
+  const [filter, setFilter] = useState<TaskFilter>('attention')
   const [searchQuery, setSearchQuery] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filterPanelOpen, setFilterPanelOpen] = useState(false)

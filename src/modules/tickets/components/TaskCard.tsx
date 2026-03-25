@@ -25,13 +25,13 @@ function formatDueDate(date: string | null): string | null {
 }
 
 const STATUS_BORDER_COLORS: Record<string, string> = {
-  open:            'var(--text-tertiary)',
+  open:            'var(--phase-2)',
   in_progress:     'var(--phase-2)',
   needs_attention: 'var(--awaiting)',
   approved:        'var(--committed)',
   done:            'var(--text-tertiary)',
   on_hold:         'var(--phase-1)',
-  cancelled:       'var(--text-tertiary)',
+  cancelled:       '#EF4444',
 }
 
 export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
