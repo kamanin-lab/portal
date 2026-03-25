@@ -24,7 +24,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
     },
     toastLabels: {
       approve:         { success: 'Schritt wurde freigegeben',     error: 'Freigabe fehlgeschlagen' },
-      request_changes: { success: 'Aenderungen wurden angefordert', error: 'Aenderungsanforderung fehlgeschlagen' },
+      request_changes: { success: 'Änderungen wurden angefordert', error: 'Aenderungsanforderung fehlgeschlagen' },
     },
   });
 
@@ -50,9 +50,9 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
     <div className="p-[14px] bg-awaiting-bg border border-awaiting/30 rounded-[var(--r-md)]">
       <div className="flex items-center gap-[12px] flex-wrap">
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-text-primary">Bereit fuer Ihre Pruefung</div>
+          <div className="text-[13px] font-medium text-text-primary">Bereit für Ihre Prüfung</div>
           <div className="text-[12px] text-text-secondary mt-[2px]">
-            Bitte pruefen Sie das Dokument und geben Sie Ihr Feedback.
+            Bitte prüfen Sie das Dokument und geben Sie Ihr Feedback.
           </div>
         </div>
         {!activeAction && (
@@ -70,7 +70,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
               variant="outline"
               size="sm"
             >
-              Aenderungen anfragen
+              Änderungen anfragen
             </Button>
           </div>
         )}
@@ -84,7 +84,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
             placeholder={
               activeAction === 'approve'
                 ? 'Optionaler Kommentar zur Freigabe...'
-                : 'Bitte beschreiben Sie die gewuenschten Aenderungen...'
+                : 'Bitte beschreiben Sie die gewünschten Änderungen...'
             }
             rows={3}
             className="bg-white"
@@ -108,7 +108,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
                 ? 'Wird gesendet...'
                 : activeAction === 'approve'
                   ? 'Freigeben'
-                  : 'Aenderungen anfragen'}
+                  : 'Änderungen anfragen'}
             </Button>
           </div>
         </div>

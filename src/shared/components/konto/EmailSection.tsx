@@ -21,7 +21,7 @@ export function EmailSection({ currentEmail }: Props) {
     const trimmed = newEmail.trim()
     if (!trimmed || trimmed === currentEmail) return
     if (!isValidEmail(trimmed)) {
-      toast.error('Ungueltige E-Mail-Adresse.')
+      toast.error('Ungültige E-Mail-Adresse.')
       return
     }
     updateEmail.mutate(trimmed, {
@@ -53,7 +53,7 @@ export function EmailSection({ currentEmail }: Props) {
 
         {confirmSent && (
           <p className="text-xs text-committed bg-committed-bg px-3 py-2 rounded-[8px]">
-            Wir haben eine Bestaetigungsemail an Ihre aktuelle und neue Adresse gesendet.
+            Wir haben eine Bestätigungsemail an Ihre aktuelle und neue Adresse gesendet.
           </p>
         )}
 
@@ -78,14 +78,14 @@ export function EmailSection({ currentEmail }: Props) {
                 variant="accent"
                 size="sm"
               >
-                {updateEmail.isPending ? 'Senden...' : 'Aendern'}
+                {updateEmail.isPending ? 'Senden...' : 'Ändern'}
               </Button>
               <Button onClick={handleCancel} variant="outline" size="sm">
                 Abbrechen
               </Button>
             </div>
             <p className="text-xs text-text-tertiary">
-              Sie erhalten eine Bestaetigungsemail an beide Adressen.
+              Sie erhalten eine Bestätigungsemail an beide Adressen.
             </p>
           </div>
         ) : (
@@ -95,7 +95,7 @@ export function EmailSection({ currentEmail }: Props) {
             size="sm"
             className="text-xs p-0 h-auto self-start"
           >
-            E-Mail aendern
+            E-Mail ändern
           </Button>
         )}
       </div>

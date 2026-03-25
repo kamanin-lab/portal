@@ -10,7 +10,7 @@ export function StepFilesTab({ step }: StepFilesTabProps) {
   return (
     <div className="flex flex-col gap-[4px]">
       {step.files.length === 0 && (
-        <EmptyState message="Noch keine Dateien fuer diesen Schritt." />
+        <EmptyState message="Noch keine Dateien für diesen Schritt." />
       )}
       {step.files.map((f, idx) => (
         <div

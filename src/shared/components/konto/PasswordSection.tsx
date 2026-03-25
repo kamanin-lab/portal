@@ -19,11 +19,11 @@ export function PasswordSection() {
 
   const handleSave = () => {
     if (!valid) {
-      toast.error('Passwort erfuellt nicht alle Anforderungen.')
+      toast.error('Passwort erfüllt nicht alle Anforderungen.')
       return
     }
     if (!passwordsMatch) {
-      toast.error('Passwoerter stimmen nicht ueberein.')
+      toast.error('Passwörter stimmen nicht überein.')
       return
     }
     updatePassword.mutate(password.trim(), {
@@ -89,7 +89,7 @@ export function PasswordSection() {
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="confirm-password" className="text-xs font-medium text-text-secondary">
-                Passwort bestaetigen
+                Passwort bestätigen
               </label>
               <Input
                 id="confirm-password"
@@ -100,13 +100,13 @@ export function PasswordSection() {
                 className="bg-bg"
               />
               {confirmPassword.length > 0 && !passwordsMatch && (
-                <span className="text-xs text-awaiting">Passwoerter stimmen nicht ueberein</span>
+                <span className="text-xs text-awaiting">Passwörter stimmen nicht überein</span>
               )}
             </div>
 
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={!canSubmit} variant="accent" size="sm">
-                {updatePassword.isPending ? 'Speichern...' : 'Passwort aendern'}
+                {updatePassword.isPending ? 'Speichern...' : 'Passwort ändern'}
               </Button>
               <Button onClick={handleCancel} variant="outline" size="sm">
                 Abbrechen
@@ -120,7 +120,7 @@ export function PasswordSection() {
             size="sm"
             className="text-xs p-0 h-auto self-start"
           >
-            Passwort aendern
+            Passwort ändern
           </Button>
         )}
       </div>

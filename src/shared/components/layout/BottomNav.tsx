@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Inbox, ClipboardList, Headset, MoreHorizontal } from 'lucide-react'
+import { Inbox, ClipboardList, Headset, FolderOpen } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
@@ -19,7 +19,7 @@ export function BottomNav() {
     { to: '/inbox',   icon: Inbox,         label: 'Inbox',   badge: inboxUnread },
     { to: '/tickets', icon: ClipboardList, label: 'Aufgaben', badge: 0 },
     { to: '/support', icon: Headset,       label: 'Support',  badge: supportUnread },
-    { to: '/hilfe',   icon: MoreHorizontal, label: 'Mehr',    badge: 0 },
+    { to: '/dateien', icon: FolderOpen,      label: 'Dateien', badge: 0 },
   ]
 
   return (

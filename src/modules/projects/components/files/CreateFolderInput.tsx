@@ -18,8 +18,8 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
   function validate(val: string): string {
     if (!val.trim()) return 'Name darf nicht leer sein';
     if (val.startsWith('.')) return 'Name darf nicht mit einem Punkt beginnen';
-    if (val.includes('..')) return 'Ungueltiger Name';
-    if (INVALID_CHARS.test(val)) return 'Ungueltige Zeichen im Namen';
+    if (val.includes('..')) return 'Ungültiger Name';
+    if (INVALID_CHARS.test(val)) return 'Ungültige Zeichen im Namen';
     return '';
   }
 
