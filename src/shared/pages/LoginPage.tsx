@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { cn } from '@/shared/lib/utils'
+import logo from '@/assets/KAMANIN-logo-dark.svg'
 
 type Mode = 'signin' | 'magic' | 'reset'
 
@@ -64,11 +65,8 @@ export function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-10 h-10 rounded-[10px] bg-accent flex items-center justify-center mb-3">
-            <span className="text-white font-bold text-base">K</span>
-          </div>
-          <h1 className="text-xl font-semibold text-text-primary">KAMANIN Portal</h1>
-          <p className="text-text-tertiary text-sm mt-1">Ihr Projektportal</p>
+          <img src={logo} alt="KAMANIN" className="h-8 w-auto mb-3" />
+          <p className="text-text-tertiary text-sm">Ihr Projektportal</p>
         </div>
 
         {/* Card */}
