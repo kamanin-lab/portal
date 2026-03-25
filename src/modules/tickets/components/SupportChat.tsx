@@ -31,10 +31,6 @@ export function SupportChat({ onRead, active = true }: SupportChatProps) {
         <h1 className="text-[1.2rem] font-semibold text-text-primary tracking-[-0.02em] flex-1">
           {dict.labels.supportTitle}
         </h1>
-        <div className="flex items-center gap-[6px]">
-          <span className="w-[8px] h-[8px] rounded-full bg-committed" />
-          <span className="text-[12px] text-text-secondary">{dict.labels.supportOnline}</span>
-        </div>
       </div>
 
       <div className="flex-1 flex flex-col gap-[14px] px-1 overflow-y-auto mb-[16px]" style={{ scrollbarWidth: 'thin' }}>
