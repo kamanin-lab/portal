@@ -5,12 +5,14 @@ import { UserAvatar } from '@/shared/components/common/UserAvatar'
 interface Props {
   expanded: boolean
   profile: Profile | null
+  onNavigate?: () => void
 }
 
-export function SidebarUserFooter({ expanded, profile }: Props) {
+export function SidebarUserFooter({ expanded, profile, onNavigate }: Props) {
   return (
     <NavLink
       to="/konto"
+      onClick={onNavigate}
       className="flex items-center h-14 px-3 shrink-0 transition-colors hover:bg-sidebar-hover"
     >
       <UserAvatar

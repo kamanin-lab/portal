@@ -66,7 +66,7 @@ const styles = `
   </style>
 `;
 
-const logoUrl = "https://portal.kamanin.at/images/K-logo.png";
+const logoUrl = "https://portal.kamanin.at/favicon.png";
 
 const header = `
   <div class="logo-section">
@@ -97,7 +97,7 @@ function generateEmailHtml(
   switch (type) {
     case "task_review": {
       const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
-      const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
       return {
@@ -115,7 +115,7 @@ function generateEmailHtml(
     case "credit_approval": {
       const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
       const credits = data.credits || "0";
-      const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName, credits) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName, credits) : copy.body;
       return {
@@ -132,7 +132,7 @@ function generateEmailHtml(
 
     case "step_ready": {
       const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
-      const stepUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(stepName) : copy.body;
       return {
@@ -149,7 +149,7 @@ function generateEmailHtml(
 
     case "project_reply": {
       const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
-      const stepUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const teamMemberName = data.teamMemberName || (locale === "de" ? "Ihr Tech-Team" : "Your tech team");
       const messagePreview = data.messagePreview || "";
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
@@ -171,7 +171,7 @@ function generateEmailHtml(
 
     case "task_completed": {
       const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
-      const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const createTaskUrl = `${portalUrl}/dashboard?createTask=true`;
       const bodyParts = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
       const bodyHtml = Array.isArray(bodyParts)
@@ -218,7 +218,7 @@ function generateEmailHtml(
 
     case "team_question": {
       const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
-      const taskUrl = data.taskId ? `${portalUrl}/task/${data.taskId}` : `${portalUrl}/dashboard`;
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const teamMemberName = data.teamMemberName || (locale === "de" ? "Ihr Tech-Team" : "Your tech team");
       const messagePreview = data.messagePreview || "";
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;

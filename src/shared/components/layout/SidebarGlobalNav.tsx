@@ -7,6 +7,7 @@ interface Props {
   expanded: boolean
   inboxCount: number
   attentionCount: number
+  onNavigate?: () => void
 }
 
 function NavBadge({ count }: { count: number }) {
@@ -18,11 +19,12 @@ function NavBadge({ count }: { count: number }) {
   )
 }
 
-export function SidebarGlobalNav({ expanded, inboxCount, attentionCount }: Props) {
+export function SidebarGlobalNav({ expanded, inboxCount, attentionCount, onNavigate }: Props) {
   return (
     <div className="py-1 flex flex-col gap-0.5">
       <NavLink
         to="/inbox"
+        onClick={onNavigate}
         className={({ isActive }) => cn(
           'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
           'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
@@ -47,6 +49,7 @@ export function SidebarGlobalNav({ expanded, inboxCount, attentionCount }: Props
 
       <NavLink
         to="/meine-aufgaben"
+        onClick={onNavigate}
         className={({ isActive }) => cn(
           'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
           'text-text-sidebar hover:bg-sidebar-hover hover:text-white',

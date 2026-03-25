@@ -37,7 +37,7 @@ const styles = `
   </style>
 `;
 
-const logoUrl = "https://portal.kamanin.at/images/K-logo.png";
+const logoUrl = "https://portal.kamanin.at/favicon.png";
 
 const header = `
   <div class="logo-section">
@@ -162,14 +162,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const payload: AuthEmailPayload = await req.json();
-    console.log("Auth email hook received:", payload.email_data.email_action_type);
-
+    const payload = await req.json();
     const { user, email_data } = payload;
-    const { token_hash, redirect_to, email_action_type, site_url } = email_data;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const actionUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to || site_url}`;
+    if (!email_data) {
+      console.error("AUTH-EMAIL: email_data missing in payload");
+      return new Response(JSON.stringify({}), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { token_hash, email_action_type } = email_data;
+    console.log("AUTH-EMAIL:", email_action_type, "for", user?.email);
+
+    // Always use external Supabase URL for verify links, frontend URL for redirect
+    const apiUrl = "https://portal.db.kamanin.at";
+    const portalUrl = "https://portal.kamanin.at";
+    const actionUrl = `${apiUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(portalUrl)}`;
 
     const firstName = user.user_metadata?.full_name?.split(" ")[0];
 

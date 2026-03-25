@@ -6,14 +6,16 @@ import { CreditBalance } from '@/modules/tickets/components/CreditBalance'
 
 interface Props {
   expanded: boolean
+  onNavigate?: () => void
 }
 
-export function SidebarUtilities({ expanded }: Props) {
+export function SidebarUtilities({ expanded, onNavigate }: Props) {
   return (
     <div className="py-1 flex flex-col gap-0.5">
       <CreditBalance compact={!expanded} />
       <NavLink
         to="/hilfe"
+        onClick={onNavigate}
         className={({ isActive }) => cn(
           'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
           'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
@@ -27,6 +29,7 @@ export function SidebarUtilities({ expanded }: Props) {
       </NavLink>
       <NavLink
         to="/konto"
+        onClick={onNavigate}
         className={({ isActive }) => cn(
           'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
           'text-text-sidebar hover:bg-sidebar-hover hover:text-white',

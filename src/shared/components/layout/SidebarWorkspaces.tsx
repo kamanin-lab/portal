@@ -32,6 +32,7 @@ interface Props {
   expanded: boolean
   workspaces: ClientWorkspace[]
   supportUnread: number
+  onNavigate?: () => void
 }
 
 function WorkspaceBadge({ count }: { count: number }) {
@@ -43,7 +44,7 @@ function WorkspaceBadge({ count }: { count: number }) {
   )
 }
 
-export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props) {
+export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavigate }: Props) {
   const visibleWorkspaces = workspaces.length > 0 ? workspaces : DEFAULT_WORKSPACES
   const { projects } = useProjects()
 
@@ -73,6 +74,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
           <div key={ws.id}>
             <NavLink
               to={rootPath}
+              onClick={onNavigate}
               className={({ isActive }) => cn(
                 'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
                 'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
@@ -94,6 +96,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread }: Props
                 <NavLink
                   key={child.path}
                   to={child.path}
+                  onClick={onNavigate}
                   className={({ isActive }) => cn(
                     'flex items-center h-9 pl-9 pr-3.5 mx-1.5 rounded-[8px] transition-colors',
                     'text-text-sidebar/80 hover:bg-sidebar-hover hover:text-white text-[13px]',
