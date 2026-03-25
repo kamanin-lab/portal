@@ -34,7 +34,7 @@ export function MessagesPage({ project }: MessagesPageProps) {
           <div className="text-[11.5px] font-semibold text-[var(--text-secondary)] uppercase tracking-[0.04em] mb-[12px] pb-[8px] border-b border-[var(--border-light)]">
             {group.chapterTitle} · {group.stepTitle}
           </div>
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-[14px] px-1">
             {group.messages.map((msg, idx) => (
               <MessageBubble
                 key={idx}
