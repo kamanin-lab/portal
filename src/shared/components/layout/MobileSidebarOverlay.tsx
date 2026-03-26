@@ -30,7 +30,7 @@ function useNeedsAttentionCount(profileId: string | undefined) {
         .select('id', { count: 'exact', head: true })
         .eq('profile_id', profileId!)
         .eq('is_visible', true)
-        .eq('status', 'client review')
+        .in('status', ['client review', 'approved'])
       return count ?? 0
     },
     enabled: !!profileId,
