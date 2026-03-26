@@ -121,8 +121,9 @@ export interface CachedComment {
 // File attachment when posting a comment (base64-encoded)
 export interface FileData {
   name: string;
-  data: string;
+  base64: string;
   type: string;
+  size: number;
 }
 
 // Input for creating a new ticket/task

@@ -8,7 +8,7 @@ export function SupportPage() {
   const { markAsRead } = useUnreadCounts(user?.id);
 
   return (
-    <div className="h-[calc(100vh-52px)] md:h-screen flex flex-col">
+    <div className="h-[calc(100dvh-52px-64px)] md:h-screen flex flex-col">
       <ContentContainer width="narrow" className="flex-1 flex flex-col min-h-0">
         <SupportChat active onRead={() => markAsRead('support')} />
       </ContentContainer>

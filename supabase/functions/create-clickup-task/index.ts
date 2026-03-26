@@ -71,8 +71,9 @@ async function fetchWithRetry(
 
 interface FileData {
   name: string;
-  data: string; // base64 encoded
+  base64: string; // base64 encoded
   type: string;
+  size?: number;
 }
 
 interface CreateTaskRequest {
@@ -266,7 +267,7 @@ Deno.serve(async (req) => {
       }
       
       // Check approximate file size from base64 (base64 is ~33% larger than binary)
-      const approxSize = (file.data.length * 3) / 4;
+      const approxSize = (file.base64.length * 3) / 4;
       if (approxSize > MAX_FILE_SIZE) {
         return new Response(
           JSON.stringify({ error: `File "${sanitizeFilename(file.name)}" is too large. Maximum size is 10MB.` }),
@@ -439,7 +440,7 @@ Deno.serve(async (req) => {
         log.debug("Uploading attachment", { name: sanitizedName });
         
         // Decode base64 to binary
-        const fileBuffer = base64ToArrayBuffer(file.data);
+        const fileBuffer = base64ToArrayBuffer(file.base64);
         
         // Validate actual file size
         if (fileBuffer.byteLength > MAX_FILE_SIZE) {

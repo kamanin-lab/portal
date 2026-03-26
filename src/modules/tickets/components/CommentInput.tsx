@@ -3,13 +3,14 @@ import { motion } from 'motion/react';
 import type { FileData } from '../types/tasks';
 import { dict } from '../lib/dictionary';
 import { AttachmentList, InputToolbar } from './CommentInputParts';
+import { useBreakpoint } from '@/shared/hooks/useBreakpoint';
 
 async function fileToBase64(file: File): Promise<FileData> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve({ name: file.name, data: result.split(',')[1], type: file.type || 'application/octet-stream' });
+      resolve({ name: file.name, base64: result.split(',')[1], type: file.type || 'application/octet-stream', size: file.size });
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -44,8 +45,12 @@ export function CommentInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const minHeight = minRows * LINE_HEIGHT + PADDING_Y;
-  const maxHeight = maxRows * LINE_HEIGHT + PADDING_Y;
+  const { isMobile } = useBreakpoint();
+  const effectiveMinRows = isMobile ? 1 : minRows;
+  const effectiveMaxRows = isMobile ? 4 : maxRows;
+
+  const minHeight = effectiveMinRows * LINE_HEIGHT + PADDING_Y;
+  const maxHeight = effectiveMaxRows * LINE_HEIGHT + PADDING_Y;
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -82,7 +87,7 @@ export function CommentInput({
   const canSend = text.trim().length > 0 || attachments.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="pt-[12px]">
+    <form onSubmit={handleSubmit} className="pt-[12px] sticky bottom-0 bg-bg z-10 max-[768px]:pt-[8px] max-[768px]:pb-[4px] max-[768px]:border-t max-[768px]:border-border/30">
       <motion.div
         animate={{
           borderColor: isFocused ? 'var(--accent)' : 'var(--border)',

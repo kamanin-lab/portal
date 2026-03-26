@@ -77,7 +77,7 @@ export function TicketsPage() {
           />
           <button
             onClick={() => setSupportOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold bg-accent text-white rounded-[var(--r-md)] hover:bg-accent-hover transition-colors cursor-pointer shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold bg-accent text-white rounded-[var(--r-md)] hover:bg-accent-hover transition-colors cursor-pointer shrink-0"
           >
             <MessageCircle size={15} />
             Support

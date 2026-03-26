@@ -17,7 +17,7 @@ async function fileToBase64(file: File): Promise<FileData> {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve({ name: file.name, data: result.split(',')[1], type: file.type || 'application/octet-stream' });
+      resolve({ name: file.name, base64: result.split(',')[1], type: file.type || 'application/octet-stream', size: file.size });
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);

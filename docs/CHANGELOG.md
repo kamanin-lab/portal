@@ -1,5 +1,30 @@
 # Changelog
 
+## Mobile UX + File Attachments + Inbox Improvements — 2026-03-26
+
+### Bug Fixes
+- **Fixed file attachments not sending to ClickUp** — Frontend FileData interface used `data` field but `post-task-comment` and `send-support-message` Edge Functions expected `base64`. Standardized all layers to `base64` + added `size` field. Files were silently dropped before this fix.
+- **Fixed mobile chat input scrolling away** — Made CommentInput sticky at bottom in TaskDetailSheet and SupportPage. Fixed SupportPage container height to account for BottomNav (64px) using `dvh` units.
+- **Fixed project timeline overflow on mobile** — Added `overflow-x-auto` to PhaseTimeline container with `shrink-0` on mobile nodes for horizontal scroll.
+- **Hidden redundant Support button on mobile** — TicketsPage top bar Support button now `hidden md:flex` since BottomNav already provides Support access.
+- **Reduced CommentInput size on mobile** — Uses `useBreakpoint` to set minRows=1/maxRows=4 on mobile (was 3/8), reducing textarea from 84-184px to 44-104px.
+
+### Features
+- **Inbox mobile accordion** — Tapping a notification on mobile now expands it inline with full title, full message (linkified), type badge, and date. Uses Motion for smooth animation.
+- **"Zur Aufgabe" navigation link** — Both desktop detail panel and mobile accordion now show a "Zur Aufgabe" button for task-related notifications, navigating to `/tickets?taskId=...`.
+- **Inbox component extraction** — `NotificationAccordionItem`, `NotificationDetailPanel`, `TypeBadge`, and `formatDate` utility extracted into `src/shared/components/inbox/`.
+
+### Files Changed
+- `src/modules/tickets/types/tasks.ts` — FileData: `data` → `base64`, added `size`
+- `src/modules/tickets/components/CommentInput.tsx` — fileToBase64 fix + sticky + mobile sizing
+- `src/modules/tickets/hooks/useCreateTask.ts` — fileToBase64 fix
+- `supabase/functions/create-clickup-task/index.ts` — `file.data` → `file.base64`
+- `src/modules/tickets/pages/TicketsPage.tsx` — Support button hidden on mobile
+- `src/modules/tickets/pages/SupportPage.tsx` — dvh height fix
+- `src/modules/projects/components/overview/PhaseTimeline.tsx` — overflow-x-auto
+- `src/shared/pages/InboxPage.tsx` — mobile accordion + task link
+- `src/shared/components/inbox/` — 4 new files (accordion, detail panel, badge, utils)
+
 ## Phase 0: Discovery — 2026-03-10
 - Analyzed Lovable codebase at tasks/
 - Generated Supabase types from cloud project

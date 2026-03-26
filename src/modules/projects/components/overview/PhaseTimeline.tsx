@@ -12,7 +12,7 @@ export function PhaseTimeline({ project, onChapterClick }: PhaseTimelineProps) {
 
   return (
     <div
-      className="flex items-center gap-0 mb-3 px-[6px] py-[8px] bg-[var(--surface)] border border-[var(--border-light)] rounded-[var(--r-md)]"
+      className="flex items-center gap-0 mb-3 px-[6px] py-[8px] bg-[var(--surface)] border border-[var(--border-light)] rounded-[var(--r-md)] overflow-x-auto"
       style={{ flexShrink: 0 }}
     >
       {chapters.map((chapter, idx) => {
@@ -21,7 +21,7 @@ export function PhaseTimeline({ project, onChapterClick }: PhaseTimelineProps) {
         const prevCompleted = idx > 0 && getChapterStatus(chapters[idx - 1], project) === 'completed';
 
         return (
-          <div key={chapter.id} className="flex items-center flex-1">
+          <div key={chapter.id} className="flex items-center flex-1 max-[768px]:flex-none max-[768px]:shrink-0">
             <PhaseNode
               chapter={chapter}
               status={status}
