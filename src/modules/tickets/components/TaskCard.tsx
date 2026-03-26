@@ -28,6 +28,7 @@ const STATUS_BORDER_COLORS: Record<string, string> = {
   open:            'var(--phase-2)',
   in_progress:     'var(--phase-2)',
   needs_attention: 'var(--awaiting)',
+  ready:           'var(--ready)',
   approved:        'var(--committed)',
   done:            '#86EFAC',
   on_hold:         'var(--phase-1)',

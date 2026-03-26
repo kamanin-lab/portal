@@ -6,6 +6,7 @@ export type TaskStatus =
   | 'in_progress'
   | 'needs_attention'
   | 'awaiting_approval'
+  | 'ready'
   | 'approved'
   | 'done'
   | 'on_hold'

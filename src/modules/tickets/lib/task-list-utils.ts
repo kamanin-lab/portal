@@ -15,6 +15,8 @@ export function getEmptyMessage(filter: TaskFilter, query: string, activeFilters
   switch (filter) {
     case 'attention':
       return 'Aktuell wartet keine Aufgabe auf Ihre Rückmeldung.'
+    case 'ready':
+      return 'Aktuell gibt es keine bereiten Aufgaben.'
     case 'open':
       return 'Aktuell gibt es keine offenen Aufgaben.'
     case 'in_progress':
@@ -54,6 +56,7 @@ export function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: str
 
   switch (filter) {
     case 'attention':   result = result.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }); break
+    case 'ready':       result = result.filter(t => mapStatus(t.status) === 'ready'); break
     case 'open':        result = result.filter(t => mapStatus(t.status) === 'open'); break
     case 'in_progress': result = result.filter(t => mapStatus(t.status) === 'in_progress'); break
     case 'approved':    result = result.filter(t => mapStatus(t.status) === 'approved'); break

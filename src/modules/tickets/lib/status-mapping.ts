@@ -10,6 +10,7 @@ const STATUS_MAP: Record<string, TaskStatus> = {
   'rework':             'in_progress',
   'client review':      'needs_attention',
   'awaiting approval':  'awaiting_approval',
+  'ready':              'ready',
   'approved':           'approved',
   'complete':           'done',
   'done':               'done',

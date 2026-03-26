@@ -83,6 +83,11 @@
   --credit-approval-bg: #FEF3C7;
   --credit-approval-text: #B45309;
 
+  /* Ready (post credit-approval) */
+  --ready: #059669;
+  --ready-bg: #ECFDF5;
+  --ready-text: #047857;
+
   /* Destructive */
   --destructive: #DC2626;
   --destructive-hover: #B91C1C;

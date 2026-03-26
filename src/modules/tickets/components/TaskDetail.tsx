@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Zap } from 'lucide-react';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { TaskActions } from './TaskActions';
@@ -6,6 +7,30 @@ import { TaskComments } from './TaskComments';
 import { mapStatus } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
 import type { ClickUpTask } from '../types/tasks';
+
+const DESC_MAX_CHARS = 400;
+
+function DescriptionBlock({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const needsTruncate = text.length > DESC_MAX_CHARS;
+  const display = needsTruncate && !expanded ? text.slice(0, DESC_MAX_CHARS) + '…' : text;
+
+  return (
+    <div className="mb-5">
+      <p className="text-[13.5px] text-text-secondary leading-[1.6] whitespace-pre-wrap">
+        {display}
+      </p>
+      {needsTruncate && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="text-[12px] text-accent font-medium mt-1 hover:underline cursor-pointer"
+        >
+          {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   task: ClickUpTask;
@@ -54,11 +79,7 @@ export function TaskDetail({ task, onRead }: Props) {
       </div>
 
       {/* Description */}
-      {task.description && (
-        <p className="text-[13.5px] text-text-secondary leading-[1.6] mb-5 whitespace-pre-wrap">
-          {task.description}
-        </p>
-      )}
+      {task.description && <DescriptionBlock text={task.description} />}
 
       {/* Credit Approval */}
       {portalStatus === 'awaiting_approval' && task.credits != null && task.credits > 0 && (

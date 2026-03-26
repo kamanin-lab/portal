@@ -99,16 +99,15 @@ export function TicketsPage() {
           <button
             onClick={() => setFilterPanelOpen(v => !v)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium border rounded-[var(--r-sm)] transition-colors cursor-pointer',
+              'relative flex items-center justify-center w-8 h-8 border rounded-[var(--r-sm)] transition-colors cursor-pointer',
               filterCount > 0
                 ? 'bg-accent/10 text-accent border-accent/30'
                 : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
             )}
           >
-            <SlidersHorizontal size={13} />
-            Filter
+            <SlidersHorizontal size={16} />
             {filterCount > 0 && (
-              <span className="min-w-[16px] h-[16px] px-[4px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-[4px] rounded-full bg-accent text-white text-[9px] font-bold flex items-center justify-center">
                 {filterCount}
               </span>
             )}

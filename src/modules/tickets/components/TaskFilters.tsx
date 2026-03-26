@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, AlertCircle, Circle, Clock, CheckCircle2, CheckCheck, PauseCircle, XCircle, Layers } from 'lucide-react'
+import { ChevronDown, AlertCircle, Circle, PlayCircle, Clock, CheckCircle2, CheckCheck, PauseCircle, XCircle, Layers } from 'lucide-react'
 import { mapStatus } from '../lib/status-mapping'
 import { STATUS_LABELS } from '../lib/status-dictionary'
 import { cn } from '@/shared/lib/utils'
 import type { ClickUpTask } from '../types/tasks'
 
-export type TaskFilter = 'all' | 'attention' | 'open' | 'in_progress' | 'approved' | 'done' | 'on_hold' | 'cancelled'
+export type TaskFilter = 'all' | 'attention' | 'ready' | 'open' | 'in_progress' | 'approved' | 'done' | 'on_hold' | 'cancelled'
 
 interface Props {
   active: TaskFilter
@@ -18,6 +18,7 @@ function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
     const s = mapStatus(t.status)
     switch (filter) {
       case 'attention':   return s === 'needs_attention' || s === 'awaiting_approval'
+      case 'ready':       return s === 'ready'
       case 'open':        return s === 'open'
       case 'in_progress': return s === 'in_progress'
       case 'approved':    return s === 'approved'
@@ -29,12 +30,13 @@ function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
   }).length
 }
 
-const PRIMARY_FILTERS: TaskFilter[] = ['attention', 'open', 'in_progress', 'approved', 'done', 'all']
-const MORE_FILTERS: TaskFilter[] = ['on_hold', 'cancelled']
+const PRIMARY_FILTERS: TaskFilter[] = ['attention', 'open', 'ready', 'in_progress', 'approved', 'done']
+const MORE_FILTERS: TaskFilter[] = ['on_hold', 'cancelled', 'all']
 
 const FILTER_LABELS: Record<TaskFilter, string> = {
   all:         STATUS_LABELS.all,
   attention:   STATUS_LABELS.needs_attention,
+  ready:       STATUS_LABELS.ready,
   open:        STATUS_LABELS.open,
   in_progress: STATUS_LABELS.in_progress,
   approved:    STATUS_LABELS.approved,
@@ -46,6 +48,7 @@ const FILTER_LABELS: Record<TaskFilter, string> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const STATUS_ICONS: Partial<Record<TaskFilter, React.ComponentType<any>>> = {
   attention:   AlertCircle,
+  ready:       PlayCircle,
   open:        Circle,
   in_progress: Clock,
   approved:    CheckCircle2,
@@ -81,7 +84,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {PRIMARY_FILTERS.map(f => {
         const count = countByFilter(tasks, f)
         const isActive = active === f
@@ -95,14 +98,12 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
           >
             {Icon && <Icon size={11} />}
             {FILTER_LABELS[f]}
-            {f !== 'all' && (
-              <span className={cn(
-                'min-w-[16px] h-[16px] px-[4px] rounded-full text-[10px] font-bold flex items-center justify-center',
-                isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
-              )}>
-                {count}
-              </span>
-            )}
+            <span className={cn(
+              'min-w-[16px] h-[16px] px-[4px] rounded-full text-[10px] font-bold flex items-center justify-center',
+              isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
+            )}>
+              {count}
+            </span>
           </button>
         )
       })}
