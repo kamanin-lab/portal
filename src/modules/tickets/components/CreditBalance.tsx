@@ -15,6 +15,7 @@ function formatPackageName(name: string | null): string {
 }
 
 function getBalanceColor(balance: number, creditsPerMonth: number | null): string {
+  if (balance < 0) return 'text-red-500';
   if (!creditsPerMonth || creditsPerMonth <= 0) return 'text-text-secondary';
   const ratio = balance / creditsPerMonth;
   if (ratio > 0.5) return 'text-credit-ok';
@@ -43,7 +44,7 @@ export function CreditBalance({ compact = false }: Props) {
     return (
       <div
         className="flex flex-col items-center justify-center h-12 mx-1.5"
-        title={`${displayBalance} Credits verfügbar - ${formatPackageName(packageName)} - ${creditsPerMonth}/Monat`}
+        title={`${displayBalance} Credits ${balance < 0 ? 'überzogen' : 'verfügbar'} - ${formatPackageName(packageName)} - ${creditsPerMonth}/Monat`}
       >
         <Zap size={20} className={cn('fill-current', balanceColor)} />
         <span className={cn('text-[9px] font-semibold leading-none mt-0.5', balanceColor)}>
@@ -60,8 +61,8 @@ export function CreditBalance({ compact = false }: Props) {
         <span className={cn('font-bold', balanceColor)}>
           {displayBalance} Credits
         </span>
-        <span className="text-text-tertiary ml-1">
-          verfügbar
+        <span className={cn('ml-1', balance < 0 ? 'text-red-500' : 'text-text-tertiary')}>
+          {balance < 0 ? 'überzogen' : 'verfügbar'}
         </span>
         <div className="text-[11px] text-text-tertiary truncate">
           {formatPackageName(packageName)} · {creditsPerMonth}/Monat

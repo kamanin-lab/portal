@@ -34,11 +34,11 @@ export function TicketsPage() {
   const activeTaskId = searchParams.get('taskId')
   const filterCount = activeFilters.priorities.length + (activeFilters.datePreset ? 1 : 0)
 
-  // Auto-select "Ihre Rückmeldung" filter when tasks in client review exist
+  // Auto-select filter: "Ihre Rückmeldung" if any exist, otherwise fallback to "Offen"
   useEffect(() => {
-    if (!isLoading && tasks.length > 0) {
+    if (!isLoading && tasks.length > 0 && filter === 'attention') {
       const hasAttention = tasks.some(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; })
-      if (hasAttention && filter === 'all') setFilter('attention')
+      if (!hasAttention) setFilter('open')
     }
   }, [isLoading, tasks]) // eslint-disable-line react-hooks/exhaustive-deps
 
