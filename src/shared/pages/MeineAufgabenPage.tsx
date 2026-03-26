@@ -44,7 +44,7 @@ export function MeineAufgabenPage() {
   const activeTaskId = searchParams.get('taskId')
 
   const attentionTasks = useMemo(
-    () => tasks.filter(t => mapStatus(t.status) === 'needs_attention'),
+    () => tasks.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }),
     [tasks],
   )
 
