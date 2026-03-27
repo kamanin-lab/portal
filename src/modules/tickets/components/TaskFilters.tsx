@@ -63,13 +63,17 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
   const moreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
         setMoreOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [])
 
   function chipClass(isActive: boolean, isAttention: boolean) {
@@ -84,46 +88,49 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 max-[768px]:overflow-x-auto max-[768px]:flex-nowrap flex-wrap" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-      {PRIMARY_FILTERS.map(f => {
-        const count = countByFilter(tasks, f)
-        const isActive = active === f
-        const isAttention = f === 'attention'
-        const Icon = STATUS_ICONS[f]
-        return (
-          <button
-            key={f}
-            onClick={() => onChange(f)}
-            className={chipClass(isActive, isAttention)}
-          >
-            {Icon && <Icon size={11} />}
-            {FILTER_LABELS[f]}
-            <span className={cn(
-              'min-w-[16px] h-[16px] px-[4px] rounded-full text-[10px] font-bold flex items-center justify-center',
-              isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
-            )}>
-              {count}
-            </span>
-          </button>
-        )
-      })}
+    <div className="flex items-center gap-1.5">
+      {/* Scrollable chips — overflow only on this inner container */}
+      <div className="flex items-center gap-1.5 max-[768px]:overflow-x-auto max-[768px]:flex-nowrap flex-wrap flex-1 min-w-0" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        {PRIMARY_FILTERS.map(f => {
+          const count = countByFilter(tasks, f)
+          const isActive = active === f
+          const isAttention = f === 'attention'
+          const Icon = STATUS_ICONS[f]
+          return (
+            <button
+              key={f}
+              onClick={() => onChange(f)}
+              className={chipClass(isActive, isAttention)}
+            >
+              {Icon && <Icon size={11} />}
+              {FILTER_LABELS[f]}
+              <span className={cn(
+                'min-w-[16px] h-[16px] px-[4px] rounded-full text-[10px] font-bold flex items-center justify-center',
+                isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
+              )}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
-      {/* Mehr dropdown */}
-      <div ref={moreRef} className="relative">
+      {/* Mehr dropdown — outside scroll container so it's not clipped */}
+      <div ref={moreRef} className="relative shrink-0">
         <button
           onClick={() => setMoreOpen(v => !v)}
           className={cn(
-            'flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-full border transition-colors cursor-pointer',
+            'flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
             MORE_FILTERS.includes(active)
               ? 'bg-accent text-white border-accent'
               : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
           )}
         >
           Mehr
-          <ChevronDown size={11} />
+          <ChevronDown size={11} className={cn('transition-transform duration-200', moreOpen && 'rotate-180')} />
         </button>
         {moreOpen && (
-          <div className="absolute top-full left-0 mt-1 w-44 bg-surface border border-border rounded-[var(--r-md)] shadow-md z-10 py-1">
+          <div className="absolute top-full right-0 mt-1 w-44 bg-surface border border-border rounded-[var(--r-md)] shadow-md z-10 py-1">
             {MORE_FILTERS.map(f => {
               const count = countByFilter(tasks, f)
               const Icon = STATUS_ICONS[f]
