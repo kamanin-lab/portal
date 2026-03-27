@@ -32,11 +32,20 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
+      // Check against parent container (includes the toggle button)
+      // so clicking the button doesn't race with close → reopen
+      const container = ref.current?.parentElement
+      if (container && !container.contains(e.target as Node)) onClose()
     }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside, { passive: true })
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [open, onClose])
 
   if (!open) return null
