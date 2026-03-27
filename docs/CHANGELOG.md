@@ -1,5 +1,28 @@
 # Changelog
 
+## Mobile UX Polish Round 2 — 2026-03-27
+
+### Bug Fixes
+- **Fixed mobile keyboard covering input** — Added `interactive-widget=resizes-content` to viewport meta tag. Layout viewport now resizes when keyboard opens, keeping sticky inputs visible.
+- **Fixed inbox accordion alignment** — Expanded content now uses `pl-9 pr-5` to align with title text (after unread dot). Removed duplicate TypeBadge/date from expanded section.
+- **Fixed file-only sends failing** — Both `post-task-comment` and `send-support-message` Edge Functions now allow empty text when files are attached. `display_text` uses "📎 Dateianhang" placeholder.
+
+### Features
+- **Auto-scroll to latest message** — SupportChat and TaskComments now scroll to the most recent message on load and after sending. Also works in StepDiscussionTab (projects) via TaskComments.
+- **Task filters horizontal scroll on mobile** — Filter chips now scroll horizontally instead of wrapping into 4 rows, using `overflow-x-auto` + `flex-nowrap` on mobile.
+- **Sidebar swipe gesture** — New `useSwipeGesture` hook enables opening sidebar by swiping right from left edge (20px) and closing by swiping left. Vanilla touch events, passive listeners, vertical scroll guard.
+
+### Files Changed
+- `index.html` — viewport meta interactive-widget
+- `src/modules/tickets/components/SupportChat.tsx` — auto-scroll
+- `src/modules/tickets/components/TaskComments.tsx` — auto-scroll
+- `src/modules/tickets/components/TaskFilters.tsx` — mobile horizontal scroll
+- `src/shared/components/inbox/NotificationAccordionItem.tsx` — alignment fix
+- `src/shared/components/layout/AppShell.tsx` — swipe gesture
+- `src/shared/hooks/useSwipeGesture.ts` — new hook
+- `supabase/functions/post-task-comment/index.ts` — file-only send
+- `supabase/functions/send-support-message/index.ts` — file-only send
+
 ## Mobile UX + File Attachments + Inbox Improvements — 2026-03-26
 
 ### Bug Fixes
