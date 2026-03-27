@@ -64,12 +64,7 @@ export function NotificationAccordionItem({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-5 py-4 bg-surface-raised/50 border-b border-border/50">
-              <div className="flex items-center gap-2 mb-2">
-                <TypeBadge type={n.type} />
-                <span className="text-xs text-text-tertiary">{formatDate(n.created_at)}</span>
-              </div>
-              <h3 className="text-sm font-semibold text-text-primary mb-2">{n.title}</h3>
+            <div className="pl-9 pr-5 py-4 bg-surface-raised/50 border-b border-border/50">
               <p className="text-sm text-text-secondary leading-relaxed mb-3">{linkifyText(n.message)}</p>
               {n.task_id && (
                 <button

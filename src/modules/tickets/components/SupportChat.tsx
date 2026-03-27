@@ -14,6 +14,7 @@ interface SupportChatProps {
 export function SupportChat({ onRead, active = true }: SupportChatProps) {
   const { comments, isLoading, error, sendMessage, isSending, isConfigured, supportTaskId } = useSupportTaskChat();
   const calledOnRead = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     calledOnRead.current = false;
@@ -24,6 +25,10 @@ export function SupportChat({ onRead, active = true }: SupportChatProps) {
     calledOnRead.current = true;
     onRead?.();
   }, [active, error, isConfigured, isLoading, onRead]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [comments]);
 
   return (
     <div className="flex flex-col h-full p-[24px] max-[768px]:p-[16px]">
@@ -55,6 +60,7 @@ export function SupportChat({ onRead, active = true }: SupportChatProps) {
             );
           })
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {isConfigured && supportTaskId && (

@@ -227,18 +227,19 @@ Deno.serve(async (req) => {
     const body: SendMessageRequest = await req.json();
     const { message, files } = body;
 
-    // Validate message
-    if (!message || typeof message !== "string") {
+    // Validate message — allow empty text if files are attached
+    const hasFiles = Array.isArray(files) && files.length > 0;
+    if ((!message || typeof message !== "string") && !hasFiles) {
       return new Response(
-        JSON.stringify({ error: "Message is required" }),
+        JSON.stringify({ error: "Message or files are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const trimmedMessage = message.trim();
-    if (trimmedMessage.length === 0) {
+    const trimmedMessage = (message || '').trim();
+    if (trimmedMessage.length === 0 && !hasFiles) {
       return new Response(
-        JSON.stringify({ error: "Message cannot be empty" }),
+        JSON.stringify({ error: "Message or files are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -326,7 +327,8 @@ Deno.serve(async (req) => {
     }
 
     // Build comment text with file references for ClickUp visibility
-    let clickupText = `${clientName} (via Client Portal):\n\n${trimmedMessage}`;
+    const messageBody = trimmedMessage || (uploadedAttachments.length > 0 ? '📎 Dateianhang' : '');
+    let clickupText = `${clientName} (via Client Portal):\n\n${messageBody}`;
     
     // Add attachment references if files were uploaded (so team sees them linked to the message)
     if (uploadedAttachments.length > 0) {
@@ -379,7 +381,7 @@ Deno.serve(async (req) => {
       .insert({
         profile_id: userId,
         message_text: clickupText,
-        display_text: trimmedMessage,
+        display_text: trimmedMessage || (uploadedAttachments.length > 0 ? '📎 Dateianhang' : ''),
         is_from_client: true,
         sender_name: firstName,
         clickup_message_id: clickupCommentId,

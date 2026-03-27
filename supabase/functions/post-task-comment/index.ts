@@ -287,15 +287,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!comment || typeof comment !== 'string' || comment.trim().length === 0) {
+    const hasFiles = Array.isArray(files) && files.length > 0;
+    if ((!comment || typeof comment !== 'string' || comment.trim().length === 0) && !hasFiles) {
       return new Response(
-        JSON.stringify({ error: "Comment text is required" }),
+        JSON.stringify({ error: "Comment text or files are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate comment length
-    if (comment.length > 10000) {
+    // Validate comment length (only when comment text is provided)
+    if (comment && comment.length > 10000) {
       return new Response(
         JSON.stringify({ error: "Comment is too long (max 10,000 characters)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -397,16 +398,19 @@ Deno.serve(async (req) => {
     }
 
     // Build comment text with file references (matching support chat format)
-    let clickupText = `${fullName} (via Client Portal):\n\n${comment.trim()}`;
-    
+    const trimmedComment = (comment || '').trim();
+    const commentBody = trimmedComment || (uploadedAttachments.length > 0 ? '📎 Dateianhang' : '');
+    let clickupText = `${fullName} (via Client Portal):\n\n${commentBody}`;
+
     // Add attachment references to comment text so team sees which files belong to this message
     if (uploadedAttachments.length > 0) {
       const fileList = uploadedAttachments.map(a => `📎 ${a.name}`).join('\n');
       clickupText += `\n\n---\n${fileList}`;
     }
-    
+
     // Clean text for portal display (no prefix, no asterisks, no file references)
-    const displayText = comment.trim();
+    // Use placeholder for file-only sends so UI doesn't show empty bubble
+    const displayText = trimmedComment || (uploadedAttachments.length > 0 ? '📎 Dateianhang' : '');
 
     // Continue only a single unambiguous public thread.
     const threadResolution = await resolveActivePublicThread(taskId, clickupApiToken, log);

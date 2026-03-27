@@ -16,6 +16,7 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
   const { data: comments = [], isLoading, error } = useTaskComments(taskId);
   const { mutateAsync: postComment, isPending: isSending } = usePostComment();
   const calledOnRead = useRef(false);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     calledOnRead.current = false;
@@ -26,6 +27,10 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
     calledOnRead.current = true;
     onRead?.();
   }, [error, isLoading, onRead]);
+
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [comments]);
 
   async function handleSend(text: string, files?: import('../types/tasks').FileData[]) {
     await postComment({ taskId, comment: text, files });
@@ -56,6 +61,7 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
               />
             );
           })}
+          <div ref={commentsEndRef} />
         </div>
       )}
 

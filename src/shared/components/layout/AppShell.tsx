@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar'
 import { MobileHeader } from './MobileHeader'
 import { MobileSidebarOverlay } from './MobileSidebarOverlay'
 import { BottomNav } from './BottomNav'
+import { useSwipeGesture } from '@/shared/hooks/useSwipeGesture'
 
 const PAGE_TITLES: Record<string, string> = {
   '/inbox': 'Inbox',
@@ -28,6 +29,12 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const title = getTitle(location.pathname)
+
+  useSwipeGesture({
+    onSwipeRight: () => setSidebarOpen(true),
+    onSwipeLeft: () => setSidebarOpen(false),
+    isOpen: sidebarOpen,
+  })
 
   return (
     <div className="min-h-screen bg-bg">

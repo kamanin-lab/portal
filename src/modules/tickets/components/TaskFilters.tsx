@@ -84,7 +84,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-1.5 max-[768px]:overflow-x-auto max-[768px]:flex-nowrap flex-wrap" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
       {PRIMARY_FILTERS.map(f => {
         const count = countByFilter(tasks, f)
         const isActive = active === f
