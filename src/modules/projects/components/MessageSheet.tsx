@@ -64,22 +64,22 @@ export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
   return (
     <SideSheet open={open} onClose={handleClose} title="Nachricht senden">
       <div className="p-6">
-        <h2 className="text-[18px] font-bold text-[var(--text-primary)] tracking-[-0.02em] mb-1">
+        <h2 className="text-lg font-bold text-[var(--text-primary)] tracking-[-0.02em] mb-1">
           Nachricht senden
         </h2>
-        <p className="text-[13px] text-[var(--text-secondary)] mb-6">
+        <p className="text-body text-[var(--text-secondary)] mb-6">
           An: KAMANIN Team
         </p>
 
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Bezug
             </label>
             <select
               value={selectedTaskId}
               onChange={e => setSelectedTaskId(e.target.value)}
-              className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full px-3 py-2 text-body bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
             >
               <option value="">Bitte wählen...</option>
               {destinations.map(dest => (
@@ -91,7 +91,7 @@ export function MessageSheet({ project, open, onClose }: MessageSheetProps) {
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Nachricht
             </label>
             <CommentInput

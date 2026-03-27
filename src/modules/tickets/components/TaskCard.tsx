@@ -61,17 +61,17 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
         {/* Card content */}
         <div className="flex-1 flex flex-col min-w-0 px-4 py-3.5">
           {/* Title — max 2 lines */}
-          <h3 className="text-[14px] font-semibold text-text-primary leading-snug line-clamp-2">
+          <h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">
             {task.name}
             {unreadCount > 0 && (
-              <span className="inline-flex items-center justify-center ml-2 min-w-[18px] h-[18px] px-[5px] rounded-full bg-cta text-white text-[10px] font-bold align-middle">
+              <span className="inline-flex items-center justify-center ml-2 min-w-[18px] h-[18px] px-1.5 rounded-full bg-cta text-white text-2xs font-bold align-middle">
                 {unreadCount}
               </span>
             )}
           </h3>
 
           {/* Description — strict 2 lines max */}
-          <p className={`text-[13px] leading-[1.4] line-clamp-2 mt-1 overflow-hidden ${
+          <p className={`text-body leading-[1.4] line-clamp-2 mt-1 overflow-hidden ${
             hasDescription ? 'text-text-secondary' : 'text-text-tertiary italic'
           }`}>
             {preview}
@@ -89,13 +89,13 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
             <CreditBadge credits={task.credits} />
 
             {dueDate && (
-              <span className="inline-flex items-center gap-1 text-[12px] text-text-tertiary">
+              <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
                 <CalendarDays size={12} />
                 {dueDate}
               </span>
             )}
 
-            <span className="flex items-center gap-1 text-[12px] text-text-tertiary ml-auto">
+            <span className="flex items-center gap-1 text-xs text-text-tertiary ml-auto">
               <User size={12} />
               {task.created_by_name || 'Team'}
             </span>

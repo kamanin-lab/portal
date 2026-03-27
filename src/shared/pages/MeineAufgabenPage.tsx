@@ -66,14 +66,14 @@ export function MeineAufgabenPage() {
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-1">
         <ClipboardCheck size={20} className="text-accent" />
-        <h1 className="text-[17px] font-semibold text-text-primary">Meine Aufgaben</h1>
+        <h1 className="text-lg font-semibold text-text-primary">Meine Aufgaben</h1>
         {attentionTasks.length > 0 && (
-          <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-cta text-white text-[11px] font-bold flex items-center justify-center">
+          <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-cta text-white text-xxs font-bold flex items-center justify-center">
             {attentionTasks.length}
           </span>
         )}
       </div>
-      <p className="text-[13px] text-text-tertiary mb-6">
+      <p className="text-body text-text-tertiary mb-6">
         Aufgaben, die Ihre Rückmeldung erfordern
       </p>
 
@@ -95,7 +95,7 @@ export function MeineAufgabenPage() {
           {/* Section divider */}
           <div className="flex items-center gap-3 mb-3">
             <div className="h-px flex-1 bg-border" />
-            <span className="text-[12px] font-medium text-text-tertiary uppercase tracking-wider shrink-0">
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider shrink-0">
               {listName}
             </span>
             <div className="h-px flex-1 bg-border" />

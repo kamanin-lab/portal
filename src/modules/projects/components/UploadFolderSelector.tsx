@@ -55,13 +55,13 @@ export function UploadFolderSelector({
     <>
       {/* Chapter selector */}
       <div>
-        <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
+        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
           Ordner
         </label>
         <select
           value={selectedChapter}
           onChange={(e) => { onChapterChange(e.target.value); onSubfolderChange(''); }}
-          className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+          className="w-full px-3 py-2 text-body bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
         >
           <option value="">{'\u2014 Ordner w\u00E4hlen \u2014'}</option>
           {chapterFolders.map((cf) => (
@@ -73,16 +73,16 @@ export function UploadFolderSelector({
       {/* Subfolder selector */}
       {selectedChapter && (
         loadingSubfolders ? (
-          <div className="text-[12px] text-[var(--text-tertiary)]">Wird geladen...</div>
+          <div className="text-xs text-[var(--text-tertiary)]">Wird geladen...</div>
         ) : subfolders.length > 0 ? (
           <div>
-            <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Unterordner (optional)
             </label>
             <select
               value={selectedSubfolder}
               onChange={(e) => onSubfolderChange(e.target.value)}
-              className="w-full px-[12px] py-[8px] text-[13px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full px-3 py-2 text-body bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
             >
               <option value="">{'\u2014 Hauptordner \u2014'}</option>
               {subfolders.map((sf) => (
@@ -101,7 +101,7 @@ export function UploadFolderSelector({
             onChange={(e) => setNewFolderName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); }}
             placeholder="Neuer Unterordner..."
-            className="flex-1 px-[10px] py-[6px] text-[12px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
+            className="flex-1 px-2.5 py-1.5 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-sm)] outline-none focus:border-[var(--accent)] transition-colors"
           />
           <Button
             variant="outline"

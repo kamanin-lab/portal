@@ -23,7 +23,7 @@ export function StepOverviewTab({ step, project }: StepOverviewTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-[14px]">
+    <div className="flex flex-col gap-3.5">
       {/* Action bar for awaiting_input */}
       {step.status === 'awaiting_input' && (
         <StepActionBar taskId={step.clickupTaskId} projectId={project.id} />
@@ -53,7 +53,7 @@ export function StepOverviewTab({ step, project }: StepOverviewTabProps) {
         <div className="border border-border-light rounded-[var(--r-md)]">
           <button
             onClick={() => toggleSection('linkedTasks')}
-            className="w-full flex items-center justify-between px-[14px] py-[12px] text-[13px] font-medium text-text-primary hover:bg-surface-hover transition-colors rounded-t-[var(--r-md)] cursor-pointer"
+            className="w-full flex items-center justify-between px-3.5 py-3 text-body font-medium text-text-primary hover:bg-surface-hover transition-colors rounded-t-[var(--r-md)] cursor-pointer"
           >
             <span>Verknuepfte Aufgaben ({linkedTasks.length})</span>
             <ChevronRight
@@ -62,16 +62,16 @@ export function StepOverviewTab({ step, project }: StepOverviewTabProps) {
             />
           </button>
           {expandedSections.linkedTasks && (
-            <div className="border-t border-border-light px-[14px] py-[10px] flex flex-col gap-[8px]">
+            <div className="border-t border-border-light px-3.5 py-2.5 flex flex-col gap-2">
               {linkedTasks.map(t => (
-                <div key={t.id} className="flex items-center gap-[10px]">
+                <div key={t.id} className="flex items-center gap-2.5">
                   <span
                     className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${
                       t.status === 'needs-attention' ? 'bg-awaiting' : 'bg-phase-2'
                     }`}
                   />
-                  <span className="flex-1 text-[12.5px] text-text-primary">{t.title}</span>
-                  <span className={`text-[11px] font-medium ${
+                  <span className="flex-1 text-body text-text-primary">{t.title}</span>
+                  <span className={`text-xxs font-medium ${
                     t.status === 'needs-attention' ? 'text-awaiting' : 'text-phase-2'
                   }`}>
                     {taskStatusLabel(t.status)}
@@ -106,7 +106,7 @@ function ExpandableSection({ title, body, defaultOpen = false, toggleable = true
     <div className="border border-border-light rounded-[var(--r-md)]">
       <button
         onClick={handleToggle}
-        className={`w-full flex items-center justify-between px-[14px] py-[12px] text-[13px] font-medium text-text-primary transition-colors rounded-[var(--r-md)] ${
+        className={`w-full flex items-center justify-between px-3.5 py-3 text-body font-medium text-text-primary transition-colors rounded-[var(--r-md)] ${
           toggleable ? 'hover:bg-surface-hover cursor-pointer' : 'cursor-default'
         }`}
       >
@@ -119,7 +119,7 @@ function ExpandableSection({ title, body, defaultOpen = false, toggleable = true
         )}
       </button>
       {open && (
-        <div className="border-t border-border-light px-[14px] py-[12px] text-[13px] text-text-secondary leading-[1.6]">
+        <div className="border-t border-border-light px-3.5 py-3 text-body text-text-secondary leading-[1.6]">
           {body}
         </div>
       )}

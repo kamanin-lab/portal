@@ -59,7 +59,7 @@ export function MessagesTab({ comments, isLoading }: MessagesTabProps) {
           variant="outline"
           size="sm"
           onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-          className="mt-[8px] self-center"
+          className="mt-2 self-center"
         >
           Mehr anzeigen
         </Button>
@@ -77,7 +77,7 @@ function CommentFeedItem({ comment }: { comment: ProjectComment }) {
     : comment.stepTitle;
 
   return (
-    <div className="flex gap-[10px] px-[6px] py-[8px] rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-[var(--surface-hover)]">
+    <div className="flex gap-2.5 px-1.5 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-[var(--surface-hover)]">
       {/* Avatar */}
       <div
         className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0"
@@ -87,24 +87,24 @@ function CommentFeedItem({ comment }: { comment: ProjectComment }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         {/* Header: name + time */}
-        <div className="flex items-baseline gap-[6px]">
-          <span className="text-[12px] font-semibold text-[var(--text-primary)]">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xs font-semibold text-[var(--text-primary)]">
             {comment.authorName}
           </span>
-          <span className="text-[10px] text-[var(--text-tertiary)] whitespace-nowrap">
+          <span className="text-2xs text-[var(--text-tertiary)] whitespace-nowrap">
             {formatCommentTime(comment.createdAt)}
           </span>
         </div>
 
         {/* Comment text (truncated to ~2 lines) */}
-        <p className="text-[12.5px] text-[var(--text-secondary)] leading-[1.4] line-clamp-2 break-words">
+        <p className="text-body text-[var(--text-secondary)] leading-[1.4] line-clamp-2 break-words">
           {linkifyText(comment.text)}
         </p>
 
         {/* Step/chapter context tag */}
-        <span className="text-[10px] text-[var(--text-tertiary)] mt-[1px] truncate">
+        <span className="text-2xs text-[var(--text-tertiary)] mt-0.5 truncate">
           {contextLabel}
         </span>
       </div>

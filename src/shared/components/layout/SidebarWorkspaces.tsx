@@ -38,7 +38,7 @@ interface Props {
 function WorkspaceBadge({ count }: { count: number }) {
   if (count <= 0) return null
   return (
-    <span className="min-w-[16px] h-[16px] px-[4px] rounded-full bg-cta text-white text-[9px] font-bold flex items-center justify-center leading-none ml-auto shrink-0">
+    <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center leading-none ml-auto shrink-0">
       {count > 99 ? '99+' : count}
     </span>
   )
@@ -58,7 +58,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavig
   return (
     <div className="py-1">
       {expanded && (
-        <div className="px-5 pb-1.5 pt-0.5 text-[10px] uppercase tracking-[2px] text-text-sidebar/60 font-medium whitespace-nowrap">
+        <div className="px-5 pb-1.5 pt-0.5 text-2xs uppercase tracking-[2px] text-text-sidebar/60 font-medium whitespace-nowrap">
           Workspaces
         </div>
       )}
@@ -99,7 +99,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavig
                   onClick={onNavigate}
                   className={({ isActive }) => cn(
                     'flex items-center h-9 pl-9 pr-3.5 mx-1.5 rounded-[8px] transition-colors',
-                    'text-text-sidebar/80 hover:bg-sidebar-hover hover:text-white text-[13px]',
+                    'text-text-sidebar/80 hover:bg-sidebar-hover hover:text-white text-body',
                     isActive && 'bg-sidebar-active text-white'
                   )}
                 >

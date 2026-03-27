@@ -38,12 +38,12 @@ export function BottomNav() {
             <div className="relative">
               <Icon size={20} />
               {badge > 0 && (
-                <span className="absolute -top-[4px] -right-[6px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-cta text-white text-[8px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute -top-[4px] -right-[6px] min-w-[14px] h-[14px] px-1 rounded-full bg-cta text-white text-3xs font-bold flex items-center justify-center leading-none">
                   {badge > 99 ? '99+' : badge}
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-medium">{label}</span>
+            <span className="text-2xs font-medium">{label}</span>
           </NavLink>
         )
       })}

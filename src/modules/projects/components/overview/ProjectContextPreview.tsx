@@ -13,22 +13,22 @@ export function ProjectContextPreview({ entries }: ProjectContextPreviewProps) {
   if (entries.length === 0) return null;
 
   return (
-    <aside className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-[18px] flex flex-col gap-[12px]">
+    <aside className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 flex flex-col gap-3">
       <div>
-        <div className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-[8px]">Known context</div>
-        <div className="text-[15px] font-semibold text-[var(--text-primary)] mb-[4px]">Useful context already agreed or safe to share</div>
-        <p className="text-[12.5px] text-[var(--text-secondary)] leading-[1.55]">This preview is filtered for client-safe context only. Internal team notes stay off overview surfaces.</p>
+        <div className="text-xxs font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-2">Known context</div>
+        <div className="text-md font-semibold text-[var(--text-primary)] mb-1">Useful context already agreed or safe to share</div>
+        <p className="text-body text-[var(--text-secondary)] leading-[1.55]">This preview is filtered for client-safe context only. Internal team notes stay off overview surfaces.</p>
       </div>
       {entries.map(entry => (
-        <div key={entry.id} className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-[12px] py-[10px]">
-          <div className="flex items-center justify-between gap-[8px] mb-[4px]">
-            <div className="text-[11px] font-semibold text-[var(--text-primary)] uppercase tracking-[0.04em]">{entry.category.replace('_', ' ')}</div>
+        <div key={entry.id} className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="text-xxs font-semibold text-[var(--text-primary)] uppercase tracking-[0.04em]">{entry.category.replace('_', ' ')}</div>
             {entry.visibility !== 'internal' ? (
-              <div className="text-[10px] text-[var(--text-tertiary)]">{VISIBILITY_COPY[entry.visibility]}</div>
+              <div className="text-2xs text-[var(--text-tertiary)]">{VISIBILITY_COPY[entry.visibility]}</div>
             ) : null}
           </div>
-          <div className="text-[12px] font-medium text-[var(--text-primary)] leading-[1.45] mb-[3px]">{entry.title}</div>
-          <div className="text-[12px] text-[var(--text-secondary)] leading-[1.5] line-clamp-3">{entry.body}</div>
+          <div className="text-xs font-medium text-[var(--text-primary)] leading-[1.45] mb-1">{entry.title}</div>
+          <div className="text-xs text-[var(--text-secondary)] leading-[1.5] line-clamp-3">{entry.body}</div>
         </div>
       ))}
     </aside>

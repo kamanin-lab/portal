@@ -13,8 +13,8 @@ export function TasksPage({ project }: TasksPageProps) {
 
   return (
     <ContentContainer width="narrow">
-    <div className="p-[24px] max-[768px]:p-[16px]">
-      <h1 className="text-[1.2rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[20px]">
+    <div className="p-6 max-[768px]:p-4">
+      <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-5">
         Aufgaben
       </h1>
 
@@ -41,7 +41,7 @@ export function TasksPage({ project }: TasksPageProps) {
       )}
 
       {project.tasks.length === 0 && (
-        <p className="text-[13px] text-[var(--text-tertiary)]">Keine Aufgaben vorhanden.</p>
+        <p className="text-body text-[var(--text-tertiary)]">Keine Aufgaben vorhanden.</p>
       )}
     </div>
     </ContentContainer>
@@ -61,14 +61,14 @@ function TaskGroup({ label, count, headerColor, headerBg, tasks, project }: Task
   const navigate = useNavigate();
 
   return (
-    <div className="mb-[20px]">
+    <div className="mb-5">
       <div
-        className="flex items-center gap-[8px] px-[12px] py-[8px] rounded-t-[var(--r-md)] text-[12px] font-semibold"
+        className="flex items-center gap-2 px-3 py-2 rounded-t-[var(--r-md)] text-xs font-semibold"
         style={{ color: headerColor, background: headerBg }}
       >
         {label}
         <span
-          className="inline-flex items-center justify-center text-[10px] font-bold text-white rounded-full"
+          className="inline-flex items-center justify-center text-2xs font-bold text-white rounded-full"
           style={{ background: headerColor, minWidth: 18, height: 18, padding: '0 5px' }}
         >
           {count}
@@ -85,21 +85,21 @@ function TaskGroup({ label, count, headerColor, headerBg, tasks, project }: Task
             <div
               key={task.id}
               onClick={() => navigate(`/projekte/schritt/${task.stepId}`)}
-              className={`flex items-start justify-between gap-[10px] px-[14px] py-[12px] cursor-pointer hover:bg-[var(--surface-hover)] transition-colors ${
+              className={`flex items-start justify-between gap-2.5 px-3.5 py-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors ${
                 idx > 0 ? 'border-t border-[var(--border-light)]' : ''
               }`}
             >
-              <div className="flex items-start gap-[10px]">
+              <div className="flex items-start gap-2.5">
                 <span
-                  className="w-[8px] h-[8px] rounded-full mt-[5px] flex-shrink-0"
+                  className="w-[8px] h-[8px] rounded-full mt-1.5 flex-shrink-0"
                   style={{ background: task.status === 'needs-attention' ? 'var(--awaiting)' : getPhaseColor(2).main }}
                 />
                 <div>
-                  <div className="text-[13px] font-medium text-[var(--text-primary)] leading-[1.4]">
+                  <div className="text-body font-medium text-[var(--text-primary)] leading-[1.4]">
                     {task.title}
                   </div>
                   {stepResult && (
-                    <div className="text-[11px] text-[var(--text-tertiary)] mt-[2px]">
+                    <div className="text-xxs text-[var(--text-tertiary)] mt-0.5">
                       {stepResult.step.title}
                     </div>
                   )}

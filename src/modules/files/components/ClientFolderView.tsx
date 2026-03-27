@@ -27,7 +27,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
     <>
       {/* Breadcrumbs — only when inside a subfolder */}
       {!isRoot && (
-        <nav className="flex items-center gap-[4px] text-[13px] mb-[16px] flex-wrap">
+        <nav className="flex items-center gap-1 text-body mb-4 flex-wrap">
           <button
             onClick={() => onNavigate([])}
             className="text-[var(--accent)] hover:underline transition-colors"
@@ -35,7 +35,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
             Dateien
           </button>
           {pathSegments.map((seg, idx) => (
-            <span key={idx} className="flex items-center gap-[4px]">
+            <span key={idx} className="flex items-center gap-1">
               <ChevronRight size={12} className="text-[var(--text-tertiary)]" />
               {idx === pathSegments.length - 1 ? (
                 <span className="text-[var(--text-primary)] font-medium">{seg}</span>
@@ -65,16 +65,16 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
           {/* Subfolders */}
           {folders.length > 0 && (
             isRoot ? (
-              <div className="grid grid-cols-3 gap-[10px] max-[768px]:grid-cols-2">
+              <div className="grid grid-cols-3 gap-2.5 max-[768px]:grid-cols-2">
                 {folders.map((f) => (
                   <button
                     key={f.path || f.name}
                     onClick={() => onNavigate([...pathSegments, f.name])}
-                    className="p-[16px] rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-left transition-all hover:-translate-y-px hover:border-[var(--accent)]"
+                    className="p-4 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-left transition-all hover:-translate-y-px hover:border-[var(--accent)]"
                   >
-                    <div className="flex items-center gap-[8px]">
+                    <div className="flex items-center gap-2">
                       <Folder size={16} className="text-[var(--accent)] flex-shrink-0" />
-                      <span className="text-[13px] font-semibold text-[var(--text-primary)]">
+                      <span className="text-body font-semibold text-[var(--text-primary)]">
                         {f.name}
                       </span>
                     </div>
@@ -82,15 +82,15 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col gap-[2px] mb-[12px]">
+              <div className="flex flex-col gap-0.5 mb-3">
                 {folders.map((f) => (
                   <button
                     key={f.path || f.name}
                     onClick={() => onNavigate([...pathSegments, f.name])}
-                    className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors text-left"
                   >
                     <Folder size={16} className="text-[var(--accent)] flex-shrink-0" />
-                    <span className="text-[13px] font-medium text-[var(--text-primary)]">
+                    <span className="text-body font-medium text-[var(--text-primary)]">
                       {f.name}
                     </span>
                   </button>
@@ -101,7 +101,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
 
           {/* Files */}
           {fileItems.length > 0 && (
-            <div className="flex flex-col gap-[2px] mb-[12px]">
+            <div className="flex flex-col gap-0.5 mb-3">
               {fileItems.map((f) => (
                 <ClientFileRow key={f.path || f.name} file={f} />
               ))}

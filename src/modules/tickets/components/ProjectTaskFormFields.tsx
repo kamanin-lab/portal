@@ -14,14 +14,14 @@ export function ProjectTaskFormFields({ chapters, selectedChapter, onChapterChan
   if (chapters.length === 0) return null;
 
   return (
-    <div className="mb-[14px]">
-      <label className="block text-[12.5px] font-medium text-text-secondary mb-[6px]">
+    <div className="mb-3.5">
+      <label className="block text-body font-medium text-text-secondary mb-1.5">
         Phase
       </label>
       <select
         value={selectedChapter}
         onChange={e => onChapterChange(e.target.value)}
-        className="w-full px-[12px] py-[8px] text-[13px] bg-surface border border-border rounded-[var(--r-sm)] outline-none focus:border-accent transition-colors cursor-pointer"
+        className="w-full px-3 py-2 text-body bg-surface border border-border rounded-[var(--r-sm)] outline-none focus:border-accent transition-colors cursor-pointer"
       >
         <option value="">Keine Phase zugewiesen</option>
         {chapters.map(ch => (

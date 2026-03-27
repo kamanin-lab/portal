@@ -109,7 +109,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
 
   return (
     <div
-      className="relative overflow-hidden rounded-[var(--r-lg)] mb-[18px]"
+      className="relative overflow-hidden rounded-[var(--r-lg)] mb-5"
       style={{
         background: content.tint,
         border: `1px solid color-mix(in srgb, ${content.phase}, transparent 82%)`,
@@ -125,9 +125,9 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
         }}
       />
 
-      <div className="flex items-center gap-[6px] mb-[8px]" style={{ color: content.phase }}>
+      <div className="flex items-center gap-1.5 mb-2" style={{ color: content.phase }}>
         {content.eyebrowIcon}
-        <span className="text-[10px] font-bold tracking-[0.08em] uppercase">{content.eyebrow}</span>
+        <span className="text-2xs font-bold tracking-[0.08em] uppercase">{content.eyebrow}</span>
         {content.eyebrowPulse && (
           <span
             className="w-[6px] h-[6px] rounded-full"
@@ -139,20 +139,20 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
         )}
       </div>
 
-      <div className="text-[22px] font-bold text-[var(--text-primary)] tracking-[-0.025em] leading-[1.2] mb-[10px]">
+      <div className="text-xl font-bold text-[var(--text-primary)] tracking-[-0.025em] leading-[1.2] mb-2.5">
         {content.title}
       </div>
 
-      <div className="text-[13.5px] text-[var(--text-secondary)] leading-[1.6] max-w-[520px] mb-[18px]">
+      <div className="text-body text-[var(--text-secondary)] leading-[1.6] max-w-[520px] mb-5">
         {content.description}
       </div>
 
       {(content.primaryCta || content.ghostCta) && (
-        <div className="flex items-center gap-[10px]">
+        <div className="flex items-center gap-2.5">
           {content.primaryCta && (
             <button
               onClick={content.primaryCta.onClick}
-              className="px-[16px] py-[8px] text-[13px] font-semibold text-white rounded-[var(--r-sm)] transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
+              className="px-4 py-2 text-body font-semibold text-white rounded-[var(--r-sm)] transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
               style={{ background: content.phase }}
             >
               {content.primaryCta.label}
@@ -161,7 +161,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
           {content.ghostCta && (
             <button
               onClick={content.ghostCta.onClick}
-              className="px-[14px] py-[7px] text-[13px] font-medium text-[var(--text-secondary)] border border-[var(--border)] bg-white/60 rounded-[var(--r-sm)] transition-all duration-150 hover:border-[var(--border)] hover:bg-white"
+              className="px-3.5 py-2 text-body font-medium text-[var(--text-secondary)] border border-[var(--border)] bg-white/60 rounded-[var(--r-sm)] transition-all duration-150 hover:border-[var(--border)] hover:bg-white"
             >
               {content.ghostCta.label}
             </button>
@@ -170,7 +170,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       )}
 
       {content.summary && (
-        <div className="text-[11px] text-[var(--text-tertiary)] mt-[14px] opacity-70">
+        <div className="text-xxs text-[var(--text-tertiary)] mt-3.5 opacity-70">
           {content.summary}
         </div>
       )}

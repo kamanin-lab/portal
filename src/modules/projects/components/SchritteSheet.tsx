@@ -22,12 +22,12 @@ export function SchritteSheet({ project, kapitelId, onClose, onOpenStep }: Schri
 
   return (
     <SideSheet open={!!kapitelId} onClose={onClose} title="Projektablauf">
-      <div className="p-[24px] max-[768px]:p-[16px]">
-        <h2 className="text-[1rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[20px]">
+      <div className="p-6 max-[768px]:p-4">
+        <h2 className="text-base font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-5">
           Projektablauf
         </h2>
 
-        <div className="flex flex-col gap-[8px]">
+        <div className="flex flex-col gap-2">
           {project.chapters.map(chapter => (
             <ChapterRow
               key={chapter.id}
@@ -63,16 +63,16 @@ function ChapterRow({
     <div className="border border-[var(--border-light)] rounded-[var(--r-md)] overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-[12px] px-[14px] py-[12px] hover:bg-[var(--surface-hover)] transition-colors text-left"
+        className="w-full flex items-center gap-3 px-3.5 py-3 hover:bg-[var(--surface-hover)] transition-colors text-left"
       >
         <span
           className="w-[10px] h-[10px] rounded-full flex-shrink-0"
           style={{ background: pc.main }}
         />
-        <span className="flex-1 text-[13.5px] font-semibold text-[var(--text-primary)]">
+        <span className="flex-1 text-body font-semibold text-[var(--text-primary)]">
           {chapter.title}
         </span>
-        <span className="text-[11px] text-[var(--text-tertiary)]">{progress}</span>
+        <span className="text-xxs text-[var(--text-tertiary)]">{progress}</span>
         {isExpanded ? (
           <ChevronDown size={14} className="text-[var(--text-tertiary)]" />
         ) : (
@@ -86,14 +86,14 @@ function ChapterRow({
             <div
               key={step.id}
               onClick={() => onOpenStep(step.id)}
-              className={`flex items-center gap-[12px] px-[18px] py-[11px] cursor-pointer hover:bg-[var(--surface-hover)] transition-colors ${
+              className={`flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors ${
                 idx > 0 ? 'border-t border-[var(--border-light)]' : ''
               }`}
             >
               <StepStatusDot status={step.status} />
-              <span className="flex-1 text-[13px] text-[var(--text-primary)]">{step.title}</span>
+              <span className="flex-1 text-body text-[var(--text-primary)]">{step.title}</span>
               <span
-                className={`text-[11px] font-medium px-[6px] py-[2px] rounded-[var(--r-sm)] ${
+                className={`text-xxs font-medium px-1.5 py-0.5 rounded-[var(--r-sm)] ${
                   step.status === 'committed'
                     ? 'bg-[var(--committed-bg)] text-[var(--committed)]'
                     : step.status === 'awaiting_input'
@@ -104,7 +104,7 @@ function ChapterRow({
                 {statusLabel(step.status)}
               </span>
               {step.updatedAt && (
-                <span className="text-[10.5px] text-[var(--text-tertiary)] hidden md:block">
+                <span className="text-2xs text-[var(--text-tertiary)] hidden md:block">
                   {step.updatedAt}
                 </span>
               )}
@@ -120,7 +120,7 @@ function StepStatusDot({ status }: { status: string }) {
   if (status === 'committed') {
     return (
       <div className="w-[14px] h-[14px] rounded-full bg-[var(--committed)] flex items-center justify-center flex-shrink-0">
-        <span className="text-[8px] text-white font-bold">✓</span>
+        <span className="text-3xs text-white font-bold">✓</span>
       </div>
     );
   }

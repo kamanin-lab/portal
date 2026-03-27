@@ -87,7 +87,7 @@ export function CommentInput({
   const canSend = text.trim().length > 0 || attachments.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="pt-[12px] sticky bottom-0 bg-bg z-10 max-[768px]:pt-[8px] max-[768px]:pb-[4px] max-[768px]:border-t max-[768px]:border-border/30">
+    <form onSubmit={handleSubmit} className="pt-3 sticky bottom-0 bg-bg z-10 max-[768px]:pt-2 max-[768px]:pb-1 max-[768px]:border-t max-[768px]:border-border/30">
       <motion.div
         animate={{
           borderColor: isFocused ? 'var(--accent)' : 'var(--border)',
@@ -112,7 +112,7 @@ export function CommentInput({
             maxHeight: `${maxHeight}px`,
             lineHeight: `${LINE_HEIGHT}px`,
           }}
-          className="w-full px-[14px] py-[12px] text-[13px] text-text-primary placeholder:text-text-tertiary bg-transparent border-none outline-none resize-none disabled:opacity-50"
+          className="w-full px-3.5 py-3 text-body text-text-primary placeholder:text-text-tertiary bg-transparent border-none outline-none resize-none disabled:opacity-50"
         />
 
         {attachments.length > 0 && (

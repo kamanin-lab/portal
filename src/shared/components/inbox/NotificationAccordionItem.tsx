@@ -72,7 +72,7 @@ export function NotificationAccordionItem({
                     e.stopPropagation()
                     onGoToTask(n.task_id!)
                   }}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:text-accent/80 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-body font-medium text-accent hover:text-accent/80 transition-colors"
                 >
                   Zur Aufgabe
                   <ArrowRight size={14} />

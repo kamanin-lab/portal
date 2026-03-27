@@ -9,7 +9,7 @@ interface LoadingSkeletonProps {
 
 export function LoadingSkeleton({ lines = 3, height = '20px', className }: LoadingSkeletonProps) {
   return (
-    <div className={cn('flex flex-col gap-[10px]', className)}>
+    <div className={cn('flex flex-col gap-2.5', className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={i}

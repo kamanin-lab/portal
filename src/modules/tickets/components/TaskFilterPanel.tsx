@@ -74,7 +74,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
     >
       {/* Priority section */}
       <div className="px-3 pt-2 pb-1">
-        <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide mb-2">Priorität</p>
+        <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-wide mb-2">Priorität</p>
         {PRIORITY_OPTIONS.map(p => {
           const checked = activeFilters.priorities.includes(p)
           return (
@@ -82,7 +82,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
               key={p}
               onClick={() => togglePriority(p)}
               className={cn(
-                'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-[var(--r-sm)] text-[13px] transition-colors',
+                'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-[var(--r-sm)] text-body transition-colors',
                 checked ? 'bg-accent/10 text-accent' : 'hover:bg-surface-raised text-text-secondary'
               )}
             >
@@ -103,7 +103,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
 
       {/* Date preset section */}
       <div className="px-3 pt-1 pb-2">
-        <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide mb-2">Fälligkeitsdatum</p>
+        <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-wide mb-2">Fälligkeitsdatum</p>
         {DATE_PRESETS.map(({ value, label }) => {
           const active = activeFilters.datePreset === value
           return (
@@ -111,7 +111,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
               key={value}
               onClick={() => setDatePreset(value)}
               className={cn(
-                'w-full flex items-center gap-2 px-2 py-1.5 rounded-[var(--r-sm)] text-[13px] transition-colors',
+                'w-full flex items-center gap-2 px-2 py-1.5 rounded-[var(--r-sm)] text-body transition-colors',
                 active ? 'bg-accent/10 text-accent font-medium' : 'hover:bg-surface-raised text-text-secondary'
               )}
             >
@@ -134,7 +134,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
           <div className="px-3 py-2">
             <button
               onClick={clearAll}
-              className="w-full text-center text-[12px] text-text-tertiary hover:text-text-secondary transition-colors py-1"
+              className="w-full text-center text-xs text-text-tertiary hover:text-text-secondary transition-colors py-1"
             >
               Filter löschen
             </button>

@@ -77,7 +77,7 @@ export function TicketsPage() {
           />
           <button
             onClick={() => setSupportOpen(true)}
-            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold bg-accent text-white rounded-[var(--r-md)] hover:bg-accent-hover transition-colors cursor-pointer shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold bg-accent text-white rounded-[var(--r-md)] hover:bg-accent-hover transition-colors cursor-pointer shrink-0"
           >
             <MessageCircle size={15} />
             Support
@@ -107,7 +107,7 @@ export function TicketsPage() {
           >
             <SlidersHorizontal size={16} />
             {filterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-[4px] rounded-full bg-accent text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center">
                 {filterCount}
               </span>
             )}

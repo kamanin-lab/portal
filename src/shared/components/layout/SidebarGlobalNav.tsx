@@ -13,7 +13,7 @@ interface Props {
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null
   return (
-    <span className="min-w-[16px] h-[16px] px-[4px] rounded-full bg-cta text-white text-[9px] font-bold flex items-center justify-center leading-none ml-auto shrink-0">
+    <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center leading-none ml-auto shrink-0">
       {count > 99 ? '99+' : count}
     </span>
   )
@@ -34,7 +34,7 @@ export function SidebarGlobalNav({ expanded, inboxCount, attentionCount, onNavig
         <div className="relative shrink-0">
           <HugeiconsIcon icon={InboxIcon} size={20} />
           {!expanded && inboxCount > 0 && (
-            <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-cta text-white text-[8px] font-bold flex items-center justify-center leading-none">
+            <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-1 rounded-full bg-cta text-white text-3xs font-bold flex items-center justify-center leading-none">
               {inboxCount > 99 ? '99+' : inboxCount}
             </span>
           )}
@@ -59,7 +59,7 @@ export function SidebarGlobalNav({ expanded, inboxCount, attentionCount, onNavig
         <div className="relative shrink-0">
           <HugeiconsIcon icon={TaskDone01Icon} size={20} />
           {!expanded && attentionCount > 0 && (
-            <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-cta text-white text-[8px] font-bold flex items-center justify-center leading-none">
+            <span className="absolute -top-[5px] -right-[5px] min-w-[14px] h-[14px] px-1 rounded-full bg-cta text-white text-3xs font-bold flex items-center justify-center leading-none">
               {attentionCount > 99 ? '99+' : attentionCount}
             </span>
           )}

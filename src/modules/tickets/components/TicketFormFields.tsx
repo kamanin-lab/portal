@@ -27,8 +27,8 @@ export function TicketFormFields({
   return (
     <>
       {/* Subject */}
-      <div className="mb-[14px]">
-        <label className="block text-[12.5px] font-medium text-text-secondary mb-[6px]">
+      <div className="mb-3.5">
+        <label className="block text-body font-medium text-text-secondary mb-1.5">
           {dict.dialogs.subjectLabel}
         </label>
         <Input
@@ -40,8 +40,8 @@ export function TicketFormFields({
       </div>
 
       {/* Description */}
-      <div className="mb-[14px]">
-        <label className="block text-[12.5px] font-medium text-text-secondary mb-[6px]">
+      <div className="mb-3.5">
+        <label className="block text-body font-medium text-text-secondary mb-1.5">
           {dict.dialogs.descLabel}
         </label>
         <Textarea
@@ -53,11 +53,11 @@ export function TicketFormFields({
       </div>
 
       {/* Priority selector */}
-      <div className="mb-[14px]">
-        <label className="block text-[12.5px] font-medium text-text-secondary mb-[6px]">
+      <div className="mb-3.5">
+        <label className="block text-body font-medium text-text-secondary mb-1.5">
           Prioritaet
         </label>
-        <div className="flex gap-[6px]">
+        <div className="flex gap-1.5">
           {PRIORITIES.map(p => {
             const selected = priority === p.value;
             return (
@@ -65,7 +65,7 @@ export function TicketFormFields({
                 key={p.value}
                 type="button"
                 onClick={() => onPriorityChange(p.value)}
-                className="flex-1 inline-flex items-center justify-center gap-[4px] px-[8px] py-[6px] text-[12px] font-medium rounded-[var(--r-sm)] border transition-all duration-150 cursor-pointer"
+                className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-[var(--r-sm)] border transition-all duration-150 cursor-pointer"
                 style={{
                   background: selected ? p.bg : 'transparent',
                   borderColor: selected ? p.color : 'var(--border)',

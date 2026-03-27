@@ -8,15 +8,15 @@ export function ProjectHelpPage() {
 
   return (
     <ContentContainer width="narrow">
-    <div className="p-[24px] max-[768px]:p-[16px]">
-      <h1 className="text-[1.2rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[8px]">
+    <div className="p-6 max-[768px]:p-4">
+      <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-2">
         Hilfe & Support
       </h1>
-      <p className="text-[13px] text-[var(--text-secondary)] mb-[28px]">
+      <p className="text-body text-[var(--text-secondary)] mb-7">
         Haben Sie Fragen zu Ihrem Projekt? Unser Team hilft Ihnen gerne weiter.
       </p>
 
-      <div className="flex flex-col gap-[12px]">
+      <div className="flex flex-col gap-3">
         <ContactCard
           icon={<MessageSquare size={18} />}
           title="Nachricht senden"
@@ -58,7 +58,7 @@ function ContactCard({ icon, title, sub, phaseIndex, onClick }: ContactCardProps
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-[14px] px-[16px] py-[14px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-md)] cursor-pointer text-left transition-all hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0"
+      className="flex items-center gap-3.5 px-4 py-3.5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-md)] cursor-pointer text-left transition-all hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0"
     >
       <div
         className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center flex-shrink-0"
@@ -67,8 +67,8 @@ function ContactCard({ icon, title, sub, phaseIndex, onClick }: ContactCardProps
         {icon}
       </div>
       <div>
-        <div className="text-[13.5px] font-semibold text-[var(--text-primary)]">{title}</div>
-        <div className="text-[12px] text-[var(--text-tertiary)] mt-[2px]">{sub}</div>
+        <div className="text-body font-semibold text-[var(--text-primary)]">{title}</div>
+        <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{sub}</div>
       </div>
     </button>
   );

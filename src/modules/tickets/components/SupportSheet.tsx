@@ -15,7 +15,7 @@ export function SupportSheet({ open, onClose }: SupportSheetProps) {
   return (
     <SideSheet open={open} onClose={onClose} title="Support">
       <div className="h-full flex flex-col">
-        <div className="px-5 py-3 border-b border-border text-[12px] text-text-tertiary">
+        <div className="px-5 py-3 border-b border-border text-xs text-text-tertiary">
           Direkter Kanal zum Team für allgemeine Rückfragen und Support.
         </div>
         <SupportChat active={open} onRead={() => markAsRead('support')} />

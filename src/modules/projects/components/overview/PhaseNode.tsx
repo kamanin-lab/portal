@@ -18,7 +18,7 @@ export function PhaseNode({ chapter, status, onClick }: PhaseNodeProps) {
   return (
     <button
       onClick={onClick}
-      className={`phase-node phase-node--${status} flex-1 flex items-center gap-[9px] px-[10px] py-[7px] rounded-[var(--r-sm)] transition-all duration-[180ms] cursor-pointer border border-transparent`}
+      className={`phase-node phase-node--${status} flex-1 flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--r-sm)] transition-all duration-[180ms] cursor-pointer border border-transparent`}
       style={status === 'current' ? {
         background: 'rgba(43,24,120,0.07)',
         border: '1px solid rgba(43,24,120,0.15)',
@@ -28,20 +28,20 @@ export function PhaseNode({ chapter, status, onClick }: PhaseNodeProps) {
     >
       <PhaseNodeDot status={status} />
       <div className="flex flex-col gap-0">
-        <span className={`text-[12.5px] font-semibold leading-[1.3] ${
+        <span className={`text-body font-semibold leading-[1.3] ${
           status === 'completed' ? 'text-[var(--text-primary)]' :
           status === 'current' ? 'text-[var(--accent)] font-bold' :
           'text-[var(--text-tertiary)] font-[450]'
         }`}>
           {chapter.title}
         </span>
-        <span className={`text-[10px] mt-[2px] ${
+        <span className={`text-2xs mt-0.5 ${
           status === 'current' ? 'text-[var(--accent)]' : 'text-[var(--text-tertiary)]'
         }`}>
           {progress}
         </span>
         {stateLabel && (
-          <span className={`text-[9px] font-semibold tracking-[0.03em] mt-[2px] ${
+          <span className={`text-2xs font-semibold tracking-[0.03em] mt-0.5 ${
             status === 'completed' ? 'text-[var(--committed)]' :
             status === 'current' ? 'text-[var(--accent)]' :
             'text-[var(--text-tertiary)] opacity-60'
@@ -60,7 +60,7 @@ function PhaseNodeDot({ status }: { status: ChapterStatus }) {
   if (status === 'completed') {
     return (
       <div className={`${base} w-[14px] h-[14px] border-[var(--committed)] bg-[var(--committed)]`}>
-        <span className="text-[8px] text-white font-bold leading-none">✓</span>
+        <span className="text-3xs text-white font-bold leading-none">✓</span>
       </div>
     );
   }
@@ -78,7 +78,7 @@ function PhaseNodeDot({ status }: { status: ChapterStatus }) {
 
   return (
     <div className={`${base} w-[14px] h-[14px] border-[var(--border)] bg-[var(--surface)]`}>
-      <span className="text-[9px] font-semibold text-[var(--text-tertiary)] opacity-50 leading-none">–</span>
+      <span className="text-2xs font-semibold text-[var(--text-tertiary)] opacity-50 leading-none">–</span>
     </div>
   );
 }

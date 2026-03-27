@@ -24,9 +24,9 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
     <div className="flex-1 min-h-0 flex flex-col">
       <Tabs defaultValue="updates" className="flex-1 min-h-0 flex flex-col">
         <TabsList className="flex-shrink-0">
-          <TabsTrigger value="updates" className="px-[20px] py-[10px]">Aktivit&auml;t</TabsTrigger>
-          <TabsTrigger value="dateien" className="px-[20px] py-[10px]">Dateien</TabsTrigger>
-          <TabsTrigger value="nachrichten" className="px-[20px] py-[10px]">Nachrichten</TabsTrigger>
+          <TabsTrigger value="updates" className="px-5 py-2.5">Aktivit&auml;t</TabsTrigger>
+          <TabsTrigger value="dateien" className="px-5 py-2.5">Dateien</TabsTrigger>
+          <TabsTrigger value="nachrichten" className="px-5 py-2.5">Nachrichten</TabsTrigger>
         </TabsList>
 
         <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>

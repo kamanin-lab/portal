@@ -59,9 +59,9 @@ export function AppShell() {
       {/* Main content */}
       <main
         className="
-          md:ml-[56px]
-          pt-[52px] md:pt-0
-          pb-[64px] md:pb-0
+          md:ml-14
+          pt-13 md:pt-0
+          pb-16 md:pb-0
           min-h-screen
         "
       >

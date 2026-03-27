@@ -72,7 +72,7 @@ export function FileUpload({ projectConfigId, chapterSortOrder, subPath, disable
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={`
-        flex items-center justify-center gap-[8px] px-[16px] py-[14px]
+        flex items-center justify-center gap-2 px-4 py-3.5
         rounded-[var(--r-md)] border border-dashed transition-colors cursor-pointer
         ${isDragOver
           ? 'border-[var(--accent)] bg-[var(--accent)]/5'
@@ -94,7 +94,7 @@ export function FileUpload({ projectConfigId, chapterSortOrder, subPath, disable
       ) : (
         <Upload size={16} className="text-[var(--text-tertiary)]" />
       )}
-      <span className="text-[12px] text-[var(--text-secondary)]">
+      <span className="text-xs text-[var(--text-secondary)]">
         {isUploading ? 'Wird hochgeladen...' : 'Datei hochladen oder hierhin ziehen'}
       </span>
     </div>

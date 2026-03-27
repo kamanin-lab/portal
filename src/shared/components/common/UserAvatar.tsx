@@ -2,7 +2,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/shared/components/ui/avat
 import { cn } from '@/shared/lib/utils';
 
 const SIZE_CLASSES = {
-  sm: 'h-7 w-7 text-[10px]',
+  sm: 'h-7 w-7 text-2xs',
   md: 'h-9 w-9 text-xs',
   lg: 'h-14 w-14 text-lg',
 } as const;

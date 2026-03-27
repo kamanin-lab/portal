@@ -57,7 +57,7 @@ export function InboxPage() {
             <Bell size={18} className="text-text-secondary" />
             <h1 className="text-base font-semibold text-text-primary">Inbox</h1>
             {unreadCount > 0 && (
-              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-cta text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}

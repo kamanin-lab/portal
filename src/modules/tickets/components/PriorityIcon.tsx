@@ -81,7 +81,7 @@ export function PriorityIcon({ priority, size = 14, showLabel = false, className
     <span className={`inline-flex items-center gap-1 ${className}`} style={{ color }}>
       {icon}
       {showLabel && label && (
-        <span className="text-[11px] font-medium leading-none">{label}</span>
+        <span className="text-xxs font-medium leading-none">{label}</span>
       )}
     </span>
   )

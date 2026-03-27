@@ -14,15 +14,15 @@ export function FolderCard({ title, order, isSelected, onClick }: FolderCardProp
   return (
     <button
       onClick={onClick}
-      className="p-[12px] rounded-[var(--r-md)] border text-left transition-all hover:-translate-y-px"
+      className="p-3 rounded-[var(--r-md)] border text-left transition-all hover:-translate-y-px"
       style={{
         background: isSelected ? pc.light : 'var(--surface)',
         borderColor: isSelected ? pc.main : 'var(--border)',
       }}
     >
-      <div className="flex items-center gap-[6px] mb-[2px]">
+      <div className="flex items-center gap-1.5 mb-0.5">
         <Folder size={13} style={{ color: pc.main }} />
-        <span className="text-[12px] font-semibold truncate" style={{ color: pc.text }}>
+        <span className="text-xs font-semibold truncate" style={{ color: pc.text }}>
           {title}
         </span>
       </div>

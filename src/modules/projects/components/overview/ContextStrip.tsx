@@ -12,16 +12,16 @@ export function ContextStrip({ project, onChapterClick }: ContextStripProps) {
   const { teamWorkingOn } = project;
 
   return (
-    <div className="flex-shrink-0 mb-[22px] pb-[14px] border-b border-[var(--border-light)]">
+    <div className="flex-shrink-0 mb-6 pb-3.5 border-b border-[var(--border-light)]">
       <PhaseTimeline project={project} onChapterClick={onChapterClick} />
 
       {/* Narrative */}
-      <p className="text-[13px] text-[var(--text-secondary)] leading-[1.55] mb-[6px]">
+      <p className="text-body text-[var(--text-secondary)] leading-[1.55] mb-1.5">
         {narrative}
       </p>
 
       {/* Team status line */}
-      <div className="flex items-center gap-[6px] text-[11.5px] text-[var(--text-secondary)]">
+      <div className="flex items-center gap-1.5 text-xxs text-[var(--text-secondary)]">
         <span
           className="w-[6px] h-[6px] rounded-full bg-[var(--committed)] flex-shrink-0"
         />

@@ -31,8 +31,8 @@ export function DateienPage() {
 
   return (
     <ContentContainer width="narrow">
-      <div className="p-[24px] max-[768px]:p-[16px]">
-        <h1 className="text-[1.2rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[20px]">
+      <div className="p-6 max-[768px]:p-4">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-5">
           Dateien
         </h1>
 

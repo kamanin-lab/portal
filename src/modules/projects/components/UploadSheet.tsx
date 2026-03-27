@@ -42,7 +42,7 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
   return (
     <SideSheet open={open} onClose={onClose} title="Datei hochladen">
       <div className="p-6">
-        <h2 className="text-[18px] font-bold text-[var(--text-primary)] tracking-[-0.02em] mb-6">
+        <h2 className="text-lg font-bold text-[var(--text-primary)] tracking-[-0.02em] mb-6">
           Datei hochladen
         </h2>
 

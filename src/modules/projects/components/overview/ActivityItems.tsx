@@ -49,7 +49,7 @@ export function StatusActivityItem({ event, project, onOpenStep }: {
 
   return (
     <div
-      className={`flex gap-[10px] items-center px-[8px] py-[7px] rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`flex gap-2.5 items-center px-2 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
       onClick={isClickable ? () => onOpenStep!(stepId!) : undefined}
     >
       <div
@@ -58,11 +58,11 @@ export function StatusActivityItem({ event, project, onOpenStep }: {
       >
         <Icon size={13} />
       </div>
-      <div className="flex-1 min-w-0 flex items-baseline gap-[8px]">
-        <span className="text-[12.5px] text-text-primary font-medium leading-[1.35]">
+      <div className="flex-1 min-w-0 flex items-baseline gap-2">
+        <span className="text-body text-text-primary font-medium leading-[1.35]">
           {event.text}
         </span>
-        <span className="text-[10px] text-text-tertiary whitespace-nowrap flex-shrink-0">
+        <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0">
           {event.timestamp}
         </span>
       </div>
@@ -78,29 +78,29 @@ export function CommentActivityItem({ event }: { event: ActivityEvent }) {
     : event.stepTitle;
 
   return (
-    <div className="flex gap-[10px] px-[8px] py-[7px] rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover">
+    <div className="flex gap-2.5 px-2 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover">
       <div
         className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center flex-shrink-0"
         style={{ background: 'var(--phase-1-light)', color: 'var(--phase-1)' }}
       >
         <MessageSquare size={13} />
       </div>
-      <div className="flex-1 min-w-0 flex flex-col gap-[1px]">
-        <div className="flex items-baseline gap-[6px]">
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-baseline gap-1.5">
           {event.author && (
-            <span className="text-[12px] font-semibold text-text-primary">
+            <span className="text-xs font-semibold text-text-primary">
               {event.author}
             </span>
           )}
-          <span className="text-[10px] text-text-tertiary whitespace-nowrap">
+          <span className="text-2xs text-text-tertiary whitespace-nowrap">
             {event.timestamp}
           </span>
         </div>
-        <p className="text-[12.5px] text-text-secondary leading-[1.4] line-clamp-2 break-words">
+        <p className="text-body text-text-secondary leading-[1.4] line-clamp-2 break-words">
           {linkifyText(event.text)}
         </p>
         {contextLabel && (
-          <span className="text-[10px] text-text-tertiary mt-[1px] truncate">
+          <span className="text-2xs text-text-tertiary mt-0.5 truncate">
             {contextLabel}
           </span>
         )}

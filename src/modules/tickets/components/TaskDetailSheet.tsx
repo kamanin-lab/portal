@@ -18,7 +18,7 @@ function SheetMessage({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex h-full min-h-[280px] items-center justify-center px-6 py-10 text-center">
       <div className="max-w-[340px] space-y-2">
-        <h2 className="text-[15px] font-semibold text-text-primary">{title}</h2>
+        <h2 className="text-md font-semibold text-text-primary">{title}</h2>
         <p className="text-sm leading-6 text-text-tertiary">{body}</p>
       </div>
     </div>

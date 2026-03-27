@@ -34,7 +34,7 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-[51] w-[min(440px,calc(100vw-32px))] translate-x-[-50%] translate-y-[-50%] rounded-[var(--r-lg)] border border-border bg-surface p-[24px] pt-[28px] shadow-[var(--shadow-xl)]",
+        "fixed left-[50%] top-[50%] z-[51] w-[min(440px,calc(100vw-32px))] translate-x-[-50%] translate-y-[-50%] rounded-[var(--r-lg)] border border-border bg-surface p-6 pt-7 shadow-[var(--shadow-xl)]",
         className
       )}
       {...props}
@@ -48,7 +48,7 @@ const AlertDialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("flex flex-col gap-[10px] mb-[24px]", className)}
+    className={cn("flex flex-col gap-2.5 mb-6", className)}
     {...props}
   />
 )
@@ -59,7 +59,7 @@ const AlertDialogFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("flex justify-end gap-[10px]", className)}
+    className={cn("flex justify-end gap-2.5", className)}
     {...props}
   />
 )
@@ -71,7 +71,7 @@ const AlertDialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn("text-[16px] font-semibold text-text-primary", className)}
+    className={cn("text-base font-semibold text-text-primary", className)}
     {...props}
   />
 ))
@@ -83,7 +83,7 @@ const AlertDialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
-    className={cn("text-[14px] text-text-secondary leading-[1.5]", className)}
+    className={cn("text-sm text-text-secondary leading-[1.5]", className)}
     {...props}
   />
 ))

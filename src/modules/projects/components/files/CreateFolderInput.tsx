@@ -38,7 +38,7 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
         onClick={() => setIsOpen(true)}
         variant="ghost"
         size="sm"
-        className="text-accent hover:text-accent-hover mt-[8px] p-0 h-auto text-[12px]"
+        className="text-accent hover:text-accent-hover mt-2 p-0 h-auto text-xs"
       >
         <FolderPlus size={14} />
         Neuen Ordner erstellen
@@ -48,7 +48,7 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
 
   return (
     <>
-      <div className="flex items-center gap-[8px] mt-[8px]">
+      <div className="flex items-center gap-2 mt-2">
         <Input
           autoFocus
           value={name}
@@ -73,7 +73,7 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
           Abbrechen
         </Button>
       </div>
-      {error && <p className="text-[11px] text-red-500 mt-[4px]">{error}</p>}
+      {error && <p className="text-xxs text-red-500 mt-1">{error}</p>}
     </>
   );
 }

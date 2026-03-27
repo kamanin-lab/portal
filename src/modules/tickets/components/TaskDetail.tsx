@@ -17,13 +17,13 @@ function DescriptionBlock({ text }: { text: string }) {
 
   return (
     <div className="mb-5">
-      <p className="text-[13.5px] text-text-secondary leading-[1.6] whitespace-pre-wrap">
+      <p className="text-body text-text-secondary leading-[1.6] whitespace-pre-wrap">
         {display}
       </p>
       {needsTruncate && (
         <button
           onClick={() => setExpanded(v => !v)}
-          className="text-[12px] text-accent font-medium mt-1 hover:underline cursor-pointer"
+          className="text-xs text-accent font-medium mt-1 hover:underline cursor-pointer"
         >
           {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
         </button>
@@ -50,7 +50,7 @@ export function TaskDetail({ task, onRead }: Props) {
     <div className="p-6 max-[768px]:p-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h1 className="text-[20px] font-bold text-text-primary tracking-[-0.02em] leading-[1.2] flex-1">
+        <h1 className="text-xl font-bold text-text-primary tracking-[-0.02em] leading-[1.2] flex-1">
           {task.name}
         </h1>
         <div className="shrink-0 mt-1">
@@ -59,7 +59,7 @@ export function TaskDetail({ task, onRead }: Props) {
       </div>
 
       {/* Meta row */}
-      <div className="flex flex-wrap gap-3 text-[11.5px] text-text-tertiary mb-5">
+      <div className="flex flex-wrap gap-3 text-xxs text-text-tertiary mb-5">
         {task.list_name && <span>{task.list_name}</span>}
         {task.created_by_name && (
           <span>{dict.labels.createdBy}: {task.created_by_name}</span>

@@ -23,7 +23,7 @@ export function ActivityFeed({ events, project, isLoading, onOpenStep }: Activit
 
   if (events.length === 0) {
     return (
-      <p className="text-[12.5px] text-text-tertiary px-[8px] py-[7px]">
+      <p className="text-body text-text-tertiary px-2 py-2">
         Noch keine Aktivitaeten.
       </p>
     );
@@ -42,7 +42,7 @@ export function ActivityFeed({ events, project, isLoading, onOpenStep }: Activit
           onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
           variant="outline"
           size="sm"
-          className="mt-[8px] self-center text-[12.5px]"
+          className="mt-2 self-center text-body"
         >
           Mehr anzeigen
         </Button>

@@ -10,19 +10,19 @@ interface ProjectContextAdminPanelProps {
 }
 
 const CATEGORY_LABELS: Record<MemoryEntry['category'], string> = {
-  profile: 'Profile',
-  communication: 'Communication',
-  technical_constraint: 'Technical constraint',
-  delivery_constraint: 'Delivery constraint',
-  decision: 'Decision',
-  risk: 'Risk',
-  commercial_context: 'Commercial context',
+  profile: 'Profil',
+  communication: 'Kommunikation',
+  technical_constraint: 'Technische Einschränkung',
+  delivery_constraint: 'Liefereinschränkung',
+  decision: 'Entscheidung',
+  risk: 'Risiko',
+  commercial_context: 'Kommerzieller Kontext',
 };
 
 const VISIBILITY_LABELS: Record<MemoryEntry['visibility'], string> = {
-  internal: 'Internal',
-  shared: 'Shared',
-  client_visible: 'Client visible',
+  internal: 'Intern',
+  shared: 'Geteilt',
+  client_visible: 'Für Kunden sichtbar',
 };
 
 export function ProjectContextAdminPanel({ project }: ProjectContextAdminPanelProps) {
@@ -48,77 +48,77 @@ export function ProjectContextAdminPanel({ project }: ProjectContextAdminPanelPr
   }
 
   return (
-    <section className="rounded-[var(--r-lg)] border border-amber-200 bg-amber-50/70 p-[18px] mb-[18px]">
-      <div className="flex items-start justify-between gap-[12px] mb-[14px] max-[768px]:flex-col">
+    <section className="rounded-[var(--r-lg)] border border-amber-200 bg-amber-50/70 p-5 mb-5">
+      <div className="flex items-start justify-between gap-3 mb-3.5 max-[768px]:flex-col">
         <div>
-          <div className="text-[11px] font-bold tracking-[0.08em] uppercase text-amber-700 mb-[6px]">Internal operator memory</div>
-          <h2 className="text-[18px] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[6px]">Author and maintain project memory</h2>
-          <p className="text-[13px] text-[var(--text-secondary)] leading-[1.55] max-w-[760px]">
-            This operator-only panel can create, edit, and archive shared memory entries through the secure backend write path. It stays hidden unless the signed-in account is explicitly allow-listed.
+          <div className="text-xxs font-bold tracking-[0.08em] uppercase text-amber-700 mb-1.5">Internes Operator-Memory</div>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-1.5">Projekt-Memory verwalten</h2>
+          <p className="text-body text-[var(--text-secondary)] leading-[1.55] max-w-[760px]">
+            Dieses Operator-Panel ermöglicht das Erstellen, Bearbeiten und Archivieren von Memory-Einträgen über den sicheren Backend-Schreibpfad. Es bleibt verborgen, sofern das angemeldete Konto nicht explizit freigegeben ist.
           </p>
         </div>
         <button
           onClick={() => { setEditingEntry(null); setSheetOpen(true); }}
-          className="inline-flex items-center gap-[8px] rounded-[var(--r-sm)] bg-[var(--text-primary)] px-[12px] py-[8px] text-[12px] font-semibold text-white hover:opacity-90"
+          className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
         >
           <Plus size={14} />
-          Add memory
+          Eintrag hinzufügen
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-[8px] mb-[12px]">
+      <div className="flex flex-wrap gap-2 mb-3">
         {(['all', 'internal', 'shared', 'client_visible'] as const).map(option => (
           <button
             key={option}
             onClick={() => setActiveVisibility(option)}
-            className={`rounded-full px-[10px] py-[5px] text-[11px] font-semibold border ${activeVisibility === option ? 'border-[var(--text-primary)] bg-white text-[var(--text-primary)]' : 'border-amber-200 bg-white/70 text-[var(--text-secondary)]'}`}
+            className={`rounded-full px-2.5 py-1.5 text-xxs font-semibold border ${activeVisibility === option ? 'border-[var(--text-primary)] bg-white text-[var(--text-primary)]' : 'border-amber-200 bg-white/70 text-[var(--text-secondary)]'}`}
           >
-            {option === 'all' ? 'All visibilities' : VISIBILITY_LABELS[option]}
+            {option === 'all' ? 'Alle Sichtbarkeiten' : VISIBILITY_LABELS[option]}
           </button>
         ))}
       </div>
 
-      <div className="flex flex-col gap-[10px]">
+      <div className="flex flex-col gap-2.5">
         {isLoading ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-amber-200 bg-white/60 px-[14px] py-[16px] text-[12.5px] text-[var(--text-secondary)]">
-            Loading internal memory…
+          <div className="rounded-[var(--r-md)] border border-dashed border-amber-200 bg-white/60 px-3.5 py-4 text-body text-[var(--text-secondary)]">
+            Internes Memory wird geladen…
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-amber-200 bg-white/60 px-[14px] py-[16px] text-[12.5px] text-[var(--text-secondary)]">
-            No memory entries match this filter yet.
+          <div className="rounded-[var(--r-md)] border border-dashed border-amber-200 bg-white/60 px-3.5 py-4 text-body text-[var(--text-secondary)]">
+            Keine Memory-Einträge entsprechen diesem Filter.
           </div>
         ) : filteredEntries.map(entry => (
-          <article key={entry.id} className="rounded-[var(--r-md)] border border-amber-100 bg-white px-[14px] py-[14px]">
-            <div className="flex items-start justify-between gap-[12px] mb-[8px] max-[768px]:flex-col">
+          <article key={entry.id} className="rounded-[var(--r-md)] border border-amber-100 bg-white px-3.5 py-3.5">
+            <div className="flex items-start justify-between gap-3 mb-2 max-[768px]:flex-col">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-[6px] mb-[6px]">
-                  <Badge>{entry.scope === 'project' ? 'Project' : 'Client'}</Badge>
+                <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                  <Badge>{entry.scope === 'project' ? 'Projekt' : 'Kunde'}</Badge>
                   <Badge>{CATEGORY_LABELS[entry.category]}</Badge>
                   <Badge tone={entry.visibility}>{VISIBILITY_LABELS[entry.visibility]}</Badge>
                 </div>
-                <h3 className="text-[14px] font-semibold text-[var(--text-primary)] leading-[1.45] mb-[4px]">{entry.title}</h3>
-                <p className="text-[12.5px] text-[var(--text-secondary)] leading-[1.6] whitespace-pre-wrap">{entry.body}</p>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] leading-[1.45] mb-1">{entry.title}</h3>
+                <p className="text-body text-[var(--text-secondary)] leading-[1.6] whitespace-pre-wrap">{entry.body}</p>
               </div>
-              <div className="flex items-center gap-[8px] shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => { setEditingEntry(entry); setSheetOpen(true); }}
-                  className="inline-flex items-center gap-[6px] rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-[10px] py-[7px] text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                  className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-2.5 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
                 >
                   <Pencil size={13} />
-                  Edit
+                  Bearbeiten
                 </button>
                 <button
                   onClick={() => handleArchive(entry.id)}
                   disabled={isArchiving}
-                  className="inline-flex items-center gap-[6px] rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-[10px] py-[7px] text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-2.5 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-60"
                 >
                   <Archive size={13} />
-                  Archive
+                  Archivieren
                 </button>
               </div>
             </div>
-            <div className="text-[11px] text-[var(--text-tertiary)]">
-              Updated {new Date(entry.updated_at).toLocaleDateString('de-DE')}
+            <div className="text-xxs text-[var(--text-tertiary)]">
+              Aktualisiert {new Date(entry.updated_at).toLocaleDateString('de-DE')}
             </div>
           </article>
         ))}
@@ -147,7 +147,7 @@ function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone
   const Icon = tone === 'internal' ? ShieldCheck : BookOpenText;
 
   return (
-    <span className={`inline-flex items-center gap-[4px] rounded-full px-[8px] py-[3px] text-[10.5px] font-semibold ${toneClass}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-semibold ${toneClass}`}>
       <Icon size={11} />
       {children}
     </span>

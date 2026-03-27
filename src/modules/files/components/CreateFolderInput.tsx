@@ -47,14 +47,14 @@ export function CreateFolderInput({ currentSubPath, onSuccess, onClose }: Create
   }, [handleCreate, onClose]);
 
   return (
-    <div className="flex items-center gap-[6px]">
+    <div className="flex items-center gap-1.5">
       <Input
         autoFocus
         value={folderName}
         onChange={(e) => setFolderName(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Ordnername..."
-        className="max-w-[260px] h-8 text-[12px]"
+        className="max-w-[260px] h-8 text-xs"
         disabled={isCreating}
       />
       <Button

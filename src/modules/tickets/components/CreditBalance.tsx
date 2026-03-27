@@ -31,7 +31,7 @@ export function CreditBalance({ compact = false }: Props) {
   if (!packageName) {
     if (compact) return null;
     return (
-      <div className="px-3.5 py-2 text-[11px] text-text-tertiary">
+      <div className="px-3.5 py-2 text-xxs text-text-tertiary">
         Kein Paket aktiv
       </div>
     );
@@ -47,7 +47,7 @@ export function CreditBalance({ compact = false }: Props) {
         title={`${displayBalance} Credits ${balance < 0 ? 'überzogen' : 'verfügbar'} - ${formatPackageName(packageName)} - ${creditsPerMonth}/Monat`}
       >
         <Zap size={20} className={cn('fill-current', balanceColor)} />
-        <span className={cn('text-[9px] font-semibold leading-none mt-0.5', balanceColor)}>
+        <span className={cn('text-2xs font-semibold leading-none mt-0.5', balanceColor)}>
           {displayBalance}
         </span>
       </div>
@@ -55,7 +55,7 @@ export function CreditBalance({ compact = false }: Props) {
   }
 
   return (
-    <div className="px-4 py-2.5 flex items-center gap-2 text-[12px]">
+    <div className="px-4 py-2.5 flex items-center gap-2 text-xs">
       <Zap size={16} className={cn('shrink-0 fill-current', balanceColor)} />
       <div className="min-w-0">
         <span className={cn('font-bold', balanceColor)}>
@@ -64,7 +64,7 @@ export function CreditBalance({ compact = false }: Props) {
         <span className={cn('ml-1', balance < 0 ? 'text-red-500' : 'text-text-tertiary')}>
           {balance < 0 ? 'überzogen' : 'verfügbar'}
         </span>
-        <div className="text-[11px] text-text-tertiary truncate">
+        <div className="text-xxs text-text-tertiary truncate">
           {formatPackageName(packageName)} · {creditsPerMonth}/Monat
         </div>
       </div>

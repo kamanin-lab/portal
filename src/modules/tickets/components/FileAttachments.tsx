@@ -9,8 +9,8 @@ interface FileAttachmentsProps {
 
 export function FileAttachments({ files, setFiles, fileInputRef }: FileAttachmentsProps) {
   return (
-    <div className="mb-[14px]">
-      <label className="block text-[12.5px] font-medium text-text-secondary mb-[6px]">Anhaenge</label>
+    <div className="mb-3.5">
+      <label className="block text-body font-medium text-text-secondary mb-1.5">Anhänge</label>
       <input
         ref={fileInputRef}
         type="file" multiple className="hidden"
@@ -23,15 +23,15 @@ export function FileAttachments({ files, setFiles, fileInputRef }: FileAttachmen
         disabled={files.length >= 5}
         variant="outline"
         size="sm"
-        className="text-[12px] border-dashed"
+        className="text-xs border-dashed"
       >
         <Paperclip size={13} />
-        Dateien hinzufuegen
+        Dateien hinzufügen
       </Button>
       {files.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {files.map((f, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-surface-active rounded text-[11px] text-text-secondary">
+            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-surface-active rounded text-xxs text-text-secondary">
               {f.name}
               <button type="button" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="hover:text-red-500 cursor-pointer">
                 <X size={12} />
@@ -40,7 +40,7 @@ export function FileAttachments({ files, setFiles, fileInputRef }: FileAttachmen
           ))}
         </div>
       )}
-      <p className="text-[11px] text-text-tertiary mt-1">Max. 5 Dateien, je 10 MB</p>
+      <p className="text-xxs text-text-tertiary mt-1">Max. 5 Dateien, je 10 MB</p>
     </div>
   );
 }

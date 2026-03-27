@@ -51,7 +51,7 @@ export function QuickActions({ overview, onOpenStep, onOpenMessage, onOpenUpload
     ));
 
   return (
-    <div className="grid grid-cols-3 gap-[10px] mb-[24px] max-[768px]:grid-cols-2 max-[420px]:grid-cols-1">
+    <div className="grid grid-cols-3 gap-2.5 mb-6 max-[768px]:grid-cols-2 max-[420px]:grid-cols-1">
       {cards.map((card) => (
         <QACard key={card.id} {...card} />
       ))}
@@ -63,7 +63,7 @@ function QACard({ label, sub, icon, accent, bg, count, countBg, onClick }: Quick
   return (
     <button
       onClick={onClick}
-      className="group flex items-center gap-3 px-[16px] py-[14px] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-md)] cursor-pointer text-left transition-all duration-[180ms] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[var(--qa-accent)] active:translate-y-0"
+      className="group flex items-center gap-3 px-4 py-3.5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--r-md)] cursor-pointer text-left transition-all duration-[180ms] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[var(--qa-accent)] active:translate-y-0"
       style={
         {
           '--qa-accent': accent,
@@ -77,18 +77,18 @@ function QACard({ label, sub, icon, accent, bg, count, countBg, onClick }: Quick
         {icon}
       </div>
       <div className="flex flex-col">
-        <span className="text-[13px] font-semibold text-[var(--text-primary)] leading-[1.3] flex items-center gap-[6px]">
+        <span className="text-body font-semibold text-[var(--text-primary)] leading-[1.3] flex items-center gap-1.5">
           {label}
           {count !== null && (
             <span
-              className="inline-flex items-center justify-center text-[10px] font-bold text-white leading-none rounded-[9px]"
+              className="inline-flex items-center justify-center text-2xs font-bold text-white leading-none rounded-[9px]"
               style={{ background: countBg, minWidth: 18, height: 18, padding: '0 5px' }}
             >
               {count}
             </span>
           )}
         </span>
-        <span className="text-[10.5px] text-[var(--text-tertiary)] mt-[2px] leading-[1.3]">{sub}</span>
+        <span className="text-2xs text-[var(--text-tertiary)] mt-0.5 leading-[1.3]">{sub}</span>
       </div>
     </button>
   );

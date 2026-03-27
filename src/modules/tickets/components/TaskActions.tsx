@@ -30,14 +30,14 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
   }
 
   return (
-    <div className="flex flex-col gap-[10px]">
+    <div className="flex flex-col gap-2.5">
       {needsAttention && (
-        <div className="flex items-center gap-[8px] p-[14px] bg-awaiting-bg border border-awaiting/40 rounded-[var(--r-md)] flex-wrap">
+        <div className="flex items-center gap-2 p-3.5 bg-awaiting-bg border border-awaiting/40 rounded-[var(--r-md)] flex-wrap">
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-text-primary">{dict.labels.filterAttention}</div>
-            <div className="text-[12px] text-text-secondary mt-[1px]">{dict.dialogs.descPlaceholder}</div>
+            <div className="text-body font-semibold text-text-primary">{dict.labels.filterAttention}</div>
+            <div className="text-xs text-text-secondary mt-0.5">{dict.dialogs.descPlaceholder}</div>
           </div>
-          <div className="flex items-center gap-[8px] flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               onClick={() => run('approve')}
               disabled={isLoading}
@@ -58,14 +58,14 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
         </div>
       )}
 
-      <div className="flex gap-[8px]">
+      <div className="flex gap-2">
         {isOnHold ? (
           <Button
             onClick={() => run('resume')}
             disabled={isLoading}
             variant="outline"
             size="sm"
-            className="text-[12px]"
+            className="text-xs"
           >
             {dict.actions.resume}
           </Button>
@@ -75,7 +75,7 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
             disabled={isLoading}
             variant="outline"
             size="sm"
-            className="text-[12px]"
+            className="text-xs"
           >
             {dict.actions.hold}
           </Button>
@@ -85,7 +85,7 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
           disabled={isLoading}
           variant="outline"
           size="sm"
-          className="text-[12px]"
+          className="text-xs"
         >
           {dict.actions.cancel}
         </Button>

@@ -23,8 +23,8 @@ export function FilesPage({ project }: FilesPageProps) {
 
   return (
     <ContentContainer width="narrow">
-      <div className="p-[24px] max-[768px]:p-[16px]">
-        <h1 className="text-[1.2rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[20px]">
+      <div className="p-6 max-[768px]:p-4">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-5">
           Dateien
         </h1>
 
@@ -71,7 +71,7 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
   return (
     <>
       {/* Phase folder cards — always visible regardless of Nextcloud status */}
-      <div className="grid grid-cols-4 gap-[10px] mb-[20px] max-[768px]:grid-cols-2">
+      <div className="grid grid-cols-4 gap-2.5 mb-5 max-[768px]:grid-cols-2">
         {chapters.map((ch) => (
           <FolderCard
             key={ch.id}
@@ -85,17 +85,17 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
 
       {/* Root-level files (if any) */}
       {error ? (
-        <p className="text-[13px] text-[var(--text-tertiary)]">
+        <p className="text-body text-[var(--text-tertiary)]">
           Dateien konnten nicht geladen werden.
         </p>
       ) : isLoading ? (
         <LoadingSkeleton lines={3} height="40px" />
       ) : rootFiles.filter((f) => f.type === 'file').length > 0 ? (
         <>
-          <h2 className="text-[13px] font-semibold text-[var(--text-secondary)] mb-[8px]">
+          <h2 className="text-body font-semibold text-[var(--text-secondary)] mb-2">
             Allgemeine Dateien
           </h2>
-          <div className="flex flex-col gap-[2px] mb-[16px]">
+          <div className="flex flex-col gap-0.5 mb-4">
             {rootFiles
               .filter((f) => f.type === 'file')
               .map((f) => (

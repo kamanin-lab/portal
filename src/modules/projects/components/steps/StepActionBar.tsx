@@ -47,16 +47,16 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
     isLoading || (activeAction === 'request_changes' && !commentText.trim());
 
   return (
-    <div className="p-[14px] bg-awaiting-bg border border-awaiting/30 rounded-[var(--r-md)]">
-      <div className="flex items-center gap-[12px] flex-wrap">
+    <div className="p-3.5 bg-awaiting-bg border border-awaiting/30 rounded-[var(--r-md)]">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-text-primary">Bereit für Ihre Prüfung</div>
-          <div className="text-[12px] text-text-secondary mt-[2px]">
+          <div className="text-body font-medium text-text-primary">Bereit für Ihre Prüfung</div>
+          <div className="text-xs text-text-secondary mt-0.5">
             Bitte prüfen Sie das Dokument und geben Sie Ihr Feedback.
           </div>
         </div>
         {!activeAction && (
-          <div className="flex items-center gap-[8px] flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               onClick={() => setActiveAction('approve')}
               variant="accent"
@@ -77,7 +77,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
       </div>
 
       {activeAction && (
-        <div className="mt-[12px] flex flex-col gap-[10px]">
+        <div className="mt-3 flex flex-col gap-2.5">
           <Textarea
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
@@ -90,7 +90,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
             className="bg-white"
             autoFocus
           />
-          <div className="flex items-center justify-end gap-[8px]">
+          <div className="flex items-center justify-end gap-2">
             <Button onClick={handleCancel} disabled={isLoading} variant="outline" size="sm">
               Abbrechen
             </Button>

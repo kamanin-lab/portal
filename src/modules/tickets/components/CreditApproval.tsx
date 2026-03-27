@@ -45,16 +45,16 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="border border-amber-400/40 bg-amber-50 rounded-[var(--r-md)] p-[16px] mb-5"
+      className="border border-amber-400/40 bg-amber-50 rounded-[var(--r-md)] p-4 mb-5"
     >
-      <div className="flex items-center gap-[8px] mb-[8px]">
+      <div className="flex items-center gap-2 mb-2">
         <Zap size={18} className="text-amber-600 fill-amber-500" />
-        <span className="text-[15px] font-bold text-text-primary">
+        <span className="text-md font-bold text-text-primary">
           Kostenfreigabe erforderlich
         </span>
       </div>
 
-      <p className="text-[13px] text-text-secondary mb-[14px]">
+      <p className="text-body text-text-secondary mb-3.5">
         Diese Aufgabe wurde mit <strong>{displayCredits} Credits</strong> bewertet.
       </p>
 
@@ -65,7 +65,7 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-[8px]"
+            className="flex items-center gap-2"
           >
             <Button
               onClick={handleApprove}
@@ -90,15 +90,15 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-[10px]"
+            className="space-y-2.5"
           >
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Bitte beschreiben Sie, warum Sie die Bewertung ablehnen..."
-              className="w-full min-h-[80px] p-[10px] text-[13px] rounded-[var(--r-sm)] border border-border bg-bg text-text-primary placeholder:text-text-tertiary resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full min-h-[80px] p-2.5 text-body rounded-[var(--r-sm)] border border-border bg-bg text-text-primary placeholder:text-text-tertiary resize-y focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            <div className="flex items-center gap-[8px]">
+            <div className="flex items-center gap-2">
               <Button
                 onClick={handleDecline}
                 disabled={!reason.trim() || postComment.isPending}

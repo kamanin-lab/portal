@@ -50,9 +50,9 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
   }, [currentSubPath, onSuccess]);
 
   return (
-    <div className="mb-[12px]">
+    <div className="mb-3">
       {/* Action buttons */}
-      <div className="flex items-center gap-[8px] mb-[8px]">
+      <div className="flex items-center gap-2 mb-2">
         <Button
           variant="outline"
           size="sm"

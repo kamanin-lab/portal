@@ -12,19 +12,19 @@ interface MemoryEntrySheetProps {
 }
 
 const CATEGORY_OPTIONS: Array<[MemoryDraft['category'], string]> = [
-  ['profile', 'Profile'],
-  ['communication', 'Communication'],
-  ['technical_constraint', 'Technical constraint'],
-  ['delivery_constraint', 'Delivery constraint'],
-  ['decision', 'Decision'],
-  ['risk', 'Risk'],
-  ['commercial_context', 'Commercial context'],
+  ['profile', 'Profil'],
+  ['communication', 'Kommunikation'],
+  ['technical_constraint', 'Technische Einschränkung'],
+  ['delivery_constraint', 'Liefereinschränkung'],
+  ['decision', 'Entscheidung'],
+  ['risk', 'Risiko'],
+  ['commercial_context', 'Kommerzieller Kontext'],
 ];
 
 const VISIBILITY_OPTIONS: Array<[NonNullable<MemoryDraft['visibility']>, string]> = [
-  ['internal', 'Internal'],
-  ['shared', 'Shared'],
-  ['client_visible', 'Client visible'],
+  ['internal', 'Intern'],
+  ['shared', 'Geteilt'],
+  ['client_visible', 'Für Kunden sichtbar'],
 ];
 
 export function MemoryEntrySheet({ open, onClose, onSubmit, initialEntry, isSaving = false }: MemoryEntrySheetProps) {
@@ -55,62 +55,62 @@ export function MemoryEntrySheet({ open, onClose, onSubmit, initialEntry, isSavi
   }
 
   return (
-    <SideSheet open={open} onClose={onClose} title={initialEntry ? 'Edit memory entry' : 'Add memory entry'}>
+    <SideSheet open={open} onClose={onClose} title={initialEntry ? 'Eintrag bearbeiten' : 'Eintrag hinzufügen'}>
       <form onSubmit={handleSubmit} className="flex h-full flex-col">
-        <div className="px-[20px] py-[18px] border-b border-[var(--border)]">
-          <h2 className="text-[18px] font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-[6px]">
-            {initialEntry ? 'Edit memory entry' : 'Add memory entry'}
+        <div className="px-5 py-5 border-b border-[var(--border)]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] tracking-[-0.02em] mb-1.5">
+            {initialEntry ? 'Eintrag bearbeiten' : 'Eintrag hinzufügen'}
           </h2>
-          <p className="text-[12.5px] text-[var(--text-secondary)] leading-[1.55]">
-            Use memory only for durable context that should survive the current working thread. New entries default to internal visibility.
+          <p className="text-body text-[var(--text-secondary)] leading-[1.55]">
+            Verwenden Sie Memory nur für dauerhaften Kontext, der über den aktuellen Arbeitsthread hinaus bestehen soll. Neue Einträge sind standardmäßig intern sichtbar.
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-[20px] py-[18px] space-y-[14px]">
-          <div className="grid grid-cols-3 gap-[10px] max-[640px]:grid-cols-1">
-            <Field label="Scope">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3.5">
+          <div className="grid grid-cols-3 gap-2.5 max-[640px]:grid-cols-1">
+            <Field label="Bereich">
               <select value={scope} onChange={event => setScope(event.target.value as MemoryDraft['scope'])} className={fieldClassName}>
-                <option value="project">Project</option>
-                <option value="client">Client</option>
+                <option value="project">Projekt</option>
+                <option value="client">Kunde</option>
               </select>
             </Field>
-            <Field label="Category">
+            <Field label="Kategorie">
               <select value={category} onChange={event => setCategory(event.target.value as MemoryDraft['category'])} className={fieldClassName}>
                 {CATEGORY_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </Field>
-            <Field label="Visibility">
+            <Field label="Sichtbarkeit">
               <select value={visibility} onChange={event => setVisibility(event.target.value as NonNullable<MemoryDraft['visibility']>)} className={fieldClassName}>
                 {VISIBILITY_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </Field>
           </div>
 
-          <Field label="Title">
-            <input value={title} onChange={event => setTitle(event.target.value)} maxLength={120} className={fieldClassName} placeholder="Short durable context label" required />
+          <Field label="Titel">
+            <input value={title} onChange={event => setTitle(event.target.value)} maxLength={120} className={fieldClassName} placeholder="Kurze Kontextbezeichnung" required />
           </Field>
 
-          <Field label="Body">
+          <Field label="Inhalt">
             <textarea
               value={body}
               onChange={event => setBody(event.target.value)}
               rows={8}
               className={`${fieldClassName} resize-none`}
-              placeholder="Rewrite the durable context clearly instead of copying a whole thread."
+              placeholder="Formulieren Sie den dauerhaften Kontext klar, anstatt einen ganzen Thread zu kopieren."
               required
             />
           </Field>
         </div>
 
-        <div className="flex justify-end gap-[10px] border-t border-[var(--border)] px-[20px] py-[16px]">
+        <div className="flex justify-end gap-2.5 border-t border-[var(--border)] px-5 py-4">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            Abbrechen
           </Button>
           <Button
             type="submit"
             disabled={isSaving || !title.trim() || !body.trim()}
           >
-            {isSaving ? 'Saving…' : initialEntry ? 'Save changes' : 'Create memory'}
+            {isSaving ? 'Speichern…' : initialEntry ? 'Änderungen speichern' : 'Eintrag erstellen'}
           </Button>
         </div>
       </form>
@@ -120,11 +120,11 @@ export function MemoryEntrySheet({ open, onClose, onSubmit, initialEntry, isSavi
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-[12.5px] font-medium text-[var(--text-secondary)]">
-      <span className="block mb-[6px]">{label}</span>
+    <label className="block text-body font-medium text-[var(--text-secondary)]">
+      <span className="block mb-1.5">{label}</span>
       {children}
     </label>
   );
 }
 
-const fieldClassName = 'w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-[12px] py-[8px] text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-colors';
+const fieldClassName = 'w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-3 py-2 text-body text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-colors';

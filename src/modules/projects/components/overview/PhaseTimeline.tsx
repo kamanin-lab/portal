@@ -12,7 +12,7 @@ export function PhaseTimeline({ project, onChapterClick }: PhaseTimelineProps) {
 
   return (
     <div
-      className="flex items-center gap-0 mb-3 px-[6px] py-[8px] bg-[var(--surface)] border border-[var(--border-light)] rounded-[var(--r-md)] overflow-x-auto"
+      className="flex items-center gap-0 mb-3 px-1.5 py-2 bg-[var(--surface)] border border-[var(--border-light)] rounded-[var(--r-md)] overflow-x-auto"
       style={{ flexShrink: 0 }}
     >
       {chapters.map((chapter, idx) => {

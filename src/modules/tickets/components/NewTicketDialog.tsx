@@ -66,7 +66,7 @@ export function NewTicketDialog({ open, onClose, mode = 'ticket', listId, chapte
           aria-describedby={undefined}
         >
           <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-            <Dialog.Title className="text-[15px] font-semibold text-text-primary">{title}</Dialog.Title>
+            <Dialog.Title className="text-md font-semibold text-text-primary">{title}</Dialog.Title>
             <Dialog.Close className="p-1.5 rounded hover:bg-surface-hover transition-colors cursor-pointer">
               <X size={18} className="text-text-tertiary" />
             </Dialog.Close>
@@ -89,7 +89,7 @@ export function NewTicketDialog({ open, onClose, mode = 'ticket', listId, chapte
               <FileAttachments files={files} setFiles={setFiles} fileInputRef={fileInputRef} />
             </div>
 
-            <div className="flex justify-end gap-[10px] px-5 py-4 border-t border-border shrink-0">
+            <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-border shrink-0">
               <Button type="button" onClick={handleClose} disabled={isPending} variant="outline">
                 {dict.actions.cancel}
               </Button>

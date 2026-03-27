@@ -53,14 +53,14 @@ export function OverviewPage({ project }: OverviewPageProps) {
     }));
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto px-[32px] py-[28px] max-[1100px]:px-[24px] max-[1100px]:py-[20px] max-[768px]:px-[16px] max-[768px]:py-[16px]">
+    <div className="h-full flex flex-col overflow-y-auto px-8 py-7 max-[1100px]:px-6 max-[1100px]:py-5 max-[768px]:px-4 max-[768px]:py-4">
       <ContentContainer width="narrow">
-        <div className="flex items-baseline justify-between gap-[16px] mb-[22px] flex-shrink-0 max-[768px]:flex-col max-[768px]:items-start max-[768px]:mb-[16px]">
+        <div className="flex items-baseline justify-between gap-4 mb-6 flex-shrink-0 max-[768px]:flex-col max-[768px]:items-start max-[768px]:mb-4">
           <div>
-            <h1 className="text-[1.3rem] font-semibold text-[var(--text-primary)] tracking-[-0.02em] max-[768px]:text-[1.15rem]">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-[-0.02em] max-[768px]:text-lg">
               {project.name}
             </h1>
-            <p className="text-[var(--text-secondary)] text-[13px] max-[768px]:text-[12px]">
+            <p className="text-[var(--text-secondary)] text-body max-[768px]:text-xs">
               {project.type} {'\u00B7'} {project.startDate} {'\u2014'} {project.targetDate}
             </p>
           </div>

@@ -78,7 +78,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
 
   function chipClass(isActive: boolean, isAttention: boolean) {
     return cn(
-      'flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
+      'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
       isActive && isAttention
         ? 'bg-amber-500 text-white border-amber-500'
         : isActive
@@ -105,7 +105,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
               {Icon && <Icon size={11} />}
               {FILTER_LABELS[f]}
               <span className={cn(
-                'min-w-[16px] h-[16px] px-[4px] rounded-full text-[10px] font-bold flex items-center justify-center',
+                'min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center',
                 isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
               )}>
                 {count}
@@ -120,7 +120,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
         <button
           onClick={() => setMoreOpen(v => !v)}
           className={cn(
-            'flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
+            'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
             MORE_FILTERS.includes(active)
               ? 'bg-accent text-white border-accent'
               : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
@@ -139,13 +139,13 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
                   key={f}
                   onClick={() => { onChange(f); setMoreOpen(false) }}
                   className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-raised transition-colors',
+                    'w-full flex items-center gap-2 px-3 py-2 text-body hover:bg-surface-raised transition-colors',
                     active === f ? 'text-accent font-medium' : 'text-text-secondary'
                   )}
                 >
                   {Icon && <Icon size={13} />}
                   <span className="flex-1 text-left">{FILTER_LABELS[f]}</span>
-                  <span className="text-[11px] text-text-tertiary">{count}</span>
+                  <span className="text-xxs text-text-tertiary">{count}</span>
                 </button>
               )
             })}

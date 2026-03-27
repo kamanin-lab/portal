@@ -37,8 +37,8 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
   }
 
   return (
-    <div className="flex flex-col gap-[12px] pt-[8px]">
-      <h3 className="text-[12.5px] font-semibold text-text-secondary uppercase tracking-[0.04em]">
+    <div className="flex flex-col gap-3 pt-2">
+      <h3 className="text-body font-semibold text-text-secondary uppercase tracking-[0.04em]">
         {dict.labels.commentsTitle}
       </h3>
 
@@ -47,7 +47,7 @@ export function TaskComments({ taskId, onRead, clientBubbleStyle = 'light' }: Ta
       ) : comments.length === 0 ? (
         <EmptyState message={dict.labels.noComments} />
       ) : (
-        <div className="flex flex-col gap-[14px] px-1">
+        <div className="flex flex-col gap-3.5 px-1">
           {[...comments].reverse().map(comment => {
             const isClient = comment.isFromPortal;
             return (

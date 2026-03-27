@@ -33,9 +33,9 @@ export function UploadDropZone({ selectedFile, onFileSelect }: UploadDropZonePro
     >
       <Upload size={22} className="mx-auto mb-3 opacity-50" />
       {selectedFile ? (
-        <p className="text-[13px] font-medium text-[var(--text-primary)]">{selectedFile.name}</p>
+        <p className="text-body font-medium text-[var(--text-primary)]">{selectedFile.name}</p>
       ) : (
-        <p className="text-[13px] text-[var(--text-secondary)]">
+        <p className="text-body text-[var(--text-secondary)]">
           Dateien hierher ziehen oder <strong className="text-[var(--accent)]">klicken</strong>
         </p>
       )}

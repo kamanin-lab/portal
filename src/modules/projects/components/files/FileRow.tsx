@@ -49,16 +49,16 @@ export function FileRow({ file, projectConfigId }: FileRowProps) {
   return (
     <div
       onClick={handleClick}
-      className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+      className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
     >
       <FileTypeIcon mimeType={file.mimeType} name={file.name} />
-      <span className="flex-1 text-[13px] font-medium text-[var(--text-primary)] truncate">
+      <span className="flex-1 text-body font-medium text-[var(--text-primary)] truncate">
         {file.name}
       </span>
-      <span className="text-[11px] text-[var(--text-tertiary)] whitespace-nowrap hidden md:block">
+      <span className="text-xxs text-[var(--text-tertiary)] whitespace-nowrap hidden md:block">
         {formatSize(file.size)}
       </span>
-      <span className="text-[11px] text-[var(--text-tertiary)] whitespace-nowrap hidden md:block">
+      <span className="text-xxs text-[var(--text-tertiary)] whitespace-nowrap hidden md:block">
         {formatDate(file.lastModified)}
       </span>
       <div className="w-[24px] flex items-center justify-center flex-shrink-0">
