@@ -1,0 +1,28 @@
+name: Send pending task reminders
+on:
+  schedule:
+    # 07:00 UTC = 09:00 CET (daily check, 5-day cooldown enforced server-side)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder email job
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_FUNCTIONS_URL }}/send-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Response: $body"
+          echo "Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Reminder job failed with status $http_code"
+            exit 1
+          fi

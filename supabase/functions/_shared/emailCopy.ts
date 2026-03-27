@@ -13,6 +13,7 @@ export type EmailType =
   | "step_ready"
   | "project_reply"
   | "credit_approval"
+  | "pending_reminder"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -85,6 +86,33 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string, credits: string) =>
         `The task "<strong>${taskName}</strong>" has been estimated at <strong>${credits} credits</strong> and is awaiting your approval.`,
       cta: "View in portal",
+    },
+  },
+
+  pending_reminder: {
+    de: {
+      subject: (count: number) =>
+        `Erinnerung: ${count} ${count === 1 ? "Aufgabe wartet" : "Aufgaben warten"} auf Ihre Rückmeldung`,
+      title: "Offene Aufgaben",
+      greeting: greetDe,
+      body: "Die folgenden Aufgaben warten auf Ihre Rückmeldung:",
+      cta: "Im Portal ansehen",
+      notes: [
+        "Sie erhalten diese Erinnerung alle 5 Tage, solange offene Aufgaben bestehen.",
+        "Sie können Erinnerungen in Ihren Kontoeinstellungen deaktivieren.",
+      ],
+    },
+    en: {
+      subject: (count: number) =>
+        `Reminder: ${count} ${count === 1 ? "task awaits" : "tasks await"} your feedback`,
+      title: "Pending tasks",
+      greeting: greetEn,
+      body: "The following tasks are waiting for your feedback:",
+      cta: "View in portal",
+      notes: [
+        "You receive this reminder every 5 days while tasks are pending.",
+        "You can disable reminders in your account settings.",
+      ],
     },
   },
 

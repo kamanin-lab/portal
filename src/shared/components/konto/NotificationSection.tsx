@@ -85,9 +85,7 @@ const NOTIFICATION_OPTIONS: Array<{
   {
     key: 'reminders',
     label: 'Erinnerungen',
-    description: 'Erinnerungen bei ausstehender Prüfung.',
-    disabled: true,
-    disabledLabel: 'Bald verfügbar',
+    description: 'Erinnerung alle 5 Tage bei ausstehender Prüfung oder Kostenfreigabe.',
   },
 ]
 
