@@ -149,13 +149,22 @@ export function LoginPage() {
           {/* Mode switchers */}
           <div className="mt-4 flex flex-col gap-2">
             {mode === 'signin' && (
-              <button
-                type="button"
-                onClick={() => { setMode('reset'); setError(null); setSuccessMsg(null) }}
-                className="text-xs text-text-tertiary hover:text-text-secondary text-center"
-              >
-                Passwort vergessen?
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => { setMode('magic'); setError(null); setSuccessMsg(null) }}
+                  className="text-xs text-accent hover:underline text-center"
+                >
+                  Anmelden mit Magic Link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('reset'); setError(null); setSuccessMsg(null) }}
+                  className="text-xs text-text-tertiary hover:text-text-secondary text-center"
+                >
+                  Passwort vergessen?
+                </button>
+              </>
             )}
             {(mode === 'magic' || mode === 'reset') && (
               <button
