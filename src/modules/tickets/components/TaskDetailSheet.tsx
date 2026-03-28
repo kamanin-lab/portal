@@ -1,5 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { TaskDetail } from './TaskDetail'
 import { useSingleTask } from '../hooks/useSingleTask'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
@@ -54,7 +55,7 @@ export function TaskDetailSheet({ taskId, onClose, tasks = [], isTasksLoading = 
           <div className="flex items-center justify-end px-5 py-3 border-b border-border shrink-0">
             <Dialog.Close asChild>
               <button className="p-1.5 rounded-[var(--r-sm)] text-text-tertiary hover:text-text-primary hover:bg-surface-raised transition-colors">
-                <X size={18} />
+                <HugeiconsIcon icon={MultiplicationSignIcon} size={18} />
               </button>
             </Dialog.Close>
           </div>

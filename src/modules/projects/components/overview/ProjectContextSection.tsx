@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
-import { BookOpenText, Shield } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { BookOpenTextIcon, Shield01Icon } from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import type { MemoryEntry } from '../../types/memory';
 import { useProjectMemory } from '../../hooks/useProjectMemory';
@@ -41,7 +42,7 @@ export function ProjectContextSection({ project }: ProjectContextSectionProps) {
           </p>
         </div>
         <div className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-hover)] px-2.5 py-2 text-xs font-medium text-[var(--text-secondary)]">
-          <Shield size={14} />
+          <HugeiconsIcon icon={Shield01Icon} size={14} />
           Nur Lesezugriff
         </div>
       </div>
@@ -83,7 +84,7 @@ function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'ne
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-semibold ${toneClass}`}>
-      <BookOpenText size={11} />
+      <HugeiconsIcon icon={BookOpenTextIcon} size={11} />
       {children}
     </span>
   );

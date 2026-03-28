@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowDown01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { SideSheet } from '@/shared/components/ui/SideSheet';
 import type { Project } from '../types/project';
 import { getChapterProgress, statusLabel } from '../lib/helpers';
@@ -74,9 +75,9 @@ function ChapterRow({
         </span>
         <span className="text-xxs text-[var(--text-tertiary)]">{progress}</span>
         {isExpanded ? (
-          <ChevronDown size={14} className="text-[var(--text-tertiary)]" />
+          <HugeiconsIcon icon={ArrowDown01Icon} size={14} className="text-[var(--text-tertiary)]" />
         ) : (
-          <ChevronRight size={14} className="text-[var(--text-tertiary)]" />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} className="text-[var(--text-tertiary)]" />
         )}
       </button>
 

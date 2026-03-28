@@ -1,4 +1,5 @@
-import { MessageSquare, Phone, Mail } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Message01Icon, Call02Icon, Mail01Icon } from '@hugeicons/core-free-icons';
 import { useNavigate } from 'react-router-dom';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { getPhaseColor } from '../../lib/phase-colors';
@@ -18,21 +19,21 @@ export function ProjectHelpPage() {
 
       <div className="flex flex-col gap-3">
         <ContactCard
-          icon={<MessageSquare size={18} />}
+          icon={<HugeiconsIcon icon={Message01Icon} size={18} />}
           title="Nachricht senden"
           sub="Direkter Chat mit dem Projektteam"
           phaseIndex={1}
           onClick={() => navigate('/nachrichten')}
         />
         <ContactCard
-          icon={<Mail size={18} />}
+          icon={<HugeiconsIcon icon={Mail01Icon} size={18} />}
           title="E-Mail schreiben"
           sub="projekt@kamanin.at"
           phaseIndex={2}
           onClick={() => window.location.href = 'mailto:projekt@kamanin.at'}
         />
         <ContactCard
-          icon={<Phone size={18} />}
+          icon={<HugeiconsIcon icon={Call02Icon} size={18} />}
           title="Anrufen"
           sub="Mo – Fr, 9:00 – 17:00 Uhr"
           phaseIndex={3}

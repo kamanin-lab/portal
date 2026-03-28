@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Upload04Icon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { useUploadFile, useUploadFileByPath } from '../../hooks/useNextcloudFiles';
 
@@ -90,9 +91,9 @@ export function FileUpload({ projectConfigId, chapterSortOrder, subPath, disable
         disabled={disabled || isUploading}
       />
       {isUploading ? (
-        <Loader2 size={16} className="animate-spin text-[var(--text-tertiary)]" />
+        <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin text-[var(--text-tertiary)]" />
       ) : (
-        <Upload size={16} className="text-[var(--text-tertiary)]" />
+        <HugeiconsIcon icon={Upload04Icon} size={16} className="text-[var(--text-tertiary)]" />
       )}
       <span className="text-xs text-[var(--text-secondary)]">
         {isUploading ? 'Wird hochgeladen...' : 'Datei hochladen oder hierhin ziehen'}

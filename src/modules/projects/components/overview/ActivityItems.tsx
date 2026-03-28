@@ -1,28 +1,30 @@
+import { HugeiconsIcon } from '@hugeicons/react';
+import type { IconSvgElement } from '@hugeicons/react';
 import {
-  CheckCircle, AlertCircle, Clock, Circle,
-  PauseCircle, XCircle, MessageSquare,
-} from 'lucide-react';
+  CheckmarkCircle02Icon, AlertCircleIcon, Clock01Icon, CircleIcon,
+  PauseCircleIcon, CancelCircleIcon, Message01Icon,
+} from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import type { ActivityEvent } from '../../hooks/useProjectActivity';
 import { linkifyText } from '@/shared/lib/linkify';
 
 /* -- Status Icon helper ---------------------------------------------- */
 
-export function getStatusIcon(rawStatus?: string) {
+export function getStatusIcon(rawStatus?: string): { icon: IconSvgElement; bg: string; color: string } {
   const s = (rawStatus || '').toLowerCase().trim();
   if (['approved', 'complete', 'done'].includes(s))
-    return { icon: CheckCircle, bg: 'var(--committed-bg)', color: 'var(--phase-4)' };
+    return { icon: CheckmarkCircle02Icon, bg: 'var(--committed-bg)', color: 'var(--phase-4)' };
   if (s === 'client review')
-    return { icon: AlertCircle, bg: 'var(--phase-3-light)', color: 'var(--phase-3)' };
+    return { icon: AlertCircleIcon, bg: 'var(--phase-3-light)', color: 'var(--phase-3)' };
   if (['in progress', 'internal review', 'rework'].includes(s))
-    return { icon: Clock, bg: 'var(--phase-2-light)', color: 'var(--phase-2)' };
+    return { icon: Clock01Icon, bg: 'var(--phase-2-light)', color: 'var(--phase-2)' };
   if (s === 'to do')
-    return { icon: Circle, bg: 'var(--surface-active)', color: 'var(--text-tertiary)' };
+    return { icon: CircleIcon, bg: 'var(--surface-active)', color: 'var(--text-tertiary)' };
   if (s === 'on hold')
-    return { icon: PauseCircle, bg: 'var(--awaiting-bg)', color: 'var(--awaiting)' };
+    return { icon: PauseCircleIcon, bg: 'var(--awaiting-bg)', color: 'var(--awaiting)' };
   if (['canceled', 'cancelled'].includes(s))
-    return { icon: XCircle, bg: 'var(--destructive-bg)', color: 'var(--destructive)' };
-  return { icon: CheckCircle, bg: 'var(--committed-bg)', color: 'var(--phase-4)' };
+    return { icon: CancelCircleIcon, bg: 'var(--destructive-bg)', color: 'var(--destructive)' };
+  return { icon: CheckmarkCircle02Icon, bg: 'var(--committed-bg)', color: 'var(--phase-4)' };
 }
 
 /* -- Status Change Item ---------------------------------------------- */
@@ -43,7 +45,6 @@ export function StatusActivityItem({ event, project, onOpenStep }: {
   onOpenStep?: (stepId: string) => void;
 }) {
   const cfg = getStatusIcon(event.rawStatus);
-  const Icon = cfg.icon;
   const stepId = project && onOpenStep ? findStepIdByTitle(event.text, project) : null;
   const isClickable = !!stepId;
 
@@ -56,7 +57,7 @@ export function StatusActivityItem({ event, project, onOpenStep }: {
         className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center flex-shrink-0"
         style={{ background: cfg.bg, color: cfg.color }}
       >
-        <Icon size={13} />
+        <HugeiconsIcon icon={cfg.icon} size={13} />
       </div>
       <div className="flex-1 min-w-0 flex items-baseline gap-2">
         <span className="text-body text-text-primary font-medium leading-[1.35]">
@@ -83,7 +84,7 @@ export function CommentActivityItem({ event }: { event: ActivityEvent }) {
         className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center flex-shrink-0"
         style={{ background: 'var(--phase-1-light)', color: 'var(--phase-1)' }}
       >
-        <MessageSquare size={13} />
+        <HugeiconsIcon icon={Message01Icon} size={13} />
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-baseline gap-1.5">

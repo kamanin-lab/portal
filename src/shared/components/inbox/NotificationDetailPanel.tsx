@@ -1,4 +1,5 @@
-import { ArrowRight } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import type { Notification } from '@/modules/tickets/hooks/useNotifications'
 import { linkifyText } from '@/shared/lib/linkify'
 import { TypeBadge } from './TypeBadge'
@@ -33,7 +34,7 @@ export function NotificationDetailPanel({
           className="inline-flex items-center gap-1.5 text-body font-medium text-accent hover:text-accent/80 transition-colors"
         >
           Zur Aufgabe
-          <ArrowRight size={14} />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
         </button>
       )}
     </div>

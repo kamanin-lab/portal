@@ -1,4 +1,5 @@
-import { Folder, ChevronRight } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Folder01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import type { Project } from '../../types/project';
 import { useNextcloudFilesByPath, useCreateFolder } from '../../hooks/useNextcloudFiles';
@@ -46,7 +47,7 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
         </button>
         {pathSegments.map((seg, idx) => (
           <span key={idx} className="flex items-center gap-1">
-            <ChevronRight size={12} className="text-[var(--text-tertiary)]" />
+            <HugeiconsIcon icon={ArrowRight01Icon} size={12} className="text-[var(--text-tertiary)]" />
             {idx === pathSegments.length - 1 ? (
               <span className="text-[var(--text-primary)] font-medium">{seg}</span>
             ) : (
@@ -77,7 +78,7 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
                   onClick={() => onNavigate([...pathSegments, f.name])}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors text-left"
                 >
-                  <Folder size={16} className="text-[var(--accent)] flex-shrink-0" />
+                  <HugeiconsIcon icon={Folder01Icon} size={16} className="text-[var(--accent)] flex-shrink-0" />
                   <span className="text-body font-medium text-[var(--text-primary)]">{f.name}</span>
                 </button>
               ))}

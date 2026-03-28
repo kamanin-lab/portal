@@ -1,4 +1,5 @@
-import { User, CalendarDays } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { UserIcon, Calendar03Icon } from '@hugeicons/core-free-icons'
 import { motion } from 'motion/react'
 import { StatusBadge } from '@/shared/components/common/StatusBadge'
 import { PriorityIcon } from './PriorityIcon'
@@ -90,13 +91,13 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
 
             {dueDate && (
               <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
-                <CalendarDays size={12} />
+                <HugeiconsIcon icon={Calendar03Icon} size={12} />
                 {dueDate}
               </span>
             )}
 
             <span className="flex items-center gap-1 text-xs text-text-tertiary ml-auto">
-              <User size={12} />
+              <HugeiconsIcon icon={UserIcon} size={12} />
               {task.created_by_name || 'Team'}
             </span>
           </div>

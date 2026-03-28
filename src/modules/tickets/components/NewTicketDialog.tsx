@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { MultiplicationSignIcon } from '@hugeicons/core-free-icons';
 import { useCreateTask } from '../hooks/useCreateTask';
 import { dict } from '../lib/dictionary';
 import { Button } from '@/shared/components/ui/button';
@@ -68,7 +69,7 @@ export function NewTicketDialog({ open, onClose, mode = 'ticket', listId, chapte
           <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
             <Dialog.Title className="text-md font-semibold text-text-primary">{title}</Dialog.Title>
             <Dialog.Close className="p-1.5 rounded hover:bg-surface-hover transition-colors cursor-pointer">
-              <X size={18} className="text-text-tertiary" />
+              <HugeiconsIcon icon={MultiplicationSignIcon} size={18} className="text-text-tertiary" />
             </Dialog.Close>
           </div>
 

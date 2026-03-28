@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { Upload, FolderPlus, Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Upload04Icon, FolderAddIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { uploadClientFile } from '../hooks/useClientFiles';
@@ -60,9 +61,9 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
           disabled={isUploading}
         >
           {isUploading ? (
-            <Loader2 size={14} className="animate-spin" />
+            <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin" />
           ) : (
-            <Upload size={14} />
+            <HugeiconsIcon icon={Upload04Icon} size={14} />
           )}
           {isUploading ? 'Wird hochgeladen...' : 'Datei hochladen'}
         </Button>
@@ -73,7 +74,7 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
           onClick={() => setShowFolderInput(true)}
           disabled={showFolderInput}
         >
-          <FolderPlus size={14} />
+          <HugeiconsIcon icon={FolderAddIcon} size={14} />
           Neuer Ordner
         </Button>
 

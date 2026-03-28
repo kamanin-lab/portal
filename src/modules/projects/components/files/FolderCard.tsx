@@ -1,4 +1,5 @@
-import { Folder } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { getPhaseColor } from '../../lib/phase-colors';
 
 interface FolderCardProps {
@@ -21,7 +22,7 @@ export function FolderCard({ title, order, isSelected, onClick }: FolderCardProp
       }}
     >
       <div className="flex items-center gap-1.5 mb-0.5">
-        <Folder size={13} style={{ color: pc.main }} />
+        <HugeiconsIcon icon={Folder01Icon} size={13} style={{ color: pc.main }} />
         <span className="text-xs font-semibold truncate" style={{ color: pc.text }}>
           {title}
         </span>

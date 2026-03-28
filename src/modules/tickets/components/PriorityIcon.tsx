@@ -1,4 +1,5 @@
-import { AlertCircle } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { AlertCircleIcon } from '@hugeicons/core-free-icons'
 import { PRIORITY_LABELS } from '../lib/status-dictionary'
 
 interface PriorityIconProps {
@@ -70,7 +71,7 @@ export function PriorityIcon({ priority, size = 14, showLabel = false, className
       </span>
     )
   } else if (key === 'urgent') {
-    icon = <AlertCircle size={size} />
+    icon = <HugeiconsIcon icon={AlertCircleIcon} size={size} />
   } else if (BAR_COUNT[key]) {
     icon = <VolumeIcon size={size} barCount={BAR_COUNT[key]} />
   } else {

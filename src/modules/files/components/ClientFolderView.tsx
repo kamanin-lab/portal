@@ -1,4 +1,5 @@
-import { Folder, ChevronRight } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Folder01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { useCallback } from 'react';
 import { useClientFiles } from '../hooks/useClientFiles';
 import { EmptyState } from '@/shared/components/common/EmptyState';
@@ -36,7 +37,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
           </button>
           {pathSegments.map((seg, idx) => (
             <span key={idx} className="flex items-center gap-1">
-              <ChevronRight size={12} className="text-[var(--text-tertiary)]" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={12} className="text-[var(--text-tertiary)]" />
               {idx === pathSegments.length - 1 ? (
                 <span className="text-[var(--text-primary)] font-medium">{seg}</span>
               ) : (
@@ -73,7 +74,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
                     className="p-4 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-left transition-all hover:-translate-y-px hover:border-[var(--accent)]"
                   >
                     <div className="flex items-center gap-2">
-                      <Folder size={16} className="text-[var(--accent)] flex-shrink-0" />
+                      <HugeiconsIcon icon={Folder01Icon} size={16} className="text-[var(--accent)] flex-shrink-0" />
                       <span className="text-body font-semibold text-[var(--text-primary)]">
                         {f.name}
                       </span>
@@ -89,7 +90,7 @@ export function ClientFolderView({ pathSegments, onNavigate }: ClientFolderViewP
                     onClick={() => onNavigate([...pathSegments, f.name])}
                     className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors text-left"
                   >
-                    <Folder size={16} className="text-[var(--accent)] flex-shrink-0" />
+                    <HugeiconsIcon icon={Folder01Icon} size={16} className="text-[var(--accent)] flex-shrink-0" />
                     <span className="text-body font-medium text-[var(--text-primary)]">
                       {f.name}
                     </span>

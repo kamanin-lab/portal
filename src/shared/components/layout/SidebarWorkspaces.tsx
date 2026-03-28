@@ -99,7 +99,7 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavig
                   onClick={onNavigate}
                   className={({ isActive }) => cn(
                     'flex items-center h-9 pl-9 pr-3.5 mx-1.5 rounded-[8px] transition-colors',
-                    'text-text-sidebar/80 hover:bg-sidebar-hover hover:text-white text-body',
+                    'text-text-sidebar/80 hover:bg-sidebar-hover hover:text-white text-[13px]',
                     isActive && 'bg-sidebar-active text-white'
                   )}
                 >

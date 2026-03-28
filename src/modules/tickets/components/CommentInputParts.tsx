@@ -1,4 +1,5 @@
-import { Paperclip, Send, X } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Attachment01Icon, SentIcon, MultiplicationSignIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@/shared/components/ui/button';
 import { dict } from '../lib/dictionary';
 
@@ -16,14 +17,14 @@ export function AttachmentList({
           key={i}
           className="inline-flex items-center gap-1 text-xxs bg-accent-light text-accent px-2 py-1 rounded-full"
         >
-          <Paperclip size={10} className="opacity-60" />
+          <HugeiconsIcon icon={Attachment01Icon} size={10} className="opacity-60" />
           {f.name}
           <button
             type="button"
             onClick={() => onRemove(i)}
             className="opacity-50 hover:opacity-100 cursor-pointer ml-0.5"
           >
-            <X size={10} />
+            <HugeiconsIcon icon={MultiplicationSignIcon} size={10} />
           </button>
         </span>
       ))}
@@ -55,7 +56,7 @@ export function InputToolbar({
             size="sm"
             className="text-text-tertiary hover:text-text-secondary gap-1.5 h-[32px] px-2.5"
           >
-            <Paperclip size={14} />
+            <HugeiconsIcon icon={Attachment01Icon} size={14} />
             <span className="text-xs max-[768px]:hidden">Datei anhängen</span>
           </Button>
         )}
@@ -73,7 +74,7 @@ export function InputToolbar({
           size="sm"
           className="font-semibold gap-1.5 h-[32px] px-3.5"
         >
-          <Send size={13} />
+          <HugeiconsIcon icon={SentIcon} size={13} />
           {dict.actions.send}
         </Button>
       </div>

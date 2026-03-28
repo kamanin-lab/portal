@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Check, X, Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Tick01Icon, MultiplicationSignIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -65,9 +66,9 @@ export function CreateFolderInput({ currentSubPath, onSuccess, onClose }: Create
         disabled={!folderName.trim() || isCreating}
       >
         {isCreating ? (
-          <Loader2 size={14} className="animate-spin" />
+          <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin" />
         ) : (
-          <Check size={14} />
+          <HugeiconsIcon icon={Tick01Icon} size={14} />
         )}
       </Button>
       <Button
@@ -77,7 +78,7 @@ export function CreateFolderInput({ currentSubPath, onSuccess, onClose }: Create
         onClick={onClose}
         disabled={isCreating}
       >
-        <X size={14} />
+        <HugeiconsIcon icon={MultiplicationSignIcon} size={14} />
       </Button>
     </div>
   );

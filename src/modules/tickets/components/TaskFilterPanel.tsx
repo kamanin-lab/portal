@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { PriorityIcon } from './PriorityIcon'
 import { PRIORITY_LABELS } from '../lib/status-dictionary'
 import { cn } from '@/shared/lib/utils'
@@ -90,7 +91,7 @@ export function TaskFilterPanel({ open, activeFilters, onChange, onClose }: Prop
                 'w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors',
                 checked ? 'bg-accent border-accent' : 'border-border'
               )}>
-                {checked && <X size={10} className="text-white" />}
+                {checked && <HugeiconsIcon icon={MultiplicationSignIcon} size={10} className="text-white" />}
               </span>
               <PriorityIcon priority={p} size={13} />
               <span>{PRIORITY_LABELS[p] ?? p}</span>

@@ -1,4 +1,5 @@
-import { Download, Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Download04Icon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { FileTypeIcon } from './FileTypeIcon';
@@ -63,9 +64,9 @@ export function FileRow({ file, projectConfigId }: FileRowProps) {
       </span>
       <div className="w-[24px] flex items-center justify-center flex-shrink-0">
         {isDownloading ? (
-          <Loader2 size={14} className="animate-spin text-[var(--text-tertiary)]" />
+          <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin text-[var(--text-tertiary)]" />
         ) : (
-          <Download size={14} className="text-[var(--text-tertiary)]" />
+          <HugeiconsIcon icon={Download04Icon} size={14} className="text-[var(--text-tertiary)]" />
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowRight01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import type { Notification } from '@/modules/tickets/hooks/useNotifications'
 import { cn } from '@/shared/lib/utils'
 import { linkifyText } from '@/shared/lib/linkify'
@@ -39,7 +40,8 @@ export function NotificationAccordionItem({
           <span className="text-sm font-medium text-text-primary leading-snug line-clamp-2 flex-1">
             {n.title}
           </span>
-          <ChevronDown
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
             size={14}
             className={cn(
               'text-text-tertiary shrink-0 mt-1 transition-transform duration-200',
@@ -75,7 +77,7 @@ export function NotificationAccordionItem({
                   className="inline-flex items-center gap-1.5 text-body font-medium text-accent hover:text-accent/80 transition-colors"
                 >
                   Zur Aufgabe
-                  <ArrowRight size={14} />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
                 </button>
               )}
             </div>

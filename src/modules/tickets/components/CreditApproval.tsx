@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FlashIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@/shared/components/ui/button';
 import { useTaskActions } from '../hooks/useTaskActions';
 import { usePostComment } from '../hooks/useTaskComments';
@@ -48,7 +49,7 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
       className="border border-amber-400/40 bg-amber-50 rounded-[var(--r-md)] p-4 mb-5"
     >
       <div className="flex items-center gap-2 mb-2">
-        <Zap size={18} className="text-amber-600 fill-amber-500" />
+        <HugeiconsIcon icon={FlashIcon} size={18} className="text-amber-600" />
         <span className="text-md font-bold text-text-primary">
           Kostenfreigabe erforderlich
         </span>

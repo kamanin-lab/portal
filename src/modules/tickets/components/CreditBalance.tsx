@@ -1,4 +1,5 @@
-import { Zap } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FlashIcon } from '@hugeicons/core-free-icons';
 import { useCredits } from '../hooks/useCredits';
 import { cn } from '@/shared/lib/utils';
 
@@ -46,7 +47,7 @@ export function CreditBalance({ compact = false }: Props) {
         className="flex flex-col items-center justify-center h-12 mx-1.5"
         title={`${displayBalance} Credits ${balance < 0 ? 'überzogen' : 'verfügbar'} - ${formatPackageName(packageName)} - ${creditsPerMonth}/Monat`}
       >
-        <Zap size={20} className={cn('fill-current', balanceColor)} />
+        <HugeiconsIcon icon={FlashIcon} size={20} className={balanceColor} />
         <span className={cn('text-2xs font-semibold leading-none mt-0.5', balanceColor)}>
           {displayBalance}
         </span>
@@ -56,7 +57,7 @@ export function CreditBalance({ compact = false }: Props) {
 
   return (
     <div className="px-4 py-2.5 flex items-center gap-2 text-xs">
-      <Zap size={16} className={cn('shrink-0 fill-current', balanceColor)} />
+      <HugeiconsIcon icon={FlashIcon} size={16} className={cn('shrink-0', balanceColor)} />
       <div className="min-w-0">
         <span className={cn('font-bold', balanceColor)}>
           {displayBalance} Credits

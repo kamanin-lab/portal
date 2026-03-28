@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Loading03Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { SideSheet } from '@/shared/components/ui/SideSheet';
 import { Button } from '@/shared/components/ui/button';
@@ -70,7 +71,7 @@ export function UploadSheet({ project, open, onClose }: UploadSheetProps) {
               onClick={handleUpload}
               disabled={!selectedFile || !selectedChapter || upload.isPending}
             >
-              {upload.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
+              {upload.isPending ? <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin" /> : null}
               Hochladen
             </Button>
           </div>

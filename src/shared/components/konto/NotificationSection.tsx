@@ -1,4 +1,5 @@
-import { Bell } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Notification03Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import type { NotificationPreferences } from '@/shared/types/common'
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/shared/types/common'
@@ -101,7 +102,7 @@ export function NotificationSection({ preferences }: Props) {
   return (
     <section className="bg-surface rounded-[14px] border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Bell size={18} className="text-text-secondary" />
+        <HugeiconsIcon icon={Notification03Icon} size={18} className="text-text-secondary" />
         <h2 className="text-sm font-semibold text-text-primary">E-Mail-Benachrichtigungen</h2>
       </div>
 

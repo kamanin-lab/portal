@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FolderOpenIcon } from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import { useNextcloudFiles } from '../../hooks/useNextcloudFiles';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
@@ -62,7 +63,7 @@ function FolderGrid({ chapters, projectId, onSelect }: FolderGridProps) {
   if (notConfigured) {
     return (
       <EmptyState
-        icon={<FolderOpen size={28} />}
+        icon={<HugeiconsIcon icon={FolderOpenIcon} size={28} />}
         message="Dateien sind für dieses Projekt noch nicht konfiguriert."
       />
     );

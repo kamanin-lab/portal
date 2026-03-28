@@ -1,4 +1,6 @@
-import { FileText, Image, File, FileSpreadsheet, FileArchive, Film } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import type { IconSvgElement } from '@hugeicons/react';
+import { File02Icon, Image01Icon, File01Icon, FileSpreadsheetIcon, FileArchiveIcon, Film01Icon } from '@hugeicons/core-free-icons';
 
 interface FileTypeIconProps {
   mimeType?: string;
@@ -12,14 +14,13 @@ interface FileTypeIconProps {
 export function FileTypeIcon({ mimeType, name }: FileTypeIconProps) {
   const ext = name?.split('.').pop()?.toLowerCase() ?? '';
   const cfg = resolveIcon(mimeType, ext);
-  const Icon = cfg.Icon;
 
   return (
     <div
       className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0"
       style={{ background: `var(${cfg.bgVar})`, color: `var(${cfg.colorVar})` }}
     >
-      <Icon size={13} />
+      <HugeiconsIcon icon={cfg.Icon} size={13} />
     </div>
   );
 }
@@ -27,38 +28,38 @@ export function FileTypeIcon({ mimeType, name }: FileTypeIconProps) {
 interface IconConfig {
   bgVar: string;
   colorVar: string;
-  Icon: typeof FileText;
+  Icon: IconSvgElement;
 }
 
 function resolveIcon(mime?: string, ext?: string): IconConfig {
   // PDF
   if (mime?.includes('pdf') || ext === 'pdf') {
-    return { bgVar: '--file-pdf-bg', colorVar: '--file-pdf', Icon: FileText };
+    return { bgVar: '--file-pdf-bg', colorVar: '--file-pdf', Icon: File02Icon };
   }
   // SVG (specific icon before generic images)
   if (ext === 'svg') {
-    return { bgVar: '--file-svg-bg', colorVar: '--file-svg', Icon: Image };
+    return { bgVar: '--file-svg-bg', colorVar: '--file-svg', Icon: Image01Icon };
   }
   // Images
   if (mime?.startsWith('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext ?? '')) {
-    return { bgVar: '--file-image-bg', colorVar: '--file-image', Icon: Image };
+    return { bgVar: '--file-image-bg', colorVar: '--file-image', Icon: Image01Icon };
   }
   // Spreadsheets
   if (mime?.includes('spreadsheet') || mime?.includes('excel') || ['xls', 'xlsx', 'csv'].includes(ext ?? '')) {
-    return { bgVar: '--file-spreadsheet-bg', colorVar: '--file-spreadsheet', Icon: FileSpreadsheet };
+    return { bgVar: '--file-spreadsheet-bg', colorVar: '--file-spreadsheet', Icon: FileSpreadsheetIcon };
   }
   // Documents (Word, text)
   if (mime?.includes('word') || mime?.includes('document') || mime === 'text/plain' || ['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext ?? '')) {
-    return { bgVar: '--file-document-bg', colorVar: '--file-document', Icon: FileText };
+    return { bgVar: '--file-document-bg', colorVar: '--file-document', Icon: File02Icon };
   }
   // Video
   if (mime?.startsWith('video') || ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext ?? '')) {
-    return { bgVar: '--file-video-bg', colorVar: '--file-video', Icon: Film };
+    return { bgVar: '--file-video-bg', colorVar: '--file-video', Icon: Film01Icon };
   }
   // Archives
   if (mime?.includes('zip') || mime?.includes('archive') || ['zip', 'rar', '7z', 'tar', 'gz'].includes(ext ?? '')) {
-    return { bgVar: '--file-archive-bg', colorVar: '--file-archive', Icon: FileArchive };
+    return { bgVar: '--file-archive-bg', colorVar: '--file-archive', Icon: FileArchiveIcon };
   }
   // Fallback
-  return { bgVar: '--file-default-bg', colorVar: '--file-default', Icon: File };
+  return { bgVar: '--file-default-bg', colorVar: '--file-default', Icon: File01Icon };
 }

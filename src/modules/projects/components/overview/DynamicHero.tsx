@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FlashIcon, CheckmarkCircle02Icon, AlertCircleIcon } from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import type { InterpretedProjectOverview } from '../../lib/overview-interpretation';
 import { getPhaseColor } from '../../lib/phase-colors';
@@ -43,7 +44,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       priority: 1,
       eyebrow: 'NÄCHSTER SCHRITT',
       eyebrowPulse: true,
-      eyebrowIcon: <AlertCircle size={12} />,
+      eyebrowIcon: <HugeiconsIcon icon={AlertCircleIcon} size={12} />,
       title: primaryAttention.portalCta || primaryAttention.title,
       description: primaryAttention.description,
       tint: phaseColor.light,
@@ -63,7 +64,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       priority: 2,
       eyebrow: 'JETZT WICHTIG',
       eyebrowPulse: true,
-      eyebrowIcon: <AlertCircle size={12} />,
+      eyebrowIcon: <HugeiconsIcon icon={AlertCircleIcon} size={12} />,
       title: `${project.tasksSummary.needsAttention} Aufgaben warten auf Sie`,
       description: 'Mindestens ein Schritt braucht Ihre Eingabe oder Freigabe. Öffnen Sie den Überblick oder schreiben Sie uns direkt, wenn etwas unklar ist.',
       tint: getPhaseColor(3).light,
@@ -83,7 +84,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       priority: 3,
       eyebrow: 'IN VORBEREITUNG',
       eyebrowPulse: false,
-      eyebrowIcon: <Zap size={12} />,
+      eyebrowIcon: <HugeiconsIcon icon={FlashIcon} size={12} />,
       title: upcomingStep.step.title,
       description: upcomingStep.step.description,
       tint: upPhase.light,
@@ -99,7 +100,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       priority: 4,
       eyebrow: 'ALLES ERLEDIGT',
       eyebrowPulse: false,
-      eyebrowIcon: <CheckCircle size={12} />,
+      eyebrowIcon: <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />,
       title: 'Ihr Projekt ist abgeschlossen',
       description: 'Alle Phasen wurden erfolgreich abgeschlossen. Herzlichen Glückwunsch!',
       tint: phaseColor.light,

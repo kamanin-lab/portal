@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Inbox, ClipboardList, Headset, FolderOpen } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
+import { InboxIcon, ClipboardIcon, CustomerServiceIcon, FolderOpenIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
@@ -15,16 +17,16 @@ export function BottomNav() {
     n => !n.is_read && (!profile?.support_task_id || n.task_id !== profile.support_task_id)
   ).length
 
-  const items = [
-    { to: '/inbox',   icon: Inbox,         label: 'Inbox',   badge: inboxUnread },
-    { to: '/tickets', icon: ClipboardList, label: 'Aufgaben', badge: 0 },
-    { to: '/support', icon: Headset,       label: 'Support',  badge: supportUnread },
-    { to: '/dateien', icon: FolderOpen,      label: 'Dateien', badge: 0 },
+  const items: { to: string; icon: IconSvgElement; label: string; badge: number }[] = [
+    { to: '/inbox',   icon: InboxIcon,            label: 'Inbox',   badge: inboxUnread },
+    { to: '/tickets', icon: ClipboardIcon,         label: 'Aufgaben', badge: 0 },
+    { to: '/support', icon: CustomerServiceIcon,   label: 'Support',  badge: supportUnread },
+    { to: '/dateien', icon: FolderOpenIcon,        label: 'Dateien', badge: 0 },
   ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 h-[64px] bg-surface border-t border-border flex md:hidden">
-      {items.map(({ to, icon: Icon, label, badge }) => {
+      {items.map(({ to, icon, label, badge }) => {
         const active = location.pathname.startsWith(to)
         return (
           <NavLink
@@ -36,7 +38,7 @@ export function BottomNav() {
             )}
           >
             <div className="relative">
-              <Icon size={20} />
+              <HugeiconsIcon icon={icon} size={20} />
               {badge > 0 && (
                 <span className="absolute -top-[4px] -right-[6px] min-w-[14px] h-[14px] px-1 rounded-full bg-cta text-white text-3xs font-bold flex items-center justify-center leading-none">
                   {badge > 99 ? '99+' : badge}

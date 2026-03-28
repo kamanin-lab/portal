@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { Camera, Loader2, X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Camera01Icon, Loading03Icon, MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { supabase } from '@/shared/lib/supabase'
 import { useUpdateProfile } from '@/shared/hooks/useUpdateProfile'
@@ -89,7 +90,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName }: Props) {
         </div>
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 size={20} className="text-accent animate-spin" />
+            <HugeiconsIcon icon={Loading03Icon} size={20} className="text-accent animate-spin" />
           </div>
         )}
       </div>
@@ -104,7 +105,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName }: Props) {
             isLoading && 'opacity-60 cursor-not-allowed'
           )}
         >
-          <Camera size={13} />
+          <HugeiconsIcon icon={Camera01Icon} size={13} />
           Foto ändern
         </button>
         {avatarUrl && (
@@ -117,7 +118,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName }: Props) {
               isLoading && 'opacity-60 cursor-not-allowed'
             )}
           >
-            <X size={13} />
+            <HugeiconsIcon icon={MultiplicationSignIcon} size={13} />
             Foto entfernen
           </button>
         )}

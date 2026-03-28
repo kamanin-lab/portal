@@ -1,4 +1,5 @@
-import { Bell } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Notification03Icon } from '@hugeicons/core-free-icons';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
@@ -22,7 +23,7 @@ export function NotificationBell() {
           className="relative p-1.5 rounded-[var(--r-sm)] text-text-sidebar hover:bg-sidebar-hover hover:text-white transition-colors cursor-pointer"
           title={dict.labels.notifications}
         >
-          <Bell size={18} />
+          <HugeiconsIcon icon={Notification03Icon} size={18} />
           {unreadCount > 0 && (
             <span className="absolute -top-[2px] -right-[2px] min-w-[16px] h-[16px] px-1 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center">
               {unreadCount > 99 ? '99+' : unreadCount}

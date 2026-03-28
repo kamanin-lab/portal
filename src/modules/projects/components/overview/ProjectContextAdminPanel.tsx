@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { BookOpenText, Pencil, Plus, ShieldCheck, Archive } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { BookOpenTextIcon, PencilEdit02Icon, PlusSignIcon, SecurityCheckIcon, ArchiveIcon } from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import type { MemoryEntry } from '../../types/memory';
 import { useProjectMemory } from '../../hooks/useProjectMemory';
@@ -61,7 +62,7 @@ export function ProjectContextAdminPanel({ project }: ProjectContextAdminPanelPr
           onClick={() => { setEditingEntry(null); setSheetOpen(true); }}
           className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
         >
-          <Plus size={14} />
+          <HugeiconsIcon icon={PlusSignIcon} size={14} />
           Eintrag hinzufügen
         </button>
       </div>
@@ -104,7 +105,7 @@ export function ProjectContextAdminPanel({ project }: ProjectContextAdminPanelPr
                   onClick={() => { setEditingEntry(entry); setSheetOpen(true); }}
                   className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-2.5 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
                 >
-                  <Pencil size={13} />
+                  <HugeiconsIcon icon={PencilEdit02Icon} size={13} />
                   Bearbeiten
                 </button>
                 <button
@@ -112,7 +113,7 @@ export function ProjectContextAdminPanel({ project }: ProjectContextAdminPanelPr
                   disabled={isArchiving}
                   className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-white px-2.5 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-60"
                 >
-                  <Archive size={13} />
+                  <HugeiconsIcon icon={ArchiveIcon} size={13} />
                   Archivieren
                 </button>
               </div>
@@ -144,11 +145,11 @@ function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone
         ? 'bg-emerald-50 text-emerald-700'
         : 'bg-[var(--surface)] text-[var(--text-secondary)]';
 
-  const Icon = tone === 'internal' ? ShieldCheck : BookOpenText;
+  const iconEl = tone === 'internal' ? SecurityCheckIcon : BookOpenTextIcon;
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-semibold ${toneClass}`}>
-      <Icon size={11} />
+      <HugeiconsIcon icon={iconEl} size={11} />
       {children}
     </span>
   );

@@ -1,4 +1,5 @@
-import { X, Paperclip } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { MultiplicationSignIcon, Attachment01Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/shared/components/ui/button';
 
 interface FileAttachmentsProps {
@@ -25,7 +26,7 @@ export function FileAttachments({ files, setFiles, fileInputRef }: FileAttachmen
         size="sm"
         className="text-xs border-dashed"
       >
-        <Paperclip size={13} />
+        <HugeiconsIcon icon={Attachment01Icon} size={13} />
         Dateien hinzufügen
       </Button>
       {files.length > 0 && (
@@ -34,7 +35,7 @@ export function FileAttachments({ files, setFiles, fileInputRef }: FileAttachmen
             <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-surface-active rounded text-xxs text-text-secondary">
               {f.name}
               <button type="button" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="hover:text-red-500 cursor-pointer">
-                <X size={12} />
+                <HugeiconsIcon icon={MultiplicationSignIcon} size={12} />
               </button>
             </span>
           ))}

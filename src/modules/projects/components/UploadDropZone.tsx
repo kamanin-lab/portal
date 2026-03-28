@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Upload04Icon } from '@hugeicons/core-free-icons';
 
 interface UploadDropZoneProps {
   selectedFile: File | null;
@@ -31,7 +32,7 @@ export function UploadDropZone({ selectedFile, onFileSelect }: UploadDropZonePro
             : 'border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-hover)]'
       }`}
     >
-      <Upload size={22} className="mx-auto mb-3 opacity-50" />
+      <HugeiconsIcon icon={Upload04Icon} size={22} className="mx-auto mb-3 opacity-50" />
       {selectedFile ? (
         <p className="text-body font-medium text-[var(--text-primary)]">{selectedFile.name}</p>
       ) : (

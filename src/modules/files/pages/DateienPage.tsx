@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FolderOpenIcon } from '@hugeicons/core-free-icons';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
@@ -22,7 +23,7 @@ export function DateienPage() {
     return (
       <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
         <EmptyState
-          icon={<FolderOpen size={28} />}
+          icon={<HugeiconsIcon icon={FolderOpenIcon} size={28} />}
           message="Dateien sind noch nicht konfiguriert."
         />
       </ContentContainer>

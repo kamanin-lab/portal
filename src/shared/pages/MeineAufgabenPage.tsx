@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ClipboardCheck, CheckCircle2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { TaskDone01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
 import { EmptyState } from '@/shared/components/common/EmptyState'
@@ -65,7 +66,7 @@ export function MeineAufgabenPage() {
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-1">
-        <ClipboardCheck size={20} className="text-accent" />
+        <HugeiconsIcon icon={TaskDone01Icon} size={20} className="text-accent" />
         <h1 className="text-lg font-semibold text-text-primary">Meine Aufgaben</h1>
         {attentionTasks.length > 0 && (
           <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-cta text-white text-xxs font-bold flex items-center justify-center">
@@ -85,7 +86,7 @@ export function MeineAufgabenPage() {
       {/* Empty state */}
       {!isLoading && attentionTasks.length === 0 && (
         <div className="py-8">
-          <EmptyState message="Keine offenen Aufgaben — alles erledigt!" icon={<CheckCircle2 size={36} className="text-green-500" />} />
+          <EmptyState message="Keine offenen Aufgaben — alles erledigt!" icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} className="text-green-500" />} />
         </div>
       )}
 

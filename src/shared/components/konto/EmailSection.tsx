@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Mail } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Mail01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { useUpdateEmail } from '@/shared/hooks/useUpdateProfile'
 import { Button } from '@/shared/components/ui/button'
@@ -41,7 +42,7 @@ export function EmailSection({ currentEmail }: Props) {
   return (
     <section className="bg-surface rounded-[14px] border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Mail size={18} className="text-text-secondary" />
+        <HugeiconsIcon icon={Mail01Icon} size={18} className="text-text-secondary" />
         <h2 className="text-sm font-semibold text-text-primary">E-Mail-Adresse</h2>
       </div>
 

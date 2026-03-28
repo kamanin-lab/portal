@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Zap } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FlashIcon } from '@hugeicons/core-free-icons';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { TaskActions } from './TaskActions';
 import { CreditApproval } from './CreditApproval';
@@ -71,8 +72,8 @@ export function TaskDetail({ task, onRead }: Props) {
           <span>{dict.labels.lastActivity}: {formatDate(task.last_activity_at)}</span>
         )}
         {task.credits != null && task.credits > 0 && (
-          <span className="inline-flex items-center gap-0.5 text-amber-600 font-medium">
-            <Zap size={11} className="fill-amber-500 stroke-amber-600" />
+          <span className="inline-flex items-center gap-0.5 text-text-secondary font-medium">
+            <HugeiconsIcon icon={FlashIcon} size={11} className="text-text-tertiary" />
             {task.credits % 1 === 0 ? task.credits : task.credits.toFixed(1)} Credits
           </span>
         )}

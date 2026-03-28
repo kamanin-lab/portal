@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { supabase } from '@/shared/lib/supabase'
 import fullLogo from '@/assets/KAMANIN-logo-white.svg'
@@ -64,7 +65,7 @@ export function MobileSidebarOverlay({ open, onClose }: Props) {
         <div className="flex items-center justify-between h-14 px-3.5 shrink-0">
           <img src={fullLogo} alt="KAMANIN" className="h-6 w-auto object-contain" />
           <button onClick={onClose} className="text-text-sidebar hover:text-white transition-colors">
-            <X size={20} />
+            <HugeiconsIcon icon={MultiplicationSignIcon} size={20} />
           </button>
         </div>
 

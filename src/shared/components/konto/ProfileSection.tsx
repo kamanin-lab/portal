@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { User } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { UserIcon } from '@hugeicons/core-free-icons'
 import type { Profile } from '@/shared/types/common'
 import { useUpdateProfile } from '@/shared/hooks/useUpdateProfile'
 import { useAuth } from '@/shared/hooks/useAuth'
@@ -89,7 +90,7 @@ export function ProfileSection({ profile }: Props) {
   return (
     <section className="bg-surface rounded-[14px] border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <User size={18} className="text-text-secondary" />
+        <HugeiconsIcon icon={UserIcon} size={18} className="text-text-secondary" />
         <h2 className="text-sm font-semibold text-text-primary">Profil</h2>
       </div>
 

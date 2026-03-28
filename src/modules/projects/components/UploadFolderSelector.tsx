@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Loading03Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import type { Project } from '../types/project';
@@ -109,7 +110,7 @@ export function UploadFolderSelector({
             onClick={handleCreateFolder}
             disabled={!newFolderName.trim() || isCreatingFolder}
           >
-            {isCreatingFolder ? <Loader2 size={12} className="animate-spin" /> : 'Erstellen'}
+            {isCreatingFolder ? <HugeiconsIcon icon={Loading03Icon} size={12} className="animate-spin" /> : 'Erstellen'}
           </Button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ArrowRight } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Notification03Icon, TickDouble01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useBreakpoint } from '@/shared/hooks/useBreakpoint'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
@@ -54,7 +55,7 @@ export function InboxPage() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Bell size={18} className="text-text-secondary" />
+            <HugeiconsIcon icon={Notification03Icon} size={18} className="text-text-secondary" />
             <h1 className="text-base font-semibold text-text-primary">Inbox</h1>
             {unreadCount > 0 && (
               <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center">
@@ -67,7 +68,7 @@ export function InboxPage() {
               onClick={() => markAllAsRead()}
               className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
             >
-              <CheckCheck size={14} />
+              <HugeiconsIcon icon={TickDouble01Icon} size={14} />
               Alle gelesen
             </button>
           )}
@@ -82,7 +83,7 @@ export function InboxPage() {
           )}
           {!isLoading && pageItems.length === 0 && (
             <div className="py-8">
-              <EmptyState message="Keine Benachrichtigungen vorhanden." icon={<Bell size={24} />} />
+              <EmptyState message="Keine Benachrichtigungen vorhanden." icon={<HugeiconsIcon icon={Notification03Icon} size={24} />} />
             </div>
           )}
           {isMobile ? (
@@ -115,7 +116,7 @@ export function InboxPage() {
                   <span className="text-sm font-medium text-text-primary leading-snug line-clamp-2 flex-1">
                     {n.title}
                   </span>
-                  <ArrowRight size={14} className="text-text-tertiary shrink-0 mt-1" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} className="text-text-tertiary shrink-0 mt-1" />
                 </div>
                 <div className="flex items-center gap-2 pl-4">
                   <TypeBadge type={n.type} />

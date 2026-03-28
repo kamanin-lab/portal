@@ -1,4 +1,5 @@
-import { RefreshCw } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Refresh01Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -22,7 +23,8 @@ export function SyncIndicator({ lastSyncedAt, isSyncing, onSync }: Props) {
       className="flex items-center gap-1.5 text-xxs text-text-tertiary hover:text-accent transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
       title="Daten aus ClickUp aktualisieren"
     >
-      <RefreshCw
+      <HugeiconsIcon
+        icon={Refresh01Icon}
         size={12}
         className={cn('shrink-0', isSyncing && 'animate-spin')}
       />

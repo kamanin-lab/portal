@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FolderPlus, Loader2 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FolderAddIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 
@@ -40,7 +41,7 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
         size="sm"
         className="text-accent hover:text-accent-hover mt-2 p-0 h-auto text-xs"
       >
-        <FolderPlus size={14} />
+        <HugeiconsIcon icon={FolderAddIcon} size={14} />
         Neuen Ordner erstellen
       </Button>
     );
@@ -63,7 +64,7 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
           variant="accent"
           size="sm"
         >
-          {isLoading ? <Loader2 size={14} className="animate-spin" /> : 'Erstellen'}
+          {isLoading ? <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin" /> : 'Erstellen'}
         </Button>
         <Button
           onClick={() => { setIsOpen(false); setName(''); setError(''); }}

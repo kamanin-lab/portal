@@ -1,26 +1,30 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Upload, ExternalLink, Paintbrush, Video, Mail, Globe, Link } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  PlusSignIcon, Message01Icon, Upload04Icon, ArrowUpRight01Icon,
+  PaintBrush01Icon, Video01Icon, Mail01Icon, GlobeIcon, Link01Icon,
+} from '@hugeicons/core-free-icons';
 import type { InterpretedProjectOverview } from '../../lib/overview-interpretation';
 import { toCardModel, type QuickActionCardModel } from '../../lib/quick-action-helpers';
 
-/** Map icon token strings (from DB or hardcoded) to Lucide icon components */
+/** Map icon token strings (from DB or hardcoded) to Hugeicons components */
 function resolveIcon(token: string): React.ReactNode {
   const iconMap: Record<string, React.ReactNode> = {
-    'message-square': <MessageSquare size={18} />,
-    'upload': <Upload size={18} />,
-    'link': <Link size={18} />,
-    'external-link': <ExternalLink size={18} />,
-    'figma': <Paintbrush size={18} />,
-    'video': <Video size={18} />,
-    'mail': <Mail size={18} />,
-    'globe': <Globe size={18} />,
-    'plus': <Plus size={18} />,
-    'primary_cta': <Plus size={18} />,
-    'general_message': <MessageSquare size={18} />,
-    'files': <Upload size={18} />,
-    'create_task': <Plus size={18} />,
+    'message-square': <HugeiconsIcon icon={Message01Icon} size={18} />,
+    'upload': <HugeiconsIcon icon={Upload04Icon} size={18} />,
+    'link': <HugeiconsIcon icon={Link01Icon} size={18} />,
+    'external-link': <HugeiconsIcon icon={ArrowUpRight01Icon} size={18} />,
+    'figma': <HugeiconsIcon icon={PaintBrush01Icon} size={18} />,
+    'video': <HugeiconsIcon icon={Video01Icon} size={18} />,
+    'mail': <HugeiconsIcon icon={Mail01Icon} size={18} />,
+    'globe': <HugeiconsIcon icon={GlobeIcon} size={18} />,
+    'plus': <HugeiconsIcon icon={PlusSignIcon} size={18} />,
+    'primary_cta': <HugeiconsIcon icon={PlusSignIcon} size={18} />,
+    'general_message': <HugeiconsIcon icon={Message01Icon} size={18} />,
+    'files': <HugeiconsIcon icon={Upload04Icon} size={18} />,
+    'create_task': <HugeiconsIcon icon={PlusSignIcon} size={18} />,
   };
-  return iconMap[token] ?? <ExternalLink size={18} />;
+  return iconMap[token] ?? <HugeiconsIcon icon={ArrowUpRight01Icon} size={18} />;
 }
 
 interface QuickActionsProps {

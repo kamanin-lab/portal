@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { MessageCircle, SlidersHorizontal } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { FlashIcon, TimeScheduleIcon, Comment01Icon, PreferenceHorizontalIcon } from '@hugeicons/core-free-icons'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { TaskFilters, type TaskFilter } from '../components/TaskFilters'
 import { TaskList } from '../components/TaskList'
 import { TaskSearchBar } from '../components/TaskSearchBar'
-// SyncIndicator removed — realtime handles updates
 import { NewTaskButton } from '../components/NewTaskButton'
 import { TaskDetailSheet } from '../components/TaskDetailSheet'
 import { TaskFilterPanel, type ActiveFilters } from '../components/TaskFilterPanel'
@@ -14,7 +14,7 @@ import { NewTicketDialog } from '../components/NewTicketDialog'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
-import { CreditBalance } from '../components/CreditBalance'
+import { useCredits } from '../hooks/useCredits'
 import { mapStatus } from '../lib/status-mapping'
 import { cn } from '@/shared/lib/utils'
 
@@ -30,6 +30,7 @@ export function TicketsPage() {
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
   const { taskUnread } = useUnreadCounts(user?.id)
+  const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
 
   const activeTaskId = searchParams.get('taskId')
   const filterCount = activeFilters.priorities.length + (activeFilters.datePreset ? 1 : 0)
@@ -66,10 +67,37 @@ export function TicketsPage() {
 
   return (
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
-      {/* Row 1: New task button + search + Support */}
+      {/* Row 1: New task button + credits + search + Support */}
       <div className="flex items-center gap-3 mb-4">
         <NewTaskButton onClick={() => setDialogOpen(true)} />
+
         <div className="flex items-center gap-2 ml-auto">
+          {/* Credit balance — desktop only (mobile shows in MobileHeader) */}
+          {!creditsLoading && packageName && (
+            <Link
+              to="/konto"
+              className="hidden md:flex items-center gap-1.5 text-xs shrink-0"
+              title="Kreditverlauf anzeigen"
+            >
+              <HugeiconsIcon icon={FlashIcon} size={14} className={cn(
+                balance < 0 ? 'text-credit-low'
+                  : creditsPerMonth && balance / creditsPerMonth > 0.5 ? 'text-credit-ok'
+                  : creditsPerMonth && balance / creditsPerMonth >= 0.2 ? 'text-credit-warn'
+                  : 'text-credit-low'
+              )} />
+              <span className={cn(
+                'font-semibold',
+                balance < 0 ? 'text-credit-low'
+                  : creditsPerMonth && balance / creditsPerMonth > 0.5 ? 'text-credit-ok'
+                  : creditsPerMonth && balance / creditsPerMonth >= 0.2 ? 'text-credit-warn'
+                  : 'text-credit-low'
+              )}>
+                {balance % 1 === 0 ? balance : balance.toFixed(1)} Credits
+              </span>
+              <span className="text-text-tertiary">/ {creditsPerMonth} pro Monat</span>
+              <HugeiconsIcon icon={TimeScheduleIcon} size={13} className="text-accent" />
+            </Link>
+          )}
           <TaskSearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -79,15 +107,10 @@ export function TicketsPage() {
             onClick={() => setSupportOpen(true)}
             className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold bg-accent text-white rounded-[var(--r-md)] hover:bg-accent-hover transition-colors cursor-pointer shrink-0"
           >
-            <MessageCircle size={15} />
+            <HugeiconsIcon icon={Comment01Icon} size={15} />
             Support
           </button>
         </div>
-      </div>
-
-      {/* Credit balance strip */}
-      <div className="mb-3 bg-surface border border-border rounded-[var(--r-md)] overflow-hidden">
-        <CreditBalance />
       </div>
 
       {/* Row 2: Filter chips + Filter button */}
@@ -105,7 +128,7 @@ export function TicketsPage() {
                 : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
             )}
           >
-            <SlidersHorizontal size={16} />
+            <HugeiconsIcon icon={PreferenceHorizontalIcon} size={16} />
             {filterCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center">
                 {filterCount}

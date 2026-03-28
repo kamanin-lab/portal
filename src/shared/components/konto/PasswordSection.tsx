@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Check, Lock, X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Tick01Icon, LockIcon, MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { PASSWORD_RULES, validatePassword } from '@/shared/lib/password-validation'
@@ -53,7 +54,7 @@ export function PasswordSection() {
   return (
     <section className="bg-surface rounded-[14px] border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Lock size={18} className="text-text-secondary" />
+        <HugeiconsIcon icon={LockIcon} size={18} className="text-text-secondary" />
         <h2 className="text-sm font-semibold text-text-primary">Passwort</h2>
       </div>
 
@@ -83,9 +84,9 @@ export function PasswordSection() {
                   return (
                     <div key={rule.key} className="flex items-center gap-1.5">
                       {passed ? (
-                        <Check size={12} className="text-committed shrink-0" />
+                        <HugeiconsIcon icon={Tick01Icon} size={12} className="text-committed shrink-0" />
                       ) : (
-                        <X size={12} className="text-awaiting shrink-0" />
+                        <HugeiconsIcon icon={MultiplicationSignIcon} size={12} className="text-awaiting shrink-0" />
                       )}
                       <span className={cn('text-xs', passed ? 'text-committed' : 'text-awaiting')}>
                         {rule.label}

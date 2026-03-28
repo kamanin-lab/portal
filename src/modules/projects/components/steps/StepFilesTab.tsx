@@ -1,4 +1,5 @@
-import { Upload } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Upload04Icon } from '@hugeicons/core-free-icons';
 import type { Step } from '../../types/project';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 
@@ -29,7 +30,7 @@ export function StepFilesTab({ step }: StepFilesTabProps) {
 
       {/* Drop zone */}
       <div className="mt-3 border-2 border-dashed border-border rounded-[var(--r-md)] p-6 text-center text-body text-text-tertiary hover:border-accent hover:bg-accent-light transition-all cursor-pointer">
-        <Upload size={18} className="mx-auto mb-2 opacity-60" />
+        <HugeiconsIcon icon={Upload04Icon} size={18} className="mx-auto mb-2 opacity-60" />
         Dateien hierher ziehen oder <strong className="text-accent">klicken</strong>
       </div>
     </div>

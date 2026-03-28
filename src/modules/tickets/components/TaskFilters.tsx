@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, AlertCircle, Circle, PlayCircle, Clock, CheckCircle2, CheckCheck, PauseCircle, XCircle, Layers } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
+import {
+  ArrowDown01Icon, AlertCircleIcon, CircleIcon, PlayCircleIcon, Clock01Icon,
+  CheckmarkCircle02Icon, TickDouble01Icon, PauseCircleIcon, CancelCircleIcon, Layers01Icon,
+} from '@hugeicons/core-free-icons'
 import { mapStatus } from '../lib/status-mapping'
 import { STATUS_LABELS } from '../lib/status-dictionary'
 import { cn } from '@/shared/lib/utils'
@@ -45,17 +50,16 @@ const FILTER_LABELS: Record<TaskFilter, string> = {
   cancelled:   STATUS_LABELS.cancelled,
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const STATUS_ICONS: Partial<Record<TaskFilter, React.ComponentType<any>>> = {
-  attention:   AlertCircle,
-  ready:       PlayCircle,
-  open:        Circle,
-  in_progress: Clock,
-  approved:    CheckCircle2,
-  done:        CheckCheck,
-  on_hold:     PauseCircle,
-  cancelled:   XCircle,
-  all:         Layers,
+const STATUS_ICONS: Partial<Record<TaskFilter, IconSvgElement>> = {
+  attention:   AlertCircleIcon,
+  ready:       PlayCircleIcon,
+  open:        CircleIcon,
+  in_progress: Clock01Icon,
+  approved:    CheckmarkCircle02Icon,
+  done:        TickDouble01Icon,
+  on_hold:     PauseCircleIcon,
+  cancelled:   CancelCircleIcon,
+  all:         Layers01Icon,
 }
 
 export function TaskFilters({ active, onChange, tasks }: Props) {
@@ -102,7 +106,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
               onClick={() => onChange(f)}
               className={chipClass(isActive, isAttention)}
             >
-              {Icon && <Icon size={11} />}
+              {Icon && <HugeiconsIcon icon={Icon} size={11} />}
               {FILTER_LABELS[f]}
               <span className={cn(
                 'min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center',
@@ -127,7 +131,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
           )}
         >
           Mehr
-          <ChevronDown size={11} className={cn('transition-transform duration-200', moreOpen && 'rotate-180')} />
+          <HugeiconsIcon icon={ArrowDown01Icon} size={11} className={cn('transition-transform duration-200', moreOpen && 'rotate-180')} />
         </button>
         {moreOpen && (
           <div className="absolute top-full right-0 mt-1 w-44 bg-surface border border-border rounded-[var(--r-md)] shadow-md z-10 py-1">
@@ -143,7 +147,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
                     active === f ? 'text-accent font-medium' : 'text-text-secondary'
                   )}
                 >
-                  {Icon && <Icon size={13} />}
+                  {Icon && <HugeiconsIcon icon={Icon} size={13} />}
                   <span className="flex-1 text-left">{FILTER_LABELS[f]}</span>
                   <span className="text-xxs text-text-tertiary">{count}</span>
                 </button>

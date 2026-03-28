@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import type { Project, Step } from '../../types/project';
 import { getTasksForStep, taskStatusLabel } from '../../lib/helpers';
 import { StepActionBar } from './StepActionBar';
@@ -56,7 +57,8 @@ export function StepOverviewTab({ step, project }: StepOverviewTabProps) {
             className="w-full flex items-center justify-between px-3.5 py-3 text-body font-medium text-text-primary hover:bg-surface-hover transition-colors rounded-t-[var(--r-md)] cursor-pointer"
           >
             <span>Verknuepfte Aufgaben ({linkedTasks.length})</span>
-            <ChevronRight
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
               size={15}
               className={`text-text-tertiary transition-transform duration-150 ${expandedSections.linkedTasks ? 'rotate-90' : ''}`}
             />
@@ -112,7 +114,8 @@ function ExpandableSection({ title, body, defaultOpen = false, toggleable = true
       >
         <span>{title}</span>
         {toggleable && (
-          <ChevronRight
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
             size={15}
             className={`text-text-tertiary transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
           />

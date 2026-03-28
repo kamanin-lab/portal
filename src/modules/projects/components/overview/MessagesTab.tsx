@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Message01Icon } from '@hugeicons/core-free-icons';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
 import { Button } from '@/shared/components/ui/button';
@@ -43,7 +44,7 @@ export function MessagesTab({ comments, isLoading }: MessagesTabProps) {
   }
 
   if (comments.length === 0) {
-    return <EmptyState message="Noch keine Nachrichten." icon={<MessageSquare size={28} />} />;
+    return <EmptyState message="Noch keine Nachrichten." icon={<HugeiconsIcon icon={Message01Icon} size={28} />} />;
   }
 
   const visible = comments.slice(0, visibleCount);
