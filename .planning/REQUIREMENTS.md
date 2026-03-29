@@ -7,10 +7,10 @@
 
 ### Critical Fixes (CRIT)
 
-- [ ] **CRIT-01**: TasksPage shows project tasks from project_task_cache (not hardcoded empty array)
+- [x] **CRIT-01**: TasksPage shows project tasks from project_task_cache (not hardcoded empty array)
 - [ ] **CRIT-02**: MessagesPage uses useProjectComments hook for live comment data (not stale step.messages)
 - [ ] **CRIT-03**: ContextStrip ETA field either shows valid data or is removed entirely
-- [ ] **CRIT-04**: StepOverviewTab hides empty enrichment sections (no blank expandable areas)
+- [x] **CRIT-04**: StepOverviewTab hides empty enrichment sections (no blank expandable areas)
 
 ### AI Enrichment (ENRICH)
 
@@ -53,10 +53,10 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| CRIT-01 | Phase 2 | Pending |
+| CRIT-01 | Phase 2 | Complete |
 | CRIT-02 | Phase 2 | Pending |
 | CRIT-03 | Phase 2 | Pending |
-| CRIT-04 | Phase 2 | Pending |
+| CRIT-04 | Phase 2 | Complete |
 | ENRICH-01 | Phase 3 | Pending |
 | ENRICH-02 | Phase 3 | Pending |
 | ENRICH-03 | Phase 3 | Pending |

@@ -34,7 +34,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Remove dead TasksPage pipeline + guard empty enrichment sections
+- [x] 02-01-PLAN.md — Remove dead TasksPage pipeline + guard empty enrichment sections
 - [ ] 02-02-PLAN.md — Fix MessagesPage live data + remove broken ETA display
 
 ### Phase 3: AI Enrichment
