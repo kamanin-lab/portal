@@ -12,15 +12,7 @@ export type StepStatus = 'committed' | 'awaiting_input' | 'upcoming_locked';
 export type ChapterStatus = 'completed' | 'current' | 'upcoming';
 export type UpdateType = 'file' | 'status' | 'message';
 export type FileType = 'pdf' | 'img' | 'jpg' | 'png' | 'svg' | 'doc';
-export type TaskStatus = 'needs-attention' | 'in-progress';
 export type MessageRole = 'team' | 'client';
-
-export interface ProjectTask {
-  id: string;
-  title: string;
-  status: TaskStatus;
-  stepId: string;
-}
 
 export interface Update {
   text: string;
@@ -160,7 +152,6 @@ export interface Project {
   clickupPhaseFieldId: string | null;
   generalMessageTaskId?: string | null;
   tasksSummary: TasksSummary;
-  tasks: ProjectTask[];
   updates: Update[];
   teamWorkingOn: TeamWorkingOn;
   chapters: Chapter[];

@@ -1,4 +1,4 @@
-import type { Project, Chapter, Step, ProjectTask, StepWithChapter, ChapterStatus } from '../types/project';
+import type { Project, Chapter, Step, StepWithChapter, ChapterStatus } from '../types/project';
 import { getPhaseColor, type PhaseColor } from './phase-colors';
 
 export function getNextCheckpoint(project: Project): StepWithChapter | null {
@@ -80,10 +80,6 @@ export function generateNarrative(project: Project): string {
   return narrative;
 }
 
-export function getTasksForStep(stepId: string, project: Project): ProjectTask[] {
-  return project.tasks.filter(t => t.stepId === stepId);
-}
-
 export function getStepById(stepId: string, project: Project): { step: Step; chapter: Chapter } | null {
   for (const chapter of project.chapters) {
     const step = chapter.steps.find(s => s.id === stepId);
@@ -101,11 +97,3 @@ export function statusLabel(status: Step['status']): string {
   return map[status] ?? status;
 }
 
-export function taskStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    'needs-attention': 'Offen',
-    'in-progress': 'In Arbeit',
-    done: 'Erledigt',
-  };
-  return map[status] ?? status;
-}

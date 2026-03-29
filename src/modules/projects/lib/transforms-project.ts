@@ -1,5 +1,5 @@
 import type {
-  Project, Chapter, Step, FileItem, Update, ProjectTask,
+  Project, Chapter, Step, FileItem, Update,
   ProjectConfigRow, ChapterConfigRow, ProjectTaskCacheRow, StepEnrichmentRow,
   QuickActionConfigRow,
 } from '../types/project';
@@ -226,7 +226,6 @@ export function transformToProject(
       inProgress,
       total: allSteps.length,
     },
-    tasks: [] as ProjectTask[],
     updates,
     teamWorkingOn: {
       task: currentWork?.name || '',
