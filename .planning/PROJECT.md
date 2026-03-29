@@ -8,6 +8,18 @@ Modular B2B client portal for KAMANIN IT Solutions (web agency, Salzburg, Austri
 
 Clients always know what needs their attention and can act on it in one click — approve, request changes, or communicate — without any project management complexity.
 
+## Current Milestone: v1.1 Projects Module v2
+
+**Goal:** Fix all broken pipelines in the Projects module, improve AI enrichment lifecycle, redesign the PhaseTimeline with Motion animations, and unify data sources — implementing all 22 findings from the formal audit.
+
+**Target features:**
+- Fix 4 critical broken data pipelines (TasksPage, MessagesPage, ContextStrip ETA, empty enrichment sections)
+- AI enrichment improvements (hash-based re-enrichment, manual trigger, hero surfacing)
+- PhaseTimeline redesign (Motion animations, partial progress, mobile responsive, tooltips)
+- Data unification and polish (ProjectContext integration, FilesTab clarity, page transitions)
+
+**PRD:** `docs/audits/projects-module-audit.md`
+
 ## Requirements
 
 ### Validated
@@ -96,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 1. Full review of all sections
 
 ---
-*Last updated: 2026-03-26 after GSD initialization*
+*Last updated: 2026-03-29 — Milestone v1.1 started (Projects Module v2)*

@@ -1,9 +1,16 @@
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-29 - Full docs restructuring (260329-hjo)
+**Last activity:** 2026-03-29 — Milestone v1.1 started (Projects Module v2)
 
-## Current Phase
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-29 — Milestone v1.1 started
+
+## Previous Milestone
 Phase 1: Portal Frontend — Complete
 
 ### Quick Tasks Completed
