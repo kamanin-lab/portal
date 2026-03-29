@@ -21,10 +21,10 @@
 
 ### PhaseTimeline (TIMELINE)
 
-- [x] **TIMELINE-01**: PhaseTimeline nodes are 20-24px with clear state differentiation via phase colors
-- [x] **TIMELINE-02**: Connector lines show partial completion fill (steps completed / total)
-- [x] **TIMELINE-03**: State transitions use Motion spring animations (layout transitions, state label entry/exit)
-- [x] **TIMELINE-04**: Mobile view (< 768px) collapses to single-phase with prev/next navigation
+- [x] **TIMELINE-01**: PhaseTimeline nodes are 28-32px stepper indicators with phase icons and per-phase colors
+- [x] **TIMELINE-02**: Connector lines show completion fill based on left chapter status (completed=100%, current=progress, upcoming=0%)
+- [x] **TIMELINE-03**: State transitions use Motion spring animations (state label entry/exit) and CSS GPU-accelerated pulse
+- [x] **TIMELINE-04**: Mobile view (< 768px) shows all phases in horizontal overflow scroll
 - [x] **TIMELINE-05**: Tooltip on hover shows chapter narrative text
 
 ### Data Unification (DATA)
