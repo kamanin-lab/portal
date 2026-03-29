@@ -15,7 +15,7 @@
 
 - [x] **Phase 2: Critical Fixes** — Restore four permanently broken data pipelines so the Projects module shows real data (completed 2026-03-29)
 - [x] **Phase 3: AI Enrichment** — Fix write-once enrichment lifecycle and surface AI content where clients can see it (completed 2026-03-29)
-- [ ] **Phase 4: PhaseTimeline Redesign** — Replace static dots with animated, informative, mobile-responsive timeline
+- [x] **Phase 4: PhaseTimeline Redesign** — Replace static dots with animated, informative, mobile-responsive timeline
 - [ ] **Phase 5: Data Unification & Polish** — Integrate ProjectContext, clarify FilesTab, add page transitions, enforce code standards
 
 ---
@@ -68,7 +68,7 @@ Plans:
 - [x] 04-02-PLAN.md — PhaseTimeline desktop/mobile rewrite + unit tests + visual verification
 
 ### Phase 5: Data Unification & Polish
-**Goal**: Project context is visible to clients, the files tab is unambiguous, and the codebase meets all architectural standards
+**Goal**: Project files show real Nextcloud data, tab transitions animate smoothly, and the PhaseTimeline has a proper loading skeleton
 **Depends on**: Phase 4
 **Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05
 **Success Criteria** (what must be TRUE):
@@ -77,8 +77,13 @@ Plans:
   3. Navigating between project tabs fades and slides in — no jarring instantaneous content swaps
   4. While project data is loading, the PhaseTimeline shows a skeleton placeholder — never a blank space or broken layout
   5. ProjectContextAdminPanel is under 150 lines with MemoryEntryForm extracted as a separate component
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+
+Plans:
+- [ ] 05-00-PLAN.md — Wave 0 test scaffolds (FilesTab, StepFilesTab, OverviewTabs, PhaseTimeline skeleton stubs)
+- [ ] 05-01-PLAN.md — FilesTab + StepFilesTab Nextcloud rewrite with slugify utility
+- [ ] 05-02-PLAN.md — Motion tab transitions + PhaseTimeline loading skeleton
+- [ ] 05-03-PLAN.md — Webhook auto-mkdir on taskCreated + env var verification
 
 ---
 
@@ -88,5 +93,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
 | 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
-| 4. PhaseTimeline Redesign | 1/3 | In Progress|  |
-| 5. Data Unification & Polish | 0/? | Not started | - |
+| 4. PhaseTimeline Redesign | 3/3 | Complete |  |
+| 5. Data Unification & Polish | 0/4 | Planning complete | - |
