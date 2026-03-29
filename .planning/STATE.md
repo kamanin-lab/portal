@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-00-PLAN.md
-last_updated: "2026-03-29T22:16:37.570Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-29T22:38:23.792Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 11
 ---
 
 # Project State
@@ -21,9 +21,9 @@ progress:
 ## Current Position
 
 Phase: 05 (data-unification-polish) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
-Stopped At: Completed 05-00-PLAN.md
+Stopped At: Completed 05-02-PLAN.md
 Last activity: 2026-03-29
 
 ## Previous Milestone
@@ -60,6 +60,12 @@ Phase 1: Portal Frontend — Complete
 - PhaseNode dot kept inline (not extracted to sub-component) to access color+status within 150-line limit (Phase 04-01)
 - createNextcloudFolder failure is intentionally non-fatal — webhook must always return 200 to ClickUp (Phase 05-03)
 - Recursive MKCOL stops on first failure to avoid orphaned subdirectory creation (Phase 05-03)
+- FilesTab shows 8 most recent Nextcloud files (type=file only), sorted by lastModified desc — no navigation to DateienPage (Phase 05-01)
+- StepFilesTab constructs path as chapterFolder/slugify(step.title) — frontend slugify mirrors Edge Function exactly (Phase 05-01)
+- slugify.ts duplicated in frontend src/ — Edge Functions cannot share src/ imports (Phase 05-01)
+- AnimatePresence requires conditional rendering (not TabsContent) — Radix CSS hides inactive tabs blocking exit animations (Phase 05-02)
+- Controlled Tabs (useState activeTab) needed for AnimatePresence keyed transitions in OverviewTabs (Phase 05-02)
+- DATA-01 (ProjectContextSection) and DATA-05 (AdminPanel refactor) deferred to admin dashboard scope (Phase 05-02)
 
 ### Blockers/Concerns
 

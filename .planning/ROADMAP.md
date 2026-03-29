@@ -16,7 +16,7 @@
 - [x] **Phase 2: Critical Fixes** — Restore four permanently broken data pipelines so the Projects module shows real data (completed 2026-03-29)
 - [x] **Phase 3: AI Enrichment** — Fix write-once enrichment lifecycle and surface AI content where clients can see it (completed 2026-03-29)
 - [x] **Phase 4: PhaseTimeline Redesign** — Replace static dots with animated, informative, mobile-responsive timeline
-- [ ] **Phase 5: Data Unification & Polish** — Integrate ProjectContext, clarify FilesTab, add page transitions, enforce code standards
+- [x] **Phase 5: Data Unification & Polish** — Integrate ProjectContext, clarify FilesTab, add page transitions, enforce code standards (completed 2026-03-29)
 
 ---
 
@@ -81,8 +81,8 @@ Plans:
 
 Plans:
 - [x] 05-00-PLAN.md — Wave 0 test scaffolds (FilesTab, StepFilesTab, OverviewTabs, PhaseTimeline skeleton stubs)
-- [ ] 05-01-PLAN.md — FilesTab + StepFilesTab Nextcloud rewrite with slugify utility
-- [ ] 05-02-PLAN.md — Motion tab transitions + PhaseTimeline loading skeleton
+- [x] 05-01-PLAN.md — FilesTab + StepFilesTab Nextcloud rewrite with slugify utility
+- [x] 05-02-PLAN.md — Motion tab transitions + PhaseTimeline loading skeleton
 - [x] 05-03-PLAN.md — Webhook auto-mkdir on taskCreated + env var verification
 
 ---
@@ -94,4 +94,4 @@ Plans:
 | 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
 | 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
 | 4. PhaseTimeline Redesign | 3/3 | Complete |  |
-| 5. Data Unification & Polish | 2/4 | In Progress|  |
+| 5. Data Unification & Polish | 4/4 | Complete   | 2026-03-29 |
