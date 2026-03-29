@@ -255,3 +255,11 @@ describe('TIMELINE-05: Tooltip content', () => {
     expect(screen.getByText('Test narrative text')).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// DATA-04: Skeleton rendering
+// ---------------------------------------------------------------------------
+
+describe('DATA-04: PhaseTimeline skeleton state', () => {
+  test.todo('renders PhaseTimelineSkeleton with 4 skeleton nodes when isLoading is true (DATA-04)');
+});
