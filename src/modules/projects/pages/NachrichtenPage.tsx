@@ -1,4 +1,5 @@
 import { useProject } from '../hooks/useProject';
+import { useProjectComments } from '../hooks/useProjectComments';
 import { MessagesPage } from '../components/messages/MessagesPage';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
@@ -6,6 +7,7 @@ import { EmptyState } from '@/shared/components/common/EmptyState';
 
 export function NachrichtenPage() {
   const { project, isLoading } = useProject();
+  const { data: comments = [], isLoading: commentsLoading } = useProjectComments(project ?? null);
 
   if (isLoading) {
     return (
@@ -23,5 +25,5 @@ export function NachrichtenPage() {
     );
   }
 
-  return <MessagesPage project={project} />;
+  return <MessagesPage comments={comments} isLoading={commentsLoading} />;
 }
