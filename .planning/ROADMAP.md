@@ -31,8 +31,11 @@
   2. A client opening the Messages tab sees live comment data — not a stale or empty feed
   3. The ContextStrip ETA field either shows a valid date or is absent — never renders a blank chip
   4. A step with failed or empty AI enrichment shows no expandable section — blank expand areas never appear
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Remove dead TasksPage pipeline + guard empty enrichment sections
+- [ ] 02-02-PLAN.md — Fix MessagesPage live data + remove broken ETA display
 
 ### Phase 3: AI Enrichment
 **Goal**: AI enrichment stays current with task changes and its content reaches clients on the overview page
@@ -77,7 +80,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 2. Critical Fixes | 0/? | Not started | - |
+| 2. Critical Fixes | 0/2 | Planned | - |
 | 3. AI Enrichment | 0/? | Not started | - |
 | 4. PhaseTimeline Redesign | 0/? | Not started | - |
 | 5. Data Unification & Polish | 0/? | Not started | - |
