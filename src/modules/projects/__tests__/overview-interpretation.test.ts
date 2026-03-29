@@ -93,6 +93,8 @@ const enrichments: StepEnrichmentRow[] = [
     why_it_matters: 'Aligns expectations.',
     what_becomes_fixed: 'Workshop outcomes are fixed.',
     sort_order: 1,
+    content_hash: null,
+    last_enriched_at: null,
   },
 ];
 

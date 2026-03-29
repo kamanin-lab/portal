@@ -107,6 +107,8 @@ export interface StepEnrichmentRow {
   why_it_matters: string;
   what_becomes_fixed: string;
   sort_order: number;
+  content_hash: string | null;
+  last_enriched_at: string | null;
 }
 
 export interface ProjectSummary {

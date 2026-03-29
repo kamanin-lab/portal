@@ -112,6 +112,8 @@ const enrichments: StepEnrichmentRow[] = [
     why_it_matters: 'Clarifies navigation.',
     what_becomes_fixed: 'Structure is agreed.',
     sort_order: 1,
+    content_hash: null,
+    last_enriched_at: null,
   },
   {
     id: 'enrich-2',
@@ -119,6 +121,8 @@ const enrichments: StepEnrichmentRow[] = [
     why_it_matters: 'Aligns expectations.',
     what_becomes_fixed: 'Workshop outcomes are fixed.',
     sort_order: 2,
+    content_hash: null,
+    last_enriched_at: null,
   },
 ]
 
