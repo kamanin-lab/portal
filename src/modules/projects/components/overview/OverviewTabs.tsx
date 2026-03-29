@@ -1,4 +1,4 @@
-import type { Project, FileItem } from '../../types/project';
+import type { Project } from '../../types/project';
 import { ActivityFeed } from './UpdatesFeed';
 import { MessagesTab } from './MessagesTab';
 import { FilesTab } from './FilesTab';
@@ -16,10 +16,6 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
   const { data: comments = [], isLoading: commentsLoading } = useProjectComments(p);
   const { events } = useProjectActivity(p, comments);
 
-  const allFiles: FileItem[] = p.chapters.flatMap(ch =>
-    ch.steps.flatMap(s => s.files)
-  );
-
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <Tabs defaultValue="updates" className="flex-1 min-h-0 flex flex-col">
@@ -34,7 +30,7 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
             <ActivityFeed events={events} project={p} isLoading={commentsLoading} onOpenStep={onOpenStep} />
           </TabsContent>
           <TabsContent value="dateien">
-            <FilesTab files={allFiles} />
+            <FilesTab projectConfigId={p.id} />
           </TabsContent>
           <TabsContent value="nachrichten">
             <MessagesTab comments={comments} isLoading={commentsLoading} />
