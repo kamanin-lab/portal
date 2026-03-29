@@ -1,40 +1,29 @@
 # KAMANIN Portal
 
 Client-facing portal for KAMANIN projects and support workflows.
+Live at **https://portal.kamanin.at** (auto-deployed from `main` via Vercel).
 
 ## What this repository is
 
-This repository contains the current portal application built with:
+This repository (`kamanin-lab/portal`) is the single canonical production codebase. Built with:
 
-- **Vite + React + TypeScript**
-- **Supabase** for auth, cache tables, realtime, and data access
+- **Vite + React 19 + TypeScript**
+- **Supabase** for auth, cache tables, realtime, and data access (self-hosted on Coolify)
 - **Edge Functions** as the action/integration boundary to ClickUp and other external services
+- **Vercel** for frontend hosting with automatic preview deployments per PR
 
-The portal currently focuses on two main product areas:
+The portal focuses on two main product areas:
 
-- **Tickets / Support**
-- **Projects / Project Experience**
+- **Tickets / Support** — client support workflows with ClickUp integration
+- **Projects / Project Experience** — project progress tracking with file management
 
 ## Current status
 
-This is an active product codebase with a strong foundation.
-It is **not** a greenfield prototype anymore, but it is also **not yet fully product-complete**.
-
-Current priorities:
-1. improve repo clarity and docs alignment
-2. complete tickets module as a production-grade workflow
-3. complete projects module as a production-grade client workspace
-4. design and introduce client memory / context layer
-5. later design credits / commercial accounting properly
-
-## Important working rule
-
-This repository is the **staging working copy**.
-
-- original reference folder: `G:/01_OPUS/Projects/PORTAL`
-- staging working folder: `G:/01_OPUS/Projects/PORTAL_staging`
-
-All future implementation work should happen in **staging**, not in the original reference copy.
+Active production product serving real clients (MBM, Summerfield). Core modules are stable:
+- Tickets module: production-grade, Phase 3.5 complete
+- Projects module: production-grade, Phase 3.6 complete
+- Files module (Nextcloud WebDAV): live
+- Credit system: v1 live (ledger model, monthly topups, task deductions)
 
 ## Architecture at a glance
 
@@ -51,17 +40,18 @@ ClickUp Webhook → Edge Function → cache update
 ### Key constraints
 
 - UI reads from cache/data tables, not directly from ClickUp
-- ClickUp is accessed through Edge Functions
-- RLS is used on user/client data
-- realtime and polling are used for freshness depending on module/flow
+- ClickUp is accessed through Edge Functions only (API token stays server-side)
+- RLS enforced on all user/client data tables
+- Realtime subscriptions + 30s polling fallback for freshness
 
 ## Main folders
 
 ### Active code
 - `src/` — frontend application
 - `supabase/functions/` — Edge Functions
-- `docs/` — architecture, decisions, status, and working docs
+- `docs/` — architecture, decisions, changelog, and domain docs
 - `public/` — static assets
+- `scripts/` — client onboarding + code review scripts
 
 ### Historical / reference areas
 - `archive/legacy-reference/tickets/` — older reference code / historical layer
@@ -72,18 +62,20 @@ These folders are kept as **reference/legacy context**, not as the primary place
 ## Key docs
 
 Start here:
-- `docs/WORKING_GUIDE.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DECISIONS.md`
-- `docs/STATUS.md`
-- `docs/REPOSITORY_MAP.md`
+- `CLAUDE.md` — project instructions, stack, architecture rules
+- `docs/ARCHITECTURE.md` — system architecture and data flow
+- `docs/DECISIONS.md` — Architecture Decision Records (ADR log)
+- `docs/CHANGELOG.md` — what changed, when, why
 
-Planning and strategy:
-- `docs/planning/` — strategic planning documents (domain model, delivery rules, product gap list, team operating model)
+Domain and strategy:
+- `docs/domain/` — domain model, delivery rules, product gap list, team operating model
+
+Audit reports:
+- `docs/audits/` — module audit reports (projects, tickets)
 
 Agent and skill definitions:
 - `.claude/agents/` — agent role definitions (docs-memory, implementation, QA, reviewer-architect)
-- `.claude/skills/` — reusable skill packages (e.g. clickup-api reference)
+- `.claude/skills/` — reusable skill packages (clickup-api, shadcn-ui)
 
 ## Local development
 
@@ -111,23 +103,13 @@ Lint:
 npm run lint
 ```
 
-## Known repository reality
-
-This repository still contains some historical layers and documentation drift from earlier phases.
-That is expected at the current stage.
-The immediate goal is **clarity first**, not destructive cleanup.
-
-Documentation consolidation is actively in progress (Phase 4). Planning docs have been moved into the repo at `docs/planning/`, agent definitions live at `.claude/agents/`, and historical root planning docs have been retired from `archive/legacy-reference/root-planning/`.
-
 ## Near-term goals
 
-- stabilize repo structure and source-of-truth docs
-- finish product understanding of tickets and projects
-- prepare stronger test coverage around critical flows
-- improve project read-model clarity and future performance path
+- complete project memory / context layer (Phase 4)
+- improve test coverage around critical flows
+- strengthen project read-model and performance
 
 ## Non-goals for now
 
 - no AI-first portal redesign
 - no autonomous in-portal agent system yet
-- no risky changes in the original reference copy

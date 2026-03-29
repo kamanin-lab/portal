@@ -261,8 +261,8 @@ At the same time, it is not yet in a state where uncontrolled feature growth wou
 ### Progress against the original recommended order:
 1. ~~finish analytical phase documents~~ — **COMPLETE**
 2. ~~define domain clarity~~ — **COMPLETE**
-3. ~~create staging copy~~ — **COMPLETE** (active at `G:/01_OPUS/Projects/PORTAL_staging`)
-4. continue implementation only in staging — **IN PROGRESS** (Phase 4: project memory, ClickUp hardening)
+3. ~~create staging copy~~ — **COMPLETE** then **CONSOLIDATED** (ADR-022: PORTAL_staging renamed to PORTAL, single canonical repo)
+4. continue implementation — **IN PROGRESS** (Phase 4: project memory, ClickUp hardening)
 
 ---
 

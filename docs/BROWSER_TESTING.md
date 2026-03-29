@@ -5,12 +5,12 @@
 This project now has a project-local Playwright MCP setup for real browser-based verification.
 
 ## MCP server
-Configured via `mcporter` as project-local server:
+Configured via `mcporter` as project-local server (optional tooling — not a hard dependency):
 - server name: `playwright`
-- config file: `config/mcporter.json`
+- config file: `.mcporter.json` (project root, if present)
 
 Current command:
-- `npx -y @playwright/mcp --headless --isolated --output-dir G:\\01_OPUS\\Projects\\PORTAL_staging\\.playwright-mcp`
+- `npx -y @playwright/mcp --headless --isolated --output-dir G:\\01_OPUS\\Projects\\PORTAL\\.playwright-mcp`
 
 ## Browser binaries
 Chromium browser binaries have been installed locally for Playwright.

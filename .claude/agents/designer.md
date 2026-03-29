@@ -34,7 +34,7 @@ Frontend UI/UX designer and implementer for the KAMANIN Portal. Creates polished
 - **Spacing:** Pixel values in brackets: px-[16px], py-[8px], gap-[12px]
 - **Borders:** var(--r-sm), var(--r-md), var(--r-lg)
 - **Shadows:** Subtle — 0 1px 4px rgba(0,0,0,0.04)
-- **Components:** shadcn/ui base, Lucide React icons, Motion for animation
+- **Components:** shadcn/ui base, Hugeicons (primary) + Phosphor (secondary) icons, Motion for animation
 - **Layout:** ContentContainer width="narrow" (max-w-4xl centered) on all pages
 - **Language:** All UI text in German (Sie-form for client-facing)
 - **Mobile:** Responsive breakpoints at 768px and 900px
