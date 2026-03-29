@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { PhaseTimeline } from '../components/overview/PhaseTimeline';
 import type { Project, Chapter, Step } from '../types/project';
 
@@ -174,9 +174,9 @@ describe('TIMELINE-01: Node size and phase colors', () => {
 describe('TIMELINE-02: Connector partial fill', () => {
   test('renders connectors between chapters on desktop', () => {
     render(<PhaseTimeline project={makeProject()} />);
-    // PhaseConnector renders a relative div with w-[28px] h-[2px] bg-[var(--border)]
-    // For 4 chapters there should be 3 connectors. Query by the outer container class.
-    const connectors = document.querySelectorAll('.relative.w-\\[28px\\].h-\\[2px\\]');
+    // PhaseTimeline renders an absolute-positioned wrapper for each connector between chapters.
+    // For 4 chapters there should be 3 connectors.
+    const connectors = document.querySelectorAll('.absolute.h-\\[2px\\]');
     expect(connectors).toHaveLength(3);
   });
 });
@@ -202,7 +202,7 @@ describe('TIMELINE-03: Motion animations', () => {
 // TIMELINE-04: Mobile single-phase view
 // ---------------------------------------------------------------------------
 
-describe('TIMELINE-04: Mobile single-phase view', () => {
+describe('TIMELINE-04: Mobile horizontal scroll view', () => {
   beforeEach(() => {
     mockUseBreakpoint.mockReturnValue({ isMobile: true, isTablet: false, isDesktop: false, width: 375 });
   });
@@ -211,32 +211,25 @@ describe('TIMELINE-04: Mobile single-phase view', () => {
     mockUseBreakpoint.mockReturnValue({ isMobile: false, isTablet: false, isDesktop: true, width: 1200 });
   });
 
-  test('shows only current chapter on mobile', () => {
+  test('shows all chapters on mobile (horizontal scroll)', () => {
     render(<PhaseTimeline project={makeProject()} />);
-    // Chapter 2 "Struktur" is current — should be visible
+    expect(screen.getByText('Konzept')).toBeInTheDocument();
     expect(screen.getByText('Struktur')).toBeInTheDocument();
-    // Chapter 1 "Konzept" (completed) and Chapter 3 "Design" (upcoming) should NOT be visible
-    expect(screen.queryByText('Konzept')).not.toBeInTheDocument();
-    expect(screen.queryByText('Design')).not.toBeInTheDocument();
-  });
-
-  test('shows page indicator on mobile', () => {
-    render(<PhaseTimeline project={makeProject()} />);
-    // Current chapter is index 1 (Struktur), so indicator should be "2 / 4"
-    expect(screen.getByText('2 / 4')).toBeInTheDocument();
-  });
-
-  test('prev button has German aria-label', () => {
-    render(<PhaseTimeline project={makeProject()} />);
-    expect(screen.getByLabelText('Vorherige Phase')).toBeInTheDocument();
-  });
-
-  test('clicking next shows next chapter', () => {
-    render(<PhaseTimeline project={makeProject()} />);
-    const nextButton = screen.getByLabelText('Nächste Phase');
-    fireEvent.click(nextButton);
     expect(screen.getByText('Design')).toBeInTheDocument();
-    expect(screen.getByText('3 / 4')).toBeInTheDocument();
+    expect(screen.getByText('Entwicklung')).toBeInTheDocument();
+  });
+
+  test('mobile container has overflow-x-auto for horizontal scrolling', () => {
+    const { container } = render(<PhaseTimeline project={makeProject()} />);
+    const scrollContainer = container.firstElementChild;
+    expect(scrollContainer?.className).toContain('overflow-x-auto');
+  });
+
+  test('tooltips are disabled on mobile', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    // No tooltip content should render on mobile (showTooltip=false)
+    const tooltipContent = document.querySelectorAll('[data-testid="tooltip-content"]');
+    expect(tooltipContent).toHaveLength(0);
   });
 });
 

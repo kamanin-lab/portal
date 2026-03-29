@@ -1,4 +1,6 @@
 import { motion, AnimatePresence } from "motion/react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Idea01Icon, PaintBrush01Icon, CodeIcon, Rocket01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons"
 import type { Chapter, ChapterStatus } from "../../types/project"
 import { getChapterProgress } from "../../lib/helpers"
 import { getPhaseColor } from "../../lib/phase-colors"
@@ -7,6 +9,8 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/shared/components/ui/tooltip"
+
+const PHASE_ICONS = [Idea01Icon, PaintBrush01Icon, CodeIcon, Rocket01Icon] as const
 
 interface PhaseNodeProps {
   chapter: Chapter
@@ -18,124 +22,87 @@ interface PhaseNodeProps {
 export function PhaseNode({ chapter, status, onClick, showTooltip = true }: PhaseNodeProps) {
   const color = getPhaseColor(chapter.order)
   const progress = getChapterProgress(chapter)
-  const stateLabel =
-    status === "completed" ? "Abgeschlossen" :
-    status === "current" ? "Aktuell" : ""
+  const stateLabel = status === "completed" ? "Abgeschlossen" : status === "current" ? "Aktuell" : "Ausstehend"
 
-  const dotBase = "flex items-center justify-center flex-shrink-0 rounded-full border-[2.5px]"
-
-  const dot = (
-    <div className="relative flex items-center justify-center flex-shrink-0">
-      {status === "current" && (
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{ backgroundColor: color.main, opacity: 0.3 }}
-          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.15, 0.3] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-        />
-      )}
-      <motion.div
-        layout
-        className={`${dotBase} ${
-          status === "completed"
-            ? "w-[20px] h-[20px]"
-            : status === "current"
-            ? "w-[24px] h-[24px]"
-            : "w-[20px] h-[20px]"
-        }`}
-        animate={{
-          backgroundColor:
-            status === "completed"
-              ? "var(--committed)"
-              : status === "current"
-              ? color.main
-              : "var(--surface)",
-          borderColor:
-            status === "completed"
-              ? "var(--committed)"
-              : status === "current"
-              ? color.main
-              : "var(--border)",
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        {status === "completed" && (
-          <span className="text-3xs text-white font-bold leading-none">✓</span>
-        )}
+  const content = (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-start gap-1.5 cursor-pointer py-1 pr-3"
+    >
+      {/* Indicator — fixed 32px container for consistent connector alignment */}
+      <div className="relative flex items-center justify-center w-[32px] h-[32px] flex-shrink-0">
         {status === "current" && (
-          <span className="block w-[8px] h-[8px] rounded-full bg-white" />
+          <div
+            className="absolute inset-[-3px] rounded-full animate-[phase-pulse_2.4s_ease-in-out_infinite]"
+            style={{ backgroundColor: color.main }}
+          />
         )}
-        {status === "upcoming" && (
-          <span className="text-2xs font-semibold text-[var(--text-tertiary)] opacity-50 leading-none">–</span>
-        )}
-      </motion.div>
-    </div>
-  )
+        <div
+          className={`relative flex items-center justify-center rounded-full border-2 ${
+            status === "current" ? "w-[32px] h-[32px]" : "w-[28px] h-[28px]"
+          }`}
+          style={{
+            backgroundColor: status === "completed" ? "var(--committed)" : status === "current" ? color.main : "var(--surface)",
+            borderColor: status === "completed" ? "var(--committed)" : status === "current" ? color.main : "var(--border)",
+          }}
+        >
+          {status === "completed" ? (
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} color="white" />
+          ) : (
+            <HugeiconsIcon
+              icon={PHASE_ICONS[(chapter.order - 1) % PHASE_ICONS.length]}
+              size={14}
+              color={status === "current" ? "white" : "var(--text-tertiary)"}
+              style={status === "upcoming" ? { opacity: 0.5 } : undefined}
+            />
+          )}
+        </div>
+      </div>
 
-  const nodeContent = (
-    <>
-      {dot}
-      <div className="flex flex-col gap-0">
+      {/* Text */}
+      <div className="flex flex-col items-start">
         <span
-          className={`text-body font-semibold leading-[1.3] ${
-            status === "completed"
-              ? "text-[var(--text-primary)]"
-              : status === "current"
-              ? "font-bold"
-              : "text-[var(--text-tertiary)] font-[450]"
+          className={`text-sm font-semibold leading-tight whitespace-nowrap ${
+            status === "completed" ? "text-[var(--text-primary)]" :
+            status === "current" ? "font-bold" : "text-[var(--text-tertiary)] font-[450]"
           }`}
           style={status === "current" ? { color: color.text } : undefined}
         >
           {chapter.title}
         </span>
         <span
-          className="text-2xs mt-0.5 text-[var(--text-tertiary)]"
+          className="text-2xs text-[var(--text-tertiary)] mt-0.5"
           style={status === "current" ? { color: color.text } : undefined}
         >
           {progress}
         </span>
         <AnimatePresence mode="wait">
-          {stateLabel && (
-            <motion.span
-              key={stateLabel}
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              transition={{ duration: 0.2 }}
-              className="text-2xs font-semibold tracking-[0.03em] mt-0.5"
-              style={{ color: status === "completed" ? "var(--committed)" : color.main }}
-            >
-              {stateLabel}
-            </motion.span>
-          )}
+          <motion.span
+            key={stateLabel}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.2 }}
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium mt-1.5"
+            style={{
+              backgroundColor: status === "completed" ? "rgba(5, 150, 105, 0.1)" :
+                              status === "current" ? color.light : "var(--surface-hover)",
+              color: status === "completed" ? "var(--committed)" :
+                     status === "current" ? color.text : "var(--text-tertiary)",
+            }}
+          >
+            {stateLabel}
+          </motion.span>
         </AnimatePresence>
       </div>
-    </>
-  )
-
-  const button = (
-    <button
-      onClick={onClick}
-      className="phase-node flex-1 flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--r-sm)] transition-all duration-[180ms] cursor-pointer border border-transparent"
-      style={
-        status === "current"
-          ? {
-              background: color.light,
-              border: `1px solid ${color.mid}`,
-              margin: "-1px 0",
-            }
-          : undefined
-      }
-    >
-      {nodeContent}
     </button>
   )
 
-  if (!showTooltip) return button
+  if (!showTooltip) return content
 
   return (
     <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
       <TooltipContent side="bottom">
         <p>{chapter.narrative}</p>
       </TooltipContent>

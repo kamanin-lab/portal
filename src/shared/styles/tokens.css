@@ -130,3 +130,8 @@
   --sidebar-collapsed-w: 56px;
   --bottomnav-h: 64px;
 }
+
+@keyframes phase-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(1.15); opacity: 0.08; }
+}
