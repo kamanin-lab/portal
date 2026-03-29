@@ -40,6 +40,7 @@ Clients always know what needs their attention and can act on it in one click �
 - ✓ Client onboarding script (automated user + profile + workspace + credits setup) — 2026-03-26
 - ✓ Vercel auto-deploy from main branch — 2026-03-26
 - ✓ Project Experience module (phases, steps, AI enrichment) — Phase 3.6
+- ✓ PhaseTimeline stepper redesign (phase icons, animated connectors, status badges, mobile scroll) — Phase 4
 
 ### Active
 
@@ -108,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 1. Full review of all sections
 
 ---
-*Last updated: 2026-03-29 — Phase 03 complete (AI Enrichment — hash-based re-enrichment, OpenRouter swap, DynamicHero AI text, sort_order from milestone_order)*
+*Last updated: 2026-03-29 — Phase 04 complete (PhaseTimeline stepper redesign — phase icons, CSS GPU pulse, connector fill logic, mobile horizontal scroll, status badges)*
