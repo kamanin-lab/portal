@@ -37,8 +37,8 @@ bun.lockb
 kamanin-portal/
 /tickets/
 kamanin-portal-prototype.html
-EXECUTION.md
-SPEC.md
+/EXECUTION.md
+/SPEC.md
 schema.sql
 
 # Allow archived legacy copies inside staging repo

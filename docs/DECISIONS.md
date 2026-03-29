@@ -233,3 +233,23 @@
 **Decision:** Rename `PORTAL_staging` to `PORTAL`. Single repo, single working directory. The "staging" concept is now handled by Vercel preview URLs (per PR). The old CLAUDE.md note about staging copy is no longer accurate.
 
 **Consequences:** CLAUDE.md header note about staging copy removed. All agent instructions now point to `G:/01_OPUS/Projects/PORTAL` as the sole working directory. Historical reference material remains under `archive/legacy-reference/` within the repo.
+
+## ADR-023: Documentation restructuring — docs/ as single source of truth
+**Date:** 2026-03-29
+**Status:** Accepted
+
+**Context:** Duplicate content existed between `docs/` and `.planning/codebase/` (ARCHITECTURE.md, STACK.md, CONVENTIONS.md, etc.). Stale files in `docs/` referenced PORTAL_staging as active (superseded by ADR-022). `docs/planning/` caused naming confusion with `.planning/` (GSD workflow directory).
+
+**Decision:** Delete `.planning/codebase/` (7 files that duplicated docs/ content). Delete 5 stale docs (STATUS.md, WORKING_GUIDE.md, bootstrap-prompt.md, REPOSITORY_MAP.md — all superseded by CLAUDE.md). Delete `docs/superpowers/` (old task planning format, superseded by GSD). Rename `docs/planning/` → `docs/domain/` to clarify these are business/domain documents. Move `docs/TICKET_AUDIT_REPORT.md` → `docs/audits/ticket-audit-report.md`.
+
+**Consequences:** Single source of truth in `docs/`. Clean separation: `docs/` = project documentation, `.planning/` = GSD workflow artifacts only. `docs/domain/` clearly signals business domain context. All `docs/planning/` references in CLAUDE.md, agent files, and README updated to `docs/domain/`.
+
+## ADR-024: Icon library migration — Hugeicons primary, Phosphor secondary
+**Date:** 2026-03-29
+**Status:** Accepted
+
+**Context:** CLAUDE.md listed "Lucide React" as the icon library but `@hugeicons/react` was already installed and used as the primary icon set (credit history implementation, 984a424). The documentation did not reflect the actual stack. Lucide React is not installed.
+
+**Decision:** Hugeicons (`@hugeicons/react` + `@hugeicons/core-free-icons`) is the primary icon library — stroke rounded style, 5100+ icons. Phosphor Icons (`@phosphor-icons/react`) is secondary for weight variants and duotone styles. Lucide React is explicitly legacy-only: do not use for new code, do not refactor existing components that still reference it (it may still appear in older archive code).
+
+**Consequences:** CLAUDE.md Stack section updated. All agent definitions updated. Designer agent's icon strategy section already reflected this (added during 984a424). New components use Hugeicons by default.

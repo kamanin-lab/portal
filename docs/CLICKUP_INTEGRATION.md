@@ -1,5 +1,10 @@
 # ClickUp Integration Guide
 
+> **For comprehensive ClickUp API reference** (endpoints, webhooks, custom fields, statuses), see the project skill:
+> `.claude/skills/clickup-api/SKILL.md`
+>
+> This document covers portal-specific ClickUp threading implementation details only.
+
 ## Current Implementation (Phase 4)
 
 ### Core Changes

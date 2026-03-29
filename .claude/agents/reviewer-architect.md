@@ -14,11 +14,12 @@ Independent engineering critic and architecture gate. **Pre-code review only.**
 > This agent is NOT used for post-code review.
 
 ## Portal Stack Context
-- Frontend: React 18 + TypeScript + Vite + Tailwind + shadcn/ui
+- Frontend: React 19 + TypeScript + Vite + Tailwind v4 + shadcn/ui
+- Icons: @hugeicons/react (primary), @phosphor-icons/react (secondary)
 - State: TanStack React Query + Supabase Realtime subscriptions
 - Backend: Supabase (Postgres + RLS + Edge Functions in Deno)
 - Integration: ClickUp API via Edge Functions + webhooks
-- Hosting: Vercel (frontend), Supabase (backend)
+- Hosting: Vercel (frontend), Supabase self-hosted on Coolify (backend)
 
 ## Architecture Rules (non-negotiable)
 - UI reads ONLY from cache tables (task_cache, comment_cache)

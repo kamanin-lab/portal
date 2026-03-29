@@ -1,5 +1,33 @@
 # Changelog
 
+## Docs Restructuring — 2026-03-29 (260329-hjo)
+
+- Deleted 5 stale docs (STATUS.md, WORKING_GUIDE.md, bootstrap-prompt.md, REPOSITORY_MAP.md, and superpowers/) — superseded by CLAUDE.md and GSD workflow
+- Deleted .planning/codebase/ (7 files — ARCHITECTURE, STACK, CONVENTIONS, etc.) — duplicated docs/ content
+- Renamed docs/planning/ → docs/domain/ (business/domain documents, not GSD planning artifacts)
+- Moved docs/TICKET_AUDIT_REPORT.md → docs/audits/ticket-audit-report.md
+- Updated all agent definitions: React 19, Hugeicons/Phosphor icon stack, removed PORTAL_staging/superpowers references
+- Updated README: reflects single-repo reality, production status, current docs structure
+- Added ADR-023 (docs restructuring) and ADR-024 (icon library migration)
+
+## UI Audit Fixes + Typography Scale — 2026-03-29 (260329-gkb, commit 02b0ce6)
+
+- Typography scale applied across all pages (spacing cleanup)
+- German translation fixes for UI strings
+- CORS security hardening: removed stale lovable.app origins, added Vercel preview URL pattern
+
+## Projects Module Audit — 2026-03-29 (260329-fhb, commit 17050f4)
+
+- 22 findings audited, 4 critical broken pipelines fixed
+- AI enrichment pipeline, project memory flow, file browser, step discussion fixed
+
+## Credit History + Hugeicons Migration — 2026-03-29 (commit 984a424)
+
+- Credit history section added to Konto page (full transaction ledger visible to clients)
+- Icon library migrated to Hugeicons as primary (@hugeicons/react + @hugeicons/core-free-icons)
+- Phosphor Icons added as secondary (@phosphor-icons/react)
+- Lucide React removed as primary icon source (existing references left in place)
+
 ## Mobile UX Polish Round 2 — 2026-03-27
 
 ### Bug Fixes

@@ -11,7 +11,6 @@ model: claude-sonnet-4-6
 Independent validation layer after implementation.
 
 ## Skills to Use
-- Use `/superpowers:verification-before-completion` skill for thorough verification
 - Consult `docs/reference/supabase-context-hub/` when verifying Supabase queries
 - Consult `.claude/skills/clickup-api/SKILL.md` when verifying ClickUp integration
 

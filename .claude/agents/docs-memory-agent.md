@@ -20,7 +20,7 @@ Keeps source-of-truth docs and durable context aligned with real work.
 - When a repeated failure pattern appears, convert it into an explicit rule
 
 ## Target Files
-- `docs/planning/` — domain model, delivery rules, product gaps
+- `docs/domain/` — domain model, delivery rules, product gaps
 - `docs/ideas/` — future feature concepts
 - `memory/` — user profile, preferences, feedback rules
 - `CLAUDE.md` — if workflow rules need permanent update
