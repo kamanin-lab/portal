@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { OverviewTabs } from '../components/overview/OverviewTabs';
 import type { Project } from '../types/project';

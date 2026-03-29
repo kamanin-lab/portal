@@ -260,6 +260,11 @@ describe('TIMELINE-05: Tooltip content', () => {
 // DATA-04: Skeleton rendering
 // ---------------------------------------------------------------------------
 
+import { PhaseTimelineSkeleton } from '../components/overview/PhaseTimelineSkeleton';
+
 describe('DATA-04: PhaseTimeline skeleton state', () => {
-  test.todo('renders PhaseTimelineSkeleton with 4 skeleton nodes when isLoading is true (DATA-04)');
+  test('renders PhaseTimelineSkeleton with 4 skeleton nodes when isLoading is true (DATA-04)', () => {
+    const { getAllByTestId } = render(<PhaseTimelineSkeleton />);
+    expect(getAllByTestId('skeleton-node').length).toBe(4);
+  });
 });
