@@ -130,7 +130,6 @@ export interface Chapter {
 
 export interface TeamWorkingOn {
   task: string;
-  eta: string;
   lastUpdate: string;
 }
 

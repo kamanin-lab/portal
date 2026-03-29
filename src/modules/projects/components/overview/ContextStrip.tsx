@@ -20,23 +20,25 @@ export function ContextStrip({ project, onChapterClick }: ContextStripProps) {
         {narrative}
       </p>
 
-      {/* Team status line */}
-      <div className="flex items-center gap-1.5 text-xxs text-[var(--text-secondary)]">
-        <span
-          className="w-[6px] h-[6px] rounded-full bg-[var(--committed)] flex-shrink-0"
-        />
-        <span>
-          Team arbeitet an{' '}
-          <strong className="text-[var(--text-primary)] font-medium">
-            {teamWorkingOn.task}
-          </strong>
-          {' '}· ETA:{' '}
-          <strong className="text-[var(--text-primary)] font-medium">
-            {teamWorkingOn.eta}
-          </strong>
-          {' '}· {teamWorkingOn.lastUpdate}
-        </span>
-      </div>
+      {/* Team status line — only when there is work in progress */}
+      {teamWorkingOn.task && (
+        <div className="flex items-center gap-1.5 text-xxs text-[var(--text-secondary)]">
+          <span
+            className="w-[6px] h-[6px] rounded-full bg-[var(--committed)] flex-shrink-0"
+          />
+          <span>
+            Team arbeitet an{' '}
+            <strong className="text-[var(--text-primary)] font-medium">
+              {teamWorkingOn.task}
+            </strong>
+            {teamWorkingOn.lastUpdate && (
+              <>
+                {' '}· Zuletzt aktiv: {teamWorkingOn.lastUpdate}
+              </>
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

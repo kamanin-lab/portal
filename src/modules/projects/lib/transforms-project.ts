@@ -229,7 +229,6 @@ export function transformToProject(
     updates,
     teamWorkingOn: {
       task: currentWork?.name || '',
-      eta: '',
       lastUpdate: currentWork?.last_activity_at
         ? formatDate(currentWork.last_activity_at) || ''
         : '',

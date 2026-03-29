@@ -20,7 +20,6 @@ export const mockProject: Project = {
 
   teamWorkingOn: {
     task: 'Sitemap-Entwurf',
-    eta: 'Donnerstag',
     lastUpdate: 'vor 2 Stunden',
   },
 
