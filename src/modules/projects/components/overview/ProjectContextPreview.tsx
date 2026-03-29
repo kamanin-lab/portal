@@ -5,8 +5,8 @@ interface ProjectContextPreviewProps {
 }
 
 const VISIBILITY_COPY: Record<Exclude<MemoryEntry['visibility'], 'internal'>, string> = {
-  shared: 'Shared context',
-  client_visible: 'Client visible',
+  shared: 'Geteilter Kontext',
+  client_visible: 'Für Kunden sichtbar',
 };
 
 export function ProjectContextPreview({ entries }: ProjectContextPreviewProps) {
@@ -15,9 +15,9 @@ export function ProjectContextPreview({ entries }: ProjectContextPreviewProps) {
   return (
     <aside className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 flex flex-col gap-3">
       <div>
-        <div className="text-xxs font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-2">Known context</div>
-        <div className="text-md font-semibold text-[var(--text-primary)] mb-1">Useful context already agreed or safe to share</div>
-        <p className="text-body text-[var(--text-secondary)] leading-[1.55]">This preview is filtered for client-safe context only. Internal team notes stay off overview surfaces.</p>
+        <div className="text-xxs font-bold tracking-[0.08em] uppercase text-[var(--text-tertiary)] mb-2">Bekannter Kontext</div>
+        <div className="text-md font-semibold text-[var(--text-primary)] mb-1">Bereits abgestimmter oder freigegebener Kontext</div>
+        <p className="text-body text-[var(--text-secondary)] leading-[1.55]">Diese Vorschau zeigt nur kundenrelevanten Kontext. Interne Teamnotizen werden hier nicht angezeigt.</p>
       </div>
       {entries.map(entry => (
         <div key={entry.id} className="rounded-[var(--r-md)] bg-[var(--surface-hover)] px-3 py-2.5">
