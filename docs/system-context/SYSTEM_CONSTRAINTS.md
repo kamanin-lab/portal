@@ -28,11 +28,11 @@ Email notifications are sent exclusively from Edge Functions using the service r
 
 ### Portal acts as projection layer
 
-The portal does not add workflow complexity. It maps ClickUp statuses to a simplified set, hides internal statuses, and exposes only actions that are meaningful for clients. The mapping is defined in `.lovable/ClientPortal_ClickUp_TaskLifecycle_FINAL.md` and is the authoritative reference for status behavior.
+The portal does not add workflow complexity. It maps ClickUp statuses to a simplified set, hides internal statuses, and exposes only actions that are meaningful for clients. The authoritative reference for status behavior is `docs/system-context/STATUS_TRANSITION_MATRIX.md`.
 
-### Lovable remains generation tool
+### Development model
 
-The frontend is generated and maintained via Lovable. Code changes go through Lovable's AI-assisted editing workflow. The project uses Lovable's standard stack: React, Vite, TypeScript, Tailwind CSS, shadcn/ui.
+The frontend is a standalone Vite + React + TypeScript project, developed and maintained via Claude Code and a structured agent team (reviewer-architect, implementation-agent, qa-agent, docs-memory-agent, designer). Code changes go through the agent workflow defined in `CLAUDE.md`. The project originated from Lovable (initial generation) but has been fully detached — Lovable is no longer part of the development workflow.
 
 ## Operational Constraints
 

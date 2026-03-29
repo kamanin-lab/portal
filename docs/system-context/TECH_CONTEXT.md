@@ -91,7 +91,7 @@ The stack consists of a React 19/Vite frontend deployed on Vercel, Supabase for 
 
 - Mailjet as the email delivery provider
 - Triggered exclusively from Edge Functions (never from frontend)
-- Email types: `task_review`, `task_completed`, `team_question`, `support_response`
+- Email types: `task_review`, `task_completed`, `message_digest`, `team_question`, `support_response`, `step_ready`, `project_reply`, `credit_approval`, `pending_reminder`, `magic_link`, `password_reset`, `email_confirmation`, `signup`, `invite`, `email_change`
 - Gated by per-user `email_notifications` flag in profiles
 - Only sent for client-visible tasks and client-facing comments
 - Automated reminder schedule for tasks in `needs_attention` status: 3, 5, 10 days

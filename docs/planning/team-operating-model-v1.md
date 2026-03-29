@@ -127,20 +127,23 @@ Maintains context integrity.
 
 ## 3. Working Environment Rules
 
-## 3.1 Original repository
-- `G:/01_OPUS/Projects/PORTAL`
-- frozen read-only reference
-- no implementation work
+> **Note (2026-03-29):** Sections 3.1–3.3 updated to reflect single-repo model after ADR-022 consolidation (March 2026).
+> The original two-repo model (PORTAL frozen, PORTAL_staging active) is no longer in effect.
 
-## 3.2 Active repository
-- `G:/01_OPUS/Projects/PORTAL_staging`
-- active implementation surface (since March 2026, 15+ commits)
-- only place for implementation work
+## 3.1 Canonical repository
+- `G:/01_OPUS/Projects/PORTAL`
+- single production repository — all implementation work happens here
+- main branch auto-deploys to https://portal.kamanin.at via Vercel
+
+## 3.2 Feature branches / PRs
+- All non-trivial changes go through PRs with Vercel preview URLs
+- PRs serve as the staging equivalent (replaces PORTAL_staging)
+- Never push breaking changes directly to `main` without a PR
 
 ## 3.3 Planning artifacts
-- `docs/planning/` (in-repo, within `PORTAL_staging`)
+- `docs/planning/` (in-repo, within `G:/01_OPUS/Projects/PORTAL`)
 - source of planning and coordination truth
-- Historical note: migrated from `C:/Users/upan/.openclaw/workspace/portal-planning/`
+- Historical note: migrated from `C:/Users/upan/.openclaw/workspace/portal-planning/` then staged in PORTAL_staging before consolidation
 
 ---
 

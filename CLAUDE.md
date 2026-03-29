@@ -10,7 +10,9 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, Lucide React, React Router v7
+- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, React Router v7
+- **Icons:** `@hugeicons/react` + `@hugeicons/core-free-icons` (primary icon set), `@phosphor-icons/react` (secondary)
+- **Toasts:** `sonner@^2.0.7` — use `import { toast } from "sonner"` for all toast notifications
 - **Animation:** Motion (v12, successor to Framer Motion) — use `import { motion } from "motion/react"` for GPU-accelerated animations, layout transitions, scroll effects, spring physics
 - **UI primitives:** shadcn/ui is the standard for new UI building blocks (Button, Input, Tabs, Badge, Skeleton, Avatar, AlertDialog, Textarea, etc.). Install selectively — only components actually needed. Customize via portal CSS tokens, not by overriding shadcn defaults directly.
 - **State:** TanStack React Query (server) + React Context (UI)
@@ -47,6 +49,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 |--------|------|------------|--------|
 | Project Experience | `src/modules/projects/` | Live Supabase (project_config, project_task_cache, step_enrichment) | Phase 3.6 complete |
 | Tasks/Support | `src/modules/tickets/` | Live Supabase (task_cache, comment_cache) | Phase 3.5 complete |
+| Files | `src/modules/files/` | Nextcloud WebDAV via `nextcloud-files` Edge Function | Live |
 | Shared Shell | `src/shared/` | Auth, layout, design tokens | Phase 3.5 complete |
 | Content Editor | `src/modules/content/` | — | Future |
 | Discovery Tool | `src/modules/discovery/` | — | Future |
@@ -103,19 +106,26 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 ├── CLAUDE.md
 ├── .claude/
 │   ├── agents/                 # Agent role definitions
+│   │   ├── designer.md
 │   │   ├── docs-memory-agent.md
 │   │   ├── implementation-agent.md
 │   │   ├── qa-agent.md
 │   │   └── reviewer-architect.md
-│   ├── skills/                 # Skills (e.g., clickup-api/)
+│   ├── skills/                 # Skills: clickup-api/, shadcn-ui/
 │   └── settings.json
 ├── docs/
 │   ├── SPEC.md                 # Design tokens, component specs, status mapping
 │   ├── ARCHITECTURE.md         # System architecture
 │   ├── DECISIONS.md            # ADR log
 │   ├── CHANGELOG.md
+│   ├── audits/                 # Module audit reports
+│   │   └── projects-module-audit.md
 │   ├── ideas/                  # Future feature proposals
-│   │   └── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
+│   │   ├── admin-dashboard.md
+│   │   ├── credit-evolution.md
+│   │   ├── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
+│   │   ├── organizations.md
+│   │   └── recommendations.md
 │   ├── planning/               # Domain model, delivery rules, product gaps
 │   │   ├── current-state-map.md
 │   │   ├── delivery-rules.md
@@ -136,31 +146,39 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   ├── dashboard.md            # Current team status (keep updated!)
 │   └── task-template.md
 ├── src/
-│   ├── app/                    # ProtectedRoute.tsx, routes.tsx
+│   ├── app/                    # ProtectedRoute.tsx, routes.tsx (bootstrap entry points)
 │   ├── shared/
-│   │   ├── components/ui/      # SideSheet (shadcn/ui base)
-│   │   ├── components/layout/  # AppShell, Sidebar, MobileHeader, BottomNav
-│   │   ├── components/common/  # ConfirmDialog, EmptyState, LoadingSkeleton, MessageBubble, StatusBadge
-│   │   ├── hooks/              # useAuth, useBreakpoint, useWorkspaces
-│   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts
+│   │   ├── components/ui/      # shadcn/ui primitives: alert-dialog, avatar, badge, button, input, SideSheet, skeleton, tabs, textarea
+│   │   ├── components/layout/  # AppShell, BottomNav, ContentContainer, MobileHeader, MobileSidebarOverlay, Sidebar, SidebarGlobalNav, SidebarUserFooter, SidebarUtilities, SidebarWorkspaces
+│   │   ├── components/common/  # ConfirmDialog, EmptyState, LoadingSkeleton, MessageBubble, StatusBadge, UserAvatar
+│   │   ├── components/konto/   # AvatarUpload, CreditHistorySection, EmailSection, NotificationSection, PasswordSection, ProfileSection
+│   │   ├── components/inbox/   # NotificationAccordionItem, NotificationDetailPanel, TypeBadge, notification-utils.ts
+│   │   ├── components/WorkspaceGuard.tsx
+│   │   ├── hooks/              # useAuth, useBreakpoint, useSwipeGesture, useUpdateProfile, useWorkspaces
+│   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts, password-validation.ts, slugify.ts
+│   │   ├── pages/              # HilfePage, InboxPage, KontoPage, LoginPage, MeineAufgabenPage, NotFoundPage, ProtectedRoute.tsx, routes.tsx
 │   │   ├── styles/tokens.css   # CSS custom properties
 │   │   └── types/              # common.ts
 │   ├── modules/
 │   │   ├── projects/           # Project Experience module
-│   │   │   ├── components/     # overview/, steps/, tasks/, files/ (FolderView, CreateFolderInput), messages/, help/
-│   │   │   ├── hooks/          # useProject, useProjects, useProjectMemory, useChapterHelpers, useHeroPriority, useNextcloudFilesByPath, useUploadFileByPath, useCreateFolder
-│   │   │   ├── lib/            # helpers, transforms-project, phase-colors, step-status-mapping, memory-access, memory-store, overview-interpretation, mock-data
-│   │   │   ├── types/          # project.ts
+│   │   │   ├── components/     # overview/ (16 components), steps/, tasks/, files/, messages/, help/
+│   │   │   │                   # Top-level: MessageSheet.tsx, SchritteSheet.tsx, StepSheet.tsx, UploadDropZone.tsx, UploadFolderSelector.tsx, UploadSheet.tsx
+│   │   │   ├── hooks/          # useChapterHelpers, useHeroPriority, useNextcloudFiles, useProject, useProjectActivity, useProjectComments, useProjectMemory, useProjects
+│   │   │   ├── lib/            # helpers, transforms-project, phase-colors, step-status-mapping, memory-access, memory-store, overview-interpretation, mock-data, quick-action-helpers
+│   │   │   ├── types/          # memory.ts, project.ts
 │   │   │   └── pages/          # UebersichtPage, NachrichtenPage, DateienPage
+│   │   ├── files/              # Client file browser (Nextcloud WebDAV)
+│   │   │   ├── components/     # ClientActionBar, ClientFileRow, ClientFolderView, CreateFolderInput
+│   │   │   ├── hooks/          # useClientFiles
+│   │   │   └── pages/          # DateienPage
 │   │   └── tickets/            # Tasks/Support module (Phase 3.5)
-│   │       ├── components/     # TaskCard, TaskList, TaskDetail, TaskActions,
-│   │       │                   # TaskFilters, TaskFilterPanel, TaskSearchBar,
-│   │       │                   # SyncIndicator, NewTaskButton, TaskDetailSheet,
-│   │       │                   # TaskComments, NewTicketDialog, PriorityIcon,
-│   │       │                   # SupportChat, SupportSheet, CommentInput,
-│   │       │                   # NotificationBell
-│   │       ├── hooks/          # useClickUpTasks, useTaskComments, useTaskActions, useNotifications, useUnreadCounts, useCreateTask, useSingleTask, useSupportTaskChat
-│   │       ├── lib/            # status-mapping, status-dictionary, transforms, dictionary, logger
+│   │       ├── components/     # CommentInput, CommentInputParts, CreditApproval, CreditBadge, CreditBalance,
+│   │       │                   # FileAttachments, NewTaskButton, NewTicketDialog, NotificationBell, PriorityIcon,
+│   │       │                   # ProjectTaskFormFields, SupportChat, SupportSheet, SyncIndicator,
+│   │       │                   # TaskActions, TaskCard, TaskComments, TaskDetail, TaskDetailSheet,
+│   │       │                   # TaskFilterPanel, TaskFilters, TaskList, TaskSearchBar, TicketFormFields
+│   │       ├── hooks/          # useClickUpTasks, useCreateTask, useCreditHistory, useCredits, useNotifications, useUnreadCounts, useSingleTask, useSupportTaskChat, useTaskActions, useTaskComments
+│   │       ├── lib/            # dictionary, logger, status-dictionary, status-mapping, task-list-utils, transforms
 │   │       ├── types/          # tasks.ts
 │   │       └── pages/          # TicketsPage (Sheet-based), SupportPage
 │   └── main.tsx
@@ -171,20 +189,24 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │       ├── auth-email/
 │       ├── clickup-webhook/
 │       ├── create-clickup-task/
+│       ├── credit-topup/
 │       ├── fetch-clickup-tasks/
 │       ├── fetch-project-tasks/
 │       ├── fetch-single-task/
 │       ├── fetch-task-comments/
 │       ├── manage-project-memory/
+│       ├── nextcloud-files/
 │       ├── post-task-comment/
 │       ├── send-feedback/
-│       ├── nextcloud-files/
 │       ├── send-mailjet-email/
+│       ├── send-reminders/
 │       ├── send-support-message/
 │       └── update-task-status/
 ├── scripts/
+│   ├── mbm-production.json     # MBM client onboarding config
+│   ├── onboard-client.ts       # Client onboarding automation (auth user + profile + workspaces + credits)
 │   ├── openrouter-review.cjs   # Post-code review via GPT-5.4-mini (OpenRouter API)
-│   └── onboard-client.ts       # Client onboarding automation (auth user + profile + workspaces + credits)
+│   └── summerfield-production.json  # Summerfield client onboarding config
 ├── vercel.json                 # SPA rewrites + /auth/v1/* proxy to self-hosted Supabase
 ├── vite.config.ts
 ├── vitest.config.ts
@@ -241,7 +263,7 @@ reviewer-architect (Claude Sonnet) still handles pre-code review because it need
 
 ### ClickUp
 - Always use the project-local ClickUp reference skill at:
-  `G:/01_OPUS/Projects/PORTAL_staging/.claude/skills/clickup-api/SKILL.md`
+  `G:/01_OPUS/Projects/PORTAL/.claude/skills/clickup-api/SKILL.md`
 - For any work touching ClickUp tasks, comments, webhooks, statuses, custom fields, lists/folders/spaces, or integration behavior, do not rely on memory alone.
 
 ### Supabase
@@ -306,7 +328,6 @@ The Supervisor is personally responsible for keeping ALL project documentation c
 ### Core Rules
 - Frame tasks clearly before execution using the task template
 - Keep work aligned with planning docs in docs/planning/
-- Enforce staging-only rule: implementation-agent works only in staging
 - Stop uncontrolled scope growth
 - **Dashboard discipline (CRITICAL):** Update BOTH `tasks/dashboard.md` AND `tasks/dashboard.json` at EVERY phase transition — before launching each agent (🔄) and after each agent completes (✅/❌). The dashboard must reflect real-time status at all times. Stale dashboard = supervisor failure. When a new idea is added to `docs/ideas/`, add it to `dashboard.json` ideas array immediately. The interactive dashboard at `tasks/dashboard.html` auto-reads from `dashboard.json` every 5 seconds.
 - After every completed loop step, immediately trigger the next step

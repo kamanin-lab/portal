@@ -1,6 +1,10 @@
 # Delivery Rules — PORTAL Planning and Execution
 
-_Status: v2 — updated 2026-03-22_
+> **HISTORICAL DOCUMENT** — Written 2026-03-22 when PORTAL (read-only) and PORTAL_staging (active) were separate repositories.
+> As of ADR-022 (March 2026), staging was consolidated into PORTAL. PORTAL is now the single canonical repo.
+> Sections 1, 2, 6.1, 6.3, and 10 reflect the old two-repo model. The workflow principles (review before code, feedback loops, approval gates) remain valid.
+
+_Status: v2 — updated 2026-03-22 (historical note added 2026-03-29)_
 
 ## Purpose
 
@@ -12,14 +16,12 @@ It exists to prevent accidental damage to the current working system and to crea
 
 ## 1. Core Principle
 
-**The current original portal folder is not the implementation surface.**
+> **Note (2026-03-29):** This section was written before ADR-022 consolidation. The two-repo model is no longer in effect.
+> **Current model:** PORTAL is the single canonical repository. All implementation work happens directly here.
 
-The original folder is treated as:
-- current known-good reference
-- source of observation
-- baseline for copying into staging
-
-Implementation work must happen later in a dedicated staging copy.
+The portal has one canonical repository: `G:/01_OPUS/Projects/PORTAL`.
+Implementation, review, and deployment all happen in this repository.
+The main branch auto-deploys to https://portal.kamanin.at via Vercel.
 
 ---
 
@@ -178,8 +180,8 @@ The portal should not expand in random directions.
 
 ## 6.1 Planning docs location
 
-Planning docs now live in-repo at:
-`docs/planning/` (within `G:/01_OPUS/Projects/PORTAL_staging`)
+Planning docs live in-repo at:
+`docs/planning/` (within `G:/01_OPUS/Projects/PORTAL`)
 
 ### Current files
 - `current-state-map.md`
@@ -206,10 +208,12 @@ They should remain separate from the original portal until staging workflow is e
 
 ## 6.3 Source-of-truth rule
 
-Staging is now the active implementation surface:
-- staging code (`PORTAL_staging`) = source of active implementation truth
-- planning docs (`docs/planning/`) = source of planning and coordination truth
-- original portal (`PORTAL`) = frozen read-only reference baseline
+> **Note (2026-03-29):** Updated to reflect single-repo model after ADR-022 consolidation.
+
+PORTAL is the single canonical repository:
+- `PORTAL` code + `docs/planning/` = unified source of implementation and planning truth
+- main branch = production-deployed state
+- Feature branches / PRs = staging equivalent (Vercel preview URLs auto-generated per PR)
 
 ---
 
@@ -322,12 +326,13 @@ Then start actual implementation planning module by module.
 
 ---
 
-## 10. Immediate Conclusion
+## 10. Current Operating Model (updated 2026-03-29)
 
-The operating rule is:
+After ADR-022 consolidation, the operating rule is:
 
-- original portal = frozen read-only reference
-- planning docs (in-repo at `docs/planning/`) = define direction
-- staging = active place of execution
+- `G:/01_OPUS/Projects/PORTAL` = canonical single repository (code + planning docs)
+- `main` branch = production (auto-deployed to portal.kamanin.at)
+- PRs/feature branches = get Vercel preview URLs (replaces staging branch)
+- `docs/planning/` = direction and coordination truth (historical planning documents remain for reference)
 
-This rule should remain stable until explicitly changed.
+The workflow principles from this document remain valid: review before code, feedback loops, no self-approval.

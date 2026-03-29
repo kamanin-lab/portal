@@ -117,8 +117,8 @@ Container: /home/deno/functions (edge-runtime v1.67.4)
 4. Restart edge-runtime container
 5. Verify: `curl -s http://<edge-runtime-IP>:9000/<function-name>`
 
-### 15 Functions + main router
-fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory, nextcloud-files, credit-topup
+### 16 Functions + main router
+fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory, nextcloud-files, credit-topup, send-reminders
 
 #### nextcloud-files
 Actions: `list` (PROPFIND), `upload` (PUT), `download` (GET proxy), `mkdir` (MKCOL, recursive).
@@ -129,3 +129,7 @@ Path safety: rejects `..` traversal and control characters.
 Triggered by pg_cron on a monthly schedule.
 Reads all active `credit_packages`, inserts `monthly_topup` transactions into `credit_transactions`.
 Also callable manually for backfill.
+
+#### send-reminders
+Sends automated email reminders for tasks stuck in `needs_attention` (Client Review) status.
+Follows a 3-5-10 day schedule from last activity. Respects per-user `notification_preferences.reminders` toggle.

@@ -1,5 +1,9 @@
 # Current State Map — KAMANIN Portal
 
+> **HISTORICAL DOCUMENT** — Written 2026-03-22 during the planning phase when PORTAL_staging was the active implementation surface.
+> As of ADR-022 (March 2026), PORTAL_staging was consolidated into PORTAL (this repo). All PORTAL_staging references below are stale artifacts.
+> For current state, refer to CLAUDE.md, ARCHITECTURE.md, and docs/system-context/.
+
 _Status: draft v1_
 
 _Updated 2026-03-22: Staging repository is now active. Phases 1-3 complete. Phase 4 (project memory, integration hardening) started._
@@ -125,14 +129,23 @@ This is not yet established as a first-class product layer.
 
 ## 3.4 Credits / Commercial Logic
 
-### Current state
-This is a future product area, not yet implemented as a finalized system.
+### Current state (updated 2026-03-29)
+Phase 1 of the credit system is **implemented**. Credit infrastructure is live.
+
+### Implemented capabilities
+- `credit_packages` and `credit_transactions` database tables
+- `CreditBalance` component (sidebar display)
+- `CreditBadge` and `CreditApproval` components (per-task credit workflow)
+- `credit-topup` Edge Function (pg_cron monthly topup)
+- `useCreditHistory` and `useCredits` hooks
+- Webhook sync: ClickUp credits custom field → `task_cache.credits`
+- `send-reminders` Edge Function for tasks awaiting credit approval
 
 ### Current assessment
-- **Exists:** conceptually
-- **Works:** no confirmed implementation yet
-- **Complete:** no
-- **Priority:** important, but after tickets/projects clarity and memory/context design
+- **Exists:** yes — Phase 1 complete
+- **Works:** yes — core credit flow live in production since TASK-010
+- **Complete:** Phase 1 complete; future phases may add estimation workflow, invoicing, reconciliation
+- **Priority:** core feature deployed; advanced commercial workflow is future work
 
 ---
 

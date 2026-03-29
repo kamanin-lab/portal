@@ -3,22 +3,18 @@
 
 const ALLOWED_ORIGINS = [
   'https://portal.kamanin.at',
-  'https://cconnect.lovable.app',
   'http://localhost:5173',
   'http://localhost:5174',
 ];
 
-// Pattern for Lovable preview URLs (e.g., id-preview--uuid.lovable.app)
-const PREVIEW_PATTERN = /^https:\/\/[a-z0-9-]+--[a-z0-9-]+\.lovable\.app$/;
-// Pattern for lovableproject.com domains
-const PROJECT_PATTERN = /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/;
+// Pattern for Vercel preview URLs (e.g., portal-git-branch-kamanin-lab.vercel.app)
+const VERCEL_PREVIEW_PATTERN = /^https:\/\/portal(-[a-z0-9-]+)?\.vercel\.app$/;
 
 // Check if origin is allowed
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (PREVIEW_PATTERN.test(origin)) return true;
-  if (PROJECT_PATTERN.test(origin)) return true;
+  if (VERCEL_PREVIEW_PATTERN.test(origin)) return true;
   return false;
 }
 

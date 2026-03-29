@@ -153,36 +153,28 @@ Without this distinction, memory becomes messy and hard to trust.
 
 ---
 
-## 4. Credits / Commercial Logic Gaps
+## 4. Credits / Commercial Logic
 
-## 4.1 Credits are not yet domain-defined
+> **Status update (2026-03-29):** Phase 1 of the credit system is **IMPLEMENTED** (TASK-010).
 
-### Gap
-Credits are a future feature, but not yet defined as a domain model.
+## 4.1 Core credit system — IMPLEMENTED
 
-### Missing clarity
-- what a credit represents
-- how credits are estimated
-- how credits are approved
-- how credits are consumed
-- whether credit logic belongs at ticket, project, or account level
+### What was built (TASK-010)
+- `credit_packages` and `credit_transactions` database tables
+- `CreditBalance` (sidebar display), `CreditBadge`, `CreditApproval` components
+- `credit-topup` Edge Function (pg_cron monthly topup)
+- `useCreditHistory` and `useCredits` hooks
+- ClickUp credits custom field → `task_cache.credits` via webhook
+- `send-reminders` for pending credit approvals
 
-### Why it matters
-This feature is financially sensitive and cannot be added as UI-first logic.
-
----
-
-## 4.2 No visible commercial workflow yet
-
-### Gap
-There is no confirmed end-to-end commercial workflow yet for:
-- estimating work
-- approving estimated cost/credit impact
-- showing usage
-- reconciling what was done
+### Remaining commercial logic gaps
+- Credit estimation workflow (pre-work approval)
+- Usage reconciliation / invoicing surface
+- Multi-package or rollover logic
+- Commercial reporting / history export
 
 ### Why it matters
-If credits are introduced later without workflow discipline, the feature will become confusing fast.
+Core credit infrastructure is live. Advanced commercial workflow is a future phase.
 
 ---
 
@@ -259,15 +251,14 @@ This affects delivery clarity more than end-user product behavior, but it is sti
 
 ## 7. Workflow / Delivery Gaps
 
-## 7.1 No staging work surface yet
+## 7.1 Staging work surface
 
-**Status: CLOSED.** Staging repository created at `G:/01_OPUS/Projects/PORTAL_staging` and actively used.
+**Status: CLOSED.** Single-repo model adopted (ADR-022, March 2026). PORTAL_staging was merged into PORTAL.
+Feature branches + Vercel preview URLs serve as the staging equivalent for PRs.
 
-### Gap
-The original project folder is currently the active known-good environment, but a staging clone is not yet established for safe implementation.
-
-### Why it matters
-Future changes should not be applied directly to the original working folder.
+### Current model
+All development happens in `G:/01_OPUS/Projects/PORTAL` (canonical single repo).
+PRs auto-generate Vercel preview URLs. Production deploys from `main`.
 
 ---
 

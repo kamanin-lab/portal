@@ -268,7 +268,7 @@ Active module registry per client. Controls which navigation items appear in the
 | profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
 | module_key | text | NOT NULL | Module identifier (e.g., `tickets`, `support`, `projects`) |
 | display_name | text | NOT NULL | German label shown in sidebar (e.g., "Aufgaben") |
-| icon | text | | Icon name from Lucide React |
+| icon | text | | Icon name from Hugeicons (`@hugeicons/core-free-icons`) |
 | sort_order | integer | NOT NULL, DEFAULT 0 | Display order within Workspaces zone |
 | is_active | boolean | NOT NULL, DEFAULT true | Only active rows appear in sidebar |
 
@@ -779,9 +779,9 @@ CORS configuration with origin whitelisting.
 
 **Allowed Origins:**
 - `https://portal.kamanin.at` (production)
-- `https://cconnect.lovable.app` (Lovable published URL)
-- `*.lovable.app` (Lovable preview URLs, pattern: `id-preview--uuid.lovable.app`)
-- `*.lovableproject.com` (Lovable project URLs)
+- `http://localhost:5173`, `http://localhost:5174` (local development)
+- `https://cconnect.lovable.app` — LEGACY: stale origin from original Lovable generation (no longer needed)
+- `*.lovable.app`, `*.lovableproject.com` — LEGACY: stale Lovable preview URL patterns (no longer needed)
 
 **Exports:**
 - `isAllowedOrigin(origin)` — checks if origin matches whitelist or patterns
