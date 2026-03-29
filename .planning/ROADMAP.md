@@ -13,7 +13,7 @@
 
 ### Phases
 
-- [ ] **Phase 2: Critical Fixes** — Restore four permanently broken data pipelines so the Projects module shows real data
+- [x] **Phase 2: Critical Fixes** — Restore four permanently broken data pipelines so the Projects module shows real data (completed 2026-03-29)
 - [ ] **Phase 3: AI Enrichment** — Fix write-once enrichment lifecycle and surface AI content where clients can see it
 - [ ] **Phase 4: PhaseTimeline Redesign** — Replace static dots with animated, informative, mobile-responsive timeline
 - [ ] **Phase 5: Data Unification & Polish** — Integrate ProjectContext, clarify FilesTab, add page transitions, enforce code standards
@@ -35,7 +35,7 @@
 
 Plans:
 - [x] 02-01-PLAN.md — Remove dead TasksPage pipeline + guard empty enrichment sections
-- [ ] 02-02-PLAN.md — Fix MessagesPage live data + remove broken ETA display
+- [x] 02-02-PLAN.md — Fix MessagesPage live data + remove broken ETA display
 
 ### Phase 3: AI Enrichment
 **Goal**: AI enrichment stays current with task changes and its content reaches clients on the overview page
@@ -80,7 +80,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 2. Critical Fixes | 0/2 | Planned | - |
+| 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
 | 3. AI Enrichment | 0/? | Not started | - |
 | 4. PhaseTimeline Redesign | 0/? | Not started | - |
 | 5. Data Unification & Polish | 0/? | Not started | - |

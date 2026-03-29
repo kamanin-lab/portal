@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-03-29T11:53:00.395Z"
+status: verifying
+last_updated: "2026-03-29T11:59:43.721Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,10 +19,10 @@ progress:
 
 ## Current Position
 
-Phase: 02 (critical-fixes) — EXECUTING
+Phase: 02 (critical-fixes) — COMPLETE
 Plan: 2 of 2
-Status: Plan 01 complete — executing Plan 02
-Last activity: 2026-03-29 — 02-01 complete: dead TasksPage pipeline removed, empty section guard added
+Status: Phase complete — both plans executed, ready for verification
+Last activity: 2026-03-29 — 02-02 complete: MessagesPage live data (CRIT-02), ETA field removed (CRIT-03)
 
 ## Previous Milestone
 
@@ -46,6 +46,8 @@ Phase 1: Portal Frontend — Complete
 - docs/planning/ renamed to docs/domain/ — business/domain documents, not GSD planning.
 - TasksPage and pipeline (ProjectTask, TaskStatus, getTasksForStep, taskStatusLabel) removed — never routed (CRIT-01)
 - ExpandableSection returns null when body empty — prevents blank UI sections in StepOverviewTab (CRIT-04)
+- MessagesPage receives ProjectComment[] + isLoading props — hook called at NachrichtenPage level where project is available (CRIT-02)
+- eta field removed from TeamWorkingOn entirely — always-empty field replaced with conditional lastUpdate display (CRIT-03)
 
 ### Blockers/Concerns
 
