@@ -15,6 +15,7 @@ import {
   resolveClientFacingCommentEvent,
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
+import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -34,6 +35,46 @@ async function fetchWithTimeout(
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Best-effort Nextcloud folder creation via WebDAV MKCOL.
+ * Silently fails if env vars are missing or MKCOL errors.
+ * Creates parent directories recursively by calling MKCOL on each path segment.
+ */
+async function createNextcloudFolder(fullPath: string, log: ReturnType<typeof createLogger>): Promise<void> {
+  const ncUrl = Deno.env.get("NEXTCLOUD_URL");
+  const ncUser = Deno.env.get("NEXTCLOUD_USER");
+  const ncPass = Deno.env.get("NEXTCLOUD_PASS");
+
+  if (!ncUrl || !ncUser || !ncPass) {
+    log.warn("Nextcloud env vars not configured — skipping folder creation", { fullPath });
+    return;
+  }
+
+  const segments = fullPath.split("/").filter(Boolean);
+  let currentPath = "";
+
+  for (const segment of segments) {
+    currentPath += `/${segment}`;
+    const mkcolUrl = `${ncUrl}/remote.php/dav/files/${ncUser}${currentPath}`;
+    try {
+      const resp = await fetchWithTimeout(mkcolUrl, {
+        method: "MKCOL",
+        headers: {
+          Authorization: `Basic ${btoa(`${ncUser}:${ncPass}`)}`,
+        },
+      }, 5000);
+      // 201 = created, 405 = already exists (both OK)
+      if (resp.status !== 201 && resp.status !== 405) {
+        log.warn("MKCOL unexpected status", { path: currentPath, status: resp.status });
+      }
+    } catch (err) {
+      log.warn("MKCOL request failed", { path: currentPath, error: String(err) });
+      return; // Stop on first failure — parent dirs are needed for children
+    }
+  }
+  log.info("Nextcloud folder created", { fullPath });
 }
 
 interface ClickUpWebhookPayload {
@@ -872,6 +913,34 @@ Deno.serve(async (req) => {
                     last_activity_at: parseClickUpTimestamp(taskData.date_updated).toISOString(),
                   }, { onConflict: "clickup_id,project_config_id" });
                   log.info("Upserted project task", { taskId, event: payload.event });
+
+                  // Auto-create Nextcloud folder for the new task (D-05, D-06, D-07)
+                  if (payload.event === "taskCreated" && chapterConfigId && taskData?.name) {
+                    try {
+                      const { data: projConfig } = await supabase
+                        .from("project_config")
+                        .select("nextcloud_root_path")
+                        .eq("id", projectConfigId)
+                        .single();
+
+                      const rootPath = projConfig?.nextcloud_root_path;
+                      if (rootPath) {
+                        const { data: chapter } = await supabase
+                          .from("chapter_config")
+                          .select("sort_order, title")
+                          .eq("id", chapterConfigId)
+                          .single();
+
+                        if (chapter) {
+                          const chapterFolder = buildChapterFolder(chapter.sort_order, chapter.title);
+                          const taskFolder = slugify(taskData.name);
+                          await createNextcloudFolder(`${rootPath}/${chapterFolder}/${taskFolder}`, log);
+                        }
+                      }
+                    } catch (err) {
+                      log.error("Nextcloud folder creation failed (non-fatal)", { error: String(err), taskId });
+                    }
+                  }
                 }
               } else {
                 await supabase.from("project_task_cache").delete().eq("clickup_id", taskId);
