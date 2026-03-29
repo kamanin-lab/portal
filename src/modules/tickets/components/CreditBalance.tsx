@@ -9,9 +9,13 @@ interface Props {
 
 function formatPackageName(name: string | null): string {
   if (!name) return '';
-  // Strip hour suffixes like "10h", "25h" from package names
   const cleaned = name.replace(/\s*\d+h\b/gi, '').trim();
-  const map: Record<string, string> = { small: 'Small', medium: 'Medium', large: 'Large' };
+  const map: Record<string, string> = {
+    basis: 'Basis',
+    standard: 'Standard',
+    professional: 'Professional',
+    premium: 'Premium',
+  };
   return map[cleaned.toLowerCase()] ?? cleaned;
 }
 
