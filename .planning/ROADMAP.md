@@ -64,7 +64,7 @@ Plans:
 
 Plans:
 - [x] 04-00-PLAN.md — Wave 0 test scaffold (PhaseTimeline.test.tsx with failing stubs for TIMELINE-01 through TIMELINE-05)
-- [ ] 04-01-PLAN.md — Tooltip primitive + PhaseConnector + PhaseNode rewrite (phase colors, Motion animations, tooltip)
+- [x] 04-01-PLAN.md — Tooltip primitive + PhaseConnector + PhaseNode rewrite (phase colors, Motion animations, tooltip)
 - [ ] 04-02-PLAN.md — PhaseTimeline desktop/mobile rewrite + unit tests + visual verification
 
 ### Phase 5: Data Unification & Polish

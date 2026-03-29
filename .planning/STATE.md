@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 04-phasetimeline-redesign/04-00-PLAN.md
-last_updated: "2026-03-29T19:22:00Z"
+status: executing
+stopped_at: Completed 04-phasetimeline-redesign/04-01-PLAN.md
+last_updated: "2026-03-29T19:26:13.202Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 1
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -21,9 +21,9 @@ progress:
 ## Current Position
 
 Phase: 04-phasetimeline-redesign
-Plan: 1 of 3
-Status: Executing Phase 04 — Plan 00 complete
-Stopped At: Completed 04-phasetimeline-redesign/04-00-PLAN.md
+Plan: 2 of 3
+Status: Ready to execute
+Stopped At: Completed 04-phasetimeline-redesign/04-01-PLAN.md
 Last activity: 2026-03-29
 
 ## Previous Milestone
@@ -55,6 +55,9 @@ Phase 1: Portal Frontend — Complete
 - parseMilestoneOrder duplicated in Edge Function — Edge Functions cannot import from src/ (Phase 03-01)
 - test.todo used over test.skip for Wave 0 stubs — clearer RED signal in vitest output (Phase 04-00)
 - filterMotionProps helper strips motion-specific props in test mocks to prevent jsdom DOM warnings (Phase 04-00)
+- Connector fill color uses LEFT chapter phase color — represents phase completion leading into next phase (Phase 04-01)
+- Pulse animation uses separate wrapping motion.div to avoid conflicting with layout animation on dot itself (Phase 04-01)
+- PhaseNode dot kept inline (not extracted to sub-component) to access color+status within 150-line limit (Phase 04-01)
 
 ### Blockers/Concerns
 
