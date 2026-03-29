@@ -1,5 +1,5 @@
-import { describe, test, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PhaseTimeline } from '../components/overview/PhaseTimeline';
 import type { Project, Chapter, Step } from '../types/project';
 
@@ -144,19 +144,27 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 }
 
 // ---------------------------------------------------------------------------
-// Test helper: silence render calls in todo-only suites
-// ---------------------------------------------------------------------------
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _render = render;
-
-// ---------------------------------------------------------------------------
 // TIMELINE-01: Node size and phase colors
 // ---------------------------------------------------------------------------
 
 describe('TIMELINE-01: Node size and phase colors', () => {
-  test.todo('renders all 4 chapter titles');
-  test.todo('completed chapter shows Abgeschlossen label');
-  test.todo('current chapter shows Aktuell label');
+  test('renders all 4 chapter titles', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    expect(screen.getByText('Konzept')).toBeInTheDocument();
+    expect(screen.getByText('Struktur')).toBeInTheDocument();
+    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.getByText('Entwicklung')).toBeInTheDocument();
+  });
+
+  test('completed chapter shows Abgeschlossen label', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
+  });
+
+  test('current chapter shows Aktuell label', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    expect(screen.getByText('Aktuell')).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -164,7 +172,13 @@ describe('TIMELINE-01: Node size and phase colors', () => {
 // ---------------------------------------------------------------------------
 
 describe('TIMELINE-02: Connector partial fill', () => {
-  test.todo('renders connectors between chapters on desktop');
+  test('renders connectors between chapters on desktop', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    // PhaseConnector renders a relative div with w-[28px] h-[2px] bg-[var(--border)]
+    // For 4 chapters there should be 3 connectors. Query by the outer container class.
+    const connectors = document.querySelectorAll('.relative.w-\\[28px\\].h-\\[2px\\]');
+    expect(connectors).toHaveLength(3);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -175,7 +189,13 @@ describe('TIMELINE-03: Motion animations', () => {
   // Automated proxy for visual animation verification per TIMELINE-03:
   // AnimatePresence mock renders children, so state labels appearing in DOM
   // confirms the animated content is reachable in the component tree.
-  test.todo('state labels are rendered (AnimatePresence mock renders children)');
+  test('state labels are rendered (AnimatePresence mock renders children)', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    // Both Abgeschlossen (completed) and Aktuell (current) state labels are rendered
+    // This confirms AnimatePresence wrapping does not prevent rendering.
+    expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
+    expect(screen.getByText('Aktuell')).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -183,10 +203,41 @@ describe('TIMELINE-03: Motion animations', () => {
 // ---------------------------------------------------------------------------
 
 describe('TIMELINE-04: Mobile single-phase view', () => {
-  test.todo('shows only current chapter on mobile');
-  test.todo('shows page indicator on mobile');
-  test.todo('prev button has German aria-label');
-  test.todo('clicking next shows next chapter');
+  beforeEach(() => {
+    mockUseBreakpoint.mockReturnValue({ isMobile: true, isTablet: false, isDesktop: false, width: 375 });
+  });
+
+  afterEach(() => {
+    mockUseBreakpoint.mockReturnValue({ isMobile: false, isTablet: false, isDesktop: true, width: 1200 });
+  });
+
+  test('shows only current chapter on mobile', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    // Chapter 2 "Struktur" is current — should be visible
+    expect(screen.getByText('Struktur')).toBeInTheDocument();
+    // Chapter 1 "Konzept" (completed) and Chapter 3 "Design" (upcoming) should NOT be visible
+    expect(screen.queryByText('Konzept')).not.toBeInTheDocument();
+    expect(screen.queryByText('Design')).not.toBeInTheDocument();
+  });
+
+  test('shows page indicator on mobile', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    // Current chapter is index 1 (Struktur), so indicator should be "2 / 4"
+    expect(screen.getByText('2 / 4')).toBeInTheDocument();
+  });
+
+  test('prev button has German aria-label', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    expect(screen.getByLabelText('Vorherige Phase')).toBeInTheDocument();
+  });
+
+  test('clicking next shows next chapter', () => {
+    render(<PhaseTimeline project={makeProject()} />);
+    const nextButton = screen.getByLabelText('Nächste Phase');
+    fireEvent.click(nextButton);
+    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.getByText('3 / 4')).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -194,5 +245,20 @@ describe('TIMELINE-04: Mobile single-phase view', () => {
 // ---------------------------------------------------------------------------
 
 describe('TIMELINE-05: Tooltip content', () => {
-  test.todo('renders tooltip content with chapter.narrative');
+  test('renders tooltip content with chapter.narrative', () => {
+    const project = makeProject({
+      chapters: [
+        makeChapter({
+          id: 'ch-1',
+          title: 'Konzept',
+          order: 1,
+          narrative: 'Test narrative text',
+          steps: [makeStep({ id: 'step-1-1', status: 'committed' })],
+        }),
+      ],
+    });
+    render(<PhaseTimeline project={project} />);
+    // @radix-ui/react-tooltip mock renders Content directly, so narrative text is in DOM
+    expect(screen.getByText('Test narrative text')).toBeInTheDocument();
+  });
 });
