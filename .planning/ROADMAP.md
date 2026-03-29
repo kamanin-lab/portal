@@ -65,7 +65,7 @@ Plans:
 Plans:
 - [x] 04-00-PLAN.md — Wave 0 test scaffold (PhaseTimeline.test.tsx with failing stubs for TIMELINE-01 through TIMELINE-05)
 - [x] 04-01-PLAN.md — Tooltip primitive + PhaseConnector + PhaseNode rewrite (phase colors, Motion animations, tooltip)
-- [ ] 04-02-PLAN.md — PhaseTimeline desktop/mobile rewrite + unit tests + visual verification
+- [x] 04-02-PLAN.md — PhaseTimeline desktop/mobile rewrite + unit tests + visual verification
 
 ### Phase 5: Data Unification & Polish
 **Goal**: Project context is visible to clients, the files tab is unambiguous, and the codebase meets all architectural standards
