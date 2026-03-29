@@ -60,8 +60,11 @@ Plans:
   3. Switching between phases or completing a step animates smoothly with Motion spring transitions — no instant jumps
   4. On a phone (< 768px), the timeline shows one phase at a time with prev/next navigation — no horizontal scroll or overflow
   5. Hovering a phase node shows a tooltip with the chapter's narrative description text
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Tooltip primitive + PhaseConnector + PhaseNode rewrite (phase colors, Motion animations, tooltip)
+- [ ] 04-02-PLAN.md — PhaseTimeline desktop/mobile rewrite + unit tests + visual verification
 
 ### Phase 5: Data Unification & Polish
 **Goal**: Project context is visible to clients, the files tab is unambiguous, and the codebase meets all architectural standards
@@ -84,5 +87,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
 | 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
-| 4. PhaseTimeline Redesign | 0/? | Not started | - |
+| 4. PhaseTimeline Redesign | 0/2 | In progress | - |
 | 5. Data Unification & Polish | 0/? | Not started | - |
