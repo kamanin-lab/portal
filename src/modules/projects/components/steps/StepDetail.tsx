@@ -1,6 +1,7 @@
 import type { Project } from '../../types/project';
 import { getStepById } from '../../lib/helpers';
 import { getPhaseColor } from '../../lib/phase-colors';
+import { buildChapterFolder } from '../../lib/slugify';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/components/ui/tabs';
 import { StepOverviewTab } from './StepOverviewTab';
@@ -20,6 +21,7 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
 
   const { step, chapter } = found;
   const phaseColor = getPhaseColor(chapter.order);
+  const chapterFolder = buildChapterFolder(chapter.order, chapter.title);
 
   return (
     <div className="p-6 max-w-[760px] max-[768px]:p-4">
@@ -44,9 +46,7 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
       <Tabs defaultValue="overview">
         <TabsList className="mb-0">
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
-          <TabsTrigger value="files">
-            Dateien{step.files.length ? ` (${step.files.length})` : ''}
-          </TabsTrigger>
+          <TabsTrigger value="files">Dateien</TabsTrigger>
           <TabsTrigger value="discussion">
             Diskussion{step.commentCount ? ` (${step.commentCount})` : ''}
           </TabsTrigger>
@@ -56,7 +56,11 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
           <StepOverviewTab step={step} projectId={project.id} />
         </TabsContent>
         <TabsContent value="files" className="pt-5">
-          <StepFilesTab step={step} />
+          <StepFilesTab
+            step={step}
+            projectConfigId={project.id}
+            chapterFolder={chapterFolder}
+          />
         </TabsContent>
         <TabsContent value="discussion" className="pt-5">
           <StepDiscussionTab step={step} />

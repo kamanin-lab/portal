@@ -30,7 +30,7 @@
 ### Data Unification (DATA)
 
 - [ ] **DATA-01**: ProjectContextSection rendered in OverviewPage (operator manages, client reads)
-- [ ] **DATA-02**: FilesTab clearly labels data source ("ClickUp-Anhange") and link destination
+- [x] **DATA-02**: FilesTab clearly labels data source ("ClickUp-Anhange") and link destination
 - [ ] **DATA-03**: Page transitions use Motion fade+slide animations (opacity 0→1, y 8→0)
 - [ ] **DATA-04**: PhaseTimeline shows shadcn Skeleton state while useProject is loading
 - [ ] **DATA-05**: ProjectContextAdminPanel refactored to < 150 lines (extract MemoryEntryForm)
@@ -67,7 +67,7 @@
 | TIMELINE-04 | Phase 4 | Complete |
 | TIMELINE-05 | Phase 4 | Complete |
 | DATA-01 | Phase 5 | Pending |
-| DATA-02 | Phase 5 | Pending |
+| DATA-02 | Phase 5 | Complete |
 | DATA-03 | Phase 5 | Pending |
 | DATA-04 | Phase 5 | Pending |
 | DATA-05 | Phase 5 | Pending |
