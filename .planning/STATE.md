@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-last_updated: "2026-03-29T12:05:08.069Z"
+last_updated: "2026-03-29T15:16:46.647Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 3
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,10 +19,11 @@ progress:
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Phase complete — both plans executed, ready for verification
-Last activity: 2026-03-29 — 02-02 complete: MessagesPage live data (CRIT-02), ETA field removed (CRIT-03)
+Phase: 03 (ai-enrichment) — COMPLETE
+Plan: 1 of 1 (all plans done)
+Status: Phase complete — ready for verification
+Stopped At: Completed 03-ai-enrichment/03-01-PLAN.md
+Last activity: 2026-03-29
 
 ## Previous Milestone
 
@@ -48,6 +49,9 @@ Phase 1: Portal Frontend — Complete
 - ExpandableSection returns null when body empty — prevents blank UI sections in StepOverviewTab (CRIT-04)
 - MessagesPage receives ProjectComment[] + isLoading props — hook called at NachrichtenPage level where project is available (CRIT-02)
 - eta field removed from TeamWorkingOn entirely — always-empty field replaced with conditional lastUpdate display (CRIT-03)
+- OpenRouter GPT-4o-mini replaces Anthropic Claude Haiku for AI enrichment generation (Phase 03-01)
+- Hash-based change detection (SHA-256 of name::description, 32 hex chars) drives re-enrichment decisions (Phase 03-01)
+- parseMilestoneOrder duplicated in Edge Function — Edge Functions cannot import from src/ (Phase 03-01)
 
 ### Blockers/Concerns
 

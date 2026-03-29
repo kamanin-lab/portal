@@ -14,10 +14,10 @@
 
 ### AI Enrichment (ENRICH)
 
-- [ ] **ENRICH-01**: Step enrichment re-generates when task name/description changes (hash-based detection)
+- [x] **ENRICH-01**: Step enrichment re-generates when task name/description changes (hash-based detection)
 - [ ] **ENRICH-02**: Operator can manually trigger re-enrichment per step via admin UI
-- [ ] **ENRICH-03**: DynamicHero shows AI-generated whyItMatters text when available
-- [ ] **ENRICH-04**: step_enrichment.sort_order is populated from milestone_order custom field
+- [x] **ENRICH-03**: DynamicHero shows AI-generated whyItMatters text when available
+- [x] **ENRICH-04**: step_enrichment.sort_order is populated from milestone_order custom field
 
 ### PhaseTimeline (TIMELINE)
 
@@ -57,10 +57,10 @@
 | CRIT-02 | Phase 2 | Complete |
 | CRIT-03 | Phase 2 | Complete |
 | CRIT-04 | Phase 2 | Complete |
-| ENRICH-01 | Phase 3 | Pending |
+| ENRICH-01 | Phase 3 | Complete |
 | ENRICH-02 | Phase 3 | Pending |
-| ENRICH-03 | Phase 3 | Pending |
-| ENRICH-04 | Phase 3 | Pending |
+| ENRICH-03 | Phase 3 | Complete |
+| ENRICH-04 | Phase 3 | Complete |
 | TIMELINE-01 | Phase 4 | Pending |
 | TIMELINE-02 | Phase 4 | Pending |
 | TIMELINE-03 | Phase 4 | Pending |

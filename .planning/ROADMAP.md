@@ -14,7 +14,7 @@
 ### Phases
 
 - [x] **Phase 2: Critical Fixes** — Restore four permanently broken data pipelines so the Projects module shows real data (completed 2026-03-29)
-- [ ] **Phase 3: AI Enrichment** — Fix write-once enrichment lifecycle and surface AI content where clients can see it
+- [x] **Phase 3: AI Enrichment** — Fix write-once enrichment lifecycle and surface AI content where clients can see it (completed 2026-03-29)
 - [ ] **Phase 4: PhaseTimeline Redesign** — Replace static dots with animated, informative, mobile-responsive timeline
 - [ ] **Phase 5: Data Unification & Polish** — Integrate ProjectContext, clarify FilesTab, add page transitions, enforce code standards
 
@@ -48,7 +48,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md — DB migration + Edge Function overhaul (hash detection, OpenRouter swap, sort_order) + DynamicHero enrichment display
+- [x] 03-01-PLAN.md — DB migration + Edge Function overhaul (hash detection, OpenRouter swap, sort_order) + DynamicHero enrichment display
 
 ### Phase 4: PhaseTimeline Redesign
 **Goal**: The phase timeline communicates project progress clearly on all screen sizes with fluid animation
@@ -83,6 +83,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
-| 3. AI Enrichment | 0/1 | Planning complete | - |
+| 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
 | 4. PhaseTimeline Redesign | 0/? | Not started | - |
 | 5. Data Unification & Polish | 0/? | Not started | - |
