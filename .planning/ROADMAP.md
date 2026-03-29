@@ -40,13 +40,15 @@ Plans:
 ### Phase 3: AI Enrichment
 **Goal**: AI enrichment stays current with task changes and its content reaches clients on the overview page
 **Depends on**: Phase 2
-**Requirements**: ENRICH-01, ENRICH-02, ENRICH-03, ENRICH-04
+**Requirements**: ENRICH-01, ENRICH-03, ENRICH-04
 **Success Criteria** (what must be TRUE):
   1. When a task name or description changes in ClickUp, the next sync generates fresh enrichment for that step (not the stale version)
-  2. An operator can press a button in the admin UI to force re-enrichment for a specific step without touching the database
-  3. The DynamicHero card shows the AI-generated "why it matters" text when enrichment exists — not an empty ClickUp description
-  4. Steps within a chapter appear in the order defined by milestone_order in ClickUp — not alphabetically
-**Plans**: TBD
+  2. The DynamicHero card shows the AI-generated "why it matters" text when enrichment exists — not an empty ClickUp description
+  3. Steps within a chapter appear in the order defined by milestone_order in ClickUp — not alphabetically
+**Plans**: 1 plan
+
+Plans:
+- [ ] 03-01-PLAN.md — DB migration + Edge Function overhaul (hash detection, OpenRouter swap, sort_order) + DynamicHero enrichment display
 
 ### Phase 4: PhaseTimeline Redesign
 **Goal**: The phase timeline communicates project progress clearly on all screen sizes with fluid animation
@@ -81,6 +83,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 2. Critical Fixes | 2/2 | Complete   | 2026-03-29 |
-| 3. AI Enrichment | 0/? | Not started | - |
+| 3. AI Enrichment | 0/1 | Planning complete | - |
 | 4. PhaseTimeline Redesign | 0/? | Not started | - |
 | 5. Data Unification & Polish | 0/? | Not started | - |
