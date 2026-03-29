@@ -41,6 +41,10 @@ Clients always know what needs their attention and can act on it in one click �
 - ✓ Vercel auto-deploy from main branch — 2026-03-26
 - ✓ Project Experience module (phases, steps, AI enrichment) — Phase 3.6
 - ✓ PhaseTimeline stepper redesign (phase icons, animated connectors, status badges, mobile scroll) — Phase 4
+- ✓ FilesTab + StepFilesTab Nextcloud integration (real files, not empty ClickUp attachments) — Phase 5
+- ✓ Motion tab transitions (fade+slide between Aktivitaet/Dateien/Nachrichten) — Phase 5
+- ✓ PhaseTimeline loading skeleton (4-node stepper-shaped placeholder) — Phase 5
+- ✓ Webhook auto-creates Nextcloud folders on task creation — Phase 5
 
 ### Active
 
@@ -109,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 1. Full review of all sections
 
 ---
-*Last updated: 2026-03-29 — Phase 04 complete (PhaseTimeline stepper redesign — phase icons, CSS GPU pulse, connector fill logic, mobile horizontal scroll, status badges)*
+*Last updated: 2026-03-30 — Phase 05 complete (Data unification — Nextcloud file integration, Motion tab transitions, PhaseTimeline skeleton, webhook folder auto-creation. DATA-01/DATA-05 deferred to admin dashboard scope.)*
