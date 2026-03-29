@@ -80,10 +80,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 05-00-PLAN.md — Wave 0 test scaffolds (FilesTab, StepFilesTab, OverviewTabs, PhaseTimeline skeleton stubs)
+- [x] 05-00-PLAN.md — Wave 0 test scaffolds (FilesTab, StepFilesTab, OverviewTabs, PhaseTimeline skeleton stubs)
 - [ ] 05-01-PLAN.md — FilesTab + StepFilesTab Nextcloud rewrite with slugify utility
 - [ ] 05-02-PLAN.md — Motion tab transitions + PhaseTimeline loading skeleton
-- [ ] 05-03-PLAN.md — Webhook auto-mkdir on taskCreated + env var verification
+- [x] 05-03-PLAN.md — Webhook auto-mkdir on taskCreated + env var verification
 
 ---
 
