@@ -10,7 +10,9 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, Lucide React, React Router v7
+- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, shadcn/ui, React Router v7
+- **Icons:** `@hugeicons/react` + `@hugeicons/core-free-icons` (primary icon set, stroke rounded), `@phosphor-icons/react` (secondary, weight variants + duotone). Lucide React is legacy-only — do not use for new code.
+- **Toasts:** `sonner@^2.0.7` — use `import { toast } from "sonner"` for all toast notifications
 - **Animation:** Motion (v12, successor to Framer Motion) — use `import { motion } from "motion/react"` for GPU-accelerated animations, layout transitions, scroll effects, spring physics
 - **UI primitives:** shadcn/ui is the standard for new UI building blocks (Button, Input, Tabs, Badge, Skeleton, Avatar, AlertDialog, Textarea, etc.). Install selectively — only components actually needed. Customize via portal CSS tokens, not by overriding shadcn defaults directly.
 - **State:** TanStack React Query (server) + React Context (UI)
@@ -47,6 +49,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 |--------|------|------------|--------|
 | Project Experience | `src/modules/projects/` | Live Supabase (project_config, project_task_cache, step_enrichment) | Phase 3.6 complete |
 | Tasks/Support | `src/modules/tickets/` | Live Supabase (task_cache, comment_cache) | Phase 3.5 complete |
+| Files | `src/modules/files/` | Nextcloud WebDAV via `nextcloud-files` Edge Function | Live |
 | Shared Shell | `src/shared/` | Auth, layout, design tokens | Phase 3.5 complete |
 | Content Editor | `src/modules/content/` | — | Future |
 | Discovery Tool | `src/modules/discovery/` | — | Future |
@@ -114,14 +117,24 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   ├── ARCHITECTURE.md         # System architecture
 │   ├── DECISIONS.md            # ADR log
 │   ├── CHANGELOG.md
-│   ├── ideas/                  # Future feature proposals
-│   │   └── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
-│   ├── planning/               # Domain model, delivery rules, product gaps
+│   ├── BROWSER_TESTING.md      # Playwright MCP setup
+│   ├── CLICKUP_INTEGRATION.md  # ClickUp threading implementation notes
+│   ├── audits/                 # Module audit reports
+│   │   ├── projects-module-audit.md
+│   │   └── ticket-audit-report.md
+│   ├── domain/                 # Business/domain documents (NOT GSD planning)
 │   │   ├── current-state-map.md
 │   │   ├── delivery-rules.md
 │   │   ├── domain-model-v1.md
 │   │   ├── product-gap-list.md
+│   │   ├── project-panel-redesign-v2.md
 │   │   └── team-operating-model-v1.md
+│   ├── ideas/                  # Future feature proposals
+│   │   ├── admin-dashboard.md
+│   │   ├── credit-evolution.md
+│   │   ├── knowledge-base.md   # Per-client AI knowledge base (Phase 4+)
+│   │   ├── organizations.md
+│   │   └── recommendations.md
 │   ├── reference/              # API docs, context-hub caches
 │   │   ├── context-hub/
 │   │   └── supabase-context-hub/
@@ -241,7 +254,7 @@ reviewer-architect (Claude Sonnet) still handles pre-code review because it need
 
 ### ClickUp
 - Always use the project-local ClickUp reference skill at:
-  `G:/01_OPUS/Projects/PORTAL_staging/.claude/skills/clickup-api/SKILL.md`
+  `G:/01_OPUS/Projects/PORTAL/.claude/skills/clickup-api/SKILL.md`
 - For any work touching ClickUp tasks, comments, webhooks, statuses, custom fields, lists/folders/spaces, or integration behavior, do not rely on memory alone.
 
 ### Supabase
@@ -305,8 +318,7 @@ The Supervisor is personally responsible for keeping ALL project documentation c
 
 ### Core Rules
 - Frame tasks clearly before execution using the task template
-- Keep work aligned with planning docs in docs/planning/
-- Enforce staging-only rule: implementation-agent works only in staging
+- Keep work aligned with domain docs in docs/domain/
 - Stop uncontrolled scope growth
 - **Dashboard discipline (CRITICAL):** Update BOTH `tasks/dashboard.md` AND `tasks/dashboard.json` at EVERY phase transition — before launching each agent (🔄) and after each agent completes (✅/❌). The dashboard must reflect real-time status at all times. Stale dashboard = supervisor failure. When a new idea is added to `docs/ideas/`, add it to `dashboard.json` ideas array immediately. The interactive dashboard at `tasks/dashboard.html` auto-reads from `dashboard.json` every 5 seconds.
 - After every completed loop step, immediately trigger the next step
@@ -378,7 +390,7 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 |---|---|---|
 | reviewer-architect | Sonnet | **Pre-code review only**, architecture gate |
 | **openrouter-review** | **GPT-5.4-mini (OpenRouter)** | **Post-code review** — independent second opinion via `scripts/openrouter-review.cjs` |
-| implementation-agent | Opus | Coding, stays in staging, follows approved scope |
+| implementation-agent | Opus | Coding, follows approved scope, reports what changed |
 | designer | Opus | UI/UX design + implementation, uses /frontend-design skill |
 | qa-agent | Sonnet | Build verification, data flow, edge cases, Playwright browser checks |
 | docs-memory-agent | Sonnet | Updates docs, records decisions, preserves context |
@@ -390,5 +402,5 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 - `docs/system-context/NOTIFICATION_MATRIX.md` — email/bell trigger rules
 - `docs/system-context/PRODUCT_VISION.md` — product direction
 - `docs/system-context/DATABASE_SCHEMA.md` — database schema reference
-- `docs/planning/` — domain model, delivery rules, product gaps
+- `docs/domain/` — domain model, delivery rules, product gaps
 - `tasks/dashboard.md` — current team status (keep updated!)

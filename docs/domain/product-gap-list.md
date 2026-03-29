@@ -261,7 +261,7 @@ This affects delivery clarity more than end-user product behavior, but it is sti
 
 ## 7.1 No staging work surface yet
 
-**Status: CLOSED.** Staging repository created at `G:/01_OPUS/Projects/PORTAL_staging` and actively used.
+**Status: CLOSED.** Single canonical repo at `G:/01_OPUS/Projects/PORTAL` (ADR-022: PORTAL_staging consolidated into PORTAL). Vercel preview URLs serve as staging environment per PR.
 
 ### Gap
 The original project folder is currently the active known-good environment, but a staging clone is not yet established for safe implementation.
@@ -273,7 +273,7 @@ Future changes should not be applied directly to the original working folder.
 
 ## 7.2 No finalized delivery rules yet
 
-**Status: PARTIALLY CLOSED.** Delivery rules documented in `docs/planning/delivery-rules.md`. Agent team defined in `.claude/agents/`.
+**Status: PARTIALLY CLOSED.** Delivery rules documented in `docs/domain/delivery-rules.md`. Agent team defined in `.claude/agents/`.
 
 ### Gap
 We still need explicit rules for:

@@ -176,10 +176,10 @@ The portal should not expand in random directions.
 
 ## 6. Documentation Rules
 
-## 6.1 Planning docs location
+## 6.1 Domain docs location
 
-Planning docs now live in-repo at:
-`docs/planning/` (within `G:/01_OPUS/Projects/PORTAL_staging`)
+Domain docs live in-repo at:
+`docs/domain/` (within `G:/01_OPUS/Projects/PORTAL`)
 
 ### Current files
 - `current-state-map.md`
@@ -187,8 +187,9 @@ Planning docs now live in-repo at:
 - `product-gap-list.md`
 - `delivery-rules.md` (this file)
 - `team-operating-model-v1.md`
+- `project-panel-redesign-v2.md`
 
-Historical note: planning docs originated in `C:\Users\upan\.openclaw\workspace\portal-planning\` and were migrated into the repo.
+Historical note: these docs originated in `C:\Users\upan\.openclaw\workspace\portal-planning\`, were migrated into the repo at `docs/planning/`, then renamed to `docs/domain/` (ADR-023, 2026-03-29).
 
 ---
 
@@ -206,10 +207,10 @@ They should remain separate from the original portal until staging workflow is e
 
 ## 6.3 Source-of-truth rule
 
-Staging is now the active implementation surface:
-- staging code (`PORTAL_staging`) = source of active implementation truth
-- planning docs (`docs/planning/`) = source of planning and coordination truth
-- original portal (`PORTAL`) = frozen read-only reference baseline
+Single canonical repo, single working directory:
+- active code (`PORTAL`) = source of implementation truth
+- domain docs (`docs/domain/`) = source of planning and coordination truth
+- staging environment = Vercel preview URLs (per PR), not a separate folder
 
 ---
 
@@ -326,8 +327,8 @@ Then start actual implementation planning module by module.
 
 The operating rule is:
 
-- original portal = frozen read-only reference
-- planning docs (in-repo at `docs/planning/`) = define direction
-- staging = active place of execution
+- `PORTAL` (single canonical repo) = active place of execution
+- domain docs (in-repo at `docs/domain/`) = define direction
+- `main` branch = production; feature branches get Vercel preview URLs for QA
 
 This rule should remain stable until explicitly changed.
