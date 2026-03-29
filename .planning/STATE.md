@@ -1,14 +1,14 @@
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-29 — Milestone v1.1 started (Projects Module v2)
+**Last activity:** 2026-03-29 — Milestone v1.1 roadmap created (Projects Module v2)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 2 — Critical Fixes
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-29 — Milestone v1.1 started
+Status: Not started
+Last activity: 2026-03-29 — Roadmap created, ready to plan Phase 2
 
 ## Previous Milestone
 Phase 1: Portal Frontend — Complete

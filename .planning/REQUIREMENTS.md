@@ -53,21 +53,21 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| CRIT-01 | — | Pending |
-| CRIT-02 | — | Pending |
-| CRIT-03 | — | Pending |
-| CRIT-04 | — | Pending |
-| ENRICH-01 | — | Pending |
-| ENRICH-02 | — | Pending |
-| ENRICH-03 | — | Pending |
-| ENRICH-04 | — | Pending |
-| TIMELINE-01 | — | Pending |
-| TIMELINE-02 | — | Pending |
-| TIMELINE-03 | — | Pending |
-| TIMELINE-04 | — | Pending |
-| TIMELINE-05 | — | Pending |
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| DATA-05 | — | Pending |
+| CRIT-01 | Phase 2 | Pending |
+| CRIT-02 | Phase 2 | Pending |
+| CRIT-03 | Phase 2 | Pending |
+| CRIT-04 | Phase 2 | Pending |
+| ENRICH-01 | Phase 3 | Pending |
+| ENRICH-02 | Phase 3 | Pending |
+| ENRICH-03 | Phase 3 | Pending |
+| ENRICH-04 | Phase 3 | Pending |
+| TIMELINE-01 | Phase 4 | Pending |
+| TIMELINE-02 | Phase 4 | Pending |
+| TIMELINE-03 | Phase 4 | Pending |
+| TIMELINE-04 | Phase 4 | Pending |
+| TIMELINE-05 | Phase 4 | Pending |
+| DATA-01 | Phase 5 | Pending |
+| DATA-02 | Phase 5 | Pending |
+| DATA-03 | Phase 5 | Pending |
+| DATA-04 | Phase 5 | Pending |
+| DATA-05 | Phase 5 | Pending |
