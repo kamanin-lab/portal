@@ -25,7 +25,6 @@ const project: Project = {
   clickupListId: 'list-1',
   clickupPhaseFieldId: null,
   tasksSummary: { needsAttention: 0, inProgress: 0, total: 0 },
-  tasks: [],
   updates: [],
   teamWorkingOn: { task: '', eta: '', lastUpdate: '' },
   chapters: [],

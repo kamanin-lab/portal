@@ -53,7 +53,7 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
         </TabsList>
 
         <TabsContent value="overview" className="pt-5">
-          <StepOverviewTab step={step} project={project} />
+          <StepOverviewTab step={step} projectId={project.id} />
         </TabsContent>
         <TabsContent value="files" className="pt-5">
           <StepFilesTab step={step} />

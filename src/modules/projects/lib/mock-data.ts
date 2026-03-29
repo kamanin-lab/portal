@@ -18,14 +18,6 @@ export const mockProject: Project = {
     total: 12,
   },
 
-  tasks: [
-    { id: 't1', title: 'Logo in hoher Auflösung liefern', status: 'needs-attention', stepId: 's2' },
-    { id: 't2', title: 'Farbpalette bestätigen', status: 'needs-attention', stepId: 's2' },
-    { id: 't3', title: 'Texte Startseite liefern', status: 'needs-attention', stepId: 's5' },
-    { id: 't4', title: 'Bildmaterial sammeln', status: 'in-progress', stepId: 's5' },
-    { id: 't5', title: 'Domain DNS-Einträge prüfen', status: 'in-progress', stepId: 's7' },
-  ],
-
   teamWorkingOn: {
     task: 'Sitemap-Entwurf',
     eta: 'Donnerstag',
