@@ -46,7 +46,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       eyebrowPulse: true,
       eyebrowIcon: <HugeiconsIcon icon={AlertCircleIcon} size={12} />,
       title: primaryAttention.portalCta || primaryAttention.title,
-      description: primaryAttention.description,
+      description: primaryAttention.whyItMatters || primaryAttention.description,
       tint: phaseColor.light,
       phase: phaseColor.main,
       primaryCta: {
@@ -86,7 +86,7 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       eyebrowPulse: false,
       eyebrowIcon: <HugeiconsIcon icon={FlashIcon} size={12} />,
       title: upcomingStep.step.title,
-      description: upcomingStep.step.description,
+      description: upcomingStep.step.whyItMatters || upcomingStep.step.description,
       tint: upPhase.light,
       phase: upPhase.main,
       ghostCta: {
