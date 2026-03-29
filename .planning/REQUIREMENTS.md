@@ -21,11 +21,11 @@
 
 ### PhaseTimeline (TIMELINE)
 
-- [ ] **TIMELINE-01**: PhaseTimeline nodes are 20-24px with clear state differentiation via phase colors
-- [ ] **TIMELINE-02**: Connector lines show partial completion fill (steps completed / total)
-- [ ] **TIMELINE-03**: State transitions use Motion spring animations (layout transitions, state label entry/exit)
-- [ ] **TIMELINE-04**: Mobile view (< 768px) collapses to single-phase with prev/next navigation
-- [ ] **TIMELINE-05**: Tooltip on hover shows chapter narrative text
+- [x] **TIMELINE-01**: PhaseTimeline nodes are 20-24px with clear state differentiation via phase colors
+- [x] **TIMELINE-02**: Connector lines show partial completion fill (steps completed / total)
+- [x] **TIMELINE-03**: State transitions use Motion spring animations (layout transitions, state label entry/exit)
+- [x] **TIMELINE-04**: Mobile view (< 768px) collapses to single-phase with prev/next navigation
+- [x] **TIMELINE-05**: Tooltip on hover shows chapter narrative text
 
 ### Data Unification (DATA)
 
@@ -61,11 +61,11 @@
 | ENRICH-02 | Phase 3 | Pending |
 | ENRICH-03 | Phase 3 | Complete |
 | ENRICH-04 | Phase 3 | Complete |
-| TIMELINE-01 | Phase 4 | Pending |
-| TIMELINE-02 | Phase 4 | Pending |
-| TIMELINE-03 | Phase 4 | Pending |
-| TIMELINE-04 | Phase 4 | Pending |
-| TIMELINE-05 | Phase 4 | Pending |
+| TIMELINE-01 | Phase 4 | Complete |
+| TIMELINE-02 | Phase 4 | Complete |
+| TIMELINE-03 | Phase 4 | Complete |
+| TIMELINE-04 | Phase 4 | Complete |
+| TIMELINE-05 | Phase 4 | Complete |
 | DATA-01 | Phase 5 | Pending |
 | DATA-02 | Phase 5 | Pending |
 | DATA-03 | Phase 5 | Pending |

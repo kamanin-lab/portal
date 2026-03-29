@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 03-ai-enrichment/03-01-PLAN.md
-last_updated: "2026-03-29T15:23:12.937Z"
+stopped_at: Completed 04-phasetimeline-redesign/04-00-PLAN.md
+last_updated: "2026-03-29T19:22:00Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 3
-  completed_plans: 4
+  completed_plans: 1
 ---
 
 # Project State
@@ -20,10 +20,10 @@ progress:
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Phase complete — ready for verification
-Stopped At: Completed 03-ai-enrichment/03-01-PLAN.md
+Phase: 04-phasetimeline-redesign
+Plan: 1 of 3
+Status: Executing Phase 04 — Plan 00 complete
+Stopped At: Completed 04-phasetimeline-redesign/04-00-PLAN.md
 Last activity: 2026-03-29
 
 ## Previous Milestone
@@ -53,6 +53,8 @@ Phase 1: Portal Frontend — Complete
 - OpenRouter GPT-4o-mini replaces Anthropic Claude Haiku for AI enrichment generation (Phase 03-01)
 - Hash-based change detection (SHA-256 of name::description, 32 hex chars) drives re-enrichment decisions (Phase 03-01)
 - parseMilestoneOrder duplicated in Edge Function — Edge Functions cannot import from src/ (Phase 03-01)
+- test.todo used over test.skip for Wave 0 stubs — clearer RED signal in vitest output (Phase 04-00)
+- filterMotionProps helper strips motion-specific props in test mocks to prevent jsdom DOM warnings (Phase 04-00)
 
 ### Blockers/Concerns
 
