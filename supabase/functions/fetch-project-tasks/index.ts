@@ -55,6 +55,35 @@ async function fetchWithRetry(
   throw lastError || new Error("Request failed after retries");
 }
 
+// Hash task name+description for change detection (D-01)
+async function computeContentHash(name: string, description: string): Promise<string> {
+  const content = `${name}::${description}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
+// Parse milestone_order custom field value (duplicated from transforms-project.ts — Edge Functions cannot import from src/)
+function parseMilestoneOrder(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function extractMilestoneOrder(customFields: ClickUpCustomField[]): number | null {
+  const field = customFields?.find(
+    f => typeof f.name === 'string' && f.name.trim().toLowerCase() === 'milestone order'
+  );
+  return field ? parseMilestoneOrder(field.value) : null;
+}
+
 interface ClickUpCustomField {
   id: string;
   name: string;
@@ -144,14 +173,14 @@ function extractAttachments(task: ClickUpTask): Array<{ name: string; url: strin
   }));
 }
 
-// AI Enrichment: Generate step descriptions via Claude API
+// AI Enrichment: Generate step descriptions via OpenRouter (GPT-4o-mini)
 async function generateStepEnrichment(
-  tasks: Array<{ clickup_id: string; name: string; description: string }>,
+  tasks: Array<{ clickup_id: string; name: string; description: string; contentHash: string }>,
   log: ReturnType<typeof createLogger>
-): Promise<Array<{ clickup_task_id: string; why_it_matters: string; what_becomes_fixed: string }>> {
-  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!anthropicKey) {
-    log.debug("No ANTHROPIC_API_KEY — skipping AI enrichment");
+): Promise<Array<{ clickup_task_id: string; why_it_matters: string; what_becomes_fixed: string; contentHash: string }>> {
+  const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (!openrouterKey) {
+    log.debug("No OPENROUTER_API_KEY — skipping AI enrichment");
     return [];
   }
 
@@ -168,27 +197,29 @@ Format:
 [{"task_index": 0, "why_it_matters": "...", "what_becomes_fixed": "..."}, ...]`;
 
   try {
-    const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${openrouterKey}`,
+        "HTTP-Referer": "https://portal.kamanin.at",
+        "X-Title": "KAMANIN Portal Enrichment",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "openai/gpt-4o-mini",
         max_tokens: 4000,
+        temperature: 0.3,
         messages: [{ role: "user", content: prompt }],
       }),
     }, 30000); // 30s timeout for AI
 
     if (!response.ok) {
-      log.warn("Claude API error", { status: response.status });
+      log.warn("OpenRouter API error", { status: response.status });
       return [];
     }
 
     const data = await response.json();
-    let text = data.content?.[0]?.text || "";
+    let text = data.choices?.[0]?.message?.content || "";
     // Strip markdown code block wrapper if present
     text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
     const parsed = JSON.parse(text);
@@ -199,6 +230,7 @@ Format:
       clickup_task_id: tasks[item.task_index]?.clickup_id || "",
       why_it_matters: item.why_it_matters || "",
       what_becomes_fixed: item.what_becomes_fixed || "",
+      contentHash: tasks[item.task_index]?.contentHash || "",
     })).filter((e: { clickup_task_id: string }) => e.clickup_task_id);
   } catch (err) {
     log.warn("AI enrichment failed", { error: (err as Error).message });
@@ -301,14 +333,17 @@ Deno.serve(async (req) => {
       publicCommentPrefix: TEST_FOLDER_CONTRACT.publicCommentPrefix,
     });
 
-    // Get existing step_enrichment IDs (to skip AI generation for existing)
+    // Get existing step_enrichment rows with content_hash for change detection (D-02)
     const { data: existingEnrichments } = await supabaseService
       .from("step_enrichment")
-      .select("clickup_task_id");
-    const enrichedTaskIds = new Set((existingEnrichments || []).map(e => e.clickup_task_id));
+      .select("clickup_task_id, content_hash");
+    const enrichmentHashMap = new Map<string, string>(
+      (existingEnrichments || []).map(e => [e.clickup_task_id, e.content_hash ?? ""])
+    );
 
     let totalSynced = 0;
-    const newTasksForEnrichment: Array<{ clickup_id: string; name: string; description: string }> = [];
+    const newTasksForEnrichment: Array<{ clickup_id: string; name: string; description: string; contentHash: string }> = [];
+    const taskMilestoneMap = new Map<string, number | null>();
 
     for (const project of projectConfigs) {
       const listId = project.clickup_list_id;
@@ -392,22 +427,27 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Collect new tasks for AI enrichment
+        // Hash-based change detection: collect tasks needing re-enrichment (D-02)
         for (const task of visibleTasks) {
-          if (!enrichedTaskIds.has(task.id)) {
+          const currentHash = await computeContentHash(task.name, task.description || "");
+          const storedHash = enrichmentHashMap.get(task.id);
+          if (!storedHash || storedHash !== currentHash) {
             newTasksForEnrichment.push({
               clickup_id: task.id,
               name: task.name,
               description: task.description || "",
+              contentHash: currentHash,
             });
           }
+          // Always record milestone_order for sort_order updates (D-11)
+          taskMilestoneMap.set(task.id, extractMilestoneOrder(task.custom_fields || []));
         }
       }
     }
 
     log.info("Total tasks synced", { count: totalSynced });
 
-    // AI Enrichment for new tasks (batched by 10)
+    // AI Enrichment for changed/new tasks (batched by 10)
     if (newTasksForEnrichment.length > 0) {
       log.info("Generating AI enrichment", { newTasks: newTasksForEnrichment.length });
 
@@ -424,8 +464,11 @@ Deno.serve(async (req) => {
                 clickup_task_id: e.clickup_task_id,
                 why_it_matters: e.why_it_matters,
                 what_becomes_fixed: e.what_becomes_fixed,
+                sort_order: taskMilestoneMap.get(e.clickup_task_id) ?? 0,
+                content_hash: e.contentHash,
+                last_enriched_at: new Date().toISOString(),
               })),
-              { onConflict: "clickup_task_id", ignoreDuplicates: true }
+              { onConflict: "clickup_task_id" }
             );
 
           if (enrichError) {
@@ -435,6 +478,23 @@ Deno.serve(async (req) => {
           }
         }
       }
+    }
+
+    // Update sort_order for tasks that were NOT re-enriched (D-11 — keep sort_order current even without content change)
+    const sortOrderUpdates: Array<{ clickup_task_id: string; sort_order: number }> = [];
+    for (const [taskId, order] of taskMilestoneMap.entries()) {
+      if (!newTasksForEnrichment.some(t => t.clickup_id === taskId)) {
+        sortOrderUpdates.push({ clickup_task_id: taskId, sort_order: order ?? 0 });
+      }
+    }
+    if (sortOrderUpdates.length > 0) {
+      for (const update of sortOrderUpdates) {
+        await supabaseService
+          .from("step_enrichment")
+          .update({ sort_order: update.sort_order })
+          .eq("clickup_task_id", update.clickup_task_id);
+      }
+      log.info("sort_order updated for existing enrichments", { count: sortOrderUpdates.length });
     }
 
     return new Response(
