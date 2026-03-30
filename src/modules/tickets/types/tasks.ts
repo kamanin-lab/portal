@@ -144,7 +144,7 @@ export type TaskAction = 'approve' | 'request_changes' | 'put_on_hold' | 'resume
 export interface Notification {
   id: string;
   profile_id: string;
-  type: 'team_reply' | 'status_change' | 'step_ready' | 'project_reply' | 'project_update';
+  type: 'team_reply' | 'status_change' | 'step_ready' | 'project_reply' | 'project_update' | 'new_recommendation';
   title: string;
   message: string;
   task_id: string | null;
