@@ -62,7 +62,7 @@ async function fetchWithRetry(
   throw lastError || new Error('Request failed after retries');
 }
 
-const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel", "approve_credits"];
+const VALID_ACTIONS = ["approve", "request_changes", "put_on_hold", "resume", "cancel", "approve_credits", "accept_recommendation", "decline_recommendation"];
 
 function isValidTaskId(taskId: string): boolean {
   return /^[a-zA-Z0-9]+$/.test(taskId) && taskId.length <= 50;
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     log.info("User attempting to update task status");
 
     const body = await req.json();
-    const { taskId, action, comment } = body;
+    const { taskId, action, comment, dueDate } = body;
 
     if (!taskId || !isValidTaskId(taskId)) {
       return new Response(
@@ -196,6 +196,13 @@ Deno.serve(async (req) => {
     if (!VALID_ACTIONS.includes(action)) {
       return new Response(
         JSON.stringify({ error: `Invalid action. Must be one of: ${VALID_ACTIONS.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "accept_recommendation" && (!dueDate || typeof dueDate !== "number")) {
+      return new Response(
+        JSON.stringify({ error: "accept_recommendation requires a dueDate (Unix ms timestamp)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -334,6 +341,63 @@ Deno.serve(async (req) => {
 
     const updatedTask = await updateResponse.json();
     log.info("Task status updated successfully");
+
+    // accept_recommendation: set due_date, remove recommendation tag, add ticket tag
+    if (action === "accept_recommendation") {
+      log.info("Processing accept_recommendation: setting due_date and swapping tags", { taskId, dueDate });
+
+      // Set due_date on the task
+      const dueDateResp = await fetchWithRetry(
+        `https://api.clickup.com/api/v2/task/${taskId}`,
+        {
+          method: "PUT",
+          headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ due_date: dueDate }),
+        },
+        2,
+        log
+      );
+      if (!dueDateResp.ok) {
+        await dueDateResp.text();
+        log.error("Failed to set due_date on recommendation task", { status: dueDateResp.status });
+      } else {
+        log.info("due_date set on recommendation task");
+      }
+
+      // Remove tag 'recommendation' (best-effort)
+      const removeTagResp = await fetchWithRetry(
+        `https://api.clickup.com/api/v2/task/${taskId}/tag/recommendation`,
+        {
+          method: "DELETE",
+          headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        },
+        2,
+        log
+      );
+      if (!removeTagResp.ok) {
+        await removeTagResp.text();
+        log.warn("Failed to remove recommendation tag (best-effort)", { status: removeTagResp.status });
+      } else {
+        log.info("Removed recommendation tag");
+      }
+
+      // Add tag 'ticket' (best-effort)
+      const addTagResp = await fetchWithRetry(
+        `https://api.clickup.com/api/v2/task/${taskId}/tag/ticket`,
+        {
+          method: "POST",
+          headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        },
+        2,
+        log
+      );
+      if (!addTagResp.ok) {
+        await addTagResp.text();
+        log.warn("Failed to add ticket tag (best-effort)", { status: addTagResp.status });
+      } else {
+        log.info("Added ticket tag");
+      }
+    }
 
     // Auto-comment for approve_credits action
     if (action === "approve_credits") {
@@ -505,13 +569,17 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString();
+    const cacheUpdate: Record<string, unknown> = {
+      status: matchedStatus.status,
+      status_color: matchedStatus.color || updatedTask.status?.color,
+      last_synced: now,
+    };
+    if (action === "accept_recommendation" && dueDate) {
+      cacheUpdate.due_date = new Date(dueDate).toISOString();
+    }
     await supabase
       .from("task_cache")
-      .update({
-        status: matchedStatus.status,
-        status_color: matchedStatus.color || updatedTask.status?.color,
-        last_synced: now,
-      })
+      .update(cacheUpdate)
       .eq("clickup_id", taskId)
       .eq("profile_id", userId);
 
@@ -522,6 +590,8 @@ Deno.serve(async (req) => {
       resume: "Task has been moved to Open",
       cancel: "Task has been cancelled",
       approve_credits: "Credits have been approved",
+      accept_recommendation: "Recommendation accepted",
+      decline_recommendation: "Recommendation declined",
     };
 
     return new Response(

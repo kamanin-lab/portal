@@ -138,7 +138,7 @@ export interface CreateTaskInput {
 }
 
 // Task actions available to the client
-export type TaskAction = 'approve' | 'request_changes' | 'put_on_hold' | 'resume' | 'cancel' | 'approve_credits';
+export type TaskAction = 'approve' | 'request_changes' | 'put_on_hold' | 'resume' | 'cancel' | 'approve_credits' | 'accept_recommendation' | 'decline_recommendation';
 
 // Notification from the notifications table
 export interface Notification {

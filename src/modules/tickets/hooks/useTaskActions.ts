@@ -10,6 +10,7 @@ interface UpdateTaskStatusParams {
   taskId: string;
   action: TaskAction;
   comment?: string;
+  dueDate?: number;
 }
 
 interface UpdateTaskStatusResponse {
@@ -20,17 +21,19 @@ interface UpdateTaskStatusResponse {
 }
 
 const ACTION_TOASTS: Record<TaskAction, { success: string; error: string }> = {
-  approve:          { success: dict.toasts.approveSuccess,        error: dict.toasts.approveError },
-  request_changes:  { success: dict.toasts.requestChangesSuccess, error: dict.toasts.requestChangesError },
-  put_on_hold:      { success: dict.toasts.holdSuccess,           error: dict.toasts.holdError },
-  resume:           { success: dict.toasts.resumeSuccess,         error: dict.toasts.resumeError },
-  cancel:           { success: dict.toasts.cancelSuccess,         error: dict.toasts.cancelError },
-  approve_credits:  { success: dict.toasts.creditApproveSuccess,  error: dict.toasts.creditApproveError },
+  approve:                 { success: dict.toasts.approveSuccess,           error: dict.toasts.approveError },
+  request_changes:         { success: dict.toasts.requestChangesSuccess,    error: dict.toasts.requestChangesError },
+  put_on_hold:             { success: dict.toasts.holdSuccess,              error: dict.toasts.holdError },
+  resume:                  { success: dict.toasts.resumeSuccess,            error: dict.toasts.resumeError },
+  cancel:                  { success: dict.toasts.cancelSuccess,            error: dict.toasts.cancelError },
+  approve_credits:         { success: dict.toasts.creditApproveSuccess,     error: dict.toasts.creditApproveError },
+  accept_recommendation:   { success: dict.toasts.recommendAcceptSuccess,   error: dict.toasts.recommendAcceptError },
+  decline_recommendation:  { success: dict.toasts.recommendDeclineSuccess,  error: dict.toasts.recommendDeclineError },
 };
 
-async function updateTaskStatus({ taskId, action, comment }: UpdateTaskStatusParams): Promise<UpdateTaskStatusResponse> {
+async function updateTaskStatus({ taskId, action, comment, dueDate }: UpdateTaskStatusParams): Promise<UpdateTaskStatusResponse> {
   const { data, error } = await supabase.functions.invoke<UpdateTaskStatusResponse>('update-task-status', {
-    body: { taskId, action, comment },
+    body: { taskId, action, comment, dueDate },
   });
 
   if (error) throw new Error(error.message || 'Failed to update task status');
@@ -61,16 +64,18 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
     },
   });
 
-  const performAction = (taskId: string, action: TaskAction, comment?: string) =>
-    mutation.mutateAsync({ taskId, action, comment });
+  const performAction = (taskId: string, action: TaskAction, comment?: string, dueDate?: number) =>
+    mutation.mutateAsync({ taskId, action, comment, dueDate });
 
   return {
-    approveTask:     (taskId: string, comment?: string) => performAction(taskId, 'approve', comment),
-    requestChanges:  (taskId: string, comment?: string) => performAction(taskId, 'request_changes', comment),
-    putOnHold:       (taskId: string, comment?: string) => performAction(taskId, 'put_on_hold', comment),
-    resumeTask:      (taskId: string, comment?: string) => performAction(taskId, 'resume', comment),
-    cancelTask:      (taskId: string, comment?: string) => performAction(taskId, 'cancel', comment),
-    approveCredits:  (taskId: string) => performAction(taskId, 'approve_credits'),
+    approveTask:             (taskId: string, comment?: string) => performAction(taskId, 'approve', comment),
+    requestChanges:          (taskId: string, comment?: string) => performAction(taskId, 'request_changes', comment),
+    putOnHold:               (taskId: string, comment?: string) => performAction(taskId, 'put_on_hold', comment),
+    resumeTask:              (taskId: string, comment?: string) => performAction(taskId, 'resume', comment),
+    cancelTask:              (taskId: string, comment?: string) => performAction(taskId, 'cancel', comment),
+    approveCredits:          (taskId: string) => performAction(taskId, 'approve_credits'),
+    acceptRecommendation:    (taskId: string, dueDate?: number) => performAction(taskId, 'accept_recommendation', undefined, dueDate),
+    declineRecommendation:   (taskId: string, comment?: string) => performAction(taskId, 'decline_recommendation', comment),
     performAction,
     isLoading: mutation.isPending,
     isError:   mutation.isError,

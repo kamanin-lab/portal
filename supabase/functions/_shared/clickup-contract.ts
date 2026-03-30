@@ -213,6 +213,8 @@ const STATUS_ALIASES: Record<string, string[]> = {
   resume: ["to do", "To Do", "TO DO"],
   cancel: ["canceled", "Canceled", "CANCELED", "cancelled", "Cancelled", "CANCELLED"],
   approve_credits: ["ready", "Ready", "READY"],
+  accept_recommendation: ["ready", "Ready", "READY"],
+  decline_recommendation: ["canceled", "Canceled", "CANCELED", "cancelled", "Cancelled", "CANCELLED"],
 };
 
 export function getStatusAliases(action: string): string[] {
