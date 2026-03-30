@@ -47,7 +47,7 @@ function formatDate(iso: string | null | undefined): string {
 
 export function TaskDetail({ task, onRead }: Props) {
   const portalStatus = mapStatus(task.status);
-  const isRecommendation = task.raw_data?.tags?.some((t: { name: string }) => t.name === 'recommendation');
+  const isRecommendation = task.tags?.some((t: { name: string }) => t.name === 'recommendation');
 
   return (
     <div className="p-6 max-[768px]:p-4">

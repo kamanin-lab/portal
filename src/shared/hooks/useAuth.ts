@@ -24,6 +24,7 @@ const STAGING_BYPASS_PROFILE: Profile = {
     team_comment: true,
     support_response: true,
     reminders: true,
+    new_recommendation: true,
   },
   avatar_url: null,
   support_task_id: null,
