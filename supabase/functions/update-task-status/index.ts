@@ -458,6 +458,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // decline_recommendation: remove recommendation tag (best-effort)
+    if (action === "decline_recommendation") {
+      const removeTagResp = await fetchWithRetry(
+        `https://api.clickup.com/api/v2/task/${taskId}/tag/recommendation`,
+        {
+          method: "DELETE",
+          headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        },
+        2,
+        log
+      );
+      if (!removeTagResp.ok) {
+        await removeTagResp.text();
+        log.warn("Failed to remove recommendation tag on decline (best-effort)", { status: removeTagResp.status });
+      } else {
+        log.info("Removed recommendation tag on decline");
+      }
+    }
+
     // Auto-comment for approve_credits action
     if (action === "approve_credits") {
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!);
