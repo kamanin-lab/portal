@@ -101,6 +101,24 @@
   }
 }
 
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-tertiary);
+  }
+}
+
 @keyframes phase-pulse {
   0%, 100% { box-shadow: 0 0 0 4px rgba(43,24,120,0.12); }
   50% { box-shadow: 0 0 0 7px rgba(43,24,120,0.06); }

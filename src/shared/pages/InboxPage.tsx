@@ -15,8 +15,6 @@ import { NotificationDetailPanel } from '@/shared/components/inbox/NotificationD
 import { TypeBadge } from '@/shared/components/inbox/TypeBadge'
 import { formatDate } from '@/shared/components/inbox/notification-utils'
 
-const PAGE_SIZE = 10
-
 export function InboxPage() {
   const { profile } = useAuth()
   const { isMobile } = useBreakpoint()
@@ -24,15 +22,11 @@ export function InboxPage() {
   const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications(profile?.id)
   const [selected, setSelected] = useState<Notification | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-
   // Exclude support task notifications
   const inboxItems = notifications.filter(
     n => !profile?.support_task_id || n.task_id !== profile.support_task_id
   )
 
-  const totalPages = Math.ceil(inboxItems.length / PAGE_SIZE)
-  const pageItems = inboxItems.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const unreadCount = inboxItems.filter(n => !n.is_read).length
 
   function handleSelect(n: Notification) {
@@ -49,7 +43,7 @@ export function InboxPage() {
   }
 
   return (
-    <ContentContainer width="narrow" className="flex h-full min-h-screen">
+    <ContentContainer width="narrow" className="flex h-screen overflow-hidden">
       {/* Left panel */}
       <div className="w-full md:w-[380px] md:max-w-[380px] flex-shrink-0 border-r border-border flex flex-col">
         {/* Header */}
@@ -75,19 +69,19 @@ export function InboxPage() {
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
           {isLoading && (
             <div className="px-5 py-4">
               <LoadingSkeleton lines={6} height="44px" />
             </div>
           )}
-          {!isLoading && pageItems.length === 0 && (
+          {!isLoading && inboxItems.length === 0 && (
             <div className="py-8">
               <EmptyState message="Keine Benachrichtigungen vorhanden." icon={<HugeiconsIcon icon={Notification03Icon} size={24} />} />
             </div>
           )}
           {isMobile ? (
-            pageItems.map(n => (
+            inboxItems.map(n => (
               <NotificationAccordionItem
                 key={n.id}
                 notification={n}
@@ -98,7 +92,7 @@ export function InboxPage() {
               />
             ))
           ) : (
-            pageItems.map(n => (
+            inboxItems.map(n => (
               <button
                 key={n.id}
                 onClick={() => handleSelect(n)}
@@ -128,29 +122,6 @@ export function InboxPage() {
             ))
           )}
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-            <button
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="text-xs text-accent disabled:text-text-tertiary disabled:cursor-not-allowed"
-            >
-              ← Zurück
-            </button>
-            <span className="text-xs text-text-tertiary">
-              {page + 1} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="text-xs text-accent disabled:text-text-tertiary disabled:cursor-not-allowed"
-            >
-              Weiter →
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Right detail panel (desktop only) */}
