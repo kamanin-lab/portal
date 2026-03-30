@@ -16,7 +16,7 @@ progress:
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-30 - Completed quick task 260330-mp6: Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification end-to-end
+**Last activity:** 2026-03-30 - Completed quick task 260330-nsg: Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook handler
 
 ## Current Position
 
@@ -40,6 +40,7 @@ Phase 1: Portal Frontend — Complete
 | 260330-gzi | Fix missing author_email in comment_cache for nadin.bonin@mbm-moebel.de — 21 rows fixed, no UUID mismatch | 2026-03-30 | pending | Needs Review | [260330-gzi-investigate-and-fix-missing-profile-id-i](./quick/260330-gzi-investigate-and-fix-missing-profile-id-i/) |
 | 260330-lvq | Recommendations block on Needs Attention tab — accept/decline workflow, Edge Function tag management, 4 new components | 2026-03-30 | `c52352c` | Done | [260330-lvq-recommendations-block-on-needs-attention](./quick/260330-lvq-recommendations-block-on-needs-attention/) |
 | 260330-mp6 | Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification wired end-to-end | 2026-03-30 | `7bc70fc` | Done | [260330-mp6-recommendations-polish-standard-card-she](./quick/260330-mp6-recommendations-polish-standard-card-she/) |
+| 260330-nsg | Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook | 2026-03-30 | `fd0626b` | Done | [260330-nsg-fix-recommendation-approval-ux-and-webho](./quick/260330-nsg-fix-recommendation-approval-ux-and-webho/) |
 
 ### Key Decisions
 
@@ -64,6 +65,9 @@ Phase 1: Portal Frontend — Complete
 - createNextcloudFolder failure is intentionally non-fatal — webhook must always return 200 to ClickUp (Phase 05-03)
 - RecommendationCard uses task.tags (top-level on ClickUpTask) not raw_data.tags for recommendation detection (quick-260330-mp6)
 - accept/decline recommendation actions moved to TaskDetailSheet via RecommendationApproval — consistent with CreditApproval UX pattern (quick-260330-mp6)
+- RecommendationApproval onClose wired via useTaskActions onSuccess — sheet closes after accept/decline (quick-260330-nsg)
+- taskTagUpdated add/remove detection via live ClickUp API tag presence check — not payload inference (quick-260330-nsg)
+- fetchTaskForVisibilityCheck extended with optional tags field — backward compatible (quick-260330-nsg)
 - Recursive MKCOL stops on first failure to avoid orphaned subdirectory creation (Phase 05-03)
 - FilesTab shows 8 most recent Nextcloud files (type=file only), sorted by lastModified desc — no navigation to DateienPage (Phase 05-01)
 - StepFilesTab constructs path as chapterFolder/slugify(step.title) — frontend slugify mirrors Edge Function exactly (Phase 05-01)
