@@ -711,6 +711,28 @@ Deno.serve(async (req) => {
       .eq("clickup_id", taskId)
       .eq("profile_id", userId);
 
+    // Belt-and-suspenders: clear recommendation tag from task_cache immediately
+    // so React Query refetch doesn't resurrect the approval block before webhook fires
+    if (action === "decline_recommendation" || action === "accept_recommendation") {
+      const { data: cachedTask } = await supabase
+        .from("task_cache")
+        .select("tags")
+        .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+
+      if (cachedTask?.tags && Array.isArray(cachedTask.tags)) {
+        const filteredTags = (cachedTask.tags as Array<{ name: string }>)
+          .filter((t) => t.name.toLowerCase() !== "recommendation");
+        await supabase
+          .from("task_cache")
+          .update({ tags: filteredTags })
+          .eq("clickup_id", taskId)
+          .eq("profile_id", userId);
+        log.info("Cleared recommendation tag from task_cache");
+      }
+    }
+
     const ACTION_MESSAGES: Record<string, string> = {
       approve: "Task has been approved",
       request_changes: "Changes have been requested",
