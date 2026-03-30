@@ -1,19 +1,42 @@
-import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Idea01Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, Calendar03Icon, Idea01Icon } from '@hugeicons/core-free-icons'
+import { motion } from 'motion/react'
+import { StatusBadge } from '@/shared/components/common/StatusBadge'
+import { PriorityIcon } from './PriorityIcon'
 import { CreditBadge } from './CreditBadge'
-import { dict } from '../lib/dictionary'
+import { mapStatus } from '../lib/status-mapping'
 import type { ClickUpTask } from '../types/tasks'
 
 interface Props {
   task: ClickUpTask
-  onAccept: (task: ClickUpTask) => void
-  onDecline: (task: ClickUpTask) => void
+  unreadCount?: number
   onTaskClick: (id: string) => void
 }
 
-export function RecommendationCard({ task, onAccept, onDecline, onTaskClick }: Props) {
+function formatDueDate(date: string | null): string | null {
+  if (!date) return null
+  return new Date(date).toLocaleDateString('de-AT', {
+    day: '2-digit',
+    month: 'short',
+  })
+}
+
+const STATUS_BORDER_COLORS: Record<string, string> = {
+  open:            'var(--phase-2)',
+  in_progress:     'var(--phase-2)',
+  needs_attention: 'var(--awaiting)',
+  ready:           'var(--ready)',
+  approved:        'var(--committed)',
+  done:            '#86EFAC',
+  on_hold:         'var(--phase-1)',
+  cancelled:       '#EF4444',
+}
+
+export function RecommendationCard({ task, unreadCount = 0, onTaskClick }: Props) {
+  const portalStatus = mapStatus(task.status)
   const preview = task.description?.trim() || 'Keine Beschreibung verfügbar.'
+  const dueDate = formatDueDate(task.due_date)
+  const borderColor = STATUS_BORDER_COLORS[portalStatus] ?? 'var(--border)'
   const hasDescription = Boolean(task.description?.trim())
 
   return (
@@ -22,58 +45,65 @@ export function RecommendationCard({ task, onAccept, onDecline, onTaskClick }: P
       whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      <div className="flex w-full h-full bg-surface border border-border rounded-[var(--r-md)] shadow-sm overflow-hidden">
-        {/* Amber left border for recommendations */}
-        <div className="w-[3px] shrink-0 rounded-l-[var(--r-md)] bg-[var(--phase-3)]" />
+      <button
+        onClick={() => onTaskClick(task.clickup_id)}
+        className="flex w-full h-full text-left bg-surface border border-border rounded-[var(--r-md)] shadow-sm overflow-hidden hover:bg-surface-hover transition-colors duration-[120ms] cursor-pointer"
+      >
+        {/* Status left border */}
+        <div
+          className="w-[3px] shrink-0 rounded-l-[var(--r-md)]"
+          style={{ background: borderColor }}
+        />
 
         {/* Card content */}
-        <button
-          onClick={() => onTaskClick(task.clickup_id)}
-          className="flex-1 flex flex-col min-w-0 px-4 py-3.5 text-left hover:bg-surface-hover transition-colors duration-[120ms] cursor-pointer"
-        >
-          {/* Title */}
-          <div className="flex items-start gap-2">
+        <div className="flex-1 flex flex-col min-w-0 px-4 py-3.5">
+          {/* Title — max 2 lines */}
+          <h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">
+            {task.name}
             <HugeiconsIcon
               icon={Idea01Icon}
-              size={15}
-              className="shrink-0 text-[var(--phase-3)] mt-0.5"
+              size={13}
+              className="inline-block ml-1.5 align-middle text-[var(--phase-3)] shrink-0"
             />
-            <h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">
-              {task.name}
-            </h3>
-          </div>
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center justify-center ml-2 min-w-[18px] h-[18px] px-1.5 rounded-full bg-cta text-white text-2xs font-bold align-middle">
+                {unreadCount}
+              </span>
+            )}
+          </h3>
 
-          {/* Description */}
-          <p className={`text-body leading-[1.4] line-clamp-2 mt-1 overflow-hidden pl-[23px] ${
+          {/* Description — strict 2 lines max */}
+          <p className={`text-body leading-[1.4] line-clamp-2 mt-1 overflow-hidden ${
             hasDescription ? 'text-text-secondary' : 'text-text-tertiary italic'
           }`}>
             {preview}
           </p>
 
+          {/* Spacer pushes meta to bottom */}
           <div className="flex-1" />
 
-          {/* Bottom row: credits */}
-          <div className="flex items-center gap-2 pt-1 pl-[23px]">
-            <CreditBadge credits={task.credits} />
-          </div>
-        </button>
+          {/* Meta row — always at bottom */}
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <StatusBadge status={portalStatus} variant="ticket" size="sm" />
 
-        {/* Action buttons — right side */}
-        <div className="flex flex-col gap-1.5 justify-center px-3 shrink-0 border-l border-border">
-          <button
-            onClick={(e) => { e.stopPropagation(); onAccept(task); }}
-            className="px-3 py-1.5 text-xs font-semibold bg-accent text-white rounded-[var(--r-sm)] hover:bg-accent-hover transition-colors cursor-pointer whitespace-nowrap"
-          >
-            {dict.actions.accept}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDecline(task); }}
-            className="px-3 py-1.5 text-xs font-semibold bg-surface-hover text-text-secondary border border-border rounded-[var(--r-sm)] hover:bg-surface-active transition-colors cursor-pointer whitespace-nowrap"
-          >
-            {dict.actions.decline}
-          </button>
+            <PriorityIcon priority={task.priority} size={13} showLabel />
+
+            <CreditBadge credits={task.credits} />
+
+            {dueDate && (
+              <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
+                <HugeiconsIcon icon={Calendar03Icon} size={12} />
+                {dueDate}
+              </span>
+            )}
+
+            <span className="flex items-center gap-1 text-xs text-text-tertiary ml-auto">
+              <HugeiconsIcon icon={UserIcon} size={12} />
+              {task.created_by_name || 'Team'}
+            </span>
+          </div>
         </div>
-      </div>
+      </button>
     </motion.div>
   )
 }

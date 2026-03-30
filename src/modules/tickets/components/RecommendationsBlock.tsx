@@ -1,9 +1,7 @@
-import { useRef } from 'react'
 import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Idea01Icon } from '@hugeicons/core-free-icons'
 import { RecommendationCard } from './RecommendationCard'
-import { RecommendationActions } from './RecommendationActions'
 import { cardVariants } from '../lib/task-list-utils'
 import { dict } from '../lib/dictionary'
 import type { ClickUpTask } from '../types/tasks'
@@ -14,9 +12,6 @@ interface Props {
 }
 
 export function RecommendationsBlock({ recommendations, onTaskClick }: Props) {
-  const openAcceptRef = useRef<(task: ClickUpTask) => void>(() => {})
-  const openDeclineRef = useRef<(task: ClickUpTask) => void>(() => {})
-
   if (recommendations.length === 0) return null
 
   return (
@@ -50,19 +45,11 @@ export function RecommendationsBlock({ recommendations, onTaskClick }: Props) {
           >
             <RecommendationCard
               task={task}
-              onAccept={(t) => openAcceptRef.current(t)}
-              onDecline={(t) => openDeclineRef.current(t)}
               onTaskClick={onTaskClick}
             />
           </motion.div>
         ))}
       </div>
-
-      {/* Modals */}
-      <RecommendationActions
-        onAcceptRef={(fn) => { openAcceptRef.current = fn }}
-        onDeclineRef={(fn) => { openDeclineRef.current = fn }}
-      />
     </div>
   )
 }
