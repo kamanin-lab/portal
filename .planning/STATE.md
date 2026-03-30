@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed 05-02-PLAN.md
 last_updated: "2026-03-29T22:47:03.122Z"
-last_activity: 2026-03-30 - Completed quick task 260330-rq4: Audit & fix recommendations decline flow
+last_activity: 2026-03-30 - Completed quick task 260330-sl4: fix new_recommendation inbox notifications
 progress:
   total_phases: 5
   completed_phases: 4
@@ -42,6 +42,7 @@ Phase 1: Portal Frontend — Complete
 | 260330-mp6 | Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification wired end-to-end | 2026-03-30 | `7bc70fc` | Done | [260330-mp6-recommendations-polish-standard-card-she](./quick/260330-mp6-recommendations-polish-standard-card-she/) |
 | 260330-nsg | Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook | 2026-03-30 | `fd0626b` | Done | [260330-nsg-fix-recommendation-approval-ux-and-webho](./quick/260330-nsg-fix-recommendation-approval-ux-and-webho/) |
 | 260330-rq4 | Audit & fix recommendations decline — auto-comment to ClickUp, block clears after decline, tag cache cleanup | 2026-03-30 | `10267dd` | Verified | [260330-rq4-audit-and-fix-recommendations-mechanism-](./quick/260330-rq4-audit-and-fix-recommendations-mechanism-/) |
+| 260330-sl4 | Fix new_recommendation inbox notifications — DB constraint, TS type, TypeBadge amber badge | 2026-03-30 | `635bdc4` | Verified | [260330-sl4-fix-new-recommendation-inbox-notificatio](./quick/260330-sl4-fix-new-recommendation-inbox-notificatio/) |
 
 ### Key Decisions
 
