@@ -1,5 +1,14 @@
 # Changelog
 
+## Recommendations Decline Fix — 2026-03-30
+
+- **Block clears after decline**: `TaskDetail.tsx` exclusion list now includes `'cancelled'` — block no longer reappears after re-opening a declined task
+- **Auto-comment on decline**: `decline_recommendation` always posts "Empfehlung abgelehnt." to ClickUp (+ optional user reasoning); mirrors accept flow
+- **No double-post**: Generic comment handler guarded with `action !== 'decline_recommendation'`
+- **Tag cache cleanup**: `task_cache.tags` updated immediately on accept/decline to remove `recommendation` tag before webhook fires
+
+---
+
 ## Projects Module Overhaul — 2026-03-30
 
 ### FilesTab → Full Nextcloud Folder Browser
