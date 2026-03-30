@@ -147,14 +147,17 @@ function sanitizeCommentText(text: string): string {
 // Map email types to notification_preferences JSONB keys.
 // Falls back to email_notifications boolean for backward compat.
 const EMAIL_TYPE_TO_PREF_KEY: Record<string, string> = {
+  // Task notifications — unchanged
   task_review: "task_review",
-  step_ready: "task_review",       // project step ready = same preference as task review
   task_completed: "task_completed",
-  team_question: "team_comment",   // email type is team_question, pref key is team_comment
-  project_reply: "team_comment",   // project reply = same preference as team comment
+  team_question: "team_comment",
   support_response: "support_response",
-  credit_approval: "task_review",  // credit approval = same preference as task review
+  credit_approval: "task_review",
   new_recommendation: "new_recommendation",
+  // Project notifications — own preference keys (decoupled from task keys)
+  step_ready: "project_task_ready",
+  step_completed: "project_step_completed",
+  project_reply: "project_messages",
 };
 
 function shouldSendEmail(
@@ -587,7 +590,7 @@ Deno.serve(async (req) => {
       // Try project_task_cache first (fast, exact)
       const { data: existingProjectTask } = await supabase
         .from("project_task_cache")
-        .select("project_config_id")
+        .select("project_config_id, chapter_config_id")
         .eq("clickup_id", taskId)
         .limit(1);
 
@@ -617,6 +620,9 @@ Deno.serve(async (req) => {
 
       if (routeContext === "project" && projectConfigId) {
         log.info("Routing to project handler", { taskId, projectConfigId, event: payload.event });
+
+        // chapter_config_id from the initial cache lookup (null if task routed via fallback path)
+        const chapterConfigId: string | null = existingProjectTask?.[0]?.chapter_config_id ?? null;
 
         // Helper: get all profile IDs with access to this project
         async function getProjectProfileIds(): Promise<string[]> {
@@ -749,6 +755,68 @@ Deno.serve(async (req) => {
                       await sendMailjetEmail("task_completed", { email: p.email, name: p.full_name }, {
                         firstName: p.full_name?.split(" ")[0], taskName: stepName, taskId,
                       }, log);
+                    }
+                  }
+
+                  // Chapter completion check: if all tasks in same chapter are done, fire chapter-level notification
+                  if (chapterConfigId) {
+                    const { data: chapterTasks } = await supabase
+                      .from("project_task_cache")
+                      .select("id, status")
+                      .eq("chapter_config_id", chapterConfigId)
+                      .eq("is_visible", true);
+
+                    const allDone = chapterTasks && chapterTasks.length > 0 &&
+                      chapterTasks.every((t: { id: string; status: string | null }) => {
+                        const s = (t.status || "").toLowerCase();
+                        return s.includes("done") || s.includes("complete") || s.includes("closed") || s.includes("approved");
+                      });
+
+                    if (allDone) {
+                      // Deduplication: check if project_update already sent for this chapter in last 24h
+                      const { data: recentNotif } = await supabase
+                        .from("notifications")
+                        .select("id")
+                        .eq("type", "project_update")
+                        .in("profile_id", profileIds)
+                        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+                        .eq("message", chapterConfigId)
+                        .limit(1);
+
+                      if (!recentNotif || recentNotif.length === 0) {
+                        // Get chapter name
+                        const { data: chapter } = await supabase
+                          .from("chapter_config")
+                          .select("title")
+                          .eq("id", chapterConfigId)
+                          .single();
+                        const chapterName = chapter?.title || stepName;
+
+                        // Bell notification for chapter completion
+                        const chapterNotifs = profileIds.map((pid: string) => ({
+                          profile_id: pid,
+                          type: "project_update",
+                          title: `Schritt abgeschlossen: ${chapterName}`,
+                          message: chapterConfigId,
+                          task_id: taskId,
+                          is_read: false,
+                        }));
+                        await supabase.from("notifications").insert(chapterNotifs);
+                        log.info("Chapter completion notifications created", { chapterName, count: chapterNotifs.length });
+
+                        // Chapter completion email
+                        const { data: profilesForEmail } = await supabase
+                          .from("profiles")
+                          .select("id, email, full_name, email_notifications, notification_preferences")
+                          .in("id", profileIds);
+                        for (const p of profilesForEmail || []) {
+                          if (shouldSendEmail(p, "step_completed")) {
+                            await sendMailjetEmail("step_completed", { email: p.email, name: p.full_name }, {
+                              firstName: p.full_name?.split(" ")[0], chapterName, taskId,
+                            }, log);
+                          }
+                        }
+                      }
                     }
                   }
                 }
