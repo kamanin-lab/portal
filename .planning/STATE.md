@@ -16,7 +16,7 @@ progress:
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-30 - Completed quick task 260330-lvq: Recommendations block on Needs Attention tab — accept/decline workflow for agency-created recommendations
+**Last activity:** 2026-03-30 - Completed quick task 260330-mp6: Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification end-to-end
 
 ## Current Position
 
@@ -39,6 +39,7 @@ Phase 1: Portal Frontend — Complete
 | 260329-hjo | Full docs restructuring — deleted stale files, renamed docs/planning/ to docs/domain/, all docs updated | 2026-03-29 | `36c7de6` | Done | [260329-hjo-full-docs-audit-and-structure-optimizati](./quick/260329-hjo-full-docs-audit-and-structure-optimizati/) |
 | 260330-gzi | Fix missing author_email in comment_cache for nadin.bonin@mbm-moebel.de — 21 rows fixed, no UUID mismatch | 2026-03-30 | pending | Needs Review | [260330-gzi-investigate-and-fix-missing-profile-id-i](./quick/260330-gzi-investigate-and-fix-missing-profile-id-i/) |
 | 260330-lvq | Recommendations block on Needs Attention tab — accept/decline workflow, Edge Function tag management, 4 new components | 2026-03-30 | `c52352c` | Done | [260330-lvq-recommendations-block-on-needs-attention](./quick/260330-lvq-recommendations-block-on-needs-attention/) |
+| 260330-mp6 | Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification wired end-to-end | 2026-03-30 | `7bc70fc` | Done | [260330-mp6-recommendations-polish-standard-card-she](./quick/260330-mp6-recommendations-polish-standard-card-she/) |
 
 ### Key Decisions
 
@@ -61,6 +62,8 @@ Phase 1: Portal Frontend — Complete
 - Pulse animation uses separate wrapping motion.div to avoid conflicting with layout animation on dot itself (Phase 04-01)
 - PhaseNode dot kept inline (not extracted to sub-component) to access color+status within 150-line limit (Phase 04-01)
 - createNextcloudFolder failure is intentionally non-fatal — webhook must always return 200 to ClickUp (Phase 05-03)
+- RecommendationCard uses task.tags (top-level on ClickUpTask) not raw_data.tags for recommendation detection (quick-260330-mp6)
+- accept/decline recommendation actions moved to TaskDetailSheet via RecommendationApproval — consistent with CreditApproval UX pattern (quick-260330-mp6)
 - Recursive MKCOL stops on first failure to avoid orphaned subdirectory creation (Phase 05-03)
 - FilesTab shows 8 most recent Nextcloud files (type=file only), sorted by lastModified desc — no navigation to DateienPage (Phase 05-01)
 - StepFilesTab constructs path as chapterFolder/slugify(step.title) — frontend slugify mirrors Edge Function exactly (Phase 05-01)
