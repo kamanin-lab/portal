@@ -5,6 +5,9 @@ export interface NotificationPreferences {
   support_response: boolean
   reminders: boolean
   new_recommendation: boolean
+  project_task_ready: boolean
+  project_step_completed: boolean
+  project_messages: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -14,6 +17,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   support_response: true,
   reminders: true,
   new_recommendation: true,
+  project_task_ready: true,
+  project_step_completed: true,
+  project_messages: true,
 }
 
 export interface Profile {

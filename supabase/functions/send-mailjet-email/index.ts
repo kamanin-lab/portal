@@ -16,8 +16,10 @@ interface EmailRequest {
     | "team_question"
     | "support_response"
     | "step_ready"
+    | "step_completed"
     | "project_reply"
     | "credit_approval"
+    | "new_recommendation"
     | "magic_link"
     | "password_reset"
     | "email_confirmation"
@@ -33,6 +35,7 @@ interface EmailRequest {
     firstName?: string;
     taskName?: string;
     stepName?: string;
+    chapterName?: string;
     taskId?: string;
     tasks?: TaskDigestItem[];
     actionUrl?: string;
@@ -142,6 +145,26 @@ function generateEmailHtml(
             <h1 class="title">${copy.title}</h1>
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
+            <a href="${stepUrl}" class="button">${copy.cta}</a>
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "step_completed": {
+      const chapterName = data.chapterName || data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
+      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const subject = typeof copy.subject === "function" ? copy.subject(chapterName) : copy.subject;
+      const bodyParts = typeof copy.body === "function" ? (copy.body as Function)(chapterName) : copy.body;
+      const bodyHtml = Array.isArray(bodyParts)
+        ? bodyParts.map((p: string) => `<p class="text">${p}</p>`).join("")
+        : `<p class="text">${bodyParts}</p>`;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            ${bodyHtml}
             <a href="${stepUrl}" class="button">${copy.cta}</a>
           </div>${defaultFooter}</div></body></html>`,
       };
@@ -333,6 +356,23 @@ function generateEmailHtml(
             <p class="text">${copy.body as string}</p>
             <a href="${actionUrl}" class="button">${copy.cta}</a>
             ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "new_recommendation": {
+      const taskName = data.taskName || (locale === "de" ? "Ihre Empfehlung" : "your recommendation");
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <a href="${taskUrl}" class="button">${copy.cta}</a>
           </div>${defaultFooter}</div></body></html>`,
       };
     }

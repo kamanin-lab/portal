@@ -107,7 +107,7 @@ In-app bell notifications. Created by the webhook function on status changes and
 |--------|------|-------------|-------------|
 | id | uuid | PK, DEFAULT gen_random_uuid() | Notification ID |
 | profile_id | uuid | NOT NULL, FK → profiles(id) | Target user |
-| type | text | NOT NULL, CHECK (`team_reply` or `status_change`) | Notification category |
+| type | text | NOT NULL, CHECK (see constraint below) | Notification category |
 | title | text | NOT NULL | Notification title (German, e.g., "Neue Antwort zu...") |
 | message | text | NOT NULL | Notification body text (truncated to ~200 chars) |
 | task_id | text | | Related ClickUp task ID |
@@ -115,7 +115,7 @@ In-app bell notifications. Created by the webhook function on status changes and
 | is_read | boolean | DEFAULT false | Read state |
 | created_at | timestamptz | DEFAULT now() | Creation timestamp |
 
-**Type Check Constraint:** `notifications_type_check` — value must be `'team_reply'` or `'status_change'`.
+**Type Check Constraint:** `notifications_type_check` — allowed values: `'team_reply'`, `'status_change'`, `'step_ready'`, `'project_reply'`, `'project_update'`, `'new_recommendation'`.
 
 **RLS Policy:** Users can read only rows where `profile_id = auth.uid()`. Users can update `is_read` on their own notifications.
 

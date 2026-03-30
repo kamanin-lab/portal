@@ -11,6 +11,7 @@ export type EmailType =
   | "team_question"
   | "support_response"
   | "step_ready"
+  | "step_completed"
   | "project_reply"
   | "credit_approval"
   | "pending_reminder"
@@ -133,6 +134,29 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (stepName: string) =>
         `The project step "<strong>${stepName}</strong>" is ready for your review. Please review the deliverables and share your feedback.`,
       cta: "Open step",
+    },
+  },
+
+  step_completed: {
+    de: {
+      subject: (chapterName: string) => `Projektschritt abgeschlossen: ${chapterName}`,
+      title: "Projektschritt abgeschlossen",
+      greeting: greetDe,
+      body: (chapterName: string) => [
+        `Der Schritt „<strong>${chapterName}</strong>" wurde erfolgreich abgeschlossen.`,
+        `Alle Aufgaben in diesem Schritt sind fertig. Wir arbeiten jetzt am nächsten Schritt Ihres Projekts.`,
+      ],
+      cta: "Projekt ansehen",
+    },
+    en: {
+      subject: (chapterName: string) => `Project step completed: ${chapterName}`,
+      title: "Project step completed",
+      greeting: greetEn,
+      body: (chapterName: string) => [
+        `The step "<strong>${chapterName}</strong>" has been successfully completed.`,
+        `All tasks in this step are done. We are now working on the next step of your project.`,
+      ],
+      cta: "View project",
     },
   },
 

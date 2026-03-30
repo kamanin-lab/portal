@@ -456,6 +456,107 @@ Deno.serve(async (req) => {
         await autoCommentRespRec.text();
         log.error("Failed to post auto-comment for recommendation acceptance", { status: autoCommentRespRec.status });
       }
+
+      // Deduct credits on recommendation acceptance (mirrors approve_credits pattern)
+      const { data: recTaskCache } = await supabaseAdminRec
+        .from("task_cache")
+        .select("credits, name")
+        .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+
+      const recCredits = recTaskCache?.credits ?? 0;
+      if (recCredits > 0) {
+        const { error: recDeductError } = await supabaseAdminRec
+          .from("credit_transactions")
+          .insert({
+            profile_id: userId,
+            amount: -recCredits,
+            type: "task_deduction",
+            task_id: taskId,
+            task_name: recTaskCache?.name || null,
+            description: `${recCredits} Credits — Empfehlung angenommen`,
+          });
+
+        if (recDeductError) {
+          if (recDeductError.message?.includes("duplicate") || recDeductError.message?.includes("unique")) {
+            log.info("Credit deduction already exists for recommendation (idempotent)", { taskId });
+          } else {
+            log.error("Failed to deduct credits on recommendation acceptance", { error: recDeductError.message });
+          }
+        } else {
+          log.info("Credits deducted on recommendation acceptance", { taskId, amount: -recCredits });
+        }
+      }
+    }
+
+    // decline_recommendation: remove recommendation tag (best-effort)
+    if (action === "decline_recommendation") {
+      const removeTagResp = await fetchWithRetry(
+        `https://api.clickup.com/api/v2/task/${taskId}/tag/recommendation`,
+        {
+          method: "DELETE",
+          headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        },
+        2,
+        log
+      );
+      if (!removeTagResp.ok) {
+        await removeTagResp.text();
+        log.warn("Failed to remove recommendation tag on decline (best-effort)", { status: removeTagResp.status });
+      } else {
+        log.info("Removed recommendation tag on decline");
+      }
+
+      // Auto-comment for decline_recommendation
+      const supabaseAdminDec = createClient(supabaseUrl, supabaseServiceKey!);
+      const { data: profileDec } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const fullNameDec = profileDec?.full_name || userEmail?.split("@")[0] || "Client";
+      const firstNameDec = fullNameDec.split(" ")[0];
+      const declineDisplayText = comment?.trim()
+        ? `Empfehlung abgelehnt.\n\nBegründung: ${comment.trim()}`
+        : "Empfehlung abgelehnt.";
+      const declineClickupComment = `${fullNameDec} (via Client Portal):\n\n${declineDisplayText}`;
+
+      const threadResDec = await resolveActivePublicThread(taskId, clickupApiToken, log);
+      const declineEndpoint = threadResDec.rootId
+        ? `https://api.clickup.com/api/v2/comment/${threadResDec.rootId}/reply`
+        : `https://api.clickup.com/api/v2/task/${taskId}/comment`;
+
+      const declineCommentResp = await fetchWithRetry(declineEndpoint, {
+        method: "POST",
+        headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ comment_text: declineClickupComment, notify_all: false }),
+      }, 2, log);
+
+      if (declineCommentResp.ok) {
+        const declineCommentData = await declineCommentResp.json();
+        log.info("Auto-comment posted for recommendation decline");
+        await supabaseAdminDec
+          .from("comment_cache")
+          .upsert({
+            clickup_comment_id: declineCommentData.id,
+            task_id: taskId,
+            profile_id: userId,
+            comment_text: declineClickupComment,
+            display_text: declineDisplayText,
+            author_id: 0,
+            author_name: firstNameDec,
+            author_email: userEmail,
+            author_avatar: null,
+            clickup_created_at: new Date().toISOString(),
+            last_synced: new Date().toISOString(),
+            is_from_portal: true,
+          }, { onConflict: "clickup_comment_id,profile_id" });
+      } else {
+        await declineCommentResp.text();
+        log.error("Failed to post auto-comment for recommendation decline", { status: declineCommentResp.status });
+      }
     }
 
     // Auto-comment for approve_credits action
@@ -553,7 +654,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (comment && typeof comment === 'string' && comment.trim()) {
+    if (comment && typeof comment === 'string' && comment.trim() && action !== 'decline_recommendation') {
       log.debug("Posting comment to task");
 
       const { data: profile } = await supabase
@@ -641,6 +742,28 @@ Deno.serve(async (req) => {
       .update(cacheUpdate)
       .eq("clickup_id", taskId)
       .eq("profile_id", userId);
+
+    // Belt-and-suspenders: clear recommendation tag from task_cache immediately
+    // so React Query refetch doesn't resurrect the approval block before webhook fires
+    if (action === "decline_recommendation" || action === "accept_recommendation") {
+      const { data: cachedTask } = await supabase
+        .from("task_cache")
+        .select("tags")
+        .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+
+      if (cachedTask?.tags && Array.isArray(cachedTask.tags)) {
+        const filteredTags = (cachedTask.tags as Array<{ name: string }>)
+          .filter((t) => t.name.toLowerCase() !== "recommendation");
+        await supabase
+          .from("task_cache")
+          .update({ tags: filteredTags })
+          .eq("clickup_id", taskId)
+          .eq("profile_id", userId);
+        log.info("Cleared recommendation tag from task_cache");
+      }
+    }
 
     const ACTION_MESSAGES: Record<string, string> = {
       approve: "Task has been approved",
