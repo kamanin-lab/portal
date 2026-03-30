@@ -19,6 +19,10 @@
 | Project доступ | `project_access` | profile_id ↔ project_config_id |
 | Уведомления | `profiles.email_notifications` | toggle |
 | General message task | `project_config.general_message_task_id` | ClickUp task ID |
+| ClickUp Chat канал | `profiles.clickup_chat_channel_id` | ID канала Chat v3 для уведомлений о новых задачах |
+| ClickUp Workspace | env var `CLICKUP_WORKSPACE_ID` | Space/Workspace ID — требуется для Chat v3 API (сейчас только в Coolify env) |
+
+> **Заметка (2026-03-30):** `CLICKUP_WORKSPACE_ID` сейчас задаётся как глобальная env var в Coolify и нигде не хранится в БД. При масштабировании до нескольких агентств/клиентов с разными ClickUp workspaces — это поле должно стать конфигурируемым в Admin Dashboard. Аналогично `clickup_chat_channel_id` — сейчас per-profile, в будущем per-organization. Оба поля должны быть редактируемы через Admin Dashboard в разделе "Клиенты" / "Организации".
 
 ## Концепция
 
@@ -54,6 +58,12 @@
 1. **Отдельный route в портале** (`/admin`) — защищён ролью `operator`
 2. **Отдельное приложение** — standalone React app
 3. **Supabase Studio** — продолжать пользоваться (не масштабируется)
+
+### Project Memory / Context
+- ProjectContextSection (client-visible read-only) — components exist (`ProjectContextSection.tsx`, `ProjectContextPreview.tsx`)
+- ProjectContextAdminPanel (operator edit UI) — exists at 156 lines, needs refactor to < 150 (extract MemoryEntryForm)
+- Integration into OverviewPage — deferred from Phase 5 (2026-03-29 decision)
+- DATA-01 and DATA-05 requirements deferred to this scope
 
 ## Зависимости
 - Роли пользователей (operator vs client) — пока только email-based check

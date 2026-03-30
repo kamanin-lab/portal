@@ -102,6 +102,9 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 | `clickup_list_ids` | `profiles` | `organizations` |
 | `nextcloud_client_root` | `profiles` | `organizations` |
 | `support_task_id` | `profiles` | `organizations` |
+| `clickup_chat_channel_id` | `profiles` | `organizations` |
+
+> **Заметка (2026-03-30):** `clickup_chat_channel_id` — ID канала ClickUp Chat v3, куда летит уведомление при создании новой задачи клиентом. Сейчас хранится в `profiles`. При переходе на organizations — должен перейти на org-уровень (один канал на всю org). Помимо channel ID, функция `create-clickup-task` требует env var `CLICKUP_WORKSPACE_ID` (Space ID в терминах ClickUp) — это глобальный параметр сейчас, но в SaaS-структуре станет per-agency/per-org полем в `organizations` таблице.
 
 ### Остаются per-user (без изменений)
 

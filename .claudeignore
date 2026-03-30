@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Lock files
+package-lock.json
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Cache / temp
+.vite/
+.vercel/
+.supabase/
+__pycache__/
+.next/
+coverage/
+supabase/.temp/
+
+# Large / binary
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sw?
+
+# Legacy / archive (large, rarely needed)
+archive/legacy-reference/tickets/node_modules/
+archive/legacy-reference/tickets/bun.lockb
+
+# Screenshots
+screenshots/

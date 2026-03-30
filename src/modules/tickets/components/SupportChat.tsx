@@ -14,10 +14,12 @@ interface SupportChatProps {
 export function SupportChat({ onRead, active = true }: SupportChatProps) {
   const { comments, isLoading, error, sendMessage, isSending, isConfigured, supportTaskId } = useSupportTaskChat();
   const calledOnRead = useRef(false);
+  const hasScrolled = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     calledOnRead.current = false;
+    hasScrolled.current = false;
   }, [supportTaskId, active]);
 
   useEffect(() => {
@@ -26,12 +28,16 @@ export function SupportChat({ onRead, active = true }: SupportChatProps) {
     onRead?.();
   }, [active, error, isConfigured, isLoading, onRead]);
 
+  // Scroll to bottom only once on initial load — never on subsequent updates
+  // so users can scroll up to read history without being pulled back down.
   useEffect(() => {
+    if (hasScrolled.current || isLoading || comments.length === 0) return;
+    hasScrolled.current = true;
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [comments]);
+  }, [comments, isLoading]);
 
   return (
-    <div className="flex flex-col h-full p-6 max-[768px]:p-4">
+    <div className="flex-1 flex flex-col min-h-0 p-6 max-[768px]:p-4">
       <div className="flex items-center gap-2.5 mb-5 pb-3.5 border-b border-border">
         <h1 className="text-xl font-semibold text-text-primary tracking-[-0.02em] flex-1">
           {dict.labels.supportTitle}
