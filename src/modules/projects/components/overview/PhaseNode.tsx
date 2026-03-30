@@ -4,11 +4,6 @@ import { Idea01Icon, PaintBrush01Icon, CodeIcon, Rocket01Icon, CheckmarkCircle02
 import type { Chapter, ChapterStatus } from "../../types/project"
 import { getChapterProgress } from "../../lib/helpers"
 import { getPhaseColor } from "../../lib/phase-colors"
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/shared/components/ui/tooltip"
 
 const PHASE_ICONS = [Idea01Icon, PaintBrush01Icon, CodeIcon, Rocket01Icon] as const
 
@@ -16,10 +11,9 @@ interface PhaseNodeProps {
   chapter: Chapter
   status: ChapterStatus
   onClick?: () => void
-  showTooltip?: boolean
 }
 
-export function PhaseNode({ chapter, status, onClick, showTooltip = true }: PhaseNodeProps) {
+export function PhaseNode({ chapter, status, onClick }: PhaseNodeProps) {
   const color = getPhaseColor(chapter.order)
   const progress = getChapterProgress(chapter)
   const stateLabel = status === "completed" ? "Abgeschlossen" : status === "current" ? "Aktuell" : "Ausstehend"
@@ -98,14 +92,5 @@ export function PhaseNode({ chapter, status, onClick, showTooltip = true }: Phas
     </button>
   )
 
-  if (!showTooltip) return content
-
-  return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent side="bottom">
-        <p>{chapter.narrative}</p>
-      </TooltipContent>
-    </Tooltip>
-  )
+  return content
 }

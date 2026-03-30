@@ -10,8 +10,6 @@ import { OverviewTabs } from './OverviewTabs';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { StepSheet } from '../StepSheet';
 import { SchritteSheet } from '../SchritteSheet';
-import { MessageSheet } from '../MessageSheet';
-import { UploadSheet } from '../UploadSheet';
 import { NewTicketDialog } from '@/modules/tickets/components/NewTicketDialog';
 
 interface OverviewPageProps {
@@ -22,8 +20,6 @@ export function OverviewPage({ project }: OverviewPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeStepId = searchParams.get('stepId');
   const activeKapitelId = searchParams.get('kapitelId');
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const overview = interpretProjectOverview(project);
   const remainingAttention = overview.attentionList.slice(1);
@@ -72,7 +68,6 @@ export function OverviewPage({ project }: OverviewPageProps) {
           project={project}
           overview={overview}
           onOpenStep={openStep}
-          onOpenMessage={() => setMessageOpen(true)}
           onCreateTask={() => setCreateTaskOpen(true)}
         />
 
@@ -81,8 +76,6 @@ export function OverviewPage({ project }: OverviewPageProps) {
         <QuickActions
           overview={overview}
           onOpenStep={openStep}
-          onOpenMessage={() => setMessageOpen(true)}
-          onOpenUpload={() => setUploadOpen(true)}
           onCreateTask={() => setCreateTaskOpen(true)}
         />
 
@@ -91,8 +84,6 @@ export function OverviewPage({ project }: OverviewPageProps) {
 
       <SchritteSheet project={project} kapitelId={activeKapitelId} onClose={closeKapitel} onOpenStep={openStepFromKapitel} />
       <StepSheet project={project} stepId={activeStepId} onClose={closeStep} />
-      <MessageSheet project={project} open={messageOpen} onClose={() => setMessageOpen(false)} />
-      <UploadSheet project={project} open={uploadOpen} onClose={() => setUploadOpen(false)} />
 
       <NewTicketDialog
         open={createTaskOpen}

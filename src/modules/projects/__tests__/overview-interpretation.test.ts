@@ -161,7 +161,7 @@ describe('interpretProjectOverview', () => {
     expect(overview.primaryAttention).toBeNull();
     expect(overview.attentionList).toEqual([]);
     expect(overview.waitingOnTeamSummary).toContain('Sitemap');
-    expect(overview.quickActions[0].destinationKind).toBe('create_task');
+    expect(overview.quickActions).toEqual([]);
   });
 
   test('keeps current phase on the earliest incomplete chapter when later chapters are still upcoming', () => {

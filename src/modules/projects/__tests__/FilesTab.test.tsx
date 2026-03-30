@@ -1,16 +1,18 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { FilesTab } from '../components/overview/FilesTab';
 import { slugify, buildChapterFolder } from '../lib/slugify';
+import type { Project, Chapter, Step } from '../types/project';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-// Mock useNextcloudFiles hook
-const mockUseNextcloudFiles = vi.fn();
+const mockUseNextcloudFilesByPath = vi.fn();
 vi.mock('../hooks/useNextcloudFiles', () => ({
-  useNextcloudFiles: (...args: unknown[]) => mockUseNextcloudFiles(...args),
+  useNextcloudFiles: vi.fn(() => ({ files: [], notConfigured: false, isLoading: false, error: null, refetch: vi.fn() })),
+  useNextcloudFilesByPath: (...args: unknown[]) => mockUseNextcloudFilesByPath(...args),
+  useCreateFolder: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   downloadFile: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -18,165 +20,73 @@ vi.mock('../hooks/useNextcloudFiles', () => ({
 // Factories
 // ---------------------------------------------------------------------------
 
-function makeFile(overrides: Record<string, unknown> = {}) {
+function makeStep(overrides: Partial<Step> = {}): Step {
   return {
-    name: 'test.pdf',
-    path: '/project/test.pdf',
-    type: 'file' as const,
-    size: 1024,
-    lastModified: '2026-01-01T00:00:00Z',
-    mimeType: 'application/pdf',
+    id: 'step-1', clickupTaskId: 'cu-1', title: 'Test Step', status: 'committed',
+    rawStatus: 'complete', portalCta: null, milestoneOrder: 1, isClientReview: false,
+    updatedAt: null, taskIds: [], description: '', whyItMatters: '', whatBecomesFixed: '',
+    files: [], messages: [], commentCount: 0, ...overrides,
+  };
+}
+
+function makeChapter(overrides: Partial<Chapter> = {}): Chapter {
+  return {
+    id: 'ch-1', title: 'Konzept', order: 1, narrative: '', nextNarrative: '',
+    clickupCfOptionId: null, steps: [makeStep()], ...overrides,
+  };
+}
+
+function makeProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: 'project-1', name: 'Test Project', type: 'Website', client: 'Test Client',
+    clientInitials: 'TC', startDate: '2026-01-01', targetDate: '2026-12-31',
+    clickupListId: 'list-1', clickupPhaseFieldId: null, generalMessageTaskId: null,
+    tasksSummary: { needsAttention: 0, inProgress: 0, total: 1 },
+    updates: [], teamWorkingOn: { task: '', lastUpdate: '' },
+    chapters: [
+      makeChapter({ id: 'ch-1', title: 'Konzept', order: 1 }),
+      makeChapter({ id: 'ch-2', title: 'Design', order: 2 }),
+    ],
     ...overrides,
   };
 }
 
 // ---------------------------------------------------------------------------
-// FilesTab tests
+// FilesTab (FileBrowser → RootView) tests
 // ---------------------------------------------------------------------------
 
 describe('FilesTab', () => {
   beforeEach(() => {
-    mockUseNextcloudFiles.mockReset();
-    mockUseNextcloudFiles.mockReturnValue({
-      files: [],
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
+    mockUseNextcloudFilesByPath.mockReset();
+    mockUseNextcloudFilesByPath.mockReturnValue({
+      files: [], notConfigured: false, isLoading: false, error: null, refetch: vi.fn(),
     });
   });
 
-  test('renders exactly 8 file-type entries when hook returns 10 files (mixed type)', () => {
-    const files = [
-      ...Array.from({ length: 6 }, (_, i) =>
-        makeFile({ name: `file${i}.pdf`, path: `/p/file${i}.pdf`, lastModified: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z` })
-      ),
-      ...Array.from({ length: 4 }, (_, i) =>
-        makeFile({ name: `folder${i}`, path: `/p/folder${i}`, type: 'folder' as const })
-      ),
-    ];
-    mockUseNextcloudFiles.mockReturnValue({
-      files,
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
+  test('renders folder names from Nextcloud root listing', () => {
+    mockUseNextcloudFilesByPath.mockReturnValue({
+      files: [
+        { name: '01_konzept', path: '/root/01_konzept', type: 'folder', size: 0, lastModified: '' },
+        { name: '02_design', path: '/root/02_design', type: 'folder', size: 0, lastModified: '' },
+      ],
+      notConfigured: false, isLoading: false, error: null, refetch: vi.fn(),
     });
-
-    render(<FilesTab projectConfigId="cfg-1" />);
-
-    // Only file-type entries should be shown, max 8
-    // 6 files + 4 folders → filter to 6 files → all 6 shown
-    expect(screen.getByText('file0.pdf')).toBeInTheDocument();
-    expect(screen.getByText('file5.pdf')).toBeInTheDocument();
-    // Folders should not appear as file entries
-    expect(screen.queryByText('folder0')).not.toBeInTheDocument();
+    render(<FilesTab project={makeProject()} />);
+    expect(screen.getByText('01_konzept')).toBeInTheDocument();
+    expect(screen.getByText('02_design')).toBeInTheDocument();
   });
 
-  test('renders exactly 8 when more than 8 files are returned', () => {
-    const files = Array.from({ length: 12 }, (_, i) =>
-      makeFile({ name: `file${i}.pdf`, path: `/p/file${i}.pdf`, lastModified: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z` })
-    );
-    mockUseNextcloudFiles.mockReturnValue({
-      files,
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
+  test('shows not-configured message when Nextcloud is not set up', () => {
+    mockUseNextcloudFilesByPath.mockReturnValue({
+      files: [], notConfigured: true, isLoading: false, error: null, refetch: vi.fn(),
     });
-
-    render(<FilesTab projectConfigId="cfg-1" />);
-
-    // 12 files available but only 8 shown
-    expect(screen.getByText('file11.pdf')).toBeInTheDocument(); // most recent (sorted desc by lastModified)
-    expect(screen.queryByText('file0.pdf')).not.toBeInTheDocument(); // oldest, not shown
+    render(<FilesTab project={makeProject()} />);
+    expect(screen.getByText('Dateien sind für dieses Projekt noch nicht konfiguriert.')).toBeInTheDocument();
   });
 
-  test('renders EmptyState with "Noch keine Dateien." when only folders are returned', () => {
-    const files = Array.from({ length: 3 }, (_, i) =>
-      makeFile({ name: `folder${i}`, path: `/p/folder${i}`, type: 'folder' as const })
-    );
-    mockUseNextcloudFiles.mockReturnValue({
-      files,
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<FilesTab projectConfigId="cfg-1" />);
-
-    expect(screen.getByText('Noch keine Dateien.')).toBeInTheDocument();
-  });
-
-  test('renders EmptyState when files array is empty', () => {
-    mockUseNextcloudFiles.mockReturnValue({
-      files: [],
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<FilesTab projectConfigId="cfg-1" />);
-
-    expect(screen.getByText('Noch keine Dateien.')).toBeInTheDocument();
-  });
-
-  test('clicking a file row calls downloadFile with (projectConfigId, file.path)', async () => {
-    const { downloadFile } = await import('../hooks/useNextcloudFiles');
-    const file = makeFile({ name: 'document.pdf', path: '/project/document.pdf' });
-    mockUseNextcloudFiles.mockReturnValue({
-      files: [file],
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<FilesTab projectConfigId="cfg-42" />);
-
-    const row = screen.getByText('document.pdf').closest('[data-testid="file-row"]') ??
-      screen.getByText('document.pdf').closest('div[class*="cursor-pointer"]');
-    expect(row).not.toBeNull();
-    fireEvent.click(row!);
-
-    expect(downloadFile).toHaveBeenCalledWith('cfg-42', '/project/document.pdf');
-  });
-
-  test('renders Skeleton when isLoading is true', () => {
-    mockUseNextcloudFiles.mockReturnValue({
-      files: [],
-      notConfigured: false,
-      isLoading: true,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    const { container } = render(<FilesTab projectConfigId="cfg-1" />);
-
-    // Skeleton renders an element with 'animate-pulse' or skeleton class
-    const skeleton = container.querySelector('[class*="skeleton"]') ??
-      container.querySelector('[class*="animate-pulse"]') ??
-      container.querySelector('[data-slot="skeleton"]');
-    expect(skeleton).not.toBeNull();
-  });
-
-  test('does not render a navigate-to-dateien button', () => {
-    const files = Array.from({ length: 10 }, (_, i) =>
-      makeFile({ name: `file${i}.pdf`, path: `/p/file${i}.pdf` })
-    );
-    mockUseNextcloudFiles.mockReturnValue({
-      files,
-      notConfigured: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<FilesTab projectConfigId="cfg-1" />);
-
-    expect(screen.queryByText(/Alle.*Dateien anzeigen/)).not.toBeInTheDocument();
+  test('shows empty message when no files or folders exist', () => {
+    render(<FilesTab project={makeProject()} />);
+    expect(screen.getByText('Noch keine Dateien in diesem Projekt.')).toBeInTheDocument();
   });
 });
 

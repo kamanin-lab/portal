@@ -10,7 +10,6 @@ interface DynamicHeroProps {
   project: Project;
   overview: InterpretedProjectOverview;
   onOpenStep?: (stepId: string) => void;
-  onOpenMessage?: () => void;
   onCreateTask?: () => void;
 }
 
@@ -30,7 +29,7 @@ interface HeroContent {
   summary?: string;
 }
 
-export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCreateTask }: DynamicHeroProps) {
+export function DynamicHero({ project, overview, onOpenStep, onCreateTask }: DynamicHeroProps) {
   const navigate = useNavigate();
   const primaryAttention = overview.primaryAttention;
   const upcomingStep = overview.nextMeaningfulStep?.step.status === 'upcoming_locked' ? overview.nextMeaningfulStep : null;
@@ -53,10 +52,6 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
         label: 'Öffnen & prüfen →',
         onClick: () => onOpenStep ? onOpenStep(primaryAttention.stepId) : navigate(`/projekte/schritt/${primaryAttention.stepId}`),
       },
-      ghostCta: {
-        label: 'Nachricht senden',
-        onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
-      },
       summary: `Phase: ${primaryAttention.chapterTitle}${primaryAttention.lastUpdated ? ` · Zuletzt aktualisiert ${primaryAttention.lastUpdated}` : ''}`,
     };
   } else if (project.tasksSummary.needsAttention > 0) {
@@ -70,10 +65,6 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       tint: getPhaseColor(3).light,
       phase: getPhaseColor(3).main,
       primaryCta: {
-        label: 'Nachricht senden',
-        onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
-      },
-      ghostCta: {
         label: 'Aufgabe erstellen',
         onClick: () => onCreateTask ? onCreateTask() : navigate('/aufgaben'),
       },
@@ -89,10 +80,6 @@ export function DynamicHero({ project, overview, onOpenStep, onOpenMessage, onCr
       description: upcomingStep.step.whyItMatters || upcomingStep.step.description,
       tint: upPhase.light,
       phase: upPhase.main,
-      ghostCta: {
-        label: 'Nachricht senden',
-        onClick: () => onOpenMessage ? onOpenMessage() : navigate('/nachrichten'),
-      },
       summary: `Das Team arbeitet daran${project.teamWorkingOn.task ? ` · ${project.teamWorkingOn.task}` : ''}`,
     };
   } else {

@@ -4,8 +4,6 @@ import type { ProjectQuickAction } from '../types/project';
 export function getCardStyle(kind: ProjectQuickAction['destinationKind']): { accent: string; bg: string } {
   switch (kind) {
     case 'primary_cta': return { accent: '#D97706', bg: '#FFFBEB' };
-    case 'general_message': return { accent: '#7C3AED', bg: '#F5F3FF' };
-    case 'files': return { accent: '#2563EB', bg: '#EFF6FF' };
     case 'external_link': return { accent: '#0891B2', bg: '#ECFEFF' };
     case 'create_task': default: return { accent: '#D97706', bg: '#FFFBEB' };
   }
@@ -25,8 +23,6 @@ export interface QuickActionCardModel {
 
 export interface CardHandlers {
   openStep: (stepId: string) => void;
-  openMessage: () => void;
-  openUpload: () => void;
   createTask: () => void;
   openExternal: (url: string) => void;
 }
@@ -52,10 +48,6 @@ export function toCardModel(
   switch (card.destinationKind) {
     case 'primary_cta':
       return { ...base, onClick: () => primaryStepId ? handlers.openStep(primaryStepId) : handlers.createTask() };
-    case 'general_message':
-      return { ...base, onClick: handlers.openMessage };
-    case 'files':
-      return { ...base, onClick: handlers.openUpload };
     case 'external_link':
       return { ...base, onClick: () => card.url ? handlers.openExternal(card.url) : undefined };
     case 'create_task':

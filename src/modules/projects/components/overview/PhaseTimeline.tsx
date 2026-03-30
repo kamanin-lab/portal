@@ -1,7 +1,6 @@
 import type { Project } from '../../types/project';
 import { getChapterStatus } from '../../lib/helpers';
 import { useBreakpoint } from '@/shared/hooks/useBreakpoint';
-import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { PhaseNode } from './PhaseNode';
 import { PhaseConnector } from './PhaseConnector';
 
@@ -28,7 +27,6 @@ export function PhaseTimeline({ project, onChapterClick }: PhaseTimelineProps) {
               chapter={chapter}
               status={status}
               onClick={() => onChapterClick?.(chapter.id)}
-              showTooltip={!isMobile}
             />
             {/* Connector line at indicator center height */}
             {!isLast && (
@@ -54,9 +52,7 @@ export function PhaseTimeline({ project, onChapterClick }: PhaseTimelineProps) {
 
   return (
     <div className={container}>
-      <TooltipProvider delayDuration={300}>
-        {timeline}
-      </TooltipProvider>
+      {timeline}
     </div>
   );
 }

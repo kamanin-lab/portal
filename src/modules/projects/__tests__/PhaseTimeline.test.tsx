@@ -31,16 +31,6 @@ vi.mock('motion/react', () => ({
   AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 
-// Mock @radix-ui/react-tooltip -- render children directly
-vi.mock('@radix-ui/react-tooltip', () => ({
-  Provider: ({ children }: React.PropsWithChildren) => <>{children}</>,
-  Root: ({ children }: React.PropsWithChildren) => <>{children}</>,
-  Trigger: ({ children }: React.PropsWithChildren) => <>{children}</>,
-  Content: ({ children }: React.PropsWithChildren) => (
-    <div data-testid="tooltip-content">{children}</div>
-  ),
-  Portal: ({ children }: React.PropsWithChildren) => <>{children}</>,
-}));
 
 // ---------------------------------------------------------------------------
 // Factories
@@ -225,36 +215,8 @@ describe('TIMELINE-04: Mobile horizontal scroll view', () => {
     expect(scrollContainer?.className).toContain('overflow-x-auto');
   });
 
-  test('tooltips are disabled on mobile', () => {
-    render(<PhaseTimeline project={makeProject()} />);
-    // No tooltip content should render on mobile (showTooltip=false)
-    const tooltipContent = document.querySelectorAll('[data-testid="tooltip-content"]');
-    expect(tooltipContent).toHaveLength(0);
-  });
 });
 
-// ---------------------------------------------------------------------------
-// TIMELINE-05: Tooltip content
-// ---------------------------------------------------------------------------
-
-describe('TIMELINE-05: Tooltip content', () => {
-  test('renders tooltip content with chapter.narrative', () => {
-    const project = makeProject({
-      chapters: [
-        makeChapter({
-          id: 'ch-1',
-          title: 'Konzept',
-          order: 1,
-          narrative: 'Test narrative text',
-          steps: [makeStep({ id: 'step-1-1', status: 'committed' })],
-        }),
-      ],
-    });
-    render(<PhaseTimeline project={project} />);
-    // @radix-ui/react-tooltip mock renders Content directly, so narrative text is in DOM
-    expect(screen.getByText('Test narrative text')).toBeInTheDocument();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // DATA-04: Skeleton rendering

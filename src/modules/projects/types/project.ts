@@ -183,7 +183,7 @@ export interface ProjectQuickAction {
   label: string;
   subtitle: string;
   iconToken: string;
-  destinationKind: 'primary_cta' | 'general_message' | 'files' | 'create_task' | 'external_link';
+  destinationKind: 'primary_cta' | 'create_task' | 'external_link';
   count?: number | null;
   isEnabled: boolean;
   sortOrder: number;

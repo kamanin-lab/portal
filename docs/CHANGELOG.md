@@ -1,5 +1,38 @@
 # Changelog
 
+## Projects Module Overhaul — 2026-03-30
+
+### FilesTab → Full Nextcloud Folder Browser
+- FilesTab in project overview now shows the full Nextcloud folder structure (dynamic from Nextcloud, not hardcoded chapters)
+- Root level shows folder cards + root files; clicking opens FolderView with breadcrumbs, upload, create subfolder
+- Extracted `FileBrowser` component reused by both overview tab and standalone DateienPage
+- `useNextcloudFilesByPath` now supports empty subPath for root listing
+- Deleted old 8-recent-files FilesTab implementation
+
+### StepDetail Simplified
+- Removed 3-tab layout (Übersicht, Dateien, Diskussion) → single scrollable view
+- New layout: header → action bar (client review) → description + AI enrichment → divider → comments inline
+- StepActionBar (Freigeben/Änderungen anfragen) kept for client review flow
+- Deleted: StepFilesTab, StepDiscussionTab, StepOverviewTab (dead code)
+
+### Quick Links Streamlined
+- Reduced from 5 to 3 external-only quick links: Staging-Website, Content-Editor, Video-Anruf
+- Removed "Nachricht senden" and "Dateien hochladen" (duplicated tabs on same page)
+- Deleted MessageSheet and UploadSheet components
+- Removed `general_message` and `files` destination kinds from quick actions pipeline
+- Removed subtitle from all quick action cards
+- DynamicHero: removed "Nachricht senden" ghost CTAs from priority 2/3 states
+
+### PhaseTimeline Cleanup
+- Removed tooltip on hover (showed stale AI narrative text)
+- Removed narrative text line from ContextStrip
+- Removed "Team arbeitet an..." status line from ContextStrip
+- Removed border-bottom separator from ContextStrip
+- Fixed chapter_config clickup_cf_option_id mapping in Supabase (was shifted by 1)
+
+### DynamicHero CTA
+- Removed "Nachricht senden" ghost button from client review CTA card (priority 1)
+
 ## Docs Restructuring — 2026-03-29 (260329-hjo)
 
 - Deleted 5 stale docs (STATUS.md, WORKING_GUIDE.md, bootstrap-prompt.md, REPOSITORY_MAP.md, and superpowers/) — superseded by CLAUDE.md and GSD workflow

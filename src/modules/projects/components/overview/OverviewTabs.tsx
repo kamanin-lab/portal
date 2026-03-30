@@ -41,7 +41,7 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
                 <ActivityFeed events={events} project={p} isLoading={commentsLoading} onOpenStep={onOpenStep} />
               )}
               {activeTab === 'dateien' && (
-                <FilesTab projectConfigId={p.id} />
+                <FilesTab project={p} />
               )}
               {activeTab === 'nachrichten' && (
                 <MessagesTab comments={comments} isLoading={commentsLoading} />

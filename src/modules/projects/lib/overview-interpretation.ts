@@ -136,11 +136,7 @@ function buildNextStepSummary(nextMeaningfulStep: StepWithChapter | null): strin
 /** Map a config row key to a destinationKind */
 function resolveDestinationKind(row: QuickActionConfigRow): ProjectQuickAction['destinationKind'] {
   if (row.url) return 'external_link';
-  switch (row.key) {
-    case 'send-message': return 'general_message';
-    case 'upload-file': return 'files';
-    default: return 'external_link';
-  }
+  return 'external_link';
 }
 
 /** Build quick actions from DB config rows */
@@ -159,39 +155,18 @@ function buildQuickActionsFromConfig(rows: QuickActionConfigRow[]): ProjectQuick
 }
 
 /** Hardcoded fallback when no DB config exists */
-function buildQuickActionsFallback(project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
+function buildQuickActionsFallback(_project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
+  if (!primaryAttention) return [];
   return [
     {
       key: 'primary-cta',
-      label: primaryAttention ? 'Freigabe / Prüfung öffnen' : 'Aufgabe erstellen',
-      subtitle: primaryAttention
-        ? `Jetzt relevant: ${primaryAttention.title}`
-        : `${project.tasksSummary.total} Aufgaben insgesamt`,
+      label: 'Freigabe / Prüfung öffnen',
+      subtitle: `Jetzt relevant: ${primaryAttention.title}`,
       iconToken: 'primary_cta',
-      destinationKind: primaryAttention ? 'primary_cta' : 'create_task',
-      count: primaryAttention ? 1 : null,
+      destinationKind: 'primary_cta',
+      count: 1,
       isEnabled: true,
       sortOrder: 10,
-    },
-    {
-      key: 'send-message',
-      label: 'Nachricht senden',
-      subtitle: 'Direkter Kontakt zum Team',
-      iconToken: 'general_message',
-      destinationKind: 'general_message',
-      count: null,
-      isEnabled: true,
-      sortOrder: 20,
-    },
-    {
-      key: 'files',
-      label: 'Dateien hochladen',
-      subtitle: 'Dateien teilen',
-      iconToken: 'files',
-      destinationKind: 'files',
-      count: null,
-      isEnabled: true,
-      sortOrder: 30,
     },
   ];
 }

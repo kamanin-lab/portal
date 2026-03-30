@@ -114,7 +114,7 @@ export function useNextcloudFilesByPath(projectConfigId: string, subPath: string
   const query = useQuery({
     queryKey,
     queryFn: () => fetchFilesByPath(projectConfigId, subPath),
-    enabled: !!projectConfigId && !!subPath,
+    enabled: !!projectConfigId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });

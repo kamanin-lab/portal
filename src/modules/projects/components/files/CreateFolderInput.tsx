@@ -39,24 +39,25 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
         onClick={() => setIsOpen(true)}
         variant="ghost"
         size="sm"
-        className="text-accent hover:text-accent-hover mt-2 p-0 h-auto text-xs"
+        className="text-accent hover:text-accent-hover text-xs gap-1 flex-shrink-0"
       >
         <HugeiconsIcon icon={FolderAddIcon} size={14} />
-        Neuen Ordner erstellen
+        <span className="hidden sm:inline">Neuen Ordner erstellen</span>
+        <span className="sm:hidden">Ordner</span>
       </Button>
     );
   }
 
   return (
-    <>
-      <div className="flex items-center gap-2 mt-2">
+    <div className="flex-shrink-0">
+      <div className="flex items-center gap-2">
         <Input
           autoFocus
           value={name}
           onChange={(e) => { setName(e.target.value); setError(''); }}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') setIsOpen(false); }}
           placeholder="Ordnername..."
-          className="flex-1"
+          className="w-[180px] max-[768px]:w-[120px]"
         />
         <Button
           onClick={handleSubmit}
@@ -75,6 +76,6 @@ export function CreateFolderInput({ onSubmit, isLoading }: CreateFolderInputProp
         </Button>
       </div>
       {error && <p className="text-xxs text-red-500 mt-1">{error}</p>}
-    </>
+    </div>
   );
 }
