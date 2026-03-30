@@ -16,7 +16,7 @@ progress:
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-30 - Completed quick task 260330-gzi: Fix missing author_email in comment_cache for nadin.bonin@mbm-moebel.de
+**Last activity:** 2026-03-30 - Completed quick task 260330-lvq: Recommendations block on Needs Attention tab — accept/decline workflow for agency-created recommendations
 
 ## Current Position
 
@@ -38,6 +38,7 @@ Phase 1: Portal Frontend — Complete
 | 260329-gkb | Documentation audit — 54 drift findings, 12 files fixed, CORS security hardened | 2026-03-29 | `bc3fc60` | Verified | [260329-gkb-documentation-audit-verify-all-docs-and-](./quick/260329-gkb-documentation-audit-verify-all-docs-and-/) |
 | 260329-hjo | Full docs restructuring — deleted stale files, renamed docs/planning/ to docs/domain/, all docs updated | 2026-03-29 | `36c7de6` | Done | [260329-hjo-full-docs-audit-and-structure-optimizati](./quick/260329-hjo-full-docs-audit-and-structure-optimizati/) |
 | 260330-gzi | Fix missing author_email in comment_cache for nadin.bonin@mbm-moebel.de — 21 rows fixed, no UUID mismatch | 2026-03-30 | pending | Needs Review | [260330-gzi-investigate-and-fix-missing-profile-id-i](./quick/260330-gzi-investigate-and-fix-missing-profile-id-i/) |
+| 260330-lvq | Recommendations block on Needs Attention tab — accept/decline workflow, Edge Function tag management, 4 new components | 2026-03-30 | `c52352c` | Done | [260330-lvq-recommendations-block-on-needs-attention](./quick/260330-lvq-recommendations-block-on-needs-attention/) |
 
 ### Key Decisions
 
