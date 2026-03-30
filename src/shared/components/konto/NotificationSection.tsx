@@ -88,6 +88,11 @@ const NOTIFICATION_OPTIONS: Array<{
     label: 'Erinnerungen',
     description: 'Erinnerung alle 5 Tage bei ausstehender Prüfung oder Kostenfreigabe.',
   },
+  {
+    key: 'new_recommendation',
+    label: 'Neue Empfehlung',
+    description: 'Benachrichtigung, wenn das Team eine neue Empfehlung für Sie erstellt hat.',
+  },
 ]
 
 export function NotificationSection({ preferences }: Props) {

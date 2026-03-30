@@ -4,6 +4,7 @@ export interface NotificationPreferences {
   team_comment: boolean
   support_response: boolean
   reminders: boolean
+  new_recommendation: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -12,6 +13,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   team_comment: true,
   support_response: true,
   reminders: true,
+  new_recommendation: true,
 }
 
 export interface Profile {

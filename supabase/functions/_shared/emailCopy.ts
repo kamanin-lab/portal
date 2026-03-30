@@ -14,6 +14,7 @@ export type EmailType =
   | "project_reply"
   | "credit_approval"
   | "pending_reminder"
+  | "new_recommendation"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -387,6 +388,25 @@ export const EMAIL_COPY: EmailCopyDict = {
       notes: [
         "If you didn't request this, you can safely ignore this email.",
       ],
+    },
+  },
+
+  new_recommendation: {
+    de: {
+      subject: (taskName: string) => "Neue Empfehlung: " + taskName,
+      title: "Neue Empfehlung",
+      greeting: greetDe,
+      body: (taskName: string) =>
+        "Unser Team hat eine neue Empfehlung für Sie erstellt: \"<strong>" + taskName + "</strong>\". Bitte sehen Sie sich den Vorschlag an und entscheiden Sie, ob Sie ihn annehmen möchten.",
+      cta: "Empfehlung ansehen",
+    },
+    en: {
+      subject: (taskName: string) => "New recommendation: " + taskName,
+      title: "New Recommendation",
+      greeting: greetEn,
+      body: (taskName: string) =>
+        "Your team has created a new recommendation for you: \"<strong>" + taskName + "</strong>\". Please review the suggestion and decide if you'd like to accept it.",
+      cta: "View recommendation",
     },
   },
 };

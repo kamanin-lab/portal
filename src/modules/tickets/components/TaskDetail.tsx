@@ -4,6 +4,7 @@ import { FlashIcon } from '@hugeicons/core-free-icons';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
 import { TaskActions } from './TaskActions';
 import { CreditApproval } from './CreditApproval';
+import { RecommendationApproval } from './RecommendationApproval';
 import { TaskComments } from './TaskComments';
 import { mapStatus } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
@@ -46,6 +47,7 @@ function formatDate(iso: string | null | undefined): string {
 
 export function TaskDetail({ task, onRead }: Props) {
   const portalStatus = mapStatus(task.status);
+  const isRecommendation = task.raw_data?.tags?.some((t: { name: string }) => t.name === 'recommendation');
 
   return (
     <div className="p-6 max-[768px]:p-4">
@@ -87,10 +89,14 @@ export function TaskDetail({ task, onRead }: Props) {
         <CreditApproval taskId={task.clickup_id} credits={task.credits} taskName={task.name} />
       )}
 
-      {/* Actions */}
-      <div className="mb-5">
-        <TaskActions taskId={task.clickup_id} status={portalStatus} />
-      </div>
+      {/* Recommendation Approval — shown instead of TaskActions for recommendation-tagged tasks */}
+      {isRecommendation ? (
+        <RecommendationApproval taskId={task.clickup_id} credits={task.credits} />
+      ) : (
+        <div className="mb-5">
+          <TaskActions taskId={task.clickup_id} status={portalStatus} />
+        </div>
+      )}
 
       <div className="h-px bg-border-light mb-5" />
 
