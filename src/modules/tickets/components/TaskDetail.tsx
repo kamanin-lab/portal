@@ -45,7 +45,7 @@ function formatDate(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function TaskDetail({ task, onRead }: Props) {
+export function TaskDetail({ task, onClose, onRead }: Props) {
   const portalStatus = mapStatus(task.status);
   const isRecommendation = task.tags?.some((t: { name: string }) => t.name === 'recommendation');
 
@@ -91,7 +91,7 @@ export function TaskDetail({ task, onRead }: Props) {
 
       {/* Recommendation Approval — shown instead of TaskActions for recommendation-tagged tasks */}
       {isRecommendation ? (
-        <RecommendationApproval taskId={task.clickup_id} credits={task.credits} />
+        <RecommendationApproval taskId={task.clickup_id} credits={task.credits} onClose={onClose} />
       ) : (
         <div className="mb-5">
           <TaskActions taskId={task.clickup_id} status={portalStatus} />

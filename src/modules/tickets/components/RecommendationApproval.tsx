@@ -14,13 +14,14 @@ function getDefaultDueDate(): string {
 interface Props {
   taskId: string;
   credits: number | null | undefined;
+  onClose?: () => void;
 }
 
-export function RecommendationApproval({ taskId, credits }: Props) {
+export function RecommendationApproval({ taskId, credits, onClose }: Props) {
   const [mode, setMode] = useState<'buttons' | 'accepting' | 'declining'>('buttons');
   const [dueDate, setDueDate] = useState(getDefaultDueDate());
   const [comment, setComment] = useState('');
-  const { acceptRecommendation, declineRecommendation, isLoading } = useTaskActions();
+  const { acceptRecommendation, declineRecommendation, isLoading } = useTaskActions({ onSuccess: onClose });
 
   const displayCredits =
     credits != null && credits > 0
@@ -97,6 +98,7 @@ export function RecommendationApproval({ taskId, credits }: Props) {
             exit={{ opacity: 0 }}
             className="space-y-2.5"
           >
+            <p className="text-xs text-text-tertiary">Bis wann soll das erledigt werden?</p>
             <input
               type="date"
               value={dueDate}
