@@ -14,10 +14,10 @@ interface Props {
 }
 
 export function RecommendationsBlock({ recommendations, onTaskClick }: Props) {
-  if (recommendations.length === 0) return null
-
   const openAcceptRef = useRef<(task: ClickUpTask) => void>(() => {})
   const openDeclineRef = useRef<(task: ClickUpTask) => void>(() => {})
+
+  if (recommendations.length === 0) return null
 
   return (
     <div className="mt-2">
