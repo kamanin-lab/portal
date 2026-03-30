@@ -154,14 +154,17 @@ function generateEmailHtml(
       const chapterName = data.chapterName || data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
       const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(chapterName) : copy.subject;
-      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(chapterName) : copy.body;
+      const bodyParts = typeof copy.body === "function" ? (copy.body as Function)(chapterName) : copy.body;
+      const bodyHtml = Array.isArray(bodyParts)
+        ? bodyParts.map((p: string) => `<p class="text">${p}</p>`).join("")
+        : `<p class="text">${bodyParts}</p>`;
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
           <div class="wrapper">${header}<div class="card">
             <h1 class="title">${copy.title}</h1>
             <p class="text">${cleanGreeting}</p>
-            <p class="text">${bodyText}</p>
+            ${bodyHtml}
             <a href="${stepUrl}" class="button">${copy.cta}</a>
           </div>${defaultFooter}</div></body></html>`,
       };

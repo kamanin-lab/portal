@@ -67,7 +67,7 @@ const PROJECT_OPTIONS: OptionDef[] = [
 export function NotificationSection({ preferences }: Props) {
   const currentPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...preferences }
   const updateProfile = useUpdateProfile()
-  const { data: workspaces = [] } = useWorkspaces()
+  const { data: workspaces = [], isLoading: workspacesLoading } = useWorkspaces()
   const hasProjects = workspaces.some(w => w.module_key === 'projects')
 
   const handleToggle = (key: keyof NotificationPreferences, checked: boolean) => {
@@ -99,7 +99,9 @@ export function NotificationSection({ preferences }: Props) {
         In-App-Benachrichtigungen bleiben immer aktiv.
       </p>
 
-      {hasProjects ? (
+      {workspacesLoading ? (
+        renderOptions(TASK_OPTIONS)
+      ) : hasProjects ? (
         <Tabs defaultValue="aufgaben">
           <TabsList className="mb-3">
             <TabsTrigger value="aufgaben">Aufgaben</TabsTrigger>

@@ -267,7 +267,7 @@ function isReviewStatus(status: string): boolean {
 // Check if status indicates "Done / Completed"
 function isDoneStatus(status: string): boolean {
   const statusLower = status.toLowerCase();
-  return statusLower.includes("done") || statusLower.includes("complete") || statusLower.includes("closed");
+  return statusLower.includes("done") || statusLower.includes("complete") || statusLower.includes("closed") || statusLower.includes("approved");
 }
 
 // Check if status indicates "Awaiting Approval" (credit approval needed)
@@ -780,7 +780,7 @@ Deno.serve(async (req) => {
                         .eq("type", "project_update")
                         .in("profile_id", profileIds)
                         .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-                        .eq("message", chapterConfigId)
+                        .eq("task_id", taskId)
                         .limit(1);
 
                       if (!recentNotif || recentNotif.length === 0) {
@@ -797,7 +797,7 @@ Deno.serve(async (req) => {
                           profile_id: pid,
                           type: "project_update",
                           title: `Schritt abgeschlossen: ${chapterName}`,
-                          message: chapterConfigId,
+                          message: `Alle Aufgaben in „${chapterName}" wurden abgeschlossen.`,
                           task_id: taskId,
                           is_read: false,
                         }));
