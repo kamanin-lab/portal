@@ -16,3 +16,16 @@
 **Impact:** `npm run build` fails via `tsc -b`. `npx tsc --noEmit` passes. Production Vercel build will fail until 04-02 resolves this.
 
 **Discovered during:** Plan 04-01, Task 2 verification.
+
+---
+
+## Pre-existing Test Failures (Out of Scope for 04-02)
+
+**File:** `src/modules/tickets/__tests__/support-chat.test.tsx`
+
+**Errors:**
+- `TypeError: messagesEndRef.current?.scrollIntoView is not a function` (2 tests)
+
+**Root cause:** jsdom does not implement `scrollIntoView` — pre-existing limitation unrelated to PhaseTimeline work. Confirmed pre-existed before plan 04-02 changes via git stash verification.
+
+**Discovered during:** Plan 04-02, full test suite run.

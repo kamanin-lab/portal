@@ -62,4 +62,4 @@ supabase/.temp/
 # Temp task scripts
 tasks/*.js
 tasks/session.json
-scripts/mbm-production.json
+scripts/*-production.json

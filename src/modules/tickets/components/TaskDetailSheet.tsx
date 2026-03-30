@@ -60,7 +60,7 @@ export function TaskDetailSheet({ taskId, onClose, tasks = [], isTasksLoading = 
             </Dialog.Close>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             {task ? (
               <TaskDetail task={task} onClose={onClose} onRead={() => markAsRead(`task:${task.clickup_id}`)} />
             ) : isLoading ? (

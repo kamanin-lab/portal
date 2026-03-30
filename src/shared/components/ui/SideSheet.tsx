@@ -7,9 +7,11 @@ interface SideSheetProps {
   onClose: () => void
   title: string
   children: React.ReactNode
+  /** When true, the child manages its own scroll. Replaces overflow-y-auto with overflow-hidden. */
+  managed?: boolean
 }
 
-export function SideSheet({ open, onClose, title, children }: SideSheetProps) {
+export function SideSheet({ open, onClose, title, children, managed }: SideSheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={o => { if (!o) onClose() }}>
       <Dialog.Portal>
@@ -28,7 +30,7 @@ export function SideSheet({ open, onClose, title, children }: SideSheetProps) {
             </Dialog.Close>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className={managed ? "flex-1 overflow-hidden flex flex-col min-h-0" : "flex-1 overflow-y-auto"}>
             {children}
           </div>
         </Dialog.Content>
