@@ -90,7 +90,7 @@ export function TaskDetail({ task, onClose, onRead }: Props) {
       )}
 
       {/* Recommendation Approval — shown only while pending (has tag + not yet accepted/in progress/done) */}
-      {isRecommendation && !['approved', 'in_progress', 'done'].includes(portalStatus) ? (
+      {isRecommendation && !['approved', 'in_progress', 'done', 'cancelled'].includes(portalStatus) ? (
         <RecommendationApproval taskId={task.clickup_id} credits={task.credits} onClose={onClose} />
       ) : (
         <div className="mb-5">

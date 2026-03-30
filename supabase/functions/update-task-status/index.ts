@@ -475,6 +475,56 @@ Deno.serve(async (req) => {
       } else {
         log.info("Removed recommendation tag on decline");
       }
+
+      // Auto-comment for decline_recommendation
+      const supabaseAdminDec = createClient(supabaseUrl, supabaseServiceKey!);
+      const { data: profileDec } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const fullNameDec = profileDec?.full_name || userEmail?.split("@")[0] || "Client";
+      const firstNameDec = fullNameDec.split(" ")[0];
+      const declineDisplayText = comment?.trim()
+        ? `Empfehlung abgelehnt.\n\nBegründung: ${comment.trim()}`
+        : "Empfehlung abgelehnt.";
+      const declineClickupComment = `${fullNameDec} (via Client Portal):\n\n${declineDisplayText}`;
+
+      const threadResDec = await resolveActivePublicThread(taskId, clickupApiToken, log);
+      const declineEndpoint = threadResDec.rootId
+        ? `https://api.clickup.com/api/v2/comment/${threadResDec.rootId}/reply`
+        : `https://api.clickup.com/api/v2/task/${taskId}/comment`;
+
+      const declineCommentResp = await fetchWithRetry(declineEndpoint, {
+        method: "POST",
+        headers: { Authorization: clickupApiToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ comment_text: declineClickupComment, notify_all: false }),
+      }, 2, log);
+
+      if (declineCommentResp.ok) {
+        const declineCommentData = await declineCommentResp.json();
+        log.info("Auto-comment posted for recommendation decline");
+        await supabaseAdminDec
+          .from("comment_cache")
+          .upsert({
+            clickup_comment_id: declineCommentData.id,
+            task_id: taskId,
+            profile_id: userId,
+            comment_text: declineClickupComment,
+            display_text: declineDisplayText,
+            author_id: 0,
+            author_name: firstNameDec,
+            author_email: userEmail,
+            author_avatar: null,
+            clickup_created_at: new Date().toISOString(),
+            last_synced: new Date().toISOString(),
+            is_from_portal: true,
+          }, { onConflict: "clickup_comment_id,profile_id" });
+      } else {
+        await declineCommentResp.text();
+        log.error("Failed to post auto-comment for recommendation decline", { status: declineCommentResp.status });
+      }
     }
 
     // Auto-comment for approve_credits action
@@ -572,7 +622,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (comment && typeof comment === 'string' && comment.trim()) {
+    if (comment && typeof comment === 'string' && comment.trim() && action !== 'decline_recommendation') {
       log.debug("Posting comment to task");
 
       const { data: profile } = await supabase
