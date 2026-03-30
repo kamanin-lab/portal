@@ -1,0 +1,279 @@
+KAMANIN Client Portal – Team Member Guide
+Version 1.3
+Last Updated: 30 March 2026
+Table of Contents
+Overview
+ClickUp Team Member Guide
+2.1 Understanding the Portal Integration
+2.2 Task Visibility Control
+2.3 Communicating with Clients
+2.4 File & Attachment Handling (Important)
+2.5 Status Workflow
+2.6 Credit Estimate & Client Approval
+2.7 Handling Client Feedback
+2.8 Recommendations
+2.9 Credits & Cost Approval (Reference)
+2.10 Support Chat
+2.11 Best Practices
+Quick Start (TL;DR)
+If you remember nothing else, remember this:
+❗ Client-visible tasks → title & description in German
+❗ Client communication → German only and correct thread usage
+❗ Files → links only (upload → copy link → paste into message)
+❗ Set Credits field BEFORE starting work → wait for client approval
+❗ Never skip INTERNAL REVIEW before client review
+❗ Status CLIENT REVIEW = waiting for client action
+❗ Recommendations → add tag "recommendation" to a visible task
+Thread rules (very important):
+To start a new client-visible conversation, begin a new comment with @client:
+If a client has already started a thread, always reply inside that thread
+Replies inside an existing client thread must NOT use @client: (it would be visible to the client)
+Best practice: keep all client communication in one client-started thread
+Everything outside these rules is considered internal communication.
+If a task does not meet these rules, do not make it visible.
+
+1. Overview
+   Clients can:
+   View tasks assigned to their projects
+   Review and approve work
+   Request changes
+   Communicate via comments
+   Create new task requests
+   Use a dedicated support chat
+   Receive real-time notifications
+   Put tasks on hold, resume tasks from hold, or cancel tasks entirely
+   Receive and respond to team recommendations
+   Review and approve cost estimates (credits)
+   The portal syncs automatically with ClickUp. Team members work only in ClickUp, while clients never access ClickUp directly.
+   Portal URL: https://portal.kamanin.at
+2. ClickUp Team Member Guide
+   This guide is for team members working in ClickUp who communicate with clients through the portal.
+   2.1 Understanding the Portal Integration
+   How It Works
+   Tasks sync automatically from ClickUp to the portal
+   Only explicitly marked tasks are visible to clients
+   Client‑visible comments are strictly filtered
+   Status changes trigger client notifications
+   Client actions update ClickUp in real time
+   What Clients Can See
+   Tasks with "Visible in client portal" enabled
+   Comments starting with @client: or replies in client threads
+   Task title, description, status, priority, due date
+   Their own comments and uploaded files (via links or from them uploaded)
+   Recommendations (tasks tagged "recommendation") in a separate section
+   What Clients Cannot See
+   Tasks without the visibility checkbox
+   Internal team comments
+   ClickUp workspace structure
+   Other team members' tasks
+   Any other client data
+   2.2 Task Visibility Control
+   Language Requirement (Mandatory)
+   ❗ All tasks that are visible to clients must have their title and description written in German.
+   Task title must be client-ready German
+   Task description must be clear, complete, and in German
+   Internal notes, drafts, or technical explanations must remain in internal comments
+   If a task is not yet properly written in German, it must not be marked as visible in the client portal.
+   Making a Task Visible
+   Open the task in ClickUp
+   Locate "Visible in client portal" checkbox
+   Enable the checkbox
+   When to Make Tasks Visible
+   DO make visible:
+   Deliverables ready for review
+   Tasks requiring client input or approval
+   Client‑requested features
+   Milestones and key updates
+   Recommendations (see Section 2.8)
+   DO NOT make visible:
+   Internal planning tasks
+   Technical debt / refactoring
+   Meetings, admin, or coordination tasks
+   Incomplete or experimental work
+   Automatic Visibility for Client‑Created Tasks
+   Tasks created by clients via the portal are automatically:
+   Marked as visible
+   Tagged with "ticket"
+   Created in the first list defined in the client profile
+   2.3 Communicating with Clients
+   Sending Messages to Clients
+   Method 1: @client: Prefix (Mandatory)
+   Start your comment with @client:
+   @client: Guten Tag! Hier ist der erste Entwurf.
+   Bitte prüfen Sie diesen und geben Sie uns Feedback.
+   The prefix is not shown to the client
+   Without the prefix, the comment remains internal
+   Method 2: Replying to Client Messages
+   Replies inside client‑started threads are automatically visible
+   No additional prefix required
+   Message Rules (Very Important)
+   ❗ All client communication must be in German
+   Clear and professional tone
+   Explain what you are sending or asking for
+   Ask concrete questions when feedback is required
+   Avoid internal or technical jargon
+   2.4 File & Attachment Handling (Critical Update)
+   ❗ Important Rule
+   Files can NOT be sent directly in client comments.
+   The only supported way to share files with clients is via links inside the message text.
+   Correct File‑Sharing Workflow
+   Upload the file to the task attachments in ClickUp
+   Locate the uploaded file in the task
+   Click the three‑dot menu (⋯) on the attachment
+   Select "Copy link"
+   Paste this link into your @client: message
+   Example:
+   @client: Hier finden Sie das aktuelle Design:
+   https://clickup.com/attachment/...
+   What Happens in the Portal
+   The link becomes clickable for the client
+   The client can download or view the file
+   The portal stays clean, fast, and consistent
+   ❌ What NOT to Do
+   Do NOT upload files directly in comments
+   Do NOT rely on inline attachments
+   Do NOT paste raw filenames without links
+   2.5 Status Workflow
+   Official Status Flow (with Credit Approval)
+   BACKLOG
+   ↓
+   TO DO  ← set Credits field here
+   ↓
+   [AWAITING CREDIT APPROVAL]  ← client approves via portal (if credits set)
+   ↓
+   IN PROGRESS  ← work begins only after approval
+   ↓
+   INTERNAL REVIEW
+   ↓
+   CLIENT REVIEW
+   ↓ ↘
+   APPROVED REWORK
+   ↓ ↗
+   COMPLETE
+   ❗ If a task has a credit cost, it must not move to IN PROGRESS until the client has approved the cost in the portal. The credit approval step is not a separate ClickUp status — it is a gate enforced in the portal. The task stays in TO DO until the client clicks "Freigeben".
+   Status Meanings
+   BACKLOG – Idea or request, not scheduled
+   TO DO – Clearly defined, ready to start; credit estimate may be pending client approval
+   IN PROGRESS – Actively being worked on; credit approval already received (if applicable)
+   INTERNAL REVIEW – Internal QA / lead check
+   CLIENT REVIEW – Waiting for client feedback
+   REWORK – Changes required (client or internal)
+   APPROVED – Client approved the result
+   COMPLETE – Fully done and closed
+   ON HOLD – Intentionally paused
+   CANCELED – Will not be completed
+   2.6 Credit Estimate & Client Approval
+   When Is a Credit Estimate Required?
+   Almost always — any task that involves billable team work should have a credit estimate set before the team begins. Exceptions are internal admin tasks or tasks explicitly agreed as free-of-charge.
+   Standard Workflow
+   1. Define the task, write title and description in German
+   2. Estimate the credit cost (discuss with lead if needed)
+   3. Set the "Credits" custom field in ClickUp
+   4. Make the task visible in the portal (set to TO DO)
+   5. The portal automatically shows a "Kostenfreigabe erforderlich" block to the client
+   6. Wait for the client to approve in the portal
+   7. Only after approval: move the task to IN PROGRESS and begin work
+   ❗ Do not start work before the client approves. The approval is logged in the portal and is visible to the client — starting without approval creates a billing dispute risk.
+   What the Client Sees
+   An amber "Kostenfreigabe erforderlich" block appears inside the task with the credit amount
+   Two actions: Freigeben (approve) or Ablehnen (decline with reason)
+   After approval, a "Kosten freigegeben" comment appears in ClickUp automatically
+   After decline, a "Kostenfreigabe abgelehnt: [reason]" comment appears in ClickUp
+   If Client Declines
+   A comment with the reason appears in ClickUp
+   Discuss the scope or pricing internally
+   Adjust the credit estimate or task scope if needed
+   Set the updated Credits field and inform the client via @client: message
+   The client can then re-approve
+   2.7 Handling Client Feedback
+   When Client Approves
+   Status moves to APPROVED
+   Task can proceed to deployment or closure
+   Optional confirmation comment from client
+   When Client Requests Changes
+   Status moves to REWORK
+   Client feedback appears in comments
+   Apply changes internally
+   Move back to CLIENT REVIEW when ready
+   Client Feedback Identification
+   Client comments in ClickUp include:
+   Label: "(via Client Portal)"
+   Client name
+   Message
+   Attached links
+   2.8 Recommendations
+   What Is a Recommendation?
+   A recommendation is a proactive suggestion from the team to the client — for example, a performance improvement, a new feature idea, a maintenance item, or a strategic proposal that the client has not explicitly requested.
+   Recommendations appear in their own section on the client's Aufgaben page, clearly separated from regular tasks, with a lightbulb icon and amber accent. The client receives a notification when a new recommendation arrives.
+   How to Create a Recommendation
+   1. Create the task in ClickUp as normal
+   2. Write the title and description in clear, professional German
+   3. Set the credits field to the estimated cost (optional but recommended — shown to client)
+   4. Enable "Visible in client portal"
+   5. Add the tag "recommendation" to the task
+   The webhook automatically detects the "recommendation" tag and sends a "Neue Empfehlung" notification to the client. The task appears in the Recommendations section of the portal immediately.
+   ❗ The task must already be visible in the portal before adding the recommendation tag. Adding the tag to a hidden task has no effect.
+   What the Client Sees
+   A dedicated "Empfehlungen" section below their regular tasks
+   Each recommendation shows: title, description preview, status, priority, credit cost, due date
+   Clicking a recommendation opens the full task detail
+   Inside the task, a yellow "Empfehlung" block appears with two options:
+   Annehmen (Accept) — client selects a due date, then confirms. The recommendation becomes a regular active task, credits are deducted from their balance, and the team is notified.
+   Ablehnen (Decline) — client can add an optional reason. A comment "Empfehlung abgelehnt." is posted to the ClickUp task with the client's reasoning. The recommendation is removed from their portal view.
+   What Happens in ClickUp After Acceptance
+   Status moves to TO DO (task enters the regular workflow)
+   Tag "recommendation" is removed; tag "ticket" is added
+   Due date is set to the date the client chose
+   Credits are deducted from the client's credit balance
+   You receive a "Empfehlung angenommen" notification
+   Note: an accepted recommendation has the credits pre-approved as part of the accept action. No separate credit approval step is required.
+   What Happens After Decline
+   A comment appears on the ClickUp task: "Empfehlung abgelehnt." followed by any reasoning the client provided
+   No status change
+   The recommendation disappears from the client's portal view
+   2.9 Credits & Cost Approval (Reference)
+   What Are Credits?
+   Credits are the billing unit used in the portal. 1 credit = 1 unit of billable work (exact value defined in the client's contract). Credit costs are set per task in ClickUp using the "Credits" custom field.
+   Client Credit Balance
+   Clients can view their full credit balance and transaction history on the Konto page. Every accepted recommendation or approved task deducts from their balance. Ensure credit estimates are accurate before presenting them.
+   The full workflow for credit approval is described in Section 2.6.
+   2.10 Support Chat
+   How Support Chat Works
+   Each client has one dedicated support task
+   Portal support messages appear as comments on this task
+   Responding to Support Requests
+   Open the client's support task in ClickUp
+   Respond using @client:
+   Message appears instantly in the portal
+   Example:
+   @client: Vielen Dank für Ihre Nachricht!
+   Gerne erklären wir Ihnen den Ablauf kurz.
+   2.11 Best Practices
+   Communication
+   ❗ German only
+   Respond within 24 hours (on working days)
+   Use @client: consistently
+   Keep internal discussion internal
+   Communicate delays early and clearly
+   Task Management
+   Mark tasks visible only when appropriate
+   Keep descriptions clear and client‑friendly
+   Set credit estimate before making a task visible
+   Update statuses promptly
+   Use priorities consistently
+   Review Workflow
+   Move to CLIENT REVIEW only when ready
+   Include clear review instructions
+   React quickly to feedback
+   Never skip INTERNAL REVIEW
+   Credit Approval Workflow
+   Always set Credits field before work begins
+   Do not move to IN PROGRESS until client approves
+   If client declines, adjust and re-present — do not start work anyway
+   Keep estimates realistic — a declined estimate damages trust more than a higher one upfront
+   Recommendations Workflow
+   Only send recommendations for well-defined, genuinely useful proposals
+   Always include a description that explains the value to the client
+   Set a realistic credit cost before tagging
+   Monitor ClickUp for accept/decline comments after sending
+   React to declines promptly — ask internally if the pricing or proposal needs adjustment
