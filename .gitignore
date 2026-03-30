@@ -63,4 +63,3 @@ supabase/.temp/
 tasks/*.js
 tasks/session.json
 scripts/*-production.json
-docs/guidelines/
