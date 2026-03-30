@@ -17,7 +17,7 @@ import { render, screen } from '@testing-library/react'
 import { TaskComments } from '../components/TaskComments'
 import { TaskDetail } from '../components/TaskDetail'
 import { SupportChat } from '../components/SupportChat'
-import { useTaskComments, usePostComment } from '../hooks/useTaskComments'
+import { useTaskComments } from '../hooks/useTaskComments'
 import { useSupportTaskChat } from '../hooks/useSupportTaskChat'
 import type { ClickUpTask } from '../types/tasks'
 
@@ -119,9 +119,8 @@ function makeTask(overrides: Partial<ClickUpTask> = {}): ClickUpTask {
     list_id: 'list-1',
     list_name: 'Support',
     credits: null,
-    credits_approved: false,
-    last_activity_at: null,
-    created_by_name: null,
+    last_activity_at: undefined,
+    created_by_name: undefined,
     ...overrides,
   }
 }
@@ -158,7 +157,7 @@ describe('TaskComments — scroll isolation', () => {
   })
 
   test('loading skeleton is inside the inner scroll container', () => {
-    vi.mocked(useTaskComments).mockReturnValue({ data: [], isLoading: true, error: null } as ReturnType<typeof useTaskComments>)
+    vi.mocked(useTaskComments).mockReturnValue({ data: [], isLoading: true, error: null } as unknown as ReturnType<typeof useTaskComments>)
 
     const { container } = render(<TaskComments taskId="task-1" />)
 
@@ -167,7 +166,7 @@ describe('TaskComments — scroll isolation', () => {
   })
 
   test('empty state is inside the inner scroll container', () => {
-    vi.mocked(useTaskComments).mockReturnValue({ data: [], isLoading: false, error: null } as ReturnType<typeof useTaskComments>)
+    vi.mocked(useTaskComments).mockReturnValue({ data: [], isLoading: false, error: null } as unknown as ReturnType<typeof useTaskComments>)
 
     const { container } = render(<TaskComments taskId="task-1" />)
 
@@ -277,7 +276,9 @@ describe('SupportChat — scroll isolation', () => {
       isSending: false,
       isConfigured: true,
       supportTaskId: 'support-1',
-    } as ReturnType<typeof useSupportTaskChat>)
+      refetch: vi.fn(),
+      userName: 'Test User',
+    } as unknown as ReturnType<typeof useSupportTaskChat>)
   })
 
   test('messages list has its own overflow-y-auto scroll container', () => {
