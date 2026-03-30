@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed 05-02-PLAN.md
 last_updated: "2026-03-29T22:47:03.122Z"
-last_activity: 2026-03-29
+last_activity: 2026-03-30 - Completed quick task 260330-rq4: Audit & fix recommendations decline flow
 progress:
   total_phases: 5
   completed_phases: 4
@@ -41,6 +41,7 @@ Phase 1: Portal Frontend — Complete
 | 260330-lvq | Recommendations block on Needs Attention tab — accept/decline workflow, Edge Function tag management, 4 new components | 2026-03-30 | `c52352c` | Done | [260330-lvq-recommendations-block-on-needs-attention](./quick/260330-lvq-recommendations-block-on-needs-attention/) |
 | 260330-mp6 | Recommendations polish — standard card layout, accept/decline in TaskDetailSheet, new_recommendation notification wired end-to-end | 2026-03-30 | `7bc70fc` | Done | [260330-mp6-recommendations-polish-standard-card-she](./quick/260330-mp6-recommendations-polish-standard-card-she/) |
 | 260330-nsg | Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook | 2026-03-30 | `fd0626b` | Done | [260330-nsg-fix-recommendation-approval-ux-and-webho](./quick/260330-nsg-fix-recommendation-approval-ux-and-webho/) |
+| 260330-rq4 | Audit & fix recommendations decline — auto-comment to ClickUp, block clears after decline, tag cache cleanup | 2026-03-30 | `10267dd` | Verified | [260330-rq4-audit-and-fix-recommendations-mechanism-](./quick/260330-rq4-audit-and-fix-recommendations-mechanism-/) |
 
 ### Key Decisions
 
