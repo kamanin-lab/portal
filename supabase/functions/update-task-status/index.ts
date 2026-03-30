@@ -397,6 +397,65 @@ Deno.serve(async (req) => {
       } else {
         log.info("Added ticket tag");
       }
+
+      // Auto-comment for accept_recommendation
+      const supabaseAdminRec = createClient(supabaseUrl, supabaseServiceKey!);
+
+      const { data: profileRec } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const fullNameRec = profileRec?.full_name || userEmail?.split("@")[0] || "Client";
+      const firstNameRec = fullNameRec.split(" ")[0];
+      const dueDateFormattedRec = new Date(dueDate).toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const displayTextRec = `Empfehlung angenommen. Erledigen bis: ${dueDateFormattedRec}`;
+      const clickupAutoCommentRec = `${fullNameRec} (via Client Portal):\n\n${displayTextRec}`;
+
+      const threadResolutionRec = await resolveActivePublicThread(taskId, clickupApiToken, log);
+      const autoEndpointRec = threadResolutionRec.rootId
+        ? `https://api.clickup.com/api/v2/comment/${threadResolutionRec.rootId}/reply`
+        : `https://api.clickup.com/api/v2/task/${taskId}/comment`;
+
+      const autoCommentRespRec = await fetchWithRetry(autoEndpointRec, {
+        method: "POST",
+        headers: {
+          Authorization: clickupApiToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          comment_text: clickupAutoCommentRec,
+          notify_all: false,
+        }),
+      }, 2, log);
+
+      if (autoCommentRespRec.ok) {
+        const autoCommentDataRec = await autoCommentRespRec.json();
+        log.info("Auto-comment posted for recommendation acceptance");
+
+        await supabaseAdminRec
+          .from("comment_cache")
+          .upsert({
+            clickup_comment_id: autoCommentDataRec.id,
+            task_id: taskId,
+            profile_id: userId,
+            comment_text: clickupAutoCommentRec,
+            display_text: displayTextRec,
+            author_id: 0,
+            author_name: firstNameRec,
+            author_email: userEmail,
+            author_avatar: null,
+            clickup_created_at: new Date().toISOString(),
+            last_synced: new Date().toISOString(),
+            is_from_portal: true,
+          }, {
+            onConflict: "clickup_comment_id,profile_id",
+          });
+      } else {
+        await autoCommentRespRec.text();
+        log.error("Failed to post auto-comment for recommendation acceptance", { status: autoCommentRespRec.status });
+      }
     }
 
     // Auto-comment for approve_credits action

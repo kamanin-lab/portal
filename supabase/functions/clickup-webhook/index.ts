@@ -114,6 +114,7 @@ interface ClickUpWebhookPayload {
     };
   }>;
   task_id?: string;
+  tag_name?: string;
 }
 
 // Rate limiting
@@ -309,7 +310,7 @@ async function fetchTaskForVisibilityCheck(
   taskId: string,
   clickupApiToken: string,
   log: ReturnType<typeof createLogger>
-): Promise<{ visible: boolean; name: string; listId: string | null } | null> {
+): Promise<{ visible: boolean; name: string; listId: string | null; tags?: Array<{ name: string }> } | null> {
   try {
     const response = await fetchWithTimeout(
       `https://api.clickup.com/api/v2/task/${taskId}`,
@@ -330,6 +331,7 @@ async function fetchTaskForVisibilityCheck(
       visible: isTaskVisible(task.custom_fields, visibleFieldId),
       name: task.name || "Task",
       listId: task.list?.id || null,
+      tags: task.tags || [],
     };
   } catch (error) {
     log.error(`Error fetching task for visibility check`, { taskId, error: String(error) });
@@ -1792,6 +1794,101 @@ Deno.serve(async (req) => {
           success: true, 
           notificationsCreated: notificationsToInsert.length 
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle taskTagUpdated event (ClickUp sends this as a separate event, no history_items)
+    if (payload.event === "taskTagUpdated" && taskId && isValidTaskId(taskId)) {
+      const tagName = payload.tag_name;
+
+      if (tagName !== "recommendation") {
+        log.debug("taskTagUpdated event ignored (not recommendation tag)", { taskId, tagName });
+        return new Response(
+          JSON.stringify({ message: "tag event ignored" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const clickupApiToken = Deno.env.get("CLICKUP_API_TOKEN");
+      if (!clickupApiToken) {
+        log.error("Missing CLICKUP_API_TOKEN for taskTagUpdated handler");
+        return new Response(
+          JSON.stringify({ success: true, type: "recommendation_tag_skipped_no_token" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Fetch the task to determine if tag was added or removed, and check visibility
+      const taskInfo = await fetchTaskForVisibilityCheck(taskId, clickupApiToken, log);
+
+      if (!taskInfo) {
+        log.info("Task not found — skipping taskTagUpdated recommendation notification", { taskId });
+        return new Response(
+          JSON.stringify({ success: true, type: "recommendation_tag_skipped_not_found" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if recommendation tag is currently present (add vs remove detection)
+      const tagStillPresent = taskInfo.tags?.some((t: { name: string }) => t.name === "recommendation");
+      if (!tagStillPresent) {
+        log.info("Recommendation tag was removed — skipping notification", { taskId });
+        return new Response(
+          JSON.stringify({ success: true, type: "recommendation_tag_removed" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!taskInfo.visible) {
+        log.info("Task not visible in portal — skipping taskTagUpdated recommendation notification", { taskId });
+        return new Response(
+          JSON.stringify({ success: true, type: "recommendation_tag_skipped_not_visible" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const taskName = taskInfo.name;
+      const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
+
+      if (profileIds.length > 0) {
+        const notifications = profileIds.map((profileId) => ({
+          profile_id: profileId,
+          type: "new_recommendation",
+          title: "Neue Empfehlung",
+          message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
+          task_id: taskId,
+          is_read: false,
+        }));
+
+        const { error: notifError } = await supabase.from("notifications").insert(notifications);
+        if (notifError) {
+          log.error("Failed to insert recommendation notifications (taskTagUpdated)", { taskId, error: notifError.message });
+        } else {
+          log.info("Recommendation notifications created (taskTagUpdated)", { taskId, count: notifications.length });
+        }
+
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, full_name, email_notifications, notification_preferences")
+          .in("id", profileIds);
+
+        for (const p of profiles || []) {
+          if (shouldSendEmail(p, "new_recommendation")) {
+            await sendMailjetEmail(
+              "new_recommendation",
+              { email: p.email, name: p.full_name },
+              { firstName: p.full_name?.split(" ")[0], taskName, taskId },
+              log
+            );
+          }
+        }
+      } else {
+        log.warn("No profiles found for recommendation notification (taskTagUpdated)", { taskId });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, type: "recommendation_tag_handled" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
