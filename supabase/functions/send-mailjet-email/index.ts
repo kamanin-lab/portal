@@ -16,6 +16,7 @@ interface EmailRequest {
     | "team_question"
     | "support_response"
     | "step_ready"
+    | "step_completed"
     | "project_reply"
     | "credit_approval"
     | "new_recommendation"
@@ -34,6 +35,7 @@ interface EmailRequest {
     firstName?: string;
     taskName?: string;
     stepName?: string;
+    chapterName?: string;
     taskId?: string;
     tasks?: TaskDigestItem[];
     actionUrl?: string;
@@ -136,6 +138,23 @@ function generateEmailHtml(
       const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(stepName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <a href="${stepUrl}" class="button">${copy.cta}</a>
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "step_completed": {
+      const chapterName = data.chapterName || data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
+      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const subject = typeof copy.subject === "function" ? copy.subject(chapterName) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(chapterName) : copy.body;
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
