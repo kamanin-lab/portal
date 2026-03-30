@@ -18,6 +18,7 @@ interface EmailRequest {
     | "step_ready"
     | "project_reply"
     | "credit_approval"
+    | "new_recommendation"
     | "magic_link"
     | "password_reset"
     | "email_confirmation"
@@ -333,6 +334,23 @@ function generateEmailHtml(
             <p class="text">${copy.body as string}</p>
             <a href="${actionUrl}" class="button">${copy.cta}</a>
             ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "new_recommendation": {
+      const taskName = data.taskName || (locale === "de" ? "Ihre Empfehlung" : "your recommendation");
+      const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
+      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${bodyText}</p>
+            <a href="${taskUrl}" class="button">${copy.cta}</a>
           </div>${defaultFooter}</div></body></html>`,
       };
     }

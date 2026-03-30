@@ -52,6 +52,25 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
   const mutation = useMutation({
     mutationFn: updateTaskStatus,
     onSuccess: (data, variables) => {
+      // Optimistic update for recommendation actions: patch cache immediately so UI reflects the change
+      // without waiting for the webhook to update task_cache
+      if (variables.action === 'accept_recommendation' || variables.action === 'decline_recommendation') {
+        const patch = (task: any) => {
+          if (task?.clickup_id !== variables.taskId) return task;
+          return {
+            ...task,
+            status: data.newStatus || task.status,
+            tags: (task.tags ?? []).filter((t: { name: string }) => t.name !== 'recommendation'),
+          };
+        };
+        queryClient.setQueriesData({ queryKey: ['clickup-tasks'] }, (old: any) => {
+          if (!old) return old;
+          if (Array.isArray(old)) return old.map(patch);
+          if (old?.pages) return { ...old, pages: old.pages.map((p: any) => (Array.isArray(p) ? p.map(patch) : p)) };
+          return old;
+        });
+        queryClient.setQueryData(['single-task', variables.taskId], patch);
+      }
       queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['needs-attention-count'] });
       options?.onSuccess?.();

@@ -1798,9 +1798,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle taskTagUpdated event (ClickUp sends this as a separate event, no history_items)
+    // Handle taskTagUpdated event (ClickUp sends tag name in history_items[0].after[0].name, not payload.tag_name)
     if (payload.event === "taskTagUpdated" && taskId && isValidTaskId(taskId)) {
-      const tagName = payload.tag_name;
+      const historyTagItem = payload.history_items?.[0];
+      const isTagAdd = historyTagItem?.field === "tag";
+      const tagName = isTagAdd
+        ? (historyTagItem?.after as Array<{ name: string }> | undefined)?.[0]?.name
+        : undefined;
 
       if (tagName !== "recommendation") {
         log.debug("taskTagUpdated event ignored (not recommendation tag)", { taskId, tagName });
