@@ -1,6 +1,6 @@
 # Feature Idea: Система рекомендаций (Proactive Recommendations)
 
-> Status: Plan Ready | Priority: High | Target: Phase 4+
+> Status: IMPLEMENTED (260330-lvq, 2026-03-30) — Phase 1 complete: recommendations block on Needs Attention tab. Phase 2 (AI generation) + Phase 3 (analytics) remain future work.
 
 ## Проблема
 
@@ -8,13 +8,13 @@
 
 ## Решения (утверждены 2026-03-27)
 
-| Вопрос | Решение | Обоснование |
-|---|---|---|
-| Статус или тег? | Только тег `recommendation` | Не нужен новый ClickUp статус, проще настройка |
-| Где показывать? | Отдельная страница `/empfehlungen` | Уникальный UI (Accept/Decline), не мешает обычным задачам |
-| Уведомления | Email + bell при новой рекомендации | Клиент должен знать о новых предложениях |
-| При принятии | Убрать tag `recommendation`, добавить tag `ticket`, статус → READY, установить due_date | Задача уходит в обычный поток как "Bereit" |
-| При отклонении | Статус → CANCELED + опциональный комментарий | Чисто, задача уходит из активного списка |
+| Вопрос          | Решение                                                                                 | Обоснование                                               |
+| --------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Статус или тег? | Только тег `recommendation`                                                             | Не нужен новый ClickUp статус, проще настройка            |
+| Где показывать? | Отдельная страница `/empfehlungen`                                                      | Уникальный UI (Accept/Decline), не мешает обычным задачам |
+| Уведомления     | Email + bell при новой рекомендации                                                     | Клиент должен знать о новых предложениях                  |
+| При принятии    | Убрать tag `recommendation`, добавить tag `ticket`, статус → READY, установить due_date | Задача уходит в обычный поток как "Bereit"                |
+| При отклонении  | Статус → CANCELED + опциональный комментарий                                            | Чисто, задача уходит из активного списка                  |
 
 ## Поток
 
@@ -51,15 +51,14 @@
 
 ## ClickUp: настройка
 
-| Элемент | Значение |
-|---|---|
-| Tag (рекомендация) | `recommendation` |
-| Tag (после принятия) | `ticket` |
-| Статус до решения | `TO DO` (стандартный) |
-| Статус после принятия | `READY` (Portal: "Bereit") |
-| Статус после отклонения | `CANCELED` |
-| Custom Fields | `Credits` (Number, Fibonacci) |
-| Создаёт | Разработчик / Юрий / AI-агент (Phase 2+) |
+| Элемент                 | Значение                      |
+| ----------------------- | ----------------------------- |
+| Tag (рекомендация)      | `recommendation`              |
+| Tag (после принятия)    | `ticket`                      |
+| Статус до решения       | `TO DO` (стандартный)         |
+| Статус после принятия   | `READY` (Portal: "Bereit")    |
+| Статус после отклонения | `CANCELED`                    |
+| Custom Fields           | `Credits` (Number, Fibonacci) |
 
 ## Portal UI
 
@@ -89,6 +88,7 @@
 ### Действия клиента
 
 **Annehmen (Принять):**
+
 1. Модальное окно с датапикером: "Bis wann soll das erledigt werden?"
 2. Edge Function → ClickUp API:
    - Убрать tag `recommendation`, добавить tag `ticket`
@@ -97,6 +97,7 @@
 3. Задача уходит из Empfehlungen → появляется в обычном списке как "Bereit"
 
 **Ablehnen (Отклонить):**
+
 1. Опциональный комментарий: "Warum nicht?"
 2. Edge Function → ClickUp API:
    - Статус → CANCELED
@@ -107,28 +108,28 @@
 
 ### Что уже есть (не нужно строить)
 
-| Компонент | Статус | Файл |
-|---|---|---|
-| Tags в task_cache | ✅ Хранятся в raw_data | `types/tasks.ts` (tags array) |
-| due_date на карточках | ✅ Отображается | `TaskCard.tsx` (formatDueDate) |
-| Credits на карточках | ✅ CreditBadge | `CreditBadge.tsx` |
-| Task actions pattern | ✅ useTaskActions | `hooks/useTaskActions.ts` |
-| Status update edge fn | ✅ update-task-status | `supabase/functions/update-task-status/` |
-| Webhook notifications | ✅ Паттерн есть | `clickup-webhook/index.ts` |
-| Email templates | ✅ emailCopy.ts | `_shared/emailCopy.ts` |
+| Компонент             | Статус                 | Файл                                     |
+| --------------------- | ---------------------- | ---------------------------------------- |
+| Tags в task_cache     | ✅ Хранятся в raw_data | `types/tasks.ts` (tags array)            |
+| due_date на карточках | ✅ Отображается        | `TaskCard.tsx` (formatDueDate)           |
+| Credits на карточках  | ✅ CreditBadge         | `CreditBadge.tsx`                        |
+| Task actions pattern  | ✅ useTaskActions      | `hooks/useTaskActions.ts`                |
+| Status update edge fn | ✅ update-task-status  | `supabase/functions/update-task-status/` |
+| Webhook notifications | ✅ Паттерн есть        | `clickup-webhook/index.ts`               |
+| Email templates       | ✅ emailCopy.ts        | `_shared/emailCopy.ts`                   |
 
 ### Что нужно построить
 
-| Компонент | Описание | Файлы |
-|---|---|---|
-| Tag management | Edge function для add/remove tags через ClickUp API | Расширить `update-task-status` или новая fn |
-| due_date update | Добавить поддержку due_date в update-task-status | `update-task-status/index.ts` |
-| Recommendations page | `/empfehlungen` — фильтр по tag, карточки, actions | Новая страница + route |
-| RecommendationActions | Accept (datepicker) / Decline (comment) компонент | Новый компонент |
-| Sidebar nav item | "Empfehlungen" с badge count | `SidebarGlobalNav.tsx` |
-| Email template | `recommendation_new` тип в emailCopy | `emailCopy.ts` |
-| Webhook handler | Уведомление при новой рекомендации (tag detection) | `clickup-webhook/index.ts` |
-| Status mapping | Нет новых статусов — используем существующие | — |
+| Компонент             | Описание                                            | Файлы                                       |
+| --------------------- | --------------------------------------------------- | ------------------------------------------- |
+| Tag management        | Edge function для add/remove tags через ClickUp API | Расширить `update-task-status` или новая fn |
+| due_date update       | Добавить поддержку due_date в update-task-status    | `update-task-status/index.ts`               |
+| Recommendations page  | `/empfehlungen` — фильтр по tag, карточки, actions  | Новая страница + route                      |
+| RecommendationActions | Accept (datepicker) / Decline (comment) компонент   | Новый компонент                             |
+| Sidebar nav item      | "Empfehlungen" с badge count                        | `SidebarGlobalNav.tsx`                      |
+| Email template        | `recommendation_new` тип в emailCopy                | `emailCopy.ts`                              |
+| Webhook handler       | Уведомление при новой рекомендации (tag detection)  | `clickup-webhook/index.ts`                  |
+| Status mapping        | Нет новых статусов — используем существующие        | —                                           |
 
 ### Edge Function: accept-recommendation
 
