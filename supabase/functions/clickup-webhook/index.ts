@@ -153,6 +153,7 @@ const EMAIL_TYPE_TO_PREF_KEY: Record<string, string> = {
   project_reply: "team_comment",   // project reply = same preference as team comment
   support_response: "support_response",
   credit_approval: "task_review",  // credit approval = same preference as task review
+  new_recommendation: "new_recommendation",
 };
 
 function shouldSendEmail(
@@ -1323,8 +1324,87 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle taskUpdated for custom field changes (Credits)
+    // Handle taskUpdated for custom field changes (Credits) and tag changes (Recommendations)
     if (payload.event === "taskUpdated" && historyItem) {
+      // --- TAG FIELD: recommendation tag detection ---
+      if (historyItem.field === "tag" && taskId && isValidTaskId(taskId)) {
+        const afterTags = historyItem.after as unknown;
+        const tagName = typeof afterTags === "string" ? afterTags : (afterTags as any)?.name;
+
+        if (tagName === "recommendation") {
+          log.info("Recommendation tag added to task", { taskId });
+
+          const clickupApiToken = Deno.env.get("CLICKUP_API_TOKEN");
+          if (!clickupApiToken) {
+            log.error("Missing CLICKUP_API_TOKEN for recommendation tag handler");
+            return new Response(
+              JSON.stringify({ success: true, type: "recommendation_tag_skipped_no_token" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          const taskInfo = await fetchTaskForVisibilityCheck(taskId, clickupApiToken, log);
+          if (!taskInfo || !taskInfo.visible) {
+            log.info("Task not visible or not found — skipping recommendation notification", { taskId });
+            return new Response(
+              JSON.stringify({ success: true, type: "recommendation_tag_skipped_not_visible" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          const taskName = taskInfo.name;
+          const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
+
+          if (profileIds.length > 0) {
+            const notifications = profileIds.map((profileId) => ({
+              profile_id: profileId,
+              type: "new_recommendation",
+              title: "Neue Empfehlung",
+              message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
+              task_id: taskId,
+              is_read: false,
+            }));
+
+            const { error: notifError } = await supabase.from("notifications").insert(notifications);
+            if (notifError) {
+              log.error("Failed to insert recommendation notifications", { taskId, error: notifError.message });
+            } else {
+              log.info("Recommendation notifications created", { taskId, count: notifications.length });
+            }
+
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, email, full_name, email_notifications, notification_preferences")
+              .in("id", profileIds);
+
+            for (const p of profiles || []) {
+              if (shouldSendEmail(p, "new_recommendation")) {
+                await sendMailjetEmail(
+                  "new_recommendation",
+                  { email: p.email, name: p.full_name },
+                  { firstName: p.full_name?.split(" ")[0], taskName, taskId },
+                  log
+                );
+              }
+            }
+          } else {
+            log.warn("No profiles found for recommendation notification", { taskId });
+          }
+
+          return new Response(
+            JSON.stringify({ success: true, type: "recommendation_tag_handled" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Non-recommendation tag changes fall through to ignore
+        log.debug("taskUpdated tag event ignored (not recommendation tag)", { taskId, tagName });
+        return new Response(
+          JSON.stringify({ message: "taskUpdated tag event ignored" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       if (historyItem.field === "custom_field" && taskId && isValidTaskId(taskId)) {
         const fieldData = historyItem.data as {
           field?: { id?: string; name?: string };
@@ -1428,8 +1508,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Non-credits taskUpdated events for tickets are ignored
-      log.debug("taskUpdated event ignored (not credits field)", { taskId });
+      // Non-tag, non-credits taskUpdated events for tickets are ignored
+      log.debug("taskUpdated event ignored (not tag or credits field)", { taskId });
       return new Response(
         JSON.stringify({ message: "taskUpdated event ignored" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
