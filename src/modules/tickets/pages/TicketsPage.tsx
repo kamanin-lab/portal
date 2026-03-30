@@ -12,6 +12,8 @@ import { TaskFilterPanel, type ActiveFilters } from '../components/TaskFilterPan
 import { SupportSheet } from '../components/SupportSheet'
 import { NewTicketDialog } from '../components/NewTicketDialog'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
+import { useRecommendations } from '../hooks/useRecommendations'
+import { RecommendationsBlock } from '../components/RecommendationsBlock'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
@@ -28,6 +30,7 @@ export function TicketsPage() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ priorities: [], datePreset: null })
 
   const { data: tasks = [], isLoading } = useClickUpTasks()
+  const { recommendations } = useRecommendations(tasks)
   const { user } = useAuth()
   const { taskUnread } = useUnreadCounts(user?.id)
   const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
@@ -154,6 +157,14 @@ export function TicketsPage() {
         activeFilters={activeFilters}
         onTaskClick={openTask}
       />
+
+      {/* Recommendations block — Needs Attention tab only */}
+      {filter === 'attention' && recommendations.length > 0 && (
+        <RecommendationsBlock
+          recommendations={recommendations}
+          onTaskClick={openTask}
+        />
+      )}
 
       {/* Sheet: task detail (URL-based) */}
       <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />
