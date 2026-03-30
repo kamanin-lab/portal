@@ -456,6 +456,38 @@ Deno.serve(async (req) => {
         await autoCommentRespRec.text();
         log.error("Failed to post auto-comment for recommendation acceptance", { status: autoCommentRespRec.status });
       }
+
+      // Deduct credits on recommendation acceptance (mirrors approve_credits pattern)
+      const { data: recTaskCache } = await supabaseAdminRec
+        .from("task_cache")
+        .select("credits, name")
+        .eq("clickup_id", taskId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+
+      const recCredits = recTaskCache?.credits ?? 0;
+      if (recCredits > 0) {
+        const { error: recDeductError } = await supabaseAdminRec
+          .from("credit_transactions")
+          .insert({
+            profile_id: userId,
+            amount: -recCredits,
+            type: "task_deduction",
+            task_id: taskId,
+            task_name: recTaskCache?.name || null,
+            description: `${recCredits} Credits — Empfehlung angenommen`,
+          });
+
+        if (recDeductError) {
+          if (recDeductError.message?.includes("duplicate") || recDeductError.message?.includes("unique")) {
+            log.info("Credit deduction already exists for recommendation (idempotent)", { taskId });
+          } else {
+            log.error("Failed to deduct credits on recommendation acceptance", { error: recDeductError.message });
+          }
+        } else {
+          log.info("Credits deducted on recommendation acceptance", { taskId, amount: -recCredits });
+        }
+      }
     }
 
     // decline_recommendation: remove recommendation tag (best-effort)
