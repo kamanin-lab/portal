@@ -99,7 +99,7 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
               </button>
               <button
                 onClick={() => setPendingDelete({ path: f.path, name: f.name, type: 'folder' })}
-                className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2.5 text-[var(--text-tertiary)] hover:text-red-500"
+                className="px-3 py-2.5 text-[var(--text-tertiary)] hover:text-red-500"
               >
                 <HugeiconsIcon icon={Delete02Icon} size={14} />
               </button>

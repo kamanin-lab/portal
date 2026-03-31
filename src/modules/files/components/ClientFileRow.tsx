@@ -61,7 +61,7 @@ export function ClientFileRow({ file, onDelete }: { file: NextcloudFile; onDelet
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-[var(--text-tertiary)] hover:text-red-500"
+            className="p-1 rounded text-[var(--text-tertiary)] hover:text-red-500"
           >
             <HugeiconsIcon icon={Delete02Icon} size={14} />
           </button>
