@@ -3,7 +3,7 @@ import type { Project } from '../../types/project';
 import type { ActivityEvent } from '../../hooks/useProjectActivity';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
 import { Button } from '@/shared/components/ui/button';
-import { StatusActivityItem, CommentActivityItem } from './ActivityItems';
+import { StatusActivityItem, CommentActivityItem, FileActivityItem } from './ActivityItems';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
@@ -61,6 +61,9 @@ function ActivityItem({ event, project, onOpenStep }: {
 }) {
   if (event.type === 'comment') {
     return <CommentActivityItem event={event} />;
+  }
+  if (event.type === 'file_activity') {
+    return <FileActivityItem event={event} />;
   }
   return <StatusActivityItem event={event} project={project} onOpenStep={onOpenStep} />;
 }

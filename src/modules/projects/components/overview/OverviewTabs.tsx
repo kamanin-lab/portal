@@ -6,6 +6,7 @@ import { MessagesTab } from './MessagesTab';
 import { FilesTab } from './FilesTab';
 import { useProjectComments } from '../../hooks/useProjectComments';
 import { useProjectActivity } from '../../hooks/useProjectActivity';
+import { useProjectFileActivity } from '../../hooks/useProjectFileActivity';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 
 interface OverviewTabsProps {
@@ -17,7 +18,8 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
   const [activeTab, setActiveTab] = useState('updates');
   // Single source of comments — passed to both ActivityFeed and MessagesTab
   const { data: comments = [], isLoading: commentsLoading } = useProjectComments(p);
-  const { events } = useProjectActivity(p, comments);
+  const { data: fileEvents = [] } = useProjectFileActivity(p.id);
+  const { events } = useProjectActivity(p, comments, fileEvents);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">

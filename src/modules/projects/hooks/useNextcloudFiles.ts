@@ -200,11 +200,27 @@ export function useUploadFileByPath(projectConfigId: string, subPath: string) {
       if (!result.ok) throw new Error(result.code || 'Upload fehlgeschlagen');
       return result;
     },
-    onSuccess: () => {
+    onSuccess: async (_data, file) => {
       queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, subPath] });
       // Also invalidate root if uploading to a chapter root
       if (!subPath.includes('/')) {
         queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, 'root'] });
+      }
+      // Log file activity (silent — never blocks UI)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase.from('project_file_activity').insert({
+            project_config_id: projectConfigId,
+            profile_id: session.user.id,
+            event_type: 'file_uploaded',
+            name: file.name,
+            path: subPath ? `${subPath}/${file.name}` : file.name,
+          });
+          queryClient.invalidateQueries({ queryKey: ['project-file-activity', projectConfigId] });
+        }
+      } catch {
+        // Silent — file activity logging should never block the UI
       }
     },
   });
@@ -241,13 +257,30 @@ export function useCreateFolder(projectConfigId: string) {
       if (!data?.ok) throw new Error(data?.code || 'Ordner konnte nicht erstellt werden');
       return data;
     },
-    onSuccess: (_data, folderPath) => {
+    onSuccess: async (_data, folderPath) => {
       // Invalidate parent folder and root
       const parentPath = folderPath.includes('/')
         ? folderPath.substring(0, folderPath.lastIndexOf('/'))
         : '';
       queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, parentPath] });
       queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, 'root'] });
+      // Log folder creation activity (silent — never blocks UI)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const folderName = folderPath.split('/').pop() || folderPath;
+          await supabase.from('project_file_activity').insert({
+            project_config_id: projectConfigId,
+            profile_id: session.user.id,
+            event_type: 'folder_created',
+            name: folderName,
+            path: folderPath,
+          });
+          queryClient.invalidateQueries({ queryKey: ['project-file-activity', projectConfigId] });
+        }
+      } catch {
+        // Silent — file activity logging should never block the UI
+      }
     },
   });
 }
