@@ -15,9 +15,8 @@ import { FaqSection } from '@/shared/components/help/FaqSection'
 import { FAQ_SECTIONS } from '@/shared/lib/hilfe-faq-data'
 
 // Map iconName strings from FAQ_SECTIONS data to actual Hugeicons icon objects.
-// FolderOpen01Icon does not exist in this version — using FolderOpenIcon instead.
 const ICON_MAP: Record<string, IconSvgElement> = {
-  FolderOpen01Icon: FolderOpenIcon,
+  FolderOpenIcon: FolderOpenIcon,
   CustomerService01Icon: CustomerService01Icon,
   FolderCloudIcon: FolderCloudIcon,
   CreditCardIcon: CreditCardIcon,

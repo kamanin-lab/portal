@@ -16,7 +16,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
   {
     id: 'projekte',
     title: 'Projekte',
-    iconName: 'FolderOpen01Icon',
+    iconName: 'FolderOpenIcon',
     items: [
       {
         question: 'Was bedeuten die Projektphasen?',
