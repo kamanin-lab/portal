@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { uploadClientFile } from '../hooks/useClientFiles';
 import { CreateFolderInput } from './CreateFolderInput';
+import { supabase } from '@/shared/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -17,6 +19,7 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderInput, setShowFolderInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -40,6 +43,22 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
     try {
       await uploadClientFile(currentSubPath, file);
       toast.success('Datei hochgeladen');
+      // Log file activity (silent — never blocks UI)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase.from('client_file_activity').insert({
+            profile_id: session.user.id,
+            event_type: 'file_uploaded' as const,
+            name: file.name,
+            path: currentSubPath ? `${currentSubPath}/${file.name}` : file.name,
+            source: 'portal' as const,
+          });
+          queryClient.invalidateQueries({ queryKey: ['client-file-activity'] });
+        }
+      } catch {
+        // Silent — activity logging must never block uploads
+      }
       onSuccess();
     } catch (err) {
       toast.error('Upload fehlgeschlagen', {

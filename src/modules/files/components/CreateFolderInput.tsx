@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { createClientFolder } from '../hooks/useClientFiles';
+import { supabase } from '@/shared/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CreateFolderInputProps {
   currentSubPath: string;
@@ -15,6 +17,7 @@ interface CreateFolderInputProps {
 export function CreateFolderInput({ currentSubPath, onSuccess, onClose }: CreateFolderInputProps) {
   const [folderName, setFolderName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleCreate = useCallback(async () => {
     const trimmed = folderName.trim();
@@ -26,6 +29,23 @@ export function CreateFolderInput({ currentSubPath, onSuccess, onClose }: Create
     try {
       await createClientFolder(fullPath);
       toast.success('Ordner erstellt');
+      // Log folder activity (silent — never blocks UI)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const folderDisplayName = fullPath.split('/').pop() || fullPath;
+          await supabase.from('client_file_activity').insert({
+            profile_id: session.user.id,
+            event_type: 'folder_created' as const,
+            name: folderDisplayName,
+            path: fullPath,
+            source: 'portal' as const,
+          });
+          queryClient.invalidateQueries({ queryKey: ['client-file-activity'] });
+        }
+      } catch {
+        // Silent — activity logging must never block folder creation
+      }
       setFolderName('');
       onClose();
       onSuccess();

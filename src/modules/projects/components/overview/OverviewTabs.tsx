@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { Project } from '../../types/project';
 import { ActivityFeed } from './UpdatesFeed';
@@ -6,7 +6,7 @@ import { MessagesTab } from './MessagesTab';
 import { FilesTab } from './FilesTab';
 import { useProjectComments } from '../../hooks/useProjectComments';
 import { useProjectActivity } from '../../hooks/useProjectActivity';
-import { useProjectFileActivity } from '../../hooks/useProjectFileActivity';
+import { useProjectFileActivity, useSyncFileActivity } from '../../hooks/useProjectFileActivity';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 
 interface OverviewTabsProps {
@@ -20,6 +20,10 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
   const { data: comments = [], isLoading: commentsLoading } = useProjectComments(p);
   const { data: fileEvents = [] } = useProjectFileActivity(p.id);
   const { events } = useProjectActivity(p, comments, fileEvents);
+
+  // Sync Nextcloud-direct file activity on mount / project change
+  const syncFileActivity = useSyncFileActivity(p.id);
+  useEffect(() => { syncFileActivity.mutate(); }, [p.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">

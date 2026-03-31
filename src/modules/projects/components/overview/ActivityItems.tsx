@@ -113,25 +113,54 @@ export function CommentActivityItem({ event }: { event: ActivityEvent }) {
 
 /* -- File Activity Item ---------------------------------------------- */
 
-export function FileActivityItem({ event }: { event: ActivityEvent }) {
+export function FileActivityItem({
+  event,
+  onDownload,
+}: {
+  event: ActivityEvent;
+  onDownload?: () => void;
+}) {
   const isFolder = event.fileEventType === 'folder_created';
   const icon = isFolder ? FolderAddIcon : Upload04Icon;
+  const isClickable = !isFolder && !!onDownload;
+
+  const folderPath = event.filePath?.includes('/')
+    ? event.filePath.substring(0, event.filePath.lastIndexOf('/'))
+    : null;
 
   return (
-    <div className="flex gap-2.5 items-center px-2 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover cursor-default">
+    <div
+      className={`flex gap-2.5 items-center px-2 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+      onClick={isClickable ? onDownload : undefined}
+    >
       <div
         className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center flex-shrink-0"
         style={{ background: 'var(--phase-2-light)', color: 'var(--phase-2)' }}
       >
         <HugeiconsIcon icon={icon} size={13} />
       </div>
-      <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
-        <span className="text-body text-text-primary font-medium leading-[1.35] min-w-0 truncate">
-          {event.text}
-        </span>
-        <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0 ml-2">
-          {event.timestamp}
-        </span>
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-body text-text-primary font-medium leading-[1.35] min-w-0 truncate">
+            {event.text}
+          </span>
+          <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0 ml-2">
+            {event.timestamp}
+          </span>
+        </div>
+        {(folderPath || event.actorLabel) && (
+          <div className="flex items-center gap-1.5">
+            {event.actorLabel && (
+              <span className="text-2xs text-text-tertiary">{event.actorLabel}</span>
+            )}
+            {folderPath && event.actorLabel && (
+              <span className="text-2xs text-text-tertiary">&middot;</span>
+            )}
+            {folderPath && (
+              <span className="text-2xs text-text-tertiary truncate">{folderPath}</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

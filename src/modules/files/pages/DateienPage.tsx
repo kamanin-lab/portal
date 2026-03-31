@@ -1,15 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { FolderOpenIcon } from '@hugeicons/core-free-icons';
 import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
-import { useClientFiles } from '../hooks/useClientFiles';
+import { useClientFiles, useClientFileActivity, useSyncClientFileActivity, downloadClientFile } from '../hooks/useClientFiles';
+import type { ClientFileActivityRecord } from '../hooks/useClientFiles';
 import { ClientFolderView } from '../components/ClientFolderView';
+import { FileActivityItem } from '@/modules/projects/components/overview/ActivityItems';
+import type { ActivityEvent } from '@/modules/projects/hooks/useProjectActivity';
+import { formatRelativeTime } from '@/shared/lib/date-utils';
+
+function toActivityEvent(r: ClientFileActivityRecord): ActivityEvent {
+  return {
+    id: `client-file-${r.id}`,
+    type: 'file_activity',
+    text: r.event_type === 'file_uploaded'
+      ? `Datei hinzugefuegt: ${r.name}`
+      : `Ordner erstellt: ${r.name}`,
+    timestamp: formatRelativeTime(r.created_at),
+    sortDate: r.created_at,
+    fileEventType: r.event_type,
+    filePath: r.path ?? undefined,
+    actorLabel: r.actor_label ?? undefined,
+  };
+}
 
 export function DateienPage() {
   const [pathSegments, setPathSegments] = useState<string[]>([]);
   const { notConfigured, isLoading } = useClientFiles();
+  const { data: activityRecords = [] } = useClientFileActivity();
+  const syncActivity = useSyncClientFileActivity();
+
+  useEffect(() => { syncActivity.mutate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (
@@ -30,6 +53,8 @@ export function DateienPage() {
     );
   }
 
+  const activityEvents = activityRecords.map(toActivityEvent);
+
   return (
     <ContentContainer width="narrow">
       <div className="p-6 max-[768px]:p-4">
@@ -41,6 +66,26 @@ export function DateienPage() {
           pathSegments={pathSegments}
           onNavigate={setPathSegments}
         />
+
+        {activityEvents.length > 0 && (
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1 px-2">
+              Letzte Aktivitaet
+            </p>
+            <div className="flex flex-col">
+              {activityEvents.slice(0, 10).map(event => (
+                <FileActivityItem
+                  key={event.id}
+                  event={event}
+                  onDownload={event.fileEventType === 'file_uploaded' && event.filePath
+                    ? () => downloadClientFile(event.filePath!)
+                    : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </ContentContainer>
   );

@@ -4,6 +4,7 @@ import type { ActivityEvent } from '../../hooks/useProjectActivity';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
 import { Button } from '@/shared/components/ui/button';
 import { StatusActivityItem, CommentActivityItem, FileActivityItem } from './ActivityItems';
+import { downloadFile } from '../../hooks/useNextcloudFiles';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
@@ -63,7 +64,16 @@ function ActivityItem({ event, project, onOpenStep }: {
     return <CommentActivityItem event={event} />;
   }
   if (event.type === 'file_activity') {
-    return <FileActivityItem event={event} />;
+    return (
+      <FileActivityItem
+        event={event}
+        onDownload={
+          event.fileEventType === 'file_uploaded' && event.filePath && project?.id
+            ? () => downloadFile(project.id, event.filePath!)
+            : undefined
+        }
+      />
+    );
   }
   return <StatusActivityItem event={event} project={project} onOpenStep={onOpenStep} />;
 }

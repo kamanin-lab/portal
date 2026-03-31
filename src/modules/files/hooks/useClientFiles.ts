@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import type { NextcloudFile } from '@/modules/projects/types/project';
 
@@ -176,4 +176,52 @@ export async function createClientFolder(folderPath: string): Promise<void> {
   if (!data?.ok) {
     throw new Error(data?.message || data?.code || 'Ordner konnte nicht erstellt werden');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Client file activity types + hooks
+// ---------------------------------------------------------------------------
+
+export interface ClientFileActivityRecord {
+  id: string;
+  event_type: 'file_uploaded' | 'folder_created';
+  name: string;
+  path: string | null;
+  source: 'portal' | 'nextcloud_direct';
+  actor_label: string | null;
+  created_at: string;
+}
+
+export function useClientFileActivity() {
+  return useQuery<ClientFileActivityRecord[]>({
+    queryKey: ['client-file-activity'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_file_activity')
+        .select('id, event_type, name, path, source, actor_label, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) return [];
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useSyncClientFileActivity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      try {
+        await supabase.functions.invoke('nextcloud-files', {
+          body: { action: 'sync_activity_client' },
+        });
+      } catch {
+        // Silent — sync is best-effort
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-file-activity'] });
+    },
+  });
 }

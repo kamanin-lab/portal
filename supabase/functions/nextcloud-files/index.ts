@@ -198,6 +198,83 @@ async function resolveProjectContext(
 }
 
 // ---------------------------------------------------------------------------
+// Nextcloud Activity API sync helper
+// ---------------------------------------------------------------------------
+
+interface OcsActivityItem {
+  activity_id: number;
+  type: string;
+  object_name: string;
+  datetime: string;
+}
+
+interface ActivityInsertRow {
+  event_type: 'file_uploaded' | 'folder_created';
+  name: string;
+  path: string;
+  nextcloud_activity_id: number;
+  actor_label: string;
+}
+
+async function syncActivityFromNextcloud(
+  ncUrl: string,
+  ncUser: string,
+  ncPass: string,
+  rootPath: string,
+  sinceId: number,
+): Promise<ActivityInsertRow[]> {
+  const cleanRoot = rootPath.replace(/\/+$/, '');
+  const url = `${ncUrl}/ocs/v2.php/apps/activity/api/v2/activity?format=json&type=files&limit=50&since=${sinceId}`;
+
+  const resp = await fetch(url, {
+    headers: {
+      'Authorization': basicAuth(ncUser, ncPass),
+      'OCS-APIRequest': 'true',
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!resp.ok) return [];  // Activity app may not be installed — silent
+
+  const json = await resp.json();
+  const items: OcsActivityItem[] = json?.ocs?.data ?? [];
+
+  const results: ActivityInsertRow[] = [];
+
+  for (const item of items) {
+    // Filter to only events within our project/client root
+    const objName = item.object_name || '';
+    // Nextcloud paths come as /rootPath/... or rootPath/...
+    const prefix1 = '/' + cleanRoot + '/';
+    const prefix2 = cleanRoot + '/';
+    if (!objName.startsWith(prefix1) && !objName.startsWith(prefix2)) continue;
+
+    // Map OCS event type
+    let eventType: 'file_uploaded' | 'folder_created' | null = null;
+    if (item.type === 'file_created') eventType = 'file_uploaded';
+    else if (item.type === 'folder_created' || item.type === 'dir_created') eventType = 'folder_created';
+    else continue;  // Skip other event types
+
+    // Relative path from root
+    const relativePath = objName.startsWith(prefix1)
+      ? objName.slice(prefix1.length)
+      : objName.slice(prefix2.length);
+
+    const name = relativePath.split('/').pop() || relativePath;
+
+    results.push({
+      event_type: eventType,
+      name,
+      path: relativePath,
+      nextcloud_activity_id: item.activity_id,
+      actor_label: 'Team',
+    });
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -306,7 +383,7 @@ Deno.serve(async (req) => {
     }
 
     // Actions that use profile-based client root instead of project_config_id
-    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file", "upload-client-file", "mkdir-client"];
+    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file", "upload-client-file", "mkdir-client", "sync_activity_client"];
     const requiresProjectConfigId = !CLIENT_ROOT_ACTIONS.includes(action);
 
     if (requiresProjectConfigId && !projectConfigId) {
@@ -1246,6 +1323,114 @@ Deno.serve(async (req) => {
           correlationId: requestId,
           data: { name: fileName, size: uploadFile.size, path: `${taskFolderPath}/${fileName}` },
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: sync_activity (project-scoped Nextcloud activity sync)
+    // ====================================================================
+    if (action === "sync_activity") {
+      // ctx is already resolved by the main handler for project-scoped actions
+      if (!ctx?.rootPath) {
+        return new Response(
+          JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { inserted: 0 } }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Get sinceId (MAX of already-synced activity IDs for this project)
+      const { data: sinceRow } = await supabaseService
+        .from("project_file_activity")
+        .select("nextcloud_activity_id")
+        .eq("project_config_id", projectConfigId)
+        .not("nextcloud_activity_id", "is", null)
+        .order("nextcloud_activity_id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const sinceId = (sinceRow as { nextcloud_activity_id: number } | null)?.nextcloud_activity_id ?? 0;
+
+      const rows = await syncActivityFromNextcloud(ncUrl, ncUser, ncPass, ctx.rootPath, sinceId);
+
+      let inserted = 0;
+      if (rows.length > 0) {
+        const { error: upsertErr } = await supabaseService.from("project_file_activity").upsert(
+          rows.map(r => ({
+            project_config_id: projectConfigId,
+            profile_id: user.id,
+            event_type: r.event_type,
+            name: r.name,
+            path: r.path,
+            source: "nextcloud_direct",
+            nextcloud_activity_id: r.nextcloud_activity_id,
+            actor_label: r.actor_label,
+          })),
+          { onConflict: "nextcloud_activity_id", ignoreDuplicates: true }
+        );
+        if (!upsertErr) inserted = rows.length;
+        else log.warn("sync_activity upsert error", { error: upsertErr.message });
+      }
+
+      log.info("sync_activity complete", { inserted });
+
+      return new Response(
+        JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { inserted } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: sync_activity_client (client-root Nextcloud activity sync)
+    // ====================================================================
+    if (action === "sync_activity_client") {
+      const { data: profile } = await supabaseService
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .single();
+
+      const clientRoot = (profile as { nextcloud_client_root: string | null } | null)?.nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { inserted: 0 } }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: sinceRow } = await supabaseService
+        .from("client_file_activity")
+        .select("nextcloud_activity_id")
+        .eq("profile_id", user.id)
+        .not("nextcloud_activity_id", "is", null)
+        .order("nextcloud_activity_id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const sinceId = (sinceRow as { nextcloud_activity_id: number } | null)?.nextcloud_activity_id ?? 0;
+
+      const rows = await syncActivityFromNextcloud(ncUrl, ncUser, ncPass, clientRoot, sinceId);
+
+      let inserted = 0;
+      if (rows.length > 0) {
+        const { error: upsertErr } = await supabaseService.from("client_file_activity").upsert(
+          rows.map(r => ({
+            profile_id: user.id,
+            event_type: r.event_type,
+            name: r.name,
+            path: r.path,
+            source: "nextcloud_direct",
+            nextcloud_activity_id: r.nextcloud_activity_id,
+            actor_label: r.actor_label,
+          })),
+          { onConflict: "nextcloud_activity_id", ignoreDuplicates: true }
+        );
+        if (!upsertErr) inserted = rows.length;
+        else log.warn("sync_activity_client upsert error", { error: upsertErr.message });
+      }
+
+      log.info("sync_activity_client complete", { inserted });
+
+      return new Response(
+        JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { inserted } }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
