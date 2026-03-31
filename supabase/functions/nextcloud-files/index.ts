@@ -348,6 +348,7 @@ Deno.serve(async (req) => {
     let folderPath: string | undefined;
     let taskName: string | undefined;
     let taskDate: string | undefined;
+    let itemPath: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -361,6 +362,7 @@ Deno.serve(async (req) => {
       folderPath = (formData.get("folder_path") as string) || undefined;
       taskName = (formData.get("task_name") as string) || undefined;
       taskDate = (formData.get("task_date") as string) || undefined;
+      itemPath = (formData.get("item_path") as string) || undefined;
     } else {
       const body = await req.json();
       action = body.action || "";
@@ -373,6 +375,7 @@ Deno.serve(async (req) => {
       folderPath = body.folder_path || undefined;
       taskName = body.task_name || undefined;
       taskDate = body.task_date || undefined;
+      itemPath = body.item_path || undefined;
     }
 
     if (!action) {
@@ -383,7 +386,7 @@ Deno.serve(async (req) => {
     }
 
     // Actions that use profile-based client root instead of project_config_id
-    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file", "upload-client-file", "mkdir-client", "sync_activity_client"];
+    const CLIENT_ROOT_ACTIONS = ["browse-client", "download-client-file", "upload-client-file", "mkdir-client", "delete-client", "sync_activity_client"];
     const requiresProjectConfigId = !CLIENT_ROOT_ACTIONS.includes(action);
 
     if (requiresProjectConfigId && !projectConfigId) {
@@ -734,6 +737,61 @@ Deno.serve(async (req) => {
           data: { path: folderPath },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: delete
+    // ====================================================================
+    if (action === "delete") {
+      if (!itemPath) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "item_path required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!isPathSafe(itemPath)) {
+        log.warn("Invalid item_path in delete", { itemPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid item path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const fullPath = `${ctx!.rootPath}/${itemPath}`;
+
+      // Prefix check: resolved path must stay within project root
+      if (!fullPath.startsWith(ctx!.rootPath)) {
+        log.warn("Path escape attempt in delete", { fullPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid item path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const davUrl = `${base}${encodePath(fullPath)}`;
+      log.info("delete DELETE", { davUrl });
+
+      const deleteResp = await fetch(davUrl, {
+        method: "DELETE",
+        headers: { Authorization: authHeaderNC },
+      });
+
+      // 204 = deleted, 404 = already gone — both are idempotent success
+      if (deleteResp.status === 204 || deleteResp.status === 404) {
+        log.info("delete complete", { itemPath });
+        return new Response(
+          JSON.stringify({ ok: true, code: "OK", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const errText = await deleteResp.text();
+      log.error("delete DELETE failed", { status: deleteResp.status, body: errText.slice(0, 500) });
+      return new Response(
+        JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "Löschen fehlgeschlagen", correlationId: requestId }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -1135,6 +1193,85 @@ Deno.serve(async (req) => {
           data: { path: folderPath },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ====================================================================
+    // ACTION: delete-client
+    // ====================================================================
+    if (action === "delete-client") {
+      if (!itemPath) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "item_path required", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!isPathSafe(itemPath)) {
+        log.warn("Invalid item_path in delete-client", { itemPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid item path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Derive client root from the authenticated user's profile
+      const { data: profileRow, error: profileErr } = await supabase
+        .from("profiles")
+        .select("nextcloud_client_root")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !profileRow) {
+        log.warn("Profile not found for delete-client");
+        return new Response(
+          JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
+      if (!clientRoot) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cleanClientRoot = clientRoot.replace(/\/+$/, "");
+      const fullPath = `${cleanClientRoot}/${itemPath}`;
+
+      // Prefix check: resolved path must stay within client root
+      if (!fullPath.startsWith(cleanClientRoot)) {
+        log.warn("Path escape attempt in delete-client", { fullPath });
+        return new Response(
+          JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Invalid item path", correlationId: requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const davUrl = `${base}${encodePath(fullPath)}`;
+      log.info("delete-client DELETE", { davUrl });
+
+      const deleteResp = await fetch(davUrl, {
+        method: "DELETE",
+        headers: { Authorization: authHeaderNC },
+      });
+
+      // 204 = deleted, 404 = already gone — both are idempotent success
+      if (deleteResp.status === 204 || deleteResp.status === 404) {
+        log.info("delete-client complete", { itemPath });
+        return new Response(
+          JSON.stringify({ ok: true, code: "OK", correlationId: requestId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const errText = await deleteResp.text();
+      log.error("delete-client DELETE failed", { status: deleteResp.status, body: errText.slice(0, 500) });
+      return new Response(
+        JSON.stringify({ ok: false, code: "NEXTCLOUD_ERROR", message: "Löschen fehlgeschlagen", correlationId: requestId }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

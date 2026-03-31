@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Download04Icon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Download04Icon, Loading03Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { downloadClientFile } from '../hooks/useClientFiles';
@@ -25,7 +25,7 @@ export function formatDate(iso: string): string {
   }
 }
 
-export function ClientFileRow({ file }: { file: NextcloudFile }) {
+export function ClientFileRow({ file, onDelete }: { file: NextcloudFile; onDelete?: () => void }) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleClick = useCallback(async () => {
@@ -45,7 +45,7 @@ export function ClientFileRow({ file }: { file: NextcloudFile }) {
   return (
     <div
       onClick={handleClick}
-      className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+      className="group flex items-center gap-2.5 px-2.5 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
     >
       <FileTypeIcon mimeType={file.mimeType} name={file.name} />
       <span className="flex-1 text-body font-medium text-[var(--text-primary)] truncate">
@@ -57,12 +57,21 @@ export function ClientFileRow({ file }: { file: NextcloudFile }) {
       <span className="text-xxs text-[var(--text-tertiary)] whitespace-nowrap hidden md:block">
         {formatDate(file.lastModified)}
       </span>
-      <div className="w-[24px] flex items-center justify-center flex-shrink-0">
-        {isDownloading ? (
-          <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin text-[var(--text-tertiary)]" />
-        ) : (
-          <HugeiconsIcon icon={Download04Icon} size={14} className="text-[var(--text-tertiary)]" />
+      <div className="flex items-center gap-1 flex-shrink-0">
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-[var(--text-tertiary)] hover:text-red-500"
+          >
+            <HugeiconsIcon icon={Delete02Icon} size={14} />
+          </button>
         )}
+        <div className="w-[24px] flex items-center justify-center">
+          {isDownloading
+            ? <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin text-[var(--text-tertiary)]" />
+            : <HugeiconsIcon icon={Download04Icon} size={14} className="text-[var(--text-tertiary)]" />
+          }
+        </div>
       </div>
     </div>
   );

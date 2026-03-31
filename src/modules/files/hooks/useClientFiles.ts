@@ -223,3 +223,28 @@ export function useSyncClientFileActivity() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Hook: useDeleteClientItem (mutation)
+// ---------------------------------------------------------------------------
+
+export function useDeleteClientItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (itemPath: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Nicht authentifiziert');
+      const { data, error } = await supabase.functions.invoke('nextcloud-files', {
+        body: { action: 'delete-client', item_path: itemPath },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error || !data?.ok) throw new Error(data?.message || 'Löschen fehlgeschlagen');
+    },
+    onSuccess: (_data, itemPath) => {
+      const parentPath = itemPath.includes('/')
+        ? itemPath.split('/').slice(0, -1).join('/')
+        : undefined;
+      queryClient.invalidateQueries({ queryKey: ['client-files', parentPath ?? 'root'] });
+    },
+  });
+}

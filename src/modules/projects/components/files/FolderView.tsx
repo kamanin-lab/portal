@@ -1,9 +1,11 @@
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Folder01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { Folder01Icon, ArrowRight01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 import type { Project } from '../../types/project';
-import { useNextcloudFilesByPath, useCreateFolder } from '../../hooks/useNextcloudFiles';
+import { useNextcloudFilesByPath, useCreateFolder, useDeleteItem } from '../../hooks/useNextcloudFiles';
+import { ConfirmDialog } from '@/shared/components/common/ConfirmDialog';
 import { EmptyState } from '@/shared/components/common/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton';
 import { FileRow } from './FileRow';
@@ -20,9 +22,23 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
   const subPath = pathSegments.join('/');
   const { files, isLoading, error } = useNextcloudFilesByPath(project.id, subPath);
   const createFolder = useCreateFolder(project.id);
+  const deleteItem = useDeleteItem(project.id);
+  const [pendingDelete, setPendingDelete] = useState<{ path: string; name: string; type: 'file' | 'folder' } | null>(null);
 
   const folders = files.filter((f) => f.type === 'folder');
   const fileItems = files.filter((f) => f.type === 'file');
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete) return;
+    try {
+      await deleteItem.mutateAsync(pendingDelete.path);
+      toast.success(`${pendingDelete.type === 'folder' ? 'Ordner' : 'Datei'} gelöscht`);
+    } catch (err) {
+      toast.error('Löschen fehlgeschlagen', { description: (err as Error).message });
+    } finally {
+      setPendingDelete(null);
+    }
+  }
 
   async function handleCreateFolder(name: string) {
     try {
@@ -67,17 +83,27 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
           transition={{ duration: 0.2 }}
         >
           {folders.map((f, i) => (
-            <motion.button
+            <motion.div
               key={f.path}
-              onClick={() => onNavigate([...pathSegments, f.name])}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+              className="group flex items-center rounded-[var(--r-sm)] hover:bg-[var(--surface-hover)] transition-colors"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15, delay: i * 0.03 }}
             >
-              <HugeiconsIcon icon={Folder01Icon} size={16} className="text-[var(--accent)] flex-shrink-0" />
-              <span className="text-body font-medium text-[var(--text-primary)]">{f.name}</span>
-            </motion.button>
+              <button
+                onClick={() => onNavigate([...pathSegments, f.name])}
+                className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 text-left"
+              >
+                <HugeiconsIcon icon={Folder01Icon} size={16} className="text-[var(--accent)] flex-shrink-0" />
+                <span className="text-body font-medium text-[var(--text-primary)] truncate">{f.name}</span>
+              </button>
+              <button
+                onClick={() => setPendingDelete({ path: f.path, name: f.name, type: 'folder' })}
+                className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2.5 text-[var(--text-tertiary)] hover:text-red-500"
+              >
+                <HugeiconsIcon icon={Delete02Icon} size={14} />
+              </button>
+            </motion.div>
           ))}
           {fileItems.map((f, i) => (
             <motion.div
@@ -86,11 +112,25 @@ export function FolderView({ project, pathSegments, onNavigate }: FolderViewProp
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15, delay: (folders.length + i) * 0.03 }}
             >
-              <FileRow file={f} projectConfigId={project.id} />
+              <FileRow
+                file={f}
+                projectConfigId={project.id}
+                onDelete={() => setPendingDelete({ path: f.path, name: f.name, type: 'file' })}
+              />
             </motion.div>
           ))}
         </motion.div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.type === 'folder' ? 'Ordner löschen?' : 'Datei löschen?'}
+        message={`„${pendingDelete?.name ?? ''}" wird endgültig gelöscht und kann nicht wiederhergestellt werden.`}
+        confirmLabel="Löschen"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        destructive
+      />
     </div>
   );
 }
