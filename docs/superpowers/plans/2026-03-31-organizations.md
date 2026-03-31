@@ -53,6 +53,7 @@
 | `supabase/functions/nextcloud-files/index.ts` | Read nextcloud_client_root from org |
 | `supabase/functions/update-task-status/index.ts` | Role check for credit approval |
 | `supabase/functions/send-support-message/index.ts` | Read support_task_id from org |
+| `supabase/functions/credit-topup/index.ts` | Switch from profile_id to organization_id for idempotency + insert |
 
 ---
 
@@ -1144,14 +1145,68 @@ const { data: orgMember } = await supabase
 const supportTaskId = (orgMember?.organizations as { support_task_id: string | null })?.support_task_id;
 ```
 
-- [ ] **Step 5: Commit all 4 edge function updates**
+- [ ] **Step 5: Update credit-topup — switch from profile_id to organization_id**
+
+`supabase/functions/credit-topup/index.ts` queries `credit_packages.profile_id` for both
+idempotency and insert. After Phase 4, new packages won't have `profile_id`. Fix now so the
+function is org-aware before cleanup removes the old columns.
+
+Current (lines 85, 115, 128 in `credit-topup/index.ts`):
+```typescript
+// line 85: select
+.select("id, profile_id, package_name, credits_per_month")
+
+// line 115: idempotency check
+.eq("profile_id", pkg.profile_id)
+
+// line 128: insert
+{ profile_id: pkg.profile_id, amount: pkg.credits_per_month, type: "monthly_topup", description }
+```
+
+Replace with org-aware version:
+```typescript
+// line 85: select organization_id instead of profile_id
+const { data: packages, error: pkgError } = await supabase
+  .from("credit_packages")
+  .select("id, organization_id, package_name, credits_per_month")
+  .eq("is_active", true);
+
+// ... inside loop:
+// line 115: idempotency check by organization_id
+const { data: existing } = await supabase
+  .from("credit_transactions")
+  .select("id")
+  .eq("organization_id", pkg.organization_id)   // was: .eq("profile_id", pkg.profile_id)
+  .eq("type", "monthly_topup")
+  .gte("created_at", monthStart)
+  .lt("created_at", monthEnd)
+  .limit(1);
+
+// line 126: insert with organization_id (profile_id kept as null audit trail)
+const { error: insertError } = await supabase
+  .from("credit_transactions")
+  .insert({
+    organization_id: pkg.organization_id,        // NEW: org-level
+    profile_id: null,                            // monthly topup has no actor profile
+    amount: pkg.credits_per_month,
+    type: "monthly_topup",
+    description,
+  });
+```
+
+Note: `credit_transactions.profile_id` stays NOT NULL only if the schema requires it.
+Check `credit_transactions` schema in Supabase — if `profile_id` is NOT NULL, also update Task 23
+to make it nullable before running credit-topup with `profile_id: null`.
+
+- [ ] **Step 6: Commit all 5 edge function updates**
 
 ```bash
 git add supabase/functions/create-clickup-task/index.ts
 git add supabase/functions/update-task-status/index.ts
 git add supabase/functions/nextcloud-files/index.ts
 git add supabase/functions/send-support-message/index.ts
-git commit -m "feat(edge): all edge functions read from organizations (dual-write active)"
+git add supabase/functions/credit-topup/index.ts
+git commit -m "feat(edge): all edge functions read from organizations (dual-write active, credit-topup updated)"
 ```
 
 ---
