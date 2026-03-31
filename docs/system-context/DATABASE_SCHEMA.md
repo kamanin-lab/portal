@@ -280,6 +280,55 @@ Active module registry per client. Controls which navigation items appear in the
 
 ---
 
+### 1.13 project_file_activity
+
+File activity log for the Projects module. Records both portal-initiated actions (upload, folder create) and events pulled from the Nextcloud OCS Activity API.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
+| project_config_id | uuid | NOT NULL, FK -> project_config(id) ON DELETE CASCADE | Parent project |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) | Acting user (portal user or resolved Nextcloud actor) |
+| event_type | text | NOT NULL | Activity type (e.g., `file_shared`, `file_created`, `folder_created`) |
+| file_name | text | NOT NULL | Display name of the affected file or folder |
+| file_path | text | | Full WebDAV path relative to project root |
+| actor_label | text | | Human-readable actor name from Nextcloud (e.g., "Yuri Kamanin"); NULL for portal-initiated events |
+| source | text | NOT NULL, DEFAULT 'portal' | Origin: `'portal'` (client action) or `'nextcloud'` (synced from OCS API) |
+| nextcloud_activity_id | bigint | | Nextcloud OCS activity ID; NULL for portal-initiated events |
+| created_at | timestamptz | DEFAULT now() | Timestamp of the event |
+
+**Unique Index (partial):** `(nextcloud_activity_id)` WHERE `nextcloud_activity_id IS NOT NULL` — prevents duplicate sync inserts.
+
+**RLS Policy:** Users can read rows where `profile_id = auth.uid()`. Service role used for upsert during sync.
+
+**Usage:** `useSyncFileActivity` mutation triggers `sync_activity` Edge Function action on project mount. `UpdatesFeed` queries recent rows and renders them via `FileActivityItem`.
+
+---
+
+### 1.14 client_file_activity
+
+File activity log for the Files module (client-level). Same structure as `project_file_activity` but scoped to a client's root Nextcloud folder rather than a specific project.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning client |
+| event_type | text | NOT NULL | Activity type (e.g., `file_shared`, `file_created`, `folder_created`) |
+| file_name | text | NOT NULL | Display name of the affected file or folder |
+| file_path | text | | Full WebDAV path relative to client root |
+| actor_label | text | | Human-readable actor name from Nextcloud; NULL for portal-initiated events |
+| source | text | NOT NULL, DEFAULT 'portal' | Origin: `'portal'` or `'nextcloud'` |
+| nextcloud_activity_id | bigint | | Nextcloud OCS activity ID; NULL for portal-initiated events |
+| created_at | timestamptz | DEFAULT now() | Timestamp of the event |
+
+**Unique Index (partial):** `(nextcloud_activity_id)` WHERE `nextcloud_activity_id IS NOT NULL`.
+
+**RLS Policy:** Users can read/insert rows where `profile_id = auth.uid()` (`WITH CHECK` on insert).
+
+**Usage:** `ClientActionBar` and `CreateFolderInput` insert portal events directly. `useSyncClientFileActivity` triggers `sync_activity_client` Edge Function action. `DateienPage` renders recent rows in the "Letzte Aktivität" section via `FileActivityItem`.
+
+---
+
 ## 2. Edge Functions
 
 All Edge Functions are deployed with `verify_jwt = false` in `supabase/config.toml` and perform manual JWT verification internally via `supabase.auth.getUser(token)`.
@@ -748,15 +797,20 @@ WebDAV proxy for Nextcloud file operations. Provides list, download, upload, and
 | `download` | `{ action: "download", project_config_id, file_path }` | Streams file bytes back to browser |
 | `upload` | FormData: `action`, `project_config_id`, `sub_path?`, `file` | PUTs file to `nextcloud_root_path/sub_path/filename` via WebDAV |
 | `mkdir` | `{ action: "mkdir", project_config_id, folder_path }` | Creates folder (and all intermediate directories) via recursive WebDAV MKCOL |
+| `delete` | `{ action: "delete", project_config_id, item_path }` | WebDAV DELETE on `nextcloud_root_path/item_path`. 204 or 404 → success (idempotent). Other status → 502. |
+| `delete-client` | `{ action: "delete-client", item_path }` | WebDAV DELETE using `profiles.nextcloud_client_root` as root. Same success/error handling as `delete`. No `project_config_id` needed. |
+| `sync_activity` | `{ action: "sync_activity", project_config_id }` | Calls Nextcloud OCS Activity API, filters by `nextcloud_root_path` prefix, upserts new records into `project_file_activity` (deduped by `nextcloud_activity_id`). Uses service role client. |
+| `sync_activity_client` | `{ action: "sync_activity_client" }` | Same as `sync_activity` but uses `profiles.nextcloud_client_root` and upserts into `client_file_activity`. |
 
 **Parameters:**
 
 | Parameter | Used By | Description |
 |-----------|---------|-------------|
-| `project_config_id` | all | Resolves project root path and verifies access |
+| `project_config_id` | `list`, `download`, `upload`, `mkdir`, `delete`, `sync_activity` | Resolves project root path and verifies access |
 | `sub_path` | `list`, `upload` | Path relative to `nextcloud_root_path` for arbitrary folder navigation |
 | `file_path` | `download` | Full path to the file within the project root |
 | `folder_path` | `mkdir` | Path (relative to project root) of the folder to create; intermediate folders are created automatically |
+| `item_path` | `delete`, `delete-client` | Path of the file or folder to delete, relative to the action's root path |
 
 **Security:**
 - Path traversal prevention: rejects `..`, leading `/`, control characters, and paths escaping `nextcloud_root_path`
@@ -767,7 +821,7 @@ WebDAV proxy for Nextcloud file operations. Provides list, download, upload, and
 - `NEXTCLOUD_NOT_CONFIGURED` — project has no `nextcloud_root_path` set (HTTP 200, non-error for UI)
 - `NEXTCLOUD_ERROR` — upstream Nextcloud error (HTTP 502)
 - `FOLDER_NOT_FOUND` — target folder does not exist in Nextcloud (HTTP 409)
-- `FILE_TOO_LARGE` — upload exceeds 50 MB limit (HTTP 400)
+- `FILE_TOO_LARGE` — upload exceeds size limit (HTTP 400). Only applies to `upload-task-file` action; the `upload` and `upload-client-file` actions have no size cap.
 
 ---
 
@@ -780,8 +834,7 @@ CORS configuration with origin whitelisting.
 **Allowed Origins:**
 - `https://portal.kamanin.at` (production)
 - `http://localhost:5173`, `http://localhost:5174` (local development)
-- `https://cconnect.lovable.app` — LEGACY: stale origin from original Lovable generation (no longer needed)
-- `*.lovable.app`, `*.lovableproject.com` — LEGACY: stale Lovable preview URL patterns (no longer needed)
+- `*.vercel.app` (Vercel preview URLs matching pattern `portal(-[a-z0-9-]+)?.vercel.app`)
 
 **Exports:**
 - `isAllowedOrigin(origin)` — checks if origin matches whitelist or patterns

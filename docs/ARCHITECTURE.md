@@ -23,11 +23,17 @@ pg_cron (monthly) → credit-topup Edge Function → credit_transactions insert
 - Realtime subscriptions debounced 300ms, fallback 30s polling via React Query staleTime
 
 ## Module Structure
-- `src/shared/` — auth, layout, hooks, lib, types
+- `src/shared/` — auth, layout, hooks, lib, types; also contains `pages/HilfePage` (FAQ) and `components/help/` (FaqItem, FaqSection)
 - `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
 - `src/modules/tickets/` — Tasks/Support + Credit display (live Supabase: task_cache, comment_cache, credit_transactions)
 - `src/modules/files/` — Client file browser (Nextcloud WebDAV via nextcloud-files Edge Function, root from profiles.nextcloud_client_root)
 - `src/app/` — routing, providers
+
+## Hilfe / FAQ
+- Static content — no backend calls
+- `src/shared/lib/hilfe-faq-data.ts` — `FAQ_SECTIONS` array (6 sections, 20 items, German)
+- `src/shared/pages/HilfePage.tsx` — renders FAQ sections with whileInView stagger animation
+- `src/shared/components/help/FaqItem.tsx` / `FaqSection.tsx` — accordion and section card components
 
 ## Sidebar Zones (Linear-style)
 1. **Global** — Inbox, Meine Aufgaben
@@ -86,7 +92,7 @@ Frontend deploys to Vercel from the `main` branch automatically on push.
 - **Preview URLs:** every PR / feature branch gets an auto-generated Vercel preview URL (replaces the old staging branch)
 - **`vercel.json`:** SPA rewrites for client-side routing + auth proxy (`/auth/v1/*` → `https://portal.db.kamanin.at/auth/v1/*`)
 - **Env vars (all 3 environments):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MEMORY_OPERATOR_EMAILS`
-- **Magic link** disabled until GoTrue SMTP is configured on the self-hosted instance
+- **Magic link** enabled — GoTrue SMTP configured on the self-hosted instance via Mailjet; `auth-email` Edge Function delivers branded magic link emails
 
 ### Deploy commands
 ```bash
@@ -121,9 +127,10 @@ Container: /home/deno/functions (edge-runtime v1.67.4)
 fetch-clickup-tasks, fetch-task-comments, fetch-single-task, post-task-comment, update-task-status, clickup-webhook, fetch-project-tasks, send-mailjet-email, create-clickup-task, auth-email, send-feedback, send-support-message, manage-project-memory, nextcloud-files, credit-topup, send-reminders
 
 #### nextcloud-files
-Actions: `list` (PROPFIND), `upload` (PUT), `download` (GET proxy), `mkdir` (MKCOL, recursive).
+Actions: `list` (PROPFIND), `upload` (PUT), `upload-client-file` (PUT, client files), `download` (GET proxy), `mkdir` (MKCOL, recursive), `delete` (DELETE, project files), `delete-client` (DELETE, client files).
 Parameters: `project_config_id` or direct path; `sub_path` for subfolder navigation; `folder_path` for mkdir target.
 Path safety: rejects `..` traversal and control characters.
+Upload size limit: removed from `upload` and `upload-client-file` actions; retained for `upload-task-file`.
 
 #### credit-topup
 Triggered by pg_cron on a monthly schedule.

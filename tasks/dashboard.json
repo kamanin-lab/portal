@@ -1,10 +1,19 @@
 {
-  "lastUpdated": "2026-03-23T19:00:00Z",
+  "lastUpdated": "2026-03-31T00:00:00Z",
   "status": "active",
-  "currentTask": { "id": "TASK-014", "title": "Fix Task Card Heights", "description": "Equal height cards in grid" },
-  "activeAgents": [{ "name": "implementation-agent", "status": "working", "task": "Card heights" }],
-  "pipeline": [{ "phase": "Implementation", "status": "in_progress", "agent": "implementation-agent", "notes": "" }],
+  "currentTask": null,
+  "activeAgents": [],
+  "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-017",
+      "title": "Hilfe FAQ Page",
+      "date": "2026-03-31",
+      "commits": ["9fecb7c", "aab008e", "e8aaa99", "59fb730", "3c72e24", "f558476"],
+      "summary": "Full FAQ page: 6 accordion sections, 20 items, German. FaqItem (AnimatePresence), FaqSection (icon card), hilfe-faq-data.ts. Tests added, IntersectionObserver mock, tsconfig test exclusion. GitHub Actions workflows removed (App not installed).",
+      "filesChanged": 9,
+      "reviewCycles": 1
+    },
     {
       "id": "TASK-013",
       "title": "Credit Approval Workflow + Auto-Deduction",

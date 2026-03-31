@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-03-25_
+_Status: active_ · _Last updated: 2026-03-31_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at**
@@ -29,6 +29,13 @@ First production client: MBM (Nadin Bonin). Auto-deploys from `main` via Vercel.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+### TASK-017: Hilfe FAQ Page ✅ (2026-03-31)
+- Full FAQ page replacing placeholder: 6 accordion sections, 20 items, German Sie-form
+- New components: `FaqItem` (AnimatePresence accordion), `FaqSection` (icon card)
+- Data file: `src/shared/lib/hilfe-faq-data.ts`
+- whileInView stagger animation; IntersectionObserver mock added for tests
+- GitHub Actions workflows removed (Claude Code App not installed → CI failures)
+
 ### TASK-016 and prior: See git log and CHANGELOG.md.
 
 Legend: ⬜ pending | 🔄 in progress | ✅ done | ❌ blocked | ⏭️ skipped

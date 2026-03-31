@@ -49,8 +49,9 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 |--------|------|------------|--------|
 | Project Experience | `src/modules/projects/` | Live Supabase (project_config, project_task_cache, step_enrichment) | Phase 3.6 complete |
 | Tasks/Support | `src/modules/tickets/` | Live Supabase (task_cache, comment_cache) | Phase 3.5 complete |
-| Files | `src/modules/files/` | Nextcloud WebDAV via `nextcloud-files` Edge Function | Live |
+| Files | `src/modules/files/` | Nextcloud WebDAV via `nextcloud-files` Edge Function | Live — root read-only, subfolder CRUD |
 | Shared Shell | `src/shared/` | Auth, layout, design tokens | Phase 3.5 complete |
+| Hilfe (FAQ) | `src/shared/pages/HilfePage.tsx` | Static FAQ data (`hilfe-faq-data.ts`) | Live |
 | Content Editor | `src/modules/content/` | — | Future |
 | Discovery Tool | `src/modules/discovery/` | — | Future |
 
@@ -66,10 +67,15 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
-| `supabase/functions/nextcloud-files/` | WebDAV proxy: list (`sub_path`), download, upload (`sub_path`), mkdir (`folder_path`) |
+| `supabase/functions/nextcloud-files/` | WebDAV proxy: list, download, upload (XHR progress), mkdir, delete, delete-client |
+| `src/shared/lib/upload-with-progress.ts` | Shared XHR upload utility — wraps XMLHttpRequest to expose `onProgress` (0–100) for all file uploads |
+| `src/modules/files/components/UploadProgressBar.tsx` | Animated per-file progress bar; exports `UploadItem` interface; auto-dismisses at completion |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
 | `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
 | `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache |
+| `src/shared/lib/hilfe-faq-data.ts` | FAQ content: `FaqItemData` / `FaqSectionData` types + `FAQ_SECTIONS` array (6 sections, 20 items, German) |
+| `src/shared/components/help/FaqItem.tsx` | Accordion item — AnimatePresence height animation, chevron rotation, `isLast` separator |
+| `src/shared/components/help/FaqSection.tsx` | FAQ section card — Hugeicons icon + h2 + FaqItem list |
 | `vercel.json` | SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint |
 
 ## Commands
@@ -154,8 +160,10 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   │   ├── components/ui/      # SideSheet (shadcn/ui base)
 │   │   ├── components/layout/  # AppShell, Sidebar, MobileHeader, BottomNav
 │   │   ├── components/common/  # ConfirmDialog, EmptyState, LoadingSkeleton, MessageBubble, StatusBadge
+│   │   ├── components/help/    # FaqItem (accordion), FaqSection (card)
 │   │   ├── hooks/              # useAuth, useBreakpoint, useWorkspaces
-│   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts
+│   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts, hilfe-faq-data.ts
+│   │   ├── pages/              # HilfePage (FAQ with accordion sections + whileInView stagger)
 │   │   ├── styles/tokens.css   # CSS custom properties
 │   │   └── types/              # common.ts
 │   ├── modules/

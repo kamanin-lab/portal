@@ -21,7 +21,7 @@ The stack consists of a React 19/Vite frontend deployed on Vercel, Supabase for 
 - **Deployed on Vercel** — auto-deploys from `main` branch to https://portal.kamanin.at
   - `vercel.json`: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth
   - Feature branches get Vercel preview URLs (replaces staging branch)
-  - Magic link disabled until GoTrue SMTP is configured on self-hosted Supabase
+  - Magic link enabled — GoTrue SMTP configured via Mailjet; `auth-email` Edge Function delivers branded magic link emails
 
 ### Supabase Backend
 

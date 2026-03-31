@@ -1,5 +1,63 @@
 # Changelog
 
+## Docs correction: Magic Link status — 2026-03-31
+
+- **`docs/ARCHITECTURE.md`** — corrected line stating "Magic link disabled until GoTrue SMTP is configured"; Magic Link is enabled and working via Mailjet + `auth-email` Edge Function
+- **`docs/system-context/TECH_CONTEXT.md`** — same correction applied
+- **`docs/DECISIONS.md`** — added ADR-027 documenting that Magic Link auth is enabled and recording the delivery mechanism (`auth-email` Edge Function → Mailjet)
+
+---
+
+## Upload Progress Bars + Remove 50 MB Limit — 2026-03-31
+
+- **`src/shared/lib/upload-with-progress.ts`** — new shared XHR-based upload utility; replaces `fetch()` for all file uploads to enable native `progress` event reporting
+- **`src/modules/files/components/UploadProgressBar.tsx`** — new animated progress bar component; exports `UploadItem` interface for multi-file upload state tracking; auto-dismisses at 100% after 2.5s
+- **`src/modules/files/hooks/useClientFiles.ts`** — removed `MAX_FILE_SIZE` limit; `uploadClientFile` now accepts optional `onProgress` callback
+- **`src/modules/projects/hooks/useNextcloudFiles.ts`** — removed `MAX_FILE_SIZE`; `useUploadFile` and `useUploadFileByPath` mutation args changed from `File` to `{ file, onProgress? }`
+- **`src/modules/files/components/ClientActionBar.tsx`** — multi-file upload with per-file progress bars rendered via `UploadProgressBar`
+- **`src/modules/projects/components/files/FileUpload.tsx`** — same multi-file + progress pattern
+- **`supabase/functions/nextcloud-files/index.ts`** — removed `MAX_UPLOAD_SIZE` check from `upload` and `upload-client-file` actions (retained for `upload-task-file`)
+
+---
+
+## File/Folder Deletion + Files Module Root Restrictions — 2026-03-31
+
+- **`supabase/functions/nextcloud-files/index.ts`** — added `delete` (project) and `delete-client` (client files) WebDAV DELETE actions
+- **`src/modules/files/hooks/useClientFiles.ts`** — added `useDeleteClientItem` hook
+- **`src/modules/projects/hooks/useNextcloudFiles.ts`** — added `useDeleteItem` hook
+- **`src/modules/files/components/ClientFolderView.tsx`** — root level is now read-only (upload/create buttons replaced with hint text); subfolder items show trash icon on group-hover with `ConfirmDialog` before deletion
+- **`src/modules/files/components/ClientFileRow.tsx`** — optional `onDelete` prop + group-hover trash icon
+- **`src/modules/projects/components/files/FolderView.tsx`** — folder items get trash icon; `FileRow` receives `onDelete`; `ConfirmDialog` guards deletion
+- **`src/modules/projects/components/files/FileRow.tsx`** — optional `onDelete` prop + group-hover trash icon
+- **Business rules:** Files module root = read-only (top-level folders are admin-controlled structure); Files module subfolders = full CRUD; Project chapter root folders = cannot be deleted; inside chapter folders = files and subfolders can be deleted
+
+---
+
+## Hilfe FAQ Page + GitHub Actions Cleanup — 2026-03-31
+
+### Hilfe FAQ Page
+- **`src/shared/lib/hilfe-faq-data.ts`** — new data file with `FaqItemData` / `FaqSectionData` types and `FAQ_SECTIONS` array (6 sections, 20 items, German Sie-form): Projekte, Tickets & Anfragen, Dateien, Kredite, Benachrichtigungen, Konto & Einstellungen
+- **`src/shared/components/help/FaqItem.tsx`** — independent accordion item: AnimatePresence height animation, chevron rotation, `isLast` border separator
+- **`src/shared/components/help/FaqSection.tsx`** — section card: Hugeicons icon + h2 + divider + FaqItem list
+- **`src/shared/pages/HilfePage.tsx`** — replaced placeholder with full FAQ page; `ICON_MAP` resolves iconName strings to Hugeicons components; whileInView stagger animation on section cards
+- Tests added for FaqItem, FaqSection, HilfePage; `IntersectionObserver` mock added to `src/test/setup.ts` for jsdom compatibility
+- `tsconfig.app.json` updated to exclude test files from production build
+- Fixed icon name inconsistency: `FolderOpenIcon` (not `FolderOpen01Icon`) in both data and ICON_MAP
+
+### GitHub Actions Cleanup
+- Deleted `.github/workflows/claude-code-review.yml` and `.github/workflows/claude.yml`
+- Reason: Claude Code GitHub App not installed, `ANTHROPIC_API_KEY` not in GitHub Secrets — these workflows caused CI failures on every push
+
+---
+
+## Bidirectional Nextcloud File Activity Sync — 2026-03-31
+
+- **`project_file_activity` extended** with `source`, `nextcloud_activity_id`, `actor_label` columns + partial unique index; new **`client_file_activity`** table (profile-scoped, RLS) for Files module
+- **`nextcloud-files` Edge Function** gains `sync_activity` and `sync_activity_client` actions that call the Nextcloud OCS Activity API and upsert deduped records via `nextcloud_activity_id`
+- **Projects module** auto-syncs activity on mount (`useSyncFileActivity`), renders folder path + actor in `FileActivityItem`, supports download on click; **Files module** gains "Letzte Aktivität" section reusing the same component and logs portal uploads/folder creates to `client_file_activity`
+
+---
+
 ## Recommendations Decline Fix — 2026-03-30
 
 - **Block clears after decline**: `TaskDetail.tsx` exclusion list now includes `'cancelled'` — block no longer reappears after re-opening a declined task

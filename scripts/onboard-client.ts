@@ -54,6 +54,7 @@ interface ClientConfig {
   company: string;
   clickupListIds: string[];
   supportTaskId?: string;
+  clickupChatChannelId?: string;
   nextcloudRoot?: string;
   modules: string[];
   creditPackage?: CreditConfig;
@@ -139,6 +140,7 @@ Config JSON example:
   "company": "Muster GmbH",
   "clickupListIds": ["901305442177"],
   "supportTaskId": "86c8abc123",
+  "clickupChatChannelId": "5-901512910505-8",
   "nextcloudRoot": "/clients/muster-gmbh/",
   "modules": ["tickets", "support"],
   "creditPackage": { "name": "Standard 10h", "creditsPerMonth": 10, "initialTopup": 10 },
@@ -198,6 +200,7 @@ async function main() {
     company_name: config.company,
     clickup_list_ids: config.clickupListIds,
     support_task_id: config.supportTaskId || null,
+    clickup_chat_channel_id: config.clickupChatChannelId || null,
     nextcloud_client_root: config.nextcloudRoot || null,
     email_notifications: true,
   });

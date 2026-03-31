@@ -244,6 +244,26 @@
 
 **Consequences:** Single source of truth in `docs/`. Clean separation: `docs/` = project documentation, `.planning/` = GSD workflow artifacts only. `docs/domain/` clearly signals business domain context. All `docs/planning/` references in CLAUDE.md, agent files, and README updated to `docs/domain/`.
 
+## ADR-025: XHR over fetch() for file uploads (progress events)
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** File uploads used `fetch()` which does not expose upload progress events. Users uploading large files had no feedback on upload completion. Removing the 50 MB size limit made progress reporting even more important.
+
+**Decision:** Replace `fetch()` with XHR (`XMLHttpRequest`) for all Nextcloud file upload calls. A shared utility `src/shared/lib/upload-with-progress.ts` wraps XHR and accepts an optional `onProgress` callback (0–100). Both file modules (`useClientFiles`, `useNextcloudFiles`) use this utility. Progress is visualized via the new `UploadProgressBar` component (`src/modules/files/components/UploadProgressBar.tsx`), which auto-dismisses on completion. The 50 MB `MAX_UPLOAD_SIZE` cap is removed from `upload` and `upload-client-file` Edge Function actions (retained for `upload-task-file` which is a different flow).
+
+**Consequences:** Users see per-file progress bars during upload. Large file uploads are now viable without an arbitrary size cap. XHR is used only for the upload path — all other API calls remain `fetch()`.
+
+## ADR-026: Files module root is read-only (admin-controlled structure)
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** The Files module (`src/modules/files/`) shows top-level Nextcloud folders from the client root path. These folders represent the folder structure KAMANIN sets up for each client — they are not meant to be created or deleted by clients. Previously, upload and create-folder buttons were visible at the root level, which was incorrect.
+
+**Decision:** The Files module root level is read-only for clients: no upload button, no create-folder button, no delete action on top-level items. A hint text explains that clients navigate into subfolders to work with files. Inside any subfolder, full CRUD is available: upload, create subfolder, delete files, delete subfolders. The same hierarchy applies in the Projects module: root-level chapter folders cannot be deleted; files and subfolders inside chapters can be deleted. Deletion is always guarded by a `ConfirmDialog`.
+
+**Consequences:** Clients cannot accidentally delete or modify the folder structure KAMANIN provisions for them. Admin-set structure is preserved. `ClientFolderView` and project `FolderView` both encode these rules in their component logic.
+
 ## ADR-024: Icon library migration — Hugeicons primary, Phosphor secondary
 **Date:** 2026-03-29
 **Status:** Accepted
@@ -253,3 +273,13 @@
 **Decision:** Hugeicons (`@hugeicons/react` + `@hugeicons/core-free-icons`) is the primary icon library — stroke rounded style, 5100+ icons. Phosphor Icons (`@phosphor-icons/react`) is secondary for weight variants and duotone styles. Lucide React is explicitly legacy-only: do not use for new code, do not refactor existing components that still reference it (it may still appear in older archive code).
 
 **Consequences:** CLAUDE.md Stack section updated. All agent definitions updated. Designer agent's icon strategy section already reflected this (added during 984a424). New components use Hugeicons by default.
+
+## ADR-027: Magic Link authentication enabled on self-hosted Supabase
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** Magic link authentication was initially deferred because GoTrue SMTP requires an external mail provider to be configured on the self-hosted Supabase instance. Earlier documentation and changelog entries noted it as "disabled until GoTrue SMTP is configured." The `auth-email` Edge Function was subsequently implemented to intercept all GoTrue auth emails (magic link, password reset, signup, invite, email change) and deliver branded versions via Mailjet. GoTrue SMTP was configured to point at this Edge Function.
+
+**Decision:** Magic Link is enabled and working. The `auth-email` Edge Function is the delivery mechanism — GoTrue triggers it via the send email hook, the function maps the Supabase email type to the portal `emailCopy.ts` template, and sends via Mailjet. Login page exposes the magic link option to users.
+
+**Consequences:** Users can authenticate without a password using a time-limited link sent to their email. All documentation references to magic link being disabled or pending SMTP configuration are outdated and have been corrected (ARCHITECTURE.md, TECH_CONTEXT.md). The `auth-email` Edge Function must remain deployed and Mailjet credentials must remain valid for magic link to function.
