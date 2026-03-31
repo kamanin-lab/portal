@@ -147,6 +147,13 @@ ALTER TABLE credit_transactions ADD COLUMN organization_id uuid REFERENCES organ
 ALTER TABLE client_workspaces  ADD COLUMN organization_id uuid REFERENCES organizations(id);
 ALTER TABLE support_messages   ADD COLUMN organization_id uuid REFERENCES organizations(id);
 ALTER TABLE profiles           ADD COLUMN organization_id uuid REFERENCES organizations(id);
+
+-- IMPORTANT: add unique constraint now so Phase 2 upserts with
+-- onConflict:"clickup_id,organization_id" work immediately.
+-- organization_id is still NULL here; PostgreSQL treats NULL != NULL
+-- so existing rows don't conflict (safe additive addition).
+ALTER TABLE task_cache ADD CONSTRAINT task_cache_clickup_id_org_key
+  UNIQUE(clickup_id, organization_id);
 ```
 
 - [ ] **Step 2: Apply in Supabase SQL Editor**
@@ -184,37 +191,42 @@ git commit -m "feat(db): add nullable organization_id to 6 tables (additive, dua
 -- supabase/migrations/20260331000003_organizations_data_migration.sql
 -- One org per existing profile. Slug = slugified company_name.
 -- Migrate org fields (clickup_list_ids etc.) from profiles to organizations.
+-- Uses DO block so slug is computed exactly once per profile (no fragile JOIN on slug).
 
--- 1. Create orgs from profiles
-INSERT INTO organizations (name, slug, clickup_list_ids, nextcloud_client_root, support_task_id, clickup_chat_channel_id)
-SELECT
-  COALESCE(company_name, full_name, email),
-  lower(regexp_replace(
-    COALESCE(company_name, full_name, email),
-    '[^a-z0-9]+', '-', 'g'
-  )),
-  COALESCE(clickup_list_ids, '[]'::jsonb),
-  nextcloud_client_root,
-  support_task_id,
-  clickup_chat_channel_id
-FROM profiles;
+-- 1 + 2. Create org AND org_members in one loop per profile.
+-- Slug generated once → no risk of regex edge case mismatch on JOIN.
+DO $$
+DECLARE
+  p   RECORD;
+  org_id uuid;
+  the_slug text;
+BEGIN
+  FOR p IN SELECT * FROM profiles LOOP
+    -- Generate slug once, strip leading/trailing hyphens from edge cases
+    the_slug := trim(both '-' from lower(regexp_replace(
+      trim(COALESCE(p.company_name, p.full_name, p.email)),
+      '[^a-z0-9]+', '-', 'g'
+    )));
+    -- Ensure slug is never empty
+    IF the_slug = '' THEN
+      the_slug := 'org-' || replace(p.id::text, '-', '')::text;
+    END IF;
 
--- 2. Create admin org_members for each profile
--- Match profile → org by slug (same slug generation as above)
-INSERT INTO org_members (organization_id, profile_id, role, status, accepted_at, invite_email)
-SELECT
-  o.id,
-  p.id,
-  'admin',
-  'active',
-  now(),
-  p.email
-FROM profiles p
-JOIN organizations o
-  ON o.slug = lower(regexp_replace(
-    COALESCE(p.company_name, p.full_name, p.email),
-    '[^a-z0-9]+', '-', 'g'
-  ));
+    INSERT INTO organizations (name, slug, clickup_list_ids, nextcloud_client_root, support_task_id, clickup_chat_channel_id)
+    VALUES (
+      COALESCE(p.company_name, p.full_name, p.email),
+      the_slug,
+      COALESCE(p.clickup_list_ids, '[]'::jsonb),
+      p.nextcloud_client_root,
+      p.support_task_id,
+      p.clickup_chat_channel_id
+    )
+    RETURNING id INTO org_id;
+
+    INSERT INTO org_members (organization_id, profile_id, role, status, accepted_at, invite_email)
+    VALUES (org_id, p.id, 'admin', 'active', now(), p.email);
+  END LOOP;
+END $$;
 
 -- 3. Fast-lookup: populate profiles.organization_id
 UPDATE profiles p
@@ -296,10 +308,16 @@ RETURNS text AS $$
   WHERE profile_id = auth.uid() AND organization_id = org_id AND status = 'active'
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
--- org_members: simple policy (cannot use user_org_ids here — circular reference)
+-- org_members: two policies
+-- (1) cannot use user_org_ids here — circular reference — use simple profile_id check for SELECT
+-- (2) admins manage their org's members using user_org_role() which is SECURITY DEFINER (bypasses RLS)
 ALTER TABLE org_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "members_see_own_row" ON org_members
   FOR SELECT USING (profile_id = auth.uid());
+-- Admin can INSERT/UPDATE/DELETE any org_members row in their own org
+-- user_org_role() is SECURITY DEFINER so it bypasses RLS on org_members (no circular reference)
+CREATE POLICY "admin_manage_org_members" ON org_members
+  FOR ALL USING (user_org_role(organization_id) = 'admin');
 
 -- organizations: members can read their org
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
@@ -850,8 +868,27 @@ export async function routeNotifications(
     if (error) log.error("notification insert failed", { error: error.message });
   }
 
-  // TODO Task 10b: trigger Mailjet emails for uniqueEmail recipients
-  // (use existing email trigger pattern from current clickup-webhook)
+  // Send emails to uniqueEmail recipients who have email_notifications enabled
+  const emailsToSend = uniqueEmail.filter((m) => m.emailNotifications);
+  for (const m of emailsToSend) {
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-mailjet-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          to: m.email,
+          subject: `Portal: ${taskName}`,
+          htmlContent: `<p>Status: <strong>${eventType}</strong></p><p>Aufgabe: ${taskName}</p>`,
+        }),
+      });
+    } catch (emailErr) {
+      log.error("email send failed", { to: m.email, error: String(emailErr) });
+      // best-effort — do not throw; notification bell is already inserted
+    }
+  }
 }
 ```
 
@@ -900,11 +937,22 @@ Deno.serve(async (req) => {
   );
   if (userError || !user) return new Response("Unauthorized", { status: 401 });
 
-  // Find pending invite matching this user's email
+  // organization_id is passed in the request body (extracted from ?org= query param by the frontend)
+  // Filtering by both email AND organization_id prevents wrong-org collision
+  // and handles cases where the same user is invited to multiple orgs
+  const { organization_id } = await req.json().catch(() => ({}));
+  if (!organization_id) {
+    return new Response(
+      JSON.stringify({ error: "organization_id erforderlich" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const { data: invite, error: inviteError } = await supabase
     .from("org_members")
     .select("id, organization_id")
     .eq("invite_email", user.email)
+    .eq("organization_id", organization_id)
     .eq("status", "pending")
     .is("accepted_at", null)
     .maybeSingle();
@@ -1337,13 +1385,42 @@ channel.on('postgres_changes', {
 .eq('organization_id', orgId)
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Verify REPLICA IDENTITY FULL on task_cache before switching Realtime filter**
+
+Realtime postgres_changes filters only work on columns included in REPLICA IDENTITY.
+Run in SQL Editor:
+```sql
+SELECT relreplident FROM pg_class WHERE relname = 'task_cache';
+-- Expected: 'f' (FULL). If 'd' (DEFAULT), run:
+-- ALTER TABLE task_cache REPLICA IDENTITY FULL;
+```
+ADR-019 should have already set this — verification is a pre-flight check, not a new migration.
+
+- [ ] **Step 5: Update CreditBalance hook to query by organization_id**
+
+Find where `credit_packages` is queried (likely `src/shared/components/layout/SidebarUtilities.tsx` CreditBalance or a `useCredits` hook):
+```bash
+grep -r "credit_packages\|useCredits\|CreditBalance" src/ --include="*.ts" --include="*.tsx" -l
+```
+Replace the `profile_id` filter with `organization_id`:
+```typescript
+// OLD
+.eq('profile_id', user.id)
+
+// NEW — query by org so all members see shared credit balance
+const { orgId } = useOrganization()
+// ...
+.eq('organization_id', orgId!)
+// Update queryKey to ['credits', 'org', orgId]
+```
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/modules/tickets/hooks/useClickUpTasks.ts
 git add src/modules/tickets/hooks/useSingleTask.ts
 git add src/shared/components/layout/Sidebar.tsx
-git commit -m "feat(hooks): filter task_cache + sidebar by organization_id"
+git commit -m "feat(hooks): filter task_cache + sidebar by organization_id; verify REPLICA IDENTITY"
 ```
 
 ---
@@ -1741,7 +1818,9 @@ Deno.serve(async (req) => {
   const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: `${Deno.env.get("SITE_URL")}/accept-invite` },
+    // Include organization_id in redirect so accept-org-invite can look up by (email, org_id)
+    // instead of just email — prevents wrong-org invite collision
+    options: { redirectTo: `${Deno.env.get("SITE_URL")}/accept-invite?org=${organization_id}` },
   });
 
   if (linkError || !linkData.properties?.action_link) {
@@ -2014,14 +2093,11 @@ Run `supabase/migrations/20260331_rls_tests.sql` in SQL Editor. All 4 tests must
 -- supabase/migrations/20260331000010_drop_dual_write.sql
 -- ONLY run after Phase 3 is verified stable in production
 
--- 1. Drop old unique constraints
+-- 1. Drop old profile-id unique constraint (org-level constraint already exists from Task 2)
 ALTER TABLE task_cache DROP CONSTRAINT IF EXISTS task_cache_clickup_id_profile_id_key;
+-- task_cache_clickup_id_org_key already exists (added in Task 2 migration)
 
--- 2. Add new org-level unique constraint on task_cache
-ALTER TABLE task_cache ADD CONSTRAINT task_cache_clickup_id_org_key
-  UNIQUE(clickup_id, organization_id);
-
--- 3. Make organization_id NOT NULL where data is complete
+-- 2. Make organization_id NOT NULL where data is complete
 ALTER TABLE task_cache ALTER COLUMN organization_id SET NOT NULL;
 ALTER TABLE credit_packages ALTER COLUMN organization_id SET NOT NULL;
 ALTER TABLE client_workspaces ALTER COLUMN organization_id SET NOT NULL;
