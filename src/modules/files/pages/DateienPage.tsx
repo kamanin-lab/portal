@@ -16,7 +16,7 @@ function toActivityEvent(r: ClientFileActivityRecord): ActivityEvent {
     id: `client-file-${r.id}`,
     type: 'file_activity',
     text: r.event_type === 'file_uploaded'
-      ? `Datei hinzugefuegt: ${r.name}`
+      ? `Datei hinzugefügt: ${r.name}`
       : `Ordner erstellt: ${r.name}`,
     timestamp: formatRelativeTime(r.created_at),
     sortDate: r.created_at,
@@ -70,7 +70,7 @@ export function DateienPage() {
         {activityEvents.length > 0 && (
           <div className="mt-6">
             <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1 px-2">
-              Letzte Aktivitaet
+              Letzte Aktivität
             </p>
             <div className="flex flex-col">
               {activityEvents.slice(0, 10).map(event => (
