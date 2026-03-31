@@ -220,6 +220,11 @@ BEGIN
     IF the_slug = '' THEN
       the_slug := 'org-' || replace(p.id::text, '-', '')::text;
     END IF;
+    -- Collision guard: if slug already taken, append short UUID suffix (first 8 chars of profile id)
+    -- Prevents UNIQUE violation killing the entire DO block when two profiles share the same company name
+    IF EXISTS (SELECT 1 FROM organizations WHERE slug = the_slug) THEN
+      the_slug := the_slug || '-' || left(replace(p.id::text, '-', ''), 8);
+    END IF;
 
     INSERT INTO organizations (name, slug, clickup_list_ids, nextcloud_client_root, support_task_id, clickup_chat_channel_id)
     VALUES (
@@ -576,7 +581,7 @@ export async function findOrgForTask(
   const { data: org, error } = await supabase
     .from("organizations")
     .select("id")
-    .contains("clickup_list_ids", JSON.stringify([listId]))
+    .contains("clickup_list_ids", [listId])  // Pass array directly — PostgREST serializes to JSONB, JSON.stringify causes double-encoding
     .maybeSingle();
 
   if (error || !org) return null;
