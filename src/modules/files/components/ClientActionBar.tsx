@@ -5,10 +5,9 @@ import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { uploadClientFile } from '../hooks/useClientFiles';
 import { CreateFolderInput } from './CreateFolderInput';
+import { UploadProgressBar, type UploadItem } from './UploadProgressBar';
 import { supabase } from '@/shared/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 interface ClientActionBarProps {
   currentSubPath: string;
@@ -16,58 +15,74 @@ interface ClientActionBarProps {
 }
 
 export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarProps) {
-  const [isUploading, setIsUploading] = useState(false);
   const [showFolderInput, setShowFolderInput] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const isUploading = uploadItems.some(item => item.status === 'uploading');
 
   const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
-  const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset input so the same file can be re-selected
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
     e.target.value = '';
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('Datei zu gross', {
-        description: 'Maximale Dateigrösse: 50 MB',
-      });
-      return;
-    }
+    const newItems: UploadItem[] = files.map(f => ({
+      id: crypto.randomUUID(),
+      name: f.name,
+      loaded: 0,
+      total: f.size,
+      status: 'uploading' as const,
+    }));
+    setUploadItems(prev => [...prev, ...newItems]);
 
-    setIsUploading(true);
-    try {
-      await uploadClientFile(currentSubPath, file);
-      toast.success('Datei hochgeladen');
-      // Log file activity (silent — never blocks UI)
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          await supabase.from('client_file_activity').insert({
-            profile_id: session.user.id,
-            event_type: 'file_uploaded' as const,
-            name: file.name,
-            path: currentSubPath ? `${currentSubPath}/${file.name}` : file.name,
-            source: 'portal' as const,
+    await Promise.allSettled(
+      files.map((file, i) => {
+        const id = newItems[i].id;
+        return uploadClientFile(currentSubPath, file, ({ loaded, total }) => {
+          setUploadItems(prev =>
+            prev.map(item => item.id === id ? { ...item, loaded, total } : item)
+          );
+        })
+          .then(async () => {
+            setUploadItems(prev =>
+              prev.map(item => item.id === id ? { ...item, status: 'done', loaded: item.total } : item)
+            );
+            queryClient.invalidateQueries({ queryKey: ['client-files'] });
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user?.id) {
+                await supabase.from('client_file_activity').insert({
+                  profile_id: session.user.id,
+                  event_type: 'file_uploaded' as const,
+                  name: file.name,
+                  path: currentSubPath ? `${currentSubPath}/${file.name}` : file.name,
+                  source: 'portal' as const,
+                });
+                queryClient.invalidateQueries({ queryKey: ['client-file-activity'] });
+              }
+            } catch {
+              // Silent — activity logging must never block uploads
+            }
+          })
+          .catch(() => {
+            setUploadItems(prev =>
+              prev.map(item => item.id === id ? { ...item, status: 'error' } : item)
+            );
+            toast.error(`Upload fehlgeschlagen: ${file.name}`);
           });
-          queryClient.invalidateQueries({ queryKey: ['client-file-activity'] });
-        }
-      } catch {
-        // Silent — activity logging must never block uploads
-      }
-      onSuccess();
-    } catch (err) {
-      toast.error('Upload fehlgeschlagen', {
-        description: (err as Error).message || 'Bitte erneut versuchen.',
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  }, [currentSubPath, onSuccess]);
+      })
+    );
+
+    // Auto-clear done items after 2.5s
+    setTimeout(() => {
+      setUploadItems(prev => prev.filter(item => item.status !== 'done'));
+    }, 2500);
+  }
 
   return (
     <div className="mb-3">
@@ -84,7 +99,7 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
           ) : (
             <HugeiconsIcon icon={Upload04Icon} size={14} />
           )}
-          {isUploading ? 'Wird hochgeladen...' : 'Datei hochladen'}
+          {isUploading ? 'Wird hochgeladen...' : 'Dateien hochladen'}
         </Button>
 
         <Button
@@ -101,10 +116,20 @@ export function ClientActionBar({ currentSubPath, onSuccess }: ClientActionBarPr
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           className="hidden"
           onChange={handleFileSelected}
         />
       </div>
+
+      {/* Upload progress bars */}
+      {uploadItems.length > 0 && (
+        <div className="mt-2 flex flex-col gap-0.5">
+          {uploadItems.map(item => (
+            <UploadProgressBar key={item.id} item={item} />
+          ))}
+        </div>
+      )}
 
       {/* Inline folder name input */}
       {showFolderInput && (

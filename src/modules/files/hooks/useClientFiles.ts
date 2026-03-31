@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
+import { uploadWithProgress } from '@/shared/lib/upload-with-progress';
+import type { UploadProgressEvent } from '@/shared/lib/upload-with-progress';
 import type { NextcloudFile } from '@/modules/projects/types/project';
 
 interface BrowseClientResponse {
@@ -117,7 +119,11 @@ export async function downloadClientFile(filePath: string): Promise<void> {
  * Uses the upload-client-file Edge Function action which derives the root
  * from the authenticated user's profiles.nextcloud_client_root.
  */
-export async function uploadClientFile(subPath: string, file: File): Promise<void> {
+export async function uploadClientFile(
+  subPath: string,
+  file: File,
+  onProgress?: (e: UploadProgressEvent) => void,
+): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Nicht authentifiziert');
 
@@ -130,28 +136,20 @@ export async function uploadClientFile(subPath: string, file: File): Promise<voi
   }
   formData.append('file', file);
 
-  const resp = await fetch(`${supabaseUrl}/functions/v1/nextcloud-files`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: formData,
-  });
+  const result = await uploadWithProgress(
+    `${supabaseUrl}/functions/v1/nextcloud-files`,
+    formData,
+    { Authorization: `Bearer ${session.access_token}` },
+    onProgress,
+  );
 
-  if (!resp.ok) {
+  if (!result.ok) {
     let message = 'Upload fehlgeschlagen';
     try {
-      const err = await resp.json();
+      const err = JSON.parse(result.body) as Record<string, string>;
       message = err.message || err.code || message;
-    } catch {
-      // keep default message
-    }
+    } catch { /* keep default */ }
     throw new Error(message);
-  }
-
-  const result = await resp.json();
-  if (!result.ok) {
-    throw new Error(result.message || result.code || 'Upload fehlgeschlagen');
   }
 }
 

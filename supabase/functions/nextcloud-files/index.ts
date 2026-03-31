@@ -611,15 +611,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // 50 MB limit
-      const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
-      if (uploadFile.size > MAX_UPLOAD_SIZE) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "FILE_TOO_LARGE", message: "Max 50 MB", correlationId: requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
       const fileName = uploadFile.name;
       // Sanitise filename
       if (!isPathSafe(fileName)) {
@@ -948,15 +939,6 @@ Deno.serve(async (req) => {
       if (!uploadFile) {
         return new Response(
           JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "file field required", correlationId: requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      // 50 MB limit
-      const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
-      if (uploadFile.size > MAX_UPLOAD_SIZE) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "FILE_TOO_LARGE", message: "Max 50 MB", correlationId: requestId }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }

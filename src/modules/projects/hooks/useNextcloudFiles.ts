@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
+import { uploadWithProgress } from '@/shared/lib/upload-with-progress';
+import type { UploadProgressEvent } from '@/shared/lib/upload-with-progress';
 import type { NextcloudFile } from '../types/project';
 
 // ---------------------------------------------------------------------------
@@ -136,7 +138,7 @@ export function useUploadFile(projectConfigId: string, chapterSortOrder?: number
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (file: File): Promise<UploadResponse> => {
+    mutationFn: async ({ file, onProgress }: { file: File; onProgress?: (e: UploadProgressEvent) => void }): Promise<UploadResponse> => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Nicht authentifiziert');
 
@@ -148,20 +150,22 @@ export function useUploadFile(projectConfigId: string, chapterSortOrder?: number
       }
       formData.append('file', file);
 
-      // supabase.functions.invoke doesn't support FormData well for streaming,
-      // so use raw fetch to the Edge Function endpoint.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const resp = await fetch(`${supabaseUrl}/functions/v1/nextcloud-files`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: formData,
-      });
+      const result = await uploadWithProgress(
+        `${supabaseUrl}/functions/v1/nextcloud-files`,
+        formData,
+        { Authorization: `Bearer ${session.access_token}` },
+        onProgress,
+      );
 
-      const result: UploadResponse = await resp.json();
-      if (!result.ok) throw new Error(result.code || 'Upload fehlgeschlagen');
-      return result;
+      let parsed: UploadResponse;
+      try {
+        parsed = JSON.parse(result.body) as UploadResponse;
+      } catch {
+        throw new Error('Upload fehlgeschlagen');
+      }
+      if (!parsed.ok) throw new Error(parsed.code || 'Upload fehlgeschlagen');
+      return parsed;
     },
     onSuccess: () => {
       // Invalidate file list for this folder
@@ -179,7 +183,7 @@ export function useUploadFileByPath(projectConfigId: string, subPath: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (file: File): Promise<UploadResponse> => {
+    mutationFn: async ({ file, onProgress }: { file: File; onProgress?: (e: UploadProgressEvent) => void }): Promise<UploadResponse> => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Nicht authentifiziert');
 
@@ -190,17 +194,23 @@ export function useUploadFileByPath(projectConfigId: string, subPath: string) {
       formData.append('file', file);
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const resp = await fetch(`${supabaseUrl}/functions/v1/nextcloud-files`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: formData,
-      });
+      const result = await uploadWithProgress(
+        `${supabaseUrl}/functions/v1/nextcloud-files`,
+        formData,
+        { Authorization: `Bearer ${session.access_token}` },
+        onProgress,
+      );
 
-      const result: UploadResponse = await resp.json();
-      if (!result.ok) throw new Error(result.code || 'Upload fehlgeschlagen');
-      return result;
+      let parsed: UploadResponse;
+      try {
+        parsed = JSON.parse(result.body) as UploadResponse;
+      } catch {
+        throw new Error('Upload fehlgeschlagen');
+      }
+      if (!parsed.ok) throw new Error(parsed.code || 'Upload fehlgeschlagen');
+      return parsed;
     },
-    onSuccess: async (_data, file) => {
+    onSuccess: async (_data, { file }) => {
       queryClient.invalidateQueries({ queryKey: ['nextcloud-files', projectConfigId, subPath] });
       // Also invalidate root if uploading to a chapter root
       if (!subPath.includes('/')) {
