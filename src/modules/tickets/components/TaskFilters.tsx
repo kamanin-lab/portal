@@ -96,9 +96,8 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
 
   // On mobile: dropdown shows all filters; on desktop: only secondary filters
   const dropdownFilters = isMobile ? ALL_FILTERS : MORE_FILTERS
-  const moreIsActive = isMobile
-    ? active !== 'attention'
-    : MORE_FILTERS.includes(active)
+  // Filter button is highlighted when a non-default filter is active
+  const moreIsActive = isMobile ? active !== 'all' : MORE_FILTERS.includes(active)
 
   return (
     <div className="flex items-center gap-1.5">
@@ -123,7 +122,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
       </div>
 
       {/* Mobile: show active filter label */}
-      {isMobile && active !== 'attention' && (
+      {isMobile && (
         <span className="text-xs text-text-secondary flex-1 truncate">
           {FILTER_LABELS[active]}
           <span className="ml-1 text-text-tertiary">({countByFilter(tasks, active)})</span>
@@ -136,7 +135,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
           onClick={() => setMoreOpen(v => !v)}
           className={cn(
             'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
-            moreIsActive && !['attention'].includes(active) && MORE_FILTERS.includes(active)
+            moreIsActive
               ? 'bg-accent text-white border-accent'
               : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
           )}
