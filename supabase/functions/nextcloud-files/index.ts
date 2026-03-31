@@ -224,7 +224,7 @@ async function syncActivityFromNextcloud(
   sinceId: number,
 ): Promise<ActivityInsertRow[]> {
   const cleanRoot = rootPath.replace(/\/+$/, '');
-  const url = `${ncUrl}/ocs/v2.php/apps/activity/api/v2/activity?format=json&type=files&limit=50&since=${sinceId}`;
+  const url = `${ncUrl}/ocs/v2.php/apps/activity/api/v2/activity?format=json&type=files&limit=50&since=${sinceId}&sort=asc`;
 
   const resp = await fetch(url, {
     headers: {
