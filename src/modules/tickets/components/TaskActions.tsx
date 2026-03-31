@@ -32,7 +32,7 @@ export function TaskActions({ taskId, status }: TaskActionsProps) {
   return (
     <div className="flex flex-col gap-2.5">
       {needsAttention && (
-        <div className="flex items-center gap-2 p-3.5 bg-awaiting-bg border border-awaiting/40 rounded-[var(--r-md)] flex-wrap">
+        <div className="flex items-center gap-2 p-3.5 bg-[var(--phase-2-light)] border border-[var(--phase-2)]/30 rounded-[var(--r-md)] flex-wrap">
           <div className="flex-1 min-w-0">
             <div className="text-body font-semibold text-text-primary">{dict.labels.filterAttention}</div>
             <div className="text-xs text-text-secondary mt-0.5">{dict.dialogs.descPlaceholder}</div>
