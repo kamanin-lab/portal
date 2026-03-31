@@ -1,4 +1,4 @@
-import { HugeiconsIcon } from '@hugeicons/react'
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
 import type { FaqItemData } from '@/shared/lib/hilfe-faq-data'
 import { FaqItem } from './FaqItem'
 
@@ -6,7 +6,7 @@ interface FaqSectionProps {
   section: {
     id: string
     title: string
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+    icon: IconSvgElement
     items: FaqItemData[]
   }
 }
