@@ -33,6 +33,7 @@
 | `src/modules/organisation/components/TeamSection.tsx` | Members table with role/remove actions |
 | `src/modules/organisation/components/InviteMemberDialog.tsx` | Invite modal (email + role) |
 | `src/modules/organisation/components/ProjectAccessSection.tsx` | Member × project access grid |
+| `src/modules/organisation/pages/AcceptInvitePage.tsx` | Invite accept landing page — reads ?org= param, calls accept-org-invite EF, redirects to /inbox |
 
 ### Modified files
 | File | Change |
@@ -54,6 +55,7 @@
 | `supabase/functions/update-task-status/index.ts` | Role check for credit approval |
 | `supabase/functions/send-support-message/index.ts` | Read support_task_id from org |
 | `supabase/functions/credit-topup/index.ts` | Switch from profile_id to organization_id for idempotency + insert |
+| `supabase/functions/fetch-single-task/index.ts` | Replace profiles.clickup_list_ids access check with org_members → organizations lookup |
 
 ---
 
@@ -155,6 +157,12 @@ ALTER TABLE profiles           ADD COLUMN organization_id uuid REFERENCES organi
 -- so existing rows don't conflict (safe additive addition).
 ALTER TABLE task_cache ADD CONSTRAINT task_cache_clickup_id_org_key
   UNIQUE(clickup_id, organization_id);
+
+-- IMPORTANT: make credit_transactions.profile_id nullable now.
+-- Task 13 Step 5 (credit-topup) will insert rows with profile_id=null
+-- (monthly topup has no actor profile — organization_id is the owner).
+-- Existing rows already have profile_id populated — safe to relax.
+ALTER TABLE credit_transactions ALTER COLUMN profile_id DROP NOT NULL;
 ```
 
 - [ ] **Step 2: Apply in Supabase SQL Editor**
@@ -1060,13 +1068,15 @@ git commit -m "feat(edge): fetch-clickup-tasks reads list_ids from organizations
 
 ---
 
-### Task 13: Update create-clickup-task + update-task-status + nextcloud-files + send-support-message
+### Task 13: Update create-clickup-task + update-task-status + nextcloud-files + send-support-message + fetch-single-task
 
 **Files:**
 - Modify: `supabase/functions/create-clickup-task/index.ts`
 - Modify: `supabase/functions/update-task-status/index.ts`
 - Modify: `supabase/functions/nextcloud-files/index.ts`
 - Modify: `supabase/functions/send-support-message/index.ts`
+- Modify: `supabase/functions/fetch-single-task/index.ts`
+- Modify: `supabase/functions/credit-topup/index.ts`
 
 - [ ] **Step 1: create-clickup-task — read list_id + role check from org**
 
@@ -1145,7 +1155,40 @@ const { data: orgMember } = await supabase
 const supportTaskId = (orgMember?.organizations as { support_task_id: string | null })?.support_task_id;
 ```
 
-- [ ] **Step 5: Update credit-topup — switch from profile_id to organization_id**
+- [ ] **Step 5: Update fetch-single-task — replace profiles.clickup_list_ids lookup with org lookup**
+
+`supabase/functions/fetch-single-task/index.ts` uses `profiles.clickup_list_ids` to verify the
+calling user has access to the requested task (access control). Task 23 drops `clickup_list_ids`
+from `profiles` — this function will return access denied for all users after Phase 4 cleanup.
+
+Find the access check (look for `profiles` select with `clickup_list_ids`). Replace with org lookup
+mirroring Task 12 (`fetch-clickup-tasks`):
+
+```typescript
+// OLD: reads from profiles.clickup_list_ids
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("clickup_list_ids")
+  .eq("id", userId)
+  .single();
+const listIds: string[] = profile?.clickup_list_ids ?? [];
+
+// NEW: reads from organizations via org_members
+const { data: orgMember } = await supabase
+  .from("org_members")
+  .select("organizations(clickup_list_ids)")
+  .eq("profile_id", userId)
+  .eq("status", "active")
+  .maybeSingle();
+
+const listIds: string[] = (orgMember?.organizations as { clickup_list_ids: string[] } | null)
+  ?.clickup_list_ids ?? [];
+```
+
+Verify: the remainder of `fetch-single-task` (ClickUp API call, task_cache upsert, return) is
+unchanged. Only the access-check lookup changes.
+
+- [ ] **Step 6: Update credit-topup — switch from profile_id to organization_id**
 
 `supabase/functions/credit-topup/index.ts` queries `credit_packages.profile_id` for both
 idempotency and insert. After Phase 4, new packages won't have `profile_id`. Fix now so the
@@ -1194,19 +1237,19 @@ const { error: insertError } = await supabase
   });
 ```
 
-Note: `credit_transactions.profile_id` stays NOT NULL only if the schema requires it.
-Check `credit_transactions` schema in Supabase — if `profile_id` is NOT NULL, also update Task 23
-to make it nullable before running credit-topup with `profile_id: null`.
+Note: `credit_transactions.profile_id` is made nullable in Task 2 migration (this same phase),
+so `profile_id: null` is safe by the time this step runs.
 
-- [ ] **Step 6: Commit all 5 edge function updates**
+- [ ] **Step 7: Commit all 6 edge function updates**
 
 ```bash
 git add supabase/functions/create-clickup-task/index.ts
 git add supabase/functions/update-task-status/index.ts
 git add supabase/functions/nextcloud-files/index.ts
 git add supabase/functions/send-support-message/index.ts
+git add supabase/functions/fetch-single-task/index.ts
 git add supabase/functions/credit-topup/index.ts
-git commit -m "feat(edge): all edge functions read from organizations (dual-write active, credit-topup updated)"
+git commit -m "feat(edge): all edge functions read from organizations (dual-write active, credit-topup + fetch-single-task updated)"
 ```
 
 ---
@@ -1469,13 +1512,33 @@ const { orgId } = useOrganization()
 // Update queryKey to ['credits', 'org', orgId]
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Update useWorkspaces.ts to filter by organization_id**
+
+`src/shared/hooks/useWorkspaces.ts` currently filters `client_workspaces` by `profile_id`.
+After Task 14 drops the old profile_id RLS policy, this query will return zero rows and the
+sidebar will show no workspaces for any user.
+
+Find the query in `useWorkspaces.ts`:
+```typescript
+// OLD
+.eq('profile_id', user.id)
+
+// NEW — filter by org so all org members see shared workspaces
+const { orgId } = useOrganization()
+// ...
+.eq('organization_id', orgId!)
+// Update queryKey to include orgId, e.g. ['workspaces', orgId]
+// enabled: !!orgId (guard against undefined)
+```
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/modules/tickets/hooks/useClickUpTasks.ts
 git add src/modules/tickets/hooks/useSingleTask.ts
 git add src/shared/components/layout/Sidebar.tsx
-git commit -m "feat(hooks): filter task_cache + sidebar by organization_id; verify REPLICA IDENTITY"
+git add src/shared/hooks/useWorkspaces.ts
+git commit -m "feat(hooks): filter task_cache + workspaces + sidebar by organization_id; verify REPLICA IDENTITY"
 ```
 
 ---
@@ -1603,6 +1666,10 @@ export function TeamSection() {
     enabled: !!orgId,
   })
 
+  // Direct Supabase writes (no Edge Function wrapper) — intentional pattern exception.
+  // Rationale: admin_manage_org_members RLS policy enforces server-side that only admins can
+  // mutate org_members rows. Adding an EF wrapper would add ~200ms latency with zero security gain.
+  // Documented deviation from the "destructive writes through EF" default.
   const changeRole = useMutation({
     mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: 'member' | 'viewer' }) => {
       const { error } = await supabase
@@ -1727,27 +1794,85 @@ git commit -m "feat(ui): /organisation page with OrgInfoSection + TeamSection"
 
 ---
 
-### Task 20: Add route + sidebar link
+### Task 20: Add route + sidebar link + AcceptInvitePage
 
 **Files:**
 - Modify: `src/app/routes.tsx`
 - Modify: `src/shared/components/layout/SidebarUtilities.tsx`
+- Create: `src/modules/organisation/pages/AcceptInvitePage.tsx`
 
-- [ ] **Step 1: Add lazy import and route**
+- [ ] **Step 1: Create AcceptInvitePage**
+
+The magic link in `invite-org-member` redirects to `${SITE_URL}/accept-invite?org=<organization_id>`.
+This page must exist — without it, invited users land on a 404.
+
+```typescript
+// src/modules/organisation/pages/AcceptInvitePage.tsx
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { supabase } from '@/shared/lib/supabase'
+
+export function AcceptInvitePage() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const [status, setStatus] = useState<'loading' | 'error'>('loading')
+  const [errorMsg, setErrorMsg] = useState('')
+
+  useEffect(() => {
+    const orgId = params.get('org')
+    if (!orgId) {
+      setErrorMsg('Ungültiger Einladungslink.')
+      setStatus('error')
+      return
+    }
+
+    supabase.functions.invoke('accept-org-invite', {
+      body: { organization_id: orgId },
+    }).then(({ error }) => {
+      if (error) {
+        setErrorMsg('Einladung konnte nicht angenommen werden.')
+        setStatus('error')
+      } else {
+        navigate('/inbox', { replace: true })
+      }
+    })
+  }, [params, navigate])
+
+  if (status === 'error') {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <p className="text-destructive">{errorMsg}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <p className="text-muted-foreground">Einladung wird angenommen…</p>
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Add lazy import and routes**
 
 In `src/app/routes.tsx`:
 
 ```typescript
-// Add lazy import at top with other lazy imports:
+// Add lazy imports at top with other lazy imports:
 const OrganisationPage = lazy(() =>
   import('@/modules/organisation/pages/OrganisationPage').then(m => ({ default: m.OrganisationPage }))
 )
+const AcceptInvitePage = lazy(() =>
+  import('@/modules/organisation/pages/AcceptInvitePage').then(m => ({ default: m.AcceptInvitePage }))
+)
 
-// Add route inside ProtectedRoute <Route>:
+// Add routes inside ProtectedRoute <Route>:
 <Route path="/organisation" element={withRouteLoading(<OrganisationPage />)} />
+<Route path="/accept-invite" element={<AcceptInvitePage />} />
 ```
 
-- [ ] **Step 2: Add sidebar link (admin only)**
+- [ ] **Step 3: Add sidebar link (admin only)**
 
 In `src/shared/components/layout/SidebarUtilities.tsx`:
 
@@ -1779,18 +1904,20 @@ const { isAdmin } = useOrganization()
 )}
 ```
 
-- [ ] **Step 3: Build check**
+- [ ] **Step 4: Build check**
 
 ```bash
 npm run build
 ```
 Expected: no TypeScript errors, no import errors.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/routes.tsx src/shared/components/layout/SidebarUtilities.tsx
-git commit -m "feat(routing): add /organisation route + admin-only sidebar link"
+git add src/app/routes.tsx
+git add src/modules/organisation/pages/AcceptInvitePage.tsx
+git add src/shared/components/layout/SidebarUtilities.tsx
+git commit -m "feat(routing): add /organisation + /accept-invite routes + admin-only sidebar link"
 ```
 
 ---
