@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import type { Project } from '../types/project';
 import type { ProjectComment } from './useProjectComments';
+import type { FileActivityRecord } from './useProjectFileActivity';
 
 export interface ActivityEvent {
   id: string;
-  type: 'status_change' | 'comment';
+  type: 'status_change' | 'comment' | 'file_activity';
   text: string;
   author?: string;
   timestamp: string;
@@ -13,6 +14,7 @@ export interface ActivityEvent {
   stepTitle?: string;
   chapterTitle?: string;
   rawStatus?: string;
+  fileEventType?: 'file_uploaded' | 'folder_created';
 }
 
 function updatesToEvents(project: Project): ActivityEvent[] {
@@ -39,6 +41,19 @@ function commentsToEvents(comments: ProjectComment[]): ActivityEvent[] {
   }));
 }
 
+function fileEventsToActivity(records: FileActivityRecord[]): ActivityEvent[] {
+  return records.map(r => ({
+    id: `file-${r.id}`,
+    type: 'file_activity' as const,
+    text: r.event_type === 'file_uploaded'
+      ? `Datei hinzugefügt: ${r.name}`
+      : `Ordner erstellt: ${r.name}`,
+    timestamp: formatRelativeTime(r.created_at),
+    sortDate: r.created_at,
+    fileEventType: r.event_type,
+  }));
+}
+
 function formatRelativeTime(isoDate: string): string {
   try {
     const date = new Date(isoDate);
@@ -55,31 +70,35 @@ function formatRelativeTime(isoDate: string): string {
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `vor ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tagen'}`;
 
-    return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
     return isoDate;
   }
 }
 
 /**
- * Combines project status-change updates with comment events into a
- * unified, reverse-chronologically sorted activity feed.
+ * Combines project status-change updates with comment events and file
+ * activity events into a unified, reverse-chronologically sorted activity feed.
  *
- * Comments are accepted as a parameter to avoid duplicate Realtime
- * subscriptions — the caller (OverviewTabs) owns the single
- * useProjectComments hook instance.
+ * Comments and file events are accepted as parameters to avoid duplicate
+ * Realtime subscriptions — the caller (OverviewTabs) owns the hook instances.
  */
-export function useProjectActivity(project: Project | null, comments: ProjectComment[]) {
+export function useProjectActivity(
+  project: Project | null,
+  comments: ProjectComment[],
+  fileEvents: FileActivityRecord[] = [],
+) {
   const events = useMemo(() => {
     if (!project) return [];
 
     const statusEvents = updatesToEvents(project);
     const commentEvents = commentsToEvents(comments);
+    const fileActivityEvents = fileEventsToActivity(fileEvents);
 
-    return [...statusEvents, ...commentEvents].sort(
+    return [...statusEvents, ...commentEvents, ...fileActivityEvents].sort(
       (a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime(),
     );
-  }, [project, comments]);
+  }, [project, comments, fileEvents]);
 
   return {
     events,

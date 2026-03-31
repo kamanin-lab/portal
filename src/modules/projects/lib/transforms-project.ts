@@ -41,7 +41,7 @@ function formatDate(isoDate: string | null): string | null {
   if (!isoDate) return null;
   try {
     const d = new Date(isoDate);
-    return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
     return isoDate;
   }

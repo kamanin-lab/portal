@@ -3,6 +3,7 @@ import type { IconSvgElement } from '@hugeicons/react';
 import {
   CheckmarkCircle02Icon, AlertCircleIcon, Clock01Icon, CircleIcon,
   PauseCircleIcon, CancelCircleIcon, Message01Icon,
+  Upload04Icon, FolderAddIcon,
 } from '@hugeicons/core-free-icons';
 import type { Project } from '../../types/project';
 import type { ActivityEvent } from '../../hooks/useProjectActivity';
@@ -59,11 +60,11 @@ export function StatusActivityItem({ event, project, onOpenStep }: {
       >
         <HugeiconsIcon icon={cfg.icon} size={13} />
       </div>
-      <div className="flex-1 min-w-0 flex items-baseline gap-2">
-        <span className="text-body text-text-primary font-medium leading-[1.35]">
+      <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+        <span className="text-body text-text-primary font-medium leading-[1.35] min-w-0 truncate">
           {event.text}
         </span>
-        <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0">
+        <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0 ml-2">
           {event.timestamp}
         </span>
       </div>
@@ -105,6 +106,32 @@ export function CommentActivityItem({ event }: { event: ActivityEvent }) {
             {contextLabel}
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* -- File Activity Item ---------------------------------------------- */
+
+export function FileActivityItem({ event }: { event: ActivityEvent }) {
+  const isFolder = event.fileEventType === 'folder_created';
+  const icon = isFolder ? FolderAddIcon : Upload04Icon;
+
+  return (
+    <div className="flex gap-2.5 items-center px-2 py-2 rounded-[var(--r-sm)] transition-colors duration-[120ms] hover:bg-surface-hover cursor-default">
+      <div
+        className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center flex-shrink-0"
+        style={{ background: 'var(--phase-2-light)', color: 'var(--phase-2)' }}
+      >
+        <HugeiconsIcon icon={icon} size={13} />
+      </div>
+      <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+        <span className="text-body text-text-primary font-medium leading-[1.35] min-w-0 truncate">
+          {event.text}
+        </span>
+        <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0 ml-2">
+          {event.timestamp}
+        </span>
       </div>
     </div>
   );
