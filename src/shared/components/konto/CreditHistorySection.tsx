@@ -115,7 +115,7 @@ export function CreditHistorySection() {
 
   return (
     <>
-      <section className="bg-surface rounded-[14px] border border-border p-5">
+      <section id="guthaben" className="bg-surface rounded-[14px] border border-border p-5">
         <div className="flex items-center gap-2 mb-1">
           <HugeiconsIcon icon={FlashIcon} size={18} className={balanceColor} />
           <h2 className="text-base font-semibold text-text-primary">Guthaben</h2>

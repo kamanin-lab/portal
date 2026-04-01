@@ -75,7 +75,7 @@ export function CreditBalance({ compact = false }: Props) {
         </div>
       </div>
       <Link
-        to="/konto"
+        to="/konto#guthaben"
         className="shrink-0 text-text-sidebar hover:text-white transition-colors"
         title="Kreditverlauf anzeigen"
       >

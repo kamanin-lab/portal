@@ -78,7 +78,7 @@ export function TicketsPage() {
           {/* Credit balance — desktop only (mobile shows in MobileHeader) */}
           {!creditsLoading && packageName && (
             <Link
-              to="/konto"
+              to="/konto#guthaben"
               className="hidden md:flex items-center gap-1.5 text-xs shrink-0"
               title="Kreditverlauf anzeigen"
             >

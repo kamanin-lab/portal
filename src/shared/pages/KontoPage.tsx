@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Logout03Icon } from '@hugeicons/core-free-icons'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
@@ -11,6 +13,13 @@ import { Button } from '@/shared/components/ui/button'
 
 export function KontoPage() {
   const { profile, signOut } = useAuth()
+  const { hash } = useLocation()
+
+  useEffect(() => {
+    if (!hash) return
+    const el = document.querySelector(hash)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash])
 
   if (!profile) return null
 
