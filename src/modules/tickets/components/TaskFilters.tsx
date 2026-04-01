@@ -140,7 +140,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
               : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
           )}
         >
-          {isMobile ? 'Filter' : 'Mehr'}
+          {isMobile ? 'Weitere Status' : 'Mehr'}
           <HugeiconsIcon icon={ArrowDown01Icon} size={11} className={cn('transition-transform duration-200', moreOpen && 'rotate-180')} />
         </button>
         {moreOpen && (
