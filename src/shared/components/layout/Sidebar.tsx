@@ -89,7 +89,7 @@ export function Sidebar() {
       <Divider />
 
       {/* Utilities zone */}
-      <SidebarUtilities expanded={expanded} />
+      <SidebarUtilities expanded={expanded} supportUnread={supportUnread} />
 
       <Divider />
 

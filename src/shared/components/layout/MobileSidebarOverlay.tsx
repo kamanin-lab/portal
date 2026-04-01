@@ -94,7 +94,7 @@ export function MobileSidebarOverlay({ open, onClose }: Props) {
         <Divider />
 
         {/* Utilities zone */}
-        <SidebarUtilities expanded={true} onNavigate={onClose} />
+        <SidebarUtilities expanded={true} supportUnread={supportUnread} onNavigate={onClose} />
 
         <Divider />
 

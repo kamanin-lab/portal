@@ -45,7 +45,7 @@ function WorkspaceBadge({ count }: { count: number }) {
 }
 
 export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavigate }: Props) {
-  const visibleWorkspaces = workspaces.length > 0 ? workspaces : DEFAULT_WORKSPACES
+  const visibleWorkspaces = (workspaces.length > 0 ? workspaces : DEFAULT_WORKSPACES).filter(ws => ws.module_key !== 'support')
   const { projects } = useProjects()
 
   // Build dynamic children for projects workspace
