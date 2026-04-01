@@ -45,14 +45,26 @@ describe('matchesTaskSearch', () => {
 })
 
 describe('filterTasks search behavior', () => {
-  test('keeps existing filters while expanding text search fields', () => {
+  test('bypasses status filter and searches all tasks when query is active', () => {
     const tasks = [
       makeTask({ clickup_id: 'a', name: 'Alpha', description: 'Needs invoice upload', status: 'open' }),
-      makeTask({ clickup_id: 'b', name: 'Beta', list_name: 'Support Board', status: 'open' }),
+      makeTask({ clickup_id: 'b', name: 'Beta', description: 'No match here', status: 'open' }),
       makeTask({ clickup_id: 'c', name: 'Gamma', description: 'Invoice mentioned here too', status: 'complete' }),
     ]
 
     const result = filterTasks(tasks, 'open', 'invoice')
+
+    // Both 'open' and 'complete' tasks match — status filter is bypassed when query is active
+    expect(result.map(task => task.clickup_id)).toEqual(['a', 'c'])
+  })
+
+  test('applies status filter normally when query is empty', () => {
+    const tasks = [
+      makeTask({ clickup_id: 'a', name: 'Alpha', status: 'open' }),
+      makeTask({ clickup_id: 'b', name: 'Beta', status: 'complete' }),
+    ]
+
+    const result = filterTasks(tasks, 'open', '')
 
     expect(result.map(task => task.clickup_id)).toEqual(['a'])
   })

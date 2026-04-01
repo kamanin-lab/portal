@@ -50,20 +50,23 @@ export function matchesTaskSearch(task: ClickUpTask, query: string): boolean {
 export function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, activeFilters?: ActiveFilters): ClickUpTask[] {
   let result = tasks
 
-  if (query.trim()) {
-    result = result.filter(t => matchesTaskSearch(t, query))
+  // When a search query is active, bypass the status filter so results span all statuses
+  if (!query.trim()) {
+    switch (filter) {
+      case 'attention':   result = result.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }); break
+      case 'ready':       result = result.filter(t => mapStatus(t.status) === 'ready'); break
+      case 'open':        result = result.filter(t => mapStatus(t.status) === 'open'); break
+      case 'in_progress': result = result.filter(t => mapStatus(t.status) === 'in_progress'); break
+      case 'approved':    result = result.filter(t => mapStatus(t.status) === 'approved'); break
+      case 'done':        result = result.filter(t => mapStatus(t.status) === 'done'); break
+      case 'on_hold':     result = result.filter(t => mapStatus(t.status) === 'on_hold'); break
+      case 'cancelled':   result = result.filter(t => mapStatus(t.status) === 'cancelled'); break
+      default:            break
+    }
   }
 
-  switch (filter) {
-    case 'attention':   result = result.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }); break
-    case 'ready':       result = result.filter(t => mapStatus(t.status) === 'ready'); break
-    case 'open':        result = result.filter(t => mapStatus(t.status) === 'open'); break
-    case 'in_progress': result = result.filter(t => mapStatus(t.status) === 'in_progress'); break
-    case 'approved':    result = result.filter(t => mapStatus(t.status) === 'approved'); break
-    case 'done':        result = result.filter(t => mapStatus(t.status) === 'done'); break
-    case 'on_hold':     result = result.filter(t => mapStatus(t.status) === 'on_hold'); break
-    case 'cancelled':   result = result.filter(t => mapStatus(t.status) === 'cancelled'); break
-    default:            break
+  if (query.trim()) {
+    result = result.filter(t => matchesTaskSearch(t, query))
   }
 
   if (!activeFilters) return result
