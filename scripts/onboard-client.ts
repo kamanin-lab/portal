@@ -22,7 +22,7 @@
  *   "clickupListIds": ["901305442177"],
  *   "supportTaskId": "86c8abc123",
  *   "nextcloudRoot": "/clients/muster-gmbh/",
- *   "modules": ["tickets", "support"],
+ *   "modules": ["tickets"],
  *   "creditPackage": { "name": "Standard 10h", "creditsPerMonth": 10, "initialTopup": 10 },
  *   "projectIds": []
  * }
@@ -61,9 +61,10 @@ interface ClientConfig {
   projectIds?: string[];
 }
 
+// Note: "support" is NOT a workspace — it's a system utility always present in the sidebar.
+// Do not include "support" in modules; use supportTaskId to link the ClickUp support task.
 const MODULE_DEFAULTS: Record<string, { display: string; icon: string }> = {
   tickets: { display: "Aufgaben", icon: "check-square" },
-  support: { display: "Support", icon: "headphones" },
   projects: { display: "Projekte", icon: "folder-kanban" },
 };
 
@@ -142,7 +143,7 @@ Config JSON example:
   "supportTaskId": "86c8abc123",
   "clickupChatChannelId": "5-901512910505-8",
   "nextcloudRoot": "/clients/muster-gmbh/",
-  "modules": ["tickets", "support"],
+  "modules": ["tickets"],
   "creditPackage": { "name": "Standard 10h", "creditsPerMonth": 10, "initialTopup": 10 },
   "projectIds": []
 }
