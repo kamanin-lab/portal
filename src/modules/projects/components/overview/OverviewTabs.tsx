@@ -34,7 +34,7 @@ export function OverviewTabs({ project: p, onOpenStep }: OverviewTabsProps) {
           <TabsTrigger value="nachrichten" className="px-5 py-2.5">Nachrichten</TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'thin', overscrollBehaviorY: 'contain' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
