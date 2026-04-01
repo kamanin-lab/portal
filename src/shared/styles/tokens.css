@@ -135,3 +135,12 @@
   0%, 100% { transform: scale(1); opacity: 0.25; }
   50% { transform: scale(1.15); opacity: 0.08; }
 }
+
+/* iOS auto-zoom prevention: inputs below 16px trigger zoom on focus */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
