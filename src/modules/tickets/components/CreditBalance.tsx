@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { FlashIcon } from '@hugeicons/core-free-icons';
+import { FlashIcon, TimeScheduleIcon } from '@hugeicons/core-free-icons';
 import { useCredits } from '../hooks/useCredits';
 import { cn } from '@/shared/lib/utils';
 
@@ -62,7 +63,7 @@ export function CreditBalance({ compact = false }: Props) {
   return (
     <div className="px-4 py-2.5 flex items-center gap-2 text-xs">
       <HugeiconsIcon icon={FlashIcon} size={16} className={cn('shrink-0', balanceColor)} />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <span className={cn('font-bold', balanceColor)}>
           {displayBalance} Credits
         </span>
@@ -73,6 +74,13 @@ export function CreditBalance({ compact = false }: Props) {
           {formatPackageName(packageName)} · {creditsPerMonth}/Monat
         </div>
       </div>
+      <Link
+        to="/konto"
+        className="shrink-0 text-text-sidebar hover:text-white transition-colors"
+        title="Kreditverlauf anzeigen"
+      >
+        <HugeiconsIcon icon={TimeScheduleIcon} size={14} />
+      </Link>
     </div>
   );
 }

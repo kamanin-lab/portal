@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
@@ -87,7 +88,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
     return cn(
       'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
       isActive && isAttention
-        ? 'bg-amber-500 text-white border-amber-500'
+        ? 'bg-rose-600 text-white border-rose-600'
         : isActive
         ? 'bg-accent text-white border-accent'
         : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
@@ -109,14 +110,22 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
           const isAttention = f === 'attention'
           const Icon = STATUS_ICONS[f]
           return (
-            <button key={f} onClick={() => onChange(f)} className={chipClass(isActive, isAttention)}>
+            <motion.button
+              key={f}
+              onClick={() => onChange(f)}
+              className={chipClass(isActive, isAttention)}
+              {...(isAttention && count > 0 ? {
+                animate: { x: [0, -3, 3, -3, 0] },
+                transition: { duration: 0.4, ease: 'easeInOut', repeat: 2, delay: 0.6 }
+              } : {})}
+            >
               {Icon && <HugeiconsIcon icon={Icon} size={11} />}
               {FILTER_LABELS[f]}
               <span className={cn(
                 'min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center',
                 isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
               )}>{count}</span>
-            </button>
+            </motion.button>
           )
         })}
       </div>

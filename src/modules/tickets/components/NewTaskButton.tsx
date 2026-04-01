@@ -12,7 +12,7 @@ export function NewTaskButton({ onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 px-4 py-2 text-body font-semibold bg-cta text-white rounded-[var(--r-md)] hover:bg-cta-hover transition-colors cursor-pointer shrink-0"
+      className="flex items-center gap-1.5 px-4 py-2 text-body font-semibold border border-accent/40 text-accent bg-transparent hover:bg-accent hover:text-white rounded-[var(--r-md)] transition-colors cursor-pointer shrink-0"
     >
       <HugeiconsIcon icon={PlusSignIcon} size={15} />
       {isMobile ? 'Aufgabe' : 'Neue Aufgabe'}
