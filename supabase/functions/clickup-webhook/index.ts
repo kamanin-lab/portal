@@ -1745,7 +1745,7 @@ Deno.serve(async (req) => {
 
       // ============ REGULAR TASK COMMENT (not support) ============
       // Find portal users for this task
-      // Fetch task info for list_id fallback and task name
+      // Fetch task info for visibility check, list_id fallback and task name
       const clickupTokenForComment = Deno.env.get("CLICKUP_API_TOKEN");
       let commentTaskListId: string | null = null;
       let commentTaskName = "a task";
@@ -1753,6 +1753,14 @@ Deno.serve(async (req) => {
       if (clickupTokenForComment) {
         const commentTaskInfo = await fetchTaskForVisibilityCheck(taskId, clickupTokenForComment, log);
         if (commentTaskInfo) {
+          // CRITICAL: Skip all notifications if task is not visible in the client portal
+          if (!commentTaskInfo.visible) {
+            log.info("Task not visible in client portal — skipping comment notification", { taskId });
+            return new Response(
+              JSON.stringify({ message: "Task not visible in portal — comment notification skipped" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
           commentTaskListId = commentTaskInfo.listId;
           commentTaskName = commentTaskInfo.name;
         }
