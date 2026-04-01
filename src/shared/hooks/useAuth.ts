@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, createElement } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
+import { toast } from 'sonner'
+import { startActivityTracking, getIdleMs, SESSION_TIMEOUT_MS, SESSION_WARNING_MS } from '@/shared/lib/session-timeout'
 import type { Profile } from '@/shared/types/common'
 
 const STAGING_AUTH_BYPASS = false
@@ -123,6 +125,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
     }
   }, [loadProfile])
+
+  // Session inactivity timeout
+  useEffect(() => {
+    if (STAGING_AUTH_BYPASS || !user) return
+
+    const stopTracking = startActivityTracking()
+    let warnedAboutExpiry = false
+
+    const checkInterval = setInterval(() => {
+      const idle = getIdleMs()
+      const remaining = SESSION_TIMEOUT_MS - idle
+
+      if (remaining <= 0) {
+        clearInterval(checkInterval)
+        stopTracking()
+        supabase.auth.signOut().then(() => {
+          setUser(null)
+          setSession(null)
+          setProfile(null)
+          toast.info('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.')
+        })
+      } else if (!warnedAboutExpiry && remaining <= SESSION_WARNING_MS) {
+        warnedAboutExpiry = true
+        toast.warning('Ihre Sitzung läuft in 5 Minuten ab. Klicken Sie irgendwo, um sie zu verlängern.', {
+          duration: 30_000,
+        })
+      }
+    }, 60_000) // check every minute
+
+    return () => {
+      clearInterval(checkInterval)
+      stopTracking()
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
