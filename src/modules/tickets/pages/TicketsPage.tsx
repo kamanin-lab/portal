@@ -108,7 +108,7 @@ export function TicketsPage() {
           />
           <button
             onClick={() => setSupportOpen(true)}
-            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold border-2 border-accent/40 text-accent bg-transparent hover:bg-accent hover:text-white rounded-[var(--r-md)] transition-colors cursor-pointer shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold border border-accent/40 text-accent bg-transparent hover:bg-accent hover:text-white rounded-[var(--r-md)] transition-colors cursor-pointer shrink-0"
           >
             <HugeiconsIcon icon={Comment01Icon} size={15} />
             Support
