@@ -230,7 +230,7 @@ export const EMAIL_COPY: EmailCopyDict = {
       greeting: greetDe,
       body: (teamMemberName: string, taskName: string) =>
         `${teamMemberName} hat eine Nachricht zu „<strong>${taskName}</strong>”:`,
-      cta: “Im Portal antworten”,
+      cta: "Im Portal antworten",
     },
     en: {
       subject: (taskName: string) => `Question about "${taskName}"`,
