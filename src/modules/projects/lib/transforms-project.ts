@@ -123,6 +123,9 @@ export function transformToProject(
     const chapterTasks = tasksByChapter.get(ch.id) || [];
 
     chapterTasks.sort((a, b) => {
+      const moA = extractMilestoneOrder(a.raw_data) ?? 999;
+      const moB = extractMilestoneOrder(b.raw_data) ?? 999;
+      if (moA !== moB) return moA - moB;
       const ea = enrichmentMap.get(a.clickup_id);
       const eb = enrichmentMap.get(b.clickup_id);
       const orderA = ea?.sort_order ?? 999;
