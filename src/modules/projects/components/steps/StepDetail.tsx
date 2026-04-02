@@ -45,12 +45,18 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
         </div>
       )}
 
-      {/* Description & enrichment */}
-      <div className="flex flex-col gap-3.5 mb-5">
-        <ExpandableSection title="Was ist das?" body={step.description} toggleable={false} defaultOpen />
-        <ExpandableSection title="Warum ist das wichtig?" body={step.whyItMatters} />
-        <ExpandableSection title="Was wird damit festgelegt?" body={step.whatBecomesFixed} />
-      </div>
+      {/* Description */}
+      {step.description && step.description.trim() !== '' && (
+        <p className="text-body text-text-secondary leading-[1.6] mb-5">{step.description}</p>
+      )}
+
+      {/* AI enrichment */}
+      {(step.whyItMatters || step.whatBecomesFixed) && (
+        <div className="flex flex-col gap-3.5 mb-5">
+          <ExpandableSection title="Warum ist das wichtig?" body={step.whyItMatters} />
+          <ExpandableSection title="Was wird damit festgelegt?" body={step.whatBecomesFixed} />
+        </div>
+      )}
 
       {/* Divider */}
       <div className="h-px bg-[var(--border-light)] mb-5" />
