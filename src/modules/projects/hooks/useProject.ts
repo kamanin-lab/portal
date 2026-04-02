@@ -141,7 +141,8 @@ export function useProject(explicitProjectId?: string) {
     queryKey: ['project', projectId],
     queryFn: () => fetchProjectData(projectId),
     enabled: !!projectId && !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes — Realtime handles live updates
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
 

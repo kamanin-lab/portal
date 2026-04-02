@@ -60,7 +60,7 @@ describe('DynamicHero — P1 priority (primaryAttention)', () => {
         whyItMatters: 'AI enrichment text',
         whatBecomesFixed: 'Structure is agreed.',
         lastUpdated: null,
-        portalCta: null,
+
         milestoneOrder: 1,
         isPrimary: true,
       },
@@ -83,7 +83,7 @@ describe('DynamicHero — P1 priority (primaryAttention)', () => {
         whyItMatters: '',
         whatBecomesFixed: 'Structure is agreed.',
         lastUpdated: null,
-        portalCta: null,
+
         milestoneOrder: 1,
         isPrimary: true,
       },
@@ -103,7 +103,7 @@ describe('DynamicHero — P3 priority (upcomingStep)', () => {
       title: 'Design Mockups',
       status: 'upcoming_locked' as const,
       rawStatus: 'to do',
-      portalCta: null,
+
       milestoneOrder: 2,
       isClientReview: false,
       updatedAt: null,

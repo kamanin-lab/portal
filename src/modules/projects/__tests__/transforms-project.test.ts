@@ -132,23 +132,23 @@ describe('transformToProject', () => {
     expect(project.chapters.map(ch => ch.id)).toEqual(['chapter-1', 'chapter-2'])
   })
 
-  test('sorts chapter tasks by enrichment sort_order before name', () => {
+  test('sorts chapter tasks by milestone order first, then enrichment sort_order', () => {
     const project = transformToProject(config, chapters, tasks, enrichments, {})
-    expect(project.chapters[0].steps.map(step => step.id)).toEqual(['task-2', 'task-1'])
+    // task-1 has milestoneOrder 5, task-2 has none (999) → task-1 comes first
+    expect(project.chapters[0].steps.map(step => step.id)).toEqual(['task-1', 'task-2'])
   })
 
   test('merges enrichment fields into steps', () => {
     const project = transformToProject(config, chapters, tasks, enrichments, { 'task-2': 3 })
-    const step = project.chapters[0].steps[0]
+    const step = project.chapters[0].steps[1] // task-2 is now at index 1
     expect(step.whyItMatters).toBe('Clarifies navigation.')
     expect(step.whatBecomesFixed).toBe('Structure is agreed.')
     expect(step.commentCount).toBe(3)
   })
 
-  test('parses Portal CTA and Milestone Order from raw ClickUp custom fields', () => {
+  test('parses Milestone Order from raw ClickUp custom fields', () => {
     const project = transformToProject(config, chapters, tasks, enrichments, {})
-    const step = project.chapters[0].steps[1]
-    expect(step.portalCta).toBe('Jetzt freigeben')
+    const step = project.chapters[0].steps[0] // task-1 with milestoneOrder is now at index 0
     expect(step.milestoneOrder).toBe(5)
     expect(step.isClientReview).toBe(true)
     expect(step.rawStatus).toBe('client review')
@@ -174,7 +174,7 @@ describe('transformToProject', () => {
 
   test('maps attachments into file items', () => {
     const project = transformToProject(config, chapters, tasks, enrichments, {})
-    const file = project.chapters[0].steps[1].files[0]
+    const file = project.chapters[0].steps[0].files[0] // task-1 (with attachment) is now at index 0
     expect(file.name).toBe('brief.pdf')
     expect(file.type).toBe('pdf')
   })

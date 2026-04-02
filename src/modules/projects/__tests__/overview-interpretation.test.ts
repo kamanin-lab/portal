@@ -109,7 +109,7 @@ describe('interpretProjectOverview', () => {
     expect(overview.quickActions[0].destinationKind).toBe('primary_cta');
   });
 
-  test('prefers Portal CTA override before milestone order', () => {
+  test('sorts attention items by milestone order ascending', () => {
     const project = transformToProject(
       config,
       chapters,
@@ -129,7 +129,6 @@ describe('interpretProjectOverview', () => {
           attachments: [],
           raw_data: {
             custom_fields: [
-              { id: 'f820ea20-fafc-4c72-9bf0-0903cbfc3b02', value: 'Bitte jetzt das Design freigeben' },
               { id: 'milestone-field', name: 'Milestone Order', value: 99 },
             ],
           },
@@ -144,9 +143,10 @@ describe('interpretProjectOverview', () => {
 
     const overview = interpretProjectOverview(project);
 
-    expect(overview.primaryAttention?.stepId).toBe('task-3');
+    // task-1 has milestoneOrder 5, task-3 has 99 → task-1 is primary
+    expect(overview.primaryAttention?.stepId).toBe('task-1');
     expect(overview.attentionList).toHaveLength(2);
-    expect(overview.attentionList[1].stepId).toBe('task-1');
+    expect(overview.attentionList[1].stepId).toBe('task-3');
   });
 
   test('falls back to no client action when no checkpoint exists', () => {

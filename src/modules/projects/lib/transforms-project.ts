@@ -5,7 +5,6 @@ import type {
 } from '../types/project';
 import { mapStepStatus } from './step-status-mapping';
 
-const PORTAL_CTA_FIELD_ID = 'f820ea20-fafc-4c72-9bf0-0903cbfc3b02';
 const MILESTONE_ORDER_FIELD_NAME = 'milestone order';
 
 type ClickUpCustomField = {
@@ -68,12 +67,6 @@ function getCustomFieldByName(rawData: unknown, fieldName: string): ClickUpCusto
   }) ?? null;
 }
 
-export function parsePortalCta(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
-}
-
 export function parseMilestoneOrder(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
@@ -83,10 +76,6 @@ export function parseMilestoneOrder(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
-}
-
-function extractPortalCta(rawData: unknown): string | null {
-  return parsePortalCta(getCustomFieldById(rawData, PORTAL_CTA_FIELD_ID)?.value);
 }
 
 function extractMilestoneOrder(rawData: unknown): number | null {
@@ -138,7 +127,6 @@ export function transformToProject(
       const enrichment = enrichmentMap.get(task.clickup_id);
       const rawStatus = (task.status || '').trim();
       const stepStatus = mapStepStatus(rawStatus);
-      const portalCta = extractPortalCta(task.raw_data);
       const milestoneOrder = extractMilestoneOrder(task.raw_data);
 
       const files: FileItem[] = (task.attachments || []).map(att => ({
@@ -155,7 +143,6 @@ export function transformToProject(
         title: task.name,
         status: stepStatus,
         rawStatus,
-        portalCta,
         milestoneOrder,
         isClientReview: rawStatus.toLowerCase() === 'client review',
         updatedAt: formatDate(task.last_activity_at),

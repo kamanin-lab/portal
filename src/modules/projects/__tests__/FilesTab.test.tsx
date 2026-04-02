@@ -23,7 +23,7 @@ vi.mock('../hooks/useNextcloudFiles', () => ({
 function makeStep(overrides: Partial<Step> = {}): Step {
   return {
     id: 'step-1', clickupTaskId: 'cu-1', title: 'Test Step', status: 'committed',
-    rawStatus: 'complete', portalCta: null, milestoneOrder: 1, isClientReview: false,
+    rawStatus: 'complete', milestoneOrder: 1, isClientReview: false,
     updatedAt: null, taskIds: [], description: '', whyItMatters: '', whatBecomesFixed: '',
     files: [], messages: [], commentCount: 0, ...overrides,
   };

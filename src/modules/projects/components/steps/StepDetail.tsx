@@ -11,9 +11,10 @@ import { StepActionBar } from './StepActionBar';
 interface StepDetailProps {
   stepId: string;
   project: Project;
+  onClose?: () => void;
 }
 
-export function StepDetail({ stepId, project }: StepDetailProps) {
+export function StepDetail({ stepId, project, onClose }: StepDetailProps) {
   const found = getStepById(stepId, project);
   if (!found) {
     return <div className="p-8 text-text-secondary">Schritt nicht gefunden.</div>;
@@ -41,7 +42,7 @@ export function StepDetail({ stepId, project }: StepDetailProps) {
       {/* Action bar for client review */}
       {step.status === 'awaiting_input' && (
         <div className="mb-4">
-          <StepActionBar taskId={step.clickupTaskId} projectId={project.id} />
+          <StepActionBar taskId={step.clickupTaskId} projectId={project.id} onSuccess={onClose} />
         </div>
       )}
 

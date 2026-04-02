@@ -43,7 +43,7 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     title: 'Test Step',
     status: 'committed',
     rawStatus: 'complete',
-    portalCta: null,
+
     milestoneOrder: 1,
     isClientReview: false,
     updatedAt: null,

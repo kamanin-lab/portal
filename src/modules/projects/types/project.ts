@@ -44,7 +44,6 @@ export interface Step {
   title: string;
   status: StepStatus;
   rawStatus: string;
-  portalCta: string | null;
   milestoneOrder: number | null;
   isClientReview: boolean;
   updatedAt: string | null;
@@ -173,7 +172,6 @@ export interface ProjectAttentionItem {
   whyItMatters: string;
   whatBecomesFixed: string;
   lastUpdated: string | null;
-  portalCta: string | null;
   milestoneOrder: number | null;
   isPrimary: boolean;
 }

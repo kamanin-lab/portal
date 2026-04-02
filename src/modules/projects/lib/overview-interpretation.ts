@@ -25,14 +25,11 @@ export interface InterpretedProjectOverview {
 }
 
 type RankedAttentionItem = ProjectAttentionItem & {
-  hasPortalCta: boolean;
   chapterOrder: number;
   stepOrder: number;
 };
 
 function compareAttentionItems(a: RankedAttentionItem, b: RankedAttentionItem): number {
-  if (a.hasPortalCta !== b.hasPortalCta) return a.hasPortalCta ? -1 : 1;
-
   const milestoneA = a.milestoneOrder ?? Number.POSITIVE_INFINITY;
   const milestoneB = b.milestoneOrder ?? Number.POSITIVE_INFINITY;
   if (milestoneA !== milestoneB) return milestoneA - milestoneB;
@@ -53,7 +50,6 @@ function buildAttentionItem(step: Step, chapter: Chapter, isPrimary: boolean): P
     whyItMatters: step.whyItMatters,
     whatBecomesFixed: step.whatBecomesFixed,
     lastUpdated: step.updatedAt,
-    portalCta: step.portalCta,
     milestoneOrder: step.milestoneOrder,
     isPrimary,
   };
@@ -67,7 +63,6 @@ function resolveAttentionItems(project: Project): ProjectAttentionItem[] {
       if (!step.isClientReview) return;
       ranked.push({
         ...buildAttentionItem(step, chapter, false),
-        hasPortalCta: Boolean(step.portalCta),
         chapterOrder: chapter.order ?? chapterIndex,
         stepOrder: stepIndex,
       });
@@ -85,7 +80,6 @@ function resolveAttentionItems(project: Project): ProjectAttentionItem[] {
     whyItMatters: item.whyItMatters,
     whatBecomesFixed: item.whatBecomesFixed,
     lastUpdated: item.lastUpdated,
-    portalCta: item.portalCta,
     milestoneOrder: item.milestoneOrder,
     isPrimary: index === 0,
   }));

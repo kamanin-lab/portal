@@ -44,7 +44,7 @@ export function DynamicHero({ project, overview, onOpenStep, onCreateTask }: Dyn
       eyebrow: 'NÄCHSTER SCHRITT',
       eyebrowPulse: true,
       eyebrowIcon: <HugeiconsIcon icon={AlertCircleIcon} size={12} />,
-      title: primaryAttention.portalCta || primaryAttention.title,
+      title: primaryAttention.title,
       description: primaryAttention.whyItMatters || primaryAttention.description,
       tint: phaseColor.light,
       phase: phaseColor.main,

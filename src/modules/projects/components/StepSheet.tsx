@@ -16,7 +16,7 @@ export function StepSheet({ project, stepId, onClose }: StepSheetProps) {
       title={stepId ? 'Schritt' : ''}
     >
       {stepId ? (
-        <StepDetail stepId={stepId} project={project} />
+        <StepDetail stepId={stepId} project={project} onClose={onClose} />
       ) : (
         <div className="flex items-center justify-center h-40 text-text-tertiary text-sm">
           Schritt nicht gefunden

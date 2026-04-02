@@ -21,7 +21,7 @@ export function AttentionList({ items, onOpenStep }: AttentionListProps) {
             className="w-full text-left rounded-[var(--r-md)] border border-[var(--border-light)] bg-[var(--surface-hover)] px-3 py-2.5 hover:bg-white transition-colors"
           >
             <div className="text-body font-semibold text-[var(--text-primary)]">
-              {item.portalCta || item.title}
+              {item.title}
             </div>
             <div className="text-xxs text-[var(--text-tertiary)] mt-0.5">
               {[item.chapterTitle, item.lastUpdated ? `Zuletzt aktualisiert ${item.lastUpdated}` : null].filter(Boolean).join(' · ')}
