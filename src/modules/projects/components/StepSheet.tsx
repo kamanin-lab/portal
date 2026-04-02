@@ -6,9 +6,10 @@ interface StepSheetProps {
   project: Project
   stepId: string | null
   onClose: () => void
+  onOpenTask?: (taskId: string) => void
 }
 
-export function StepSheet({ project, stepId, onClose }: StepSheetProps) {
+export function StepSheet({ project, stepId, onClose, onOpenTask }: StepSheetProps) {
   return (
     <SideSheet
       open={!!stepId}
@@ -16,7 +17,7 @@ export function StepSheet({ project, stepId, onClose }: StepSheetProps) {
       title={stepId ? 'Schritt' : ''}
     >
       {stepId ? (
-        <StepDetail stepId={stepId} project={project} onClose={onClose} />
+        <StepDetail stepId={stepId} project={project} onClose={onClose} onOpenTask={onOpenTask} />
       ) : (
         <div className="flex items-center justify-center h-40 text-text-tertiary text-sm">
           Schritt nicht gefunden

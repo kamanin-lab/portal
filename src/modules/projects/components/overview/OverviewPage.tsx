@@ -11,6 +11,7 @@ import { ContentContainer } from '@/shared/components/layout/ContentContainer';
 import { StepSheet } from '../StepSheet';
 import { SchritteSheet } from '../SchritteSheet';
 import { NewTicketDialog } from '@/modules/tickets/components/NewTicketDialog';
+import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet';
 
 interface OverviewPageProps {
   project: Project;
@@ -20,6 +21,7 @@ export function OverviewPage({ project }: OverviewPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeStepId = searchParams.get('stepId');
   const activeKapitelId = searchParams.get('kapitelId');
+  const activeTaskId = searchParams.get('taskId');
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const overview = interpretProjectOverview(project);
   const remainingAttention = overview.attentionList.slice(1);
@@ -38,6 +40,12 @@ export function OverviewPage({ project }: OverviewPageProps) {
   }
   function openStepFromKapitel(stepId: string) {
     setSearchParams(prev => { prev.delete('kapitelId'); prev.set('stepId', stepId); return prev }, { replace: true });
+  }
+  function openTask(taskId: string) {
+    setSearchParams(prev => { prev.set('taskId', taskId); return prev }, { replace: true });
+  }
+  function closeTask() {
+    setSearchParams(prev => { prev.delete('taskId'); return prev }, { replace: true });
   }
 
   const chapterOptions = project.chapters
@@ -83,7 +91,8 @@ export function OverviewPage({ project }: OverviewPageProps) {
       </ContentContainer>
 
       <SchritteSheet project={project} kapitelId={activeKapitelId} onClose={closeKapitel} onOpenStep={openStepFromKapitel} />
-      <StepSheet project={project} stepId={activeStepId} onClose={closeStep} />
+      <StepSheet project={project} stepId={activeStepId} onClose={closeStep} onOpenTask={openTask} />
+      <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} />
 
       <NewTicketDialog
         open={createTaskOpen}

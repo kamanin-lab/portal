@@ -12,9 +12,10 @@ interface StepDetailProps {
   stepId: string;
   project: Project;
   onClose?: () => void;
+  onOpenTask?: (taskId: string) => void;
 }
 
-export function StepDetail({ stepId, project, onClose }: StepDetailProps) {
+export function StepDetail({ stepId, project, onClose, onOpenTask }: StepDetailProps) {
   const found = getStepById(stepId, project);
   if (!found) {
     return <div className="p-8 text-text-secondary">Schritt nicht gefunden.</div>;
@@ -35,7 +36,17 @@ export function StepDetail({ stepId, project, onClose }: StepDetailProps) {
           <h2 className="text-xl font-bold text-text-primary tracking-[-0.02em] leading-[1.2]">
             {step.title}
           </h2>
-          <StatusBadge status={step.status} variant="project" size="sm" />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <StatusBadge status={step.status} variant="project" size="sm" />
+            {onOpenTask && (
+              <button
+                onClick={() => onOpenTask(step.clickupTaskId)}
+                className="text-xs text-text-tertiary hover:text-text-primary border border-border-light rounded-[var(--r-sm)] px-2 py-0.5 hover:bg-surface-hover transition-colors"
+              >
+                Öffnen
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

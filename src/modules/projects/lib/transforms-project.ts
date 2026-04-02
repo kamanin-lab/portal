@@ -56,10 +56,6 @@ function getCustomFields(rawData: unknown): ClickUpCustomField[] {
   return Array.isArray(rawTask?.custom_fields) ? rawTask.custom_fields : [];
 }
 
-function getCustomFieldById(rawData: unknown, fieldId: string): ClickUpCustomField | null {
-  return getCustomFields(rawData).find(field => field.id === fieldId) ?? null;
-}
-
 function getCustomFieldByName(rawData: unknown, fieldName: string): ClickUpCustomField | null {
   const normalizedName = fieldName.trim().toLowerCase();
   return getCustomFields(rawData).find(field => {
