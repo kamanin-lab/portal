@@ -11,9 +11,15 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, isMarkingRead } = useNotifications(profile?.id);
 
-  function handleNotificationClick(id: string, taskId: string | null) {
+  function handleNotificationClick(id: string, taskId: string | null, projectConfigId?: string | null) {
     markAsRead([id]);
-    if (taskId) navigate(`/tickets?taskId=${taskId}`);
+    if (taskId) {
+      if (projectConfigId) {
+        navigate(`/projekte?id=${projectConfigId}&stepId=${taskId}`);
+      } else {
+        navigate(`/tickets?taskId=${taskId}`);
+      }
+    }
   }
 
   return (
@@ -64,7 +70,7 @@ export function NotificationBell() {
             notifications.slice(0, 15).map(n => (
               <DropdownMenu.Item
                 key={n.id}
-                onSelect={() => handleNotificationClick(n.id, n.task_id)}
+                onSelect={() => handleNotificationClick(n.id, n.task_id, n.project_config_id)}
                 style={{
                   padding: '10px 14px', cursor: 'pointer',
                   background: n.is_read ? 'transparent' : 'var(--accent-light)',

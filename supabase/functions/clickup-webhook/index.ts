@@ -712,7 +712,7 @@ Deno.serve(async (req) => {
                 for (const p of profiles || []) {
                   if (shouldSendEmail(p, "step_ready")) {
                     await sendMailjetEmail("step_ready", { email: p.email, name: p.full_name }, {
-                      firstName: p.full_name?.split(" ")[0], stepName, taskId,
+                      firstName: p.full_name?.split(" ")[0], stepName, taskId, projectConfigId: projectConfigId ?? undefined,
                     }, log);
                   }
                 }
@@ -812,7 +812,7 @@ Deno.serve(async (req) => {
                         for (const p of profilesForEmail || []) {
                           if (shouldSendEmail(p, "step_completed")) {
                             await sendMailjetEmail("step_completed", { email: p.email, name: p.full_name }, {
-                              firstName: p.full_name?.split(" ")[0], chapterName, taskId,
+                              firstName: p.full_name?.split(" ")[0], chapterName, taskId, projectConfigId: projectConfigId ?? undefined,
                             }, log);
                           }
                         }
@@ -940,7 +940,7 @@ Deno.serve(async (req) => {
           for (const p of profiles || []) {
             if (shouldSendEmail(p, "project_reply")) {
               await sendMailjetEmail("project_reply", { email: p.email, name: p.full_name }, {
-                firstName: p.full_name?.split(" ")[0], stepName, taskId,
+                firstName: p.full_name?.split(" ")[0], stepName, taskId, projectConfigId: projectConfigId ?? undefined,
                 teamMemberName: firstName, messagePreview: displayText.substring(0, 300),
               }, log);
             }

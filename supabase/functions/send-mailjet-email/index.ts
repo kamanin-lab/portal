@@ -37,6 +37,7 @@ interface EmailRequest {
     stepName?: string;
     chapterName?: string;
     taskId?: string;
+    projectConfigId?: string;
     tasks?: TaskDigestItem[];
     actionUrl?: string;
     token?: string;
@@ -135,7 +136,9 @@ function generateEmailHtml(
 
     case "step_ready": {
       const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
-      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const stepUrl = data.projectConfigId && data.taskId
+        ? `${portalUrl}/projekte?id=${data.projectConfigId}&stepId=${data.taskId}`
+        : data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(stepName) : copy.body;
       return {
@@ -152,7 +155,9 @@ function generateEmailHtml(
 
     case "step_completed": {
       const chapterName = data.chapterName || data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
-      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const stepUrl = data.projectConfigId && data.taskId
+        ? `${portalUrl}/projekte?id=${data.projectConfigId}&stepId=${data.taskId}`
+        : data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(chapterName) : copy.subject;
       const bodyParts = typeof copy.body === "function" ? (copy.body as Function)(chapterName) : copy.body;
       const bodyHtml = Array.isArray(bodyParts)
@@ -172,7 +177,9 @@ function generateEmailHtml(
 
     case "project_reply": {
       const stepName = data.stepName || data.taskName || (locale === "de" ? "Ihr Projektschritt" : "your project step");
-      const stepUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
+      const stepUrl = data.projectConfigId && data.taskId
+        ? `${portalUrl}/projekte?id=${data.projectConfigId}&stepId=${data.taskId}`
+        : data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const teamMemberName = data.teamMemberName || (locale === "de" ? "Ihr Tech-Team" : "Your tech team");
       const messagePreview = data.messagePreview || "";
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
