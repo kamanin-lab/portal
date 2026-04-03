@@ -16,7 +16,7 @@ progress:
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-03-30 - Completed quick task 260330-nsg: Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook handler
+**Last activity:** 2026-04-03 - Completed quick task 260403-euc: Fix projects module realtime and task open button
 
 ## Current Position
 
@@ -43,6 +43,7 @@ Phase 1: Portal Frontend — Complete
 | 260330-nsg | Fix recommendation approval UX — sheet close on success, German date label, auto-comment, taskTagUpdated webhook | 2026-03-30 | `fd0626b` | Done | [260330-nsg-fix-recommendation-approval-ux-and-webho](./quick/260330-nsg-fix-recommendation-approval-ux-and-webho/) |
 | 260330-rq4 | Audit & fix recommendations decline — auto-comment to ClickUp, block clears after decline, tag cache cleanup | 2026-03-30 | `10267dd` | Verified | [260330-rq4-audit-and-fix-recommendations-mechanism-](./quick/260330-rq4-audit-and-fix-recommendations-mechanism-/) |
 | 260330-sl4 | Fix new_recommendation inbox notifications — DB constraint, TS type, TypeBadge amber badge | 2026-03-30 | `635bdc4` | Verified | [260330-sl4-fix-new-recommendation-inbox-notificatio](./quick/260330-sl4-fix-new-recommendation-inbox-notificatio/) |
+| 260403-euc | Fix projects module realtime and task open button | 2026-04-03 | `9527675` | Verified | [260403-euc-fix-projects-module-realtime-and-task-op](./quick/260403-euc-fix-projects-module-realtime-and-task-op/) |
 
 ### Key Decisions
 
