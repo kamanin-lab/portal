@@ -17,7 +17,11 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
 
   const queryClient = useQueryClient();
   const { approveTask, requestChanges, isLoading } = useTaskActions({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // cancelQueries prevents any in-flight refetch from overwriting the optimistic state.
+      // Without this, refetchOnWindowFocus or stale-while-revalidate can land AFTER setQueryData
+      // and revert the hero card to the old status (project_task_cache is only updated by webhook).
+      await queryClient.cancelQueries({ queryKey: ['project', projectId] });
       // Optimistic patch: immediately update step status in project cache
       // so the DynamicHero CTA card updates without waiting for the webhook roundtrip (1-3s).
       // We read activeAction here (before resetting it) to know which status to apply.
@@ -51,8 +55,12 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
         };
       });
 
-      // Still invalidate to sync with real DB data once webhook arrives
-      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      // Invalidate comments so any comment posted during approve/request_changes
+      // appears immediately (comment_cache is written synchronously by update-task-status).
+      // Do NOT invalidate ['project', projectId] here — project_task_cache is only updated
+      // by the ClickUp webhook (15-20s later). The realtime subscription in useProject handles
+      // eventual sync. Invalidating early would overwrite the optimistic patch with stale data.
+      queryClient.invalidateQueries({ queryKey: ['task-comments', taskId] });
       setActiveAction(null);
       setCommentText('');
       onSuccess?.();
