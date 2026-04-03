@@ -80,6 +80,10 @@ export function DynamicHero({ project, overview, onOpenStep, onCreateTask }: Dyn
       description: upcomingStep.step.whyItMatters || upcomingStep.step.description,
       tint: upPhase.light,
       phase: upPhase.main,
+      ghostCta: {
+        label: 'Aufgabe öffnen',
+        onClick: () => onOpenStep?.(upcomingStep.step.id),
+      },
       summary: `Das Team arbeitet daran${project.teamWorkingOn.task ? ` · ${project.teamWorkingOn.task}` : ''}`,
     };
   } else {
