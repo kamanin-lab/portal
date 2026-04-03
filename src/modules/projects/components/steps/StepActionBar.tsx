@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTaskActions } from '@/modules/tickets/hooks/useTaskActions';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
+import type { Project, StepStatus } from '../../types/project';
 
 interface StepActionBarProps {
   taskId: string;
@@ -17,6 +18,40 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
   const queryClient = useQueryClient();
   const { approveTask, requestChanges, isLoading } = useTaskActions({
     onSuccess: () => {
+      // Optimistic patch: immediately update step status in project cache
+      // so the DynamicHero CTA card updates without waiting for the webhook roundtrip (1-3s).
+      // We read activeAction here (before resetting it) to know which status to apply.
+      const currentAction = activeAction;
+      queryClient.setQueryData(['project', projectId], (old: Project | null | undefined) => {
+        if (!old) return old;
+        const isApprove = currentAction === 'approve';
+        const updatedChapters = old.chapters.map(ch => ({
+          ...ch,
+          steps: ch.steps.map(step => {
+            if (step.clickupTaskId !== taskId) return step;
+            return {
+              ...step,
+              rawStatus: isApprove ? 'approved' : 'in progress',
+              status: (isApprove ? 'committed' : 'upcoming_locked') as StepStatus,
+              isClientReview: false,
+            };
+          }),
+        }));
+        const newNeedsAttention = updatedChapters.reduce(
+          (count, ch) => count + ch.steps.filter(s => s.status === 'awaiting_input').length,
+          0,
+        );
+        return {
+          ...old,
+          chapters: updatedChapters,
+          tasksSummary: {
+            ...old.tasksSummary,
+            needsAttention: newNeedsAttention,
+          },
+        };
+      });
+
+      // Still invalidate to sync with real DB data once webhook arrives
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       setActiveAction(null);
       setCommentText('');
