@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed 05-02-PLAN.md
 last_updated: "2026-03-29T22:47:03.122Z"
-last_activity: 2026-03-30 - Completed quick task 260330-sl4: fix new_recommendation inbox notifications
+last_activity: 2026-04-03 - Completed quick task 260403-fnr: Fix optimistic update flicker in project steps
 progress:
   total_phases: 5
   completed_phases: 4
@@ -16,7 +16,7 @@ progress:
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-04-03 - Completed quick task 260403-euc: Fix projects module realtime and task open button
+**Last activity:** 2026-04-03 - Completed quick task 260403-fnr: Fix optimistic update flicker in project steps
 
 ## Current Position
 
@@ -44,6 +44,7 @@ Phase 1: Portal Frontend — Complete
 | 260330-rq4 | Audit & fix recommendations decline — auto-comment to ClickUp, block clears after decline, tag cache cleanup | 2026-03-30 | `10267dd` | Verified | [260330-rq4-audit-and-fix-recommendations-mechanism-](./quick/260330-rq4-audit-and-fix-recommendations-mechanism-/) |
 | 260330-sl4 | Fix new_recommendation inbox notifications — DB constraint, TS type, TypeBadge amber badge | 2026-03-30 | `635bdc4` | Verified | [260330-sl4-fix-new-recommendation-inbox-notificatio](./quick/260330-sl4-fix-new-recommendation-inbox-notificatio/) |
 | 260403-euc | Fix projects module realtime and task open button | 2026-04-03 | `9527675` | Verified | [260403-euc-fix-projects-module-realtime-and-task-op](./quick/260403-euc-fix-projects-module-realtime-and-task-op/) |
+| 260403-fnr | Fix optimistic update flicker in project steps — cancelQueries before setQueryData, comments invalidation | 2026-04-03 | `4e2ca26` | Done | [260403-fnr-fix-optimistic-update-flicker-in-project](./quick/260403-fnr-fix-optimistic-update-flicker-in-project/) |
 
 ### Key Decisions
 
