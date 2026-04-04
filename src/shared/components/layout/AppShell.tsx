@@ -41,7 +41,7 @@ export function AppShell() {
 
   const toggleSidebar = () => setSidebarExpanded(v => {
     const next = !v
-    try { localStorage.setItem('portal-sidebar-expanded', String(next)) } catch {}
+    try { localStorage.setItem('portal-sidebar-expanded', String(next)) } catch (_e) { /* storage unavailable */ }
     return next
   })
 
