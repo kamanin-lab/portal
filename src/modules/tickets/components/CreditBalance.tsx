@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/utils';
 
 interface Props {
   compact?: boolean;
+  onNavigate?: () => void;
 }
 
 function formatPackageName(name: string | null): string {
@@ -29,7 +30,7 @@ function getBalanceColor(balance: number, creditsPerMonth: number | null): strin
   return 'text-credit-low';
 }
 
-export function CreditBalance({ compact = false }: Props) {
+export function CreditBalance({ compact = false, onNavigate }: Props) {
   const { balance, packageName, creditsPerMonth, isLoading } = useCredits();
 
   if (isLoading) return null;
@@ -76,6 +77,7 @@ export function CreditBalance({ compact = false }: Props) {
       </div>
       <Link
         to="/konto#guthaben"
+        onClick={onNavigate}
         className="shrink-0 text-text-sidebar hover:text-white transition-colors"
         title="Kreditverlauf anzeigen"
       >

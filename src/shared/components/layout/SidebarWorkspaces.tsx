@@ -4,7 +4,7 @@ import {
   ClipboardIcon,
   Folder01Icon,
   DashboardSquare01Icon,
-  CustomerServiceIcon,
+  BubbleChatIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import type { ClientWorkspace } from '@/shared/hooks/useWorkspaces'
@@ -23,8 +23,8 @@ const ICON_MAP: Record<string, IconSvgElement> = {
   'check-square': ClipboardIcon,
   'folder-kanban': DashboardSquare01Icon,
   'folder': Folder01Icon,
-  'headphones': CustomerServiceIcon,
-  'headset': CustomerServiceIcon,
+  'headphones': BubbleChatIcon,
+  'headset': BubbleChatIcon,
   'box': DashboardSquare01Icon,
 }
 

@@ -1,5 +1,6 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { SidebarLeft01Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import iconLogo from '@/assets/Icon_transparent_white.svg'
 import fullLogo from '@/assets/KAMANIN-logo-white.svg'
@@ -34,8 +35,12 @@ function useNeedsAttentionCount(profileId: string | undefined) {
   })
 }
 
-export function Sidebar() {
-  const [expanded, setExpanded] = useState(false)
+interface Props {
+  expanded: boolean
+  onToggle: () => void
+}
+
+export function Sidebar({ expanded, onToggle }: Props) {
   const { profile } = useAuth()
   const { data: workspaces = [] } = useWorkspaces()
   const { notifications } = useNotifications(profile?.id)
@@ -54,15 +59,28 @@ export function Sidebar() {
         'bg-sidebar-bg overflow-hidden',
         expanded ? 'w-[260px]' : 'w-[56px]'
       )}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
     >
-      {/* Logo */}
+      {/* Logo + toggle */}
       <div className="flex items-center h-14 px-3.5 shrink-0">
         {expanded ? (
-          <img src={fullLogo} alt="KAMANIN" className="h-6 w-auto object-contain whitespace-nowrap" />
+          <>
+            <img src={fullLogo} alt="KAMANIN" className="h-6 w-auto object-contain whitespace-nowrap flex-1" />
+            <button
+              onClick={onToggle}
+              className="shrink-0 ml-2 p-1 text-text-sidebar hover:text-white transition-colors rounded-[6px]"
+              title="Seitenleiste einklappen"
+            >
+              <HugeiconsIcon icon={SidebarLeft01Icon} size={18} />
+            </button>
+          </>
         ) : (
-          <img src={iconLogo} alt="K" className="w-7 h-7 object-contain shrink-0" />
+          <button
+            onClick={onToggle}
+            className="w-7 h-7 flex items-center justify-center"
+            title="Seitenleiste ausklappen"
+          >
+            <img src={iconLogo} alt="K" className="w-7 h-7 object-contain shrink-0" />
+          </button>
         )}
       </div>
 

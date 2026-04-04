@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
-import { InboxIcon, ClipboardIcon, CustomerServiceIcon, FolderOpenIcon } from '@hugeicons/core-free-icons'
+import { InboxIcon, ClipboardIcon, BubbleChatIcon, FolderOpenIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
@@ -20,7 +20,7 @@ export function BottomNav() {
   const items: { to: string; icon: IconSvgElement; label: string; badge: number }[] = [
     { to: '/inbox',   icon: InboxIcon,            label: 'Inbox',   badge: inboxUnread },
     { to: '/tickets', icon: ClipboardIcon,         label: 'Aufgaben', badge: 0 },
-    { to: '/support', icon: CustomerServiceIcon,   label: 'Support',  badge: supportUnread },
+    { to: '/support', icon: BubbleChatIcon,          label: 'Support',  badge: supportUnread },
     { to: '/dateien', icon: FolderOpenIcon,        label: 'Dateien', badge: 0 },
   ]
 

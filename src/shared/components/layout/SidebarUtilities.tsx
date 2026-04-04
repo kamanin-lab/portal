@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { HelpCircleIcon, Settings02Icon, CustomerServiceIcon } from '@hugeicons/core-free-icons'
+import { HelpCircleIcon, Settings02Icon, BubbleChatIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { CreditBalance } from '@/modules/tickets/components/CreditBalance'
 
@@ -13,7 +13,7 @@ interface Props {
 export function SidebarUtilities({ expanded, supportUnread = 0, onNavigate }: Props) {
   return (
     <div className="py-1 flex flex-col gap-0.5">
-      <CreditBalance compact={!expanded} />
+      <CreditBalance compact={!expanded} onNavigate={onNavigate} />
       <NavLink
         to="/support"
         onClick={onNavigate}
@@ -23,7 +23,7 @@ export function SidebarUtilities({ expanded, supportUnread = 0, onNavigate }: Pr
           isActive && 'bg-sidebar-active text-white'
         )}
       >
-        <HugeiconsIcon icon={CustomerServiceIcon} size={20} className="shrink-0" />
+        <HugeiconsIcon icon={BubbleChatIcon} size={20} className="shrink-0" />
         {expanded && (
           <>
             <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex-1">Support</span>

@@ -5,6 +5,7 @@ import { MobileHeader } from './MobileHeader'
 import { MobileSidebarOverlay } from './MobileSidebarOverlay'
 import { BottomNav } from './BottomNav'
 import { useSwipeGesture } from '@/shared/hooks/useSwipeGesture'
+import { cn } from '@/shared/lib/utils'
 
 const PAGE_TITLES: Record<string, string> = {
   '/inbox': 'Inbox',
@@ -27,8 +28,22 @@ function getTitle(pathname: string): string {
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('portal-sidebar-expanded')
+      return stored === null ? true : stored === 'true'
+    } catch {
+      return true
+    }
+  })
   const location = useLocation()
   const title = getTitle(location.pathname)
+
+  const toggleSidebar = () => setSidebarExpanded(v => {
+    const next = !v
+    try { localStorage.setItem('portal-sidebar-expanded', String(next)) } catch {}
+    return next
+  })
 
   useSwipeGesture({
     onSwipeRight: () => setSidebarOpen(true),
@@ -40,7 +55,7 @@ export function AppShell() {
     <div className="min-h-screen bg-bg">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
-        <Sidebar />
+        <Sidebar expanded={sidebarExpanded} onToggle={toggleSidebar} />
       </div>
 
       {/* Mobile header */}
@@ -58,12 +73,10 @@ export function AppShell() {
 
       {/* Main content */}
       <main
-        className="
-          md:ml-14
-          pt-13 md:pt-0
-          pb-16 md:pb-0
-          min-h-screen
-        "
+        className={cn(
+          'pt-13 md:pt-0 pb-16 md:pb-0 min-h-screen transition-[margin-left] duration-200',
+          sidebarExpanded ? 'md:ml-[260px]' : 'md:ml-14'
+        )}
       >
         <Outlet />
       </main>
