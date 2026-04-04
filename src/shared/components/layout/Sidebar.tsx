@@ -56,7 +56,7 @@ export function Sidebar({ expanded, onToggle }: Props) {
     <aside
       className={cn(
         'fixed left-0 top-0 h-full z-40 flex flex-col transition-all duration-200 ease-out',
-        'bg-sidebar-bg overflow-hidden',
+        'bg-sidebar-bg overflow-hidden group',
         expanded ? 'w-[260px]' : 'w-[56px]'
       )}
     >
@@ -76,10 +76,17 @@ export function Sidebar({ expanded, onToggle }: Props) {
         ) : (
           <button
             onClick={onToggle}
-            className="w-7 h-7 flex items-center justify-center"
+            className="w-7 h-7 flex items-center justify-center relative"
             title="Seitenleiste ausklappen"
           >
-            <img src={iconLogo} alt="K" className="w-7 h-7 object-contain shrink-0" />
+            <img
+              src={iconLogo}
+              alt="K"
+              className="w-7 h-7 object-contain shrink-0 transition-opacity duration-150 group-hover:opacity-0"
+            />
+            <span className="absolute inset-0 flex items-center justify-center text-text-sidebar opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              <HugeiconsIcon icon={SidebarLeft01Icon} size={18} />
+            </span>
           </button>
         )}
       </div>
