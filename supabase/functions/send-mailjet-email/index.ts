@@ -20,6 +20,7 @@ interface EmailRequest {
     | "project_reply"
     | "credit_approval"
     | "new_recommendation"
+    | "project_reminder"
     | "magic_link"
     | "password_reset"
     | "email_confirmation"
@@ -395,6 +396,31 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${copy.body as string}</p>
             <a href="${actionUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
+          </div>${defaultFooter}</div></body></html>`,
+      };
+    }
+
+    case "project_reminder": {
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
+      const tasks = data.tasks || [];
+      const taskListHtml = tasks
+        .map(
+          (t) => `<div class="task-item">
+            <span class="task-name">${t.taskName}</span>
+          </div>`
+        )
+        .join("");
+      const subject = typeof copy.subject === "function" ? copy.subject(tasks.length) : copy.subject;
+      return {
+        subject,
+        html: `<!DOCTYPE html><html><head>${styles}</head><body>
+          <div class="wrapper">${header}<div class="card">
+            <h1 class="title">${copy.title}</h1>
+            <p class="text">${cleanGreeting}</p>
+            <p class="text">${copy.body as string}</p>
+            <div class="task-list">${taskListHtml}</div>
+            <a href="${portalUrl}/projekte" class="button">${copy.cta}</a>
             ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };

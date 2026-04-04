@@ -15,6 +15,7 @@ export type EmailType =
   | "project_reply"
   | "credit_approval"
   | "pending_reminder"
+  | "project_reminder"
   | "new_recommendation"
   | "magic_link"
   | "password_reset"
@@ -113,6 +114,33 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "View in portal",
       notes: [
         "You receive this reminder every 5 days while tasks are pending.",
+        "You can disable reminders in your account settings.",
+      ],
+    },
+  },
+
+  project_reminder: {
+    de: {
+      subject: (count: number) =>
+        `Erinnerung: ${count} Projektschritt${count === 1 ? '' : 'e'} warte${count === 1 ? 't' : 'n'} auf Ihre Rückmeldung`,
+      title: "Offene Projektschritte",
+      greeting: greetDe,
+      body: "Die folgenden Projektschritte warten auf Ihre Rückmeldung:",
+      cta: "Im Portal ansehen",
+      notes: [
+        "Sie erhalten diese Erinnerung alle 3 Tage, solange offene Projektschritte auf Ihre Freigabe warten.",
+        "Sie können Erinnerungen in Ihren Kontoeinstellungen deaktivieren.",
+      ],
+    },
+    en: {
+      subject: (count: number) =>
+        `Reminder: ${count} project step${count === 1 ? '' : 's'} await${count === 1 ? 's' : ''} your feedback`,
+      title: "Pending project steps",
+      greeting: greetEn,
+      body: "The following project steps are waiting for your feedback:",
+      cta: "View in portal",
+      notes: [
+        "You receive this reminder every 3 days while project steps are pending.",
         "You can disable reminders in your account settings.",
       ],
     },

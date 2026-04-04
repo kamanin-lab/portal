@@ -62,9 +62,11 @@ const portalUrl = "https://portal.kamanin.at";
 function buildReminderHtml(
   tasks: ReminderTaskItem[],
   firstName: string | null,
-  locale: EmailLocale = "de"
+  locale: EmailLocale = "de",
+  emailType: "pending_reminder" | "project_reminder" = "pending_reminder",
+  ctaUrl: string = `${portalUrl}/tickets`
 ): { subject: string; html: string } {
-  const copy = getEmailCopy("pending_reminder", locale);
+  const copy = getEmailCopy(emailType, locale);
   const greeting = typeof copy.greeting === "function"
     ? copy.greeting(firstName || undefined)
     : copy.greeting;
@@ -95,7 +97,7 @@ function buildReminderHtml(
         <p class="text">${greeting}</p>
         <p class="text">${copy.body as string}</p>
         <div class="task-list">${taskListHtml}</div>
-        <a href="${portalUrl}/tickets" class="button">${copy.cta}</a>
+        <a href="${ctaUrl}" class="button">${copy.cta}</a>
         ${notesHtml}
       </div>
       <div class="footer">
@@ -322,10 +324,142 @@ Deno.serve(async (req) => {
       }
     }
 
-    log.info("Reminder job complete", { sent, skipped, errors, totalProfiles: profileMap.size });
+    log.info("Ticket reminder job complete", { sent, skipped, errors, totalProfiles: profileMap.size });
+
+    // ===== PROJECT TASK REMINDERS (3-day cooldown) =====
+    let projectSent = 0;
+    let projectSkipped = 0;
+
+    const { data: projectRows, error: projectQueryError } = await supabase
+      .from("project_task_cache")
+      .select(`
+        clickup_id,
+        name,
+        status,
+        last_activity_at,
+        project_config_id
+      `)
+      .eq("status", "client review")
+      .eq("is_visible", true)
+      .lt("last_activity_at", new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (projectQueryError) {
+      log.warn("Project task query failed", { error: String(projectQueryError) });
+    } else if (projectRows && projectRows.length > 0) {
+      // Get unique project_config_ids
+      const projectConfigIds = [...new Set(projectRows.map((r: Record<string, unknown>) => r.project_config_id as string).filter(Boolean))];
+
+      // Get all profile_ids with access to these projects
+      const { data: accessRows } = await supabase
+        .from("project_access")
+        .select("profile_id, project_config_id")
+        .in("project_config_id", projectConfigIds);
+
+      // Get profile details for these users
+      const projectProfileIds = [...new Set((accessRows || []).map((r: Record<string, unknown>) => r.profile_id as string))];
+
+      const { data: projectProfiles } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, email_notifications, notification_preferences, last_project_reminder_sent_at")
+        .in("id", projectProfileIds);
+
+      // Build project_config_id -> profile_ids map
+      const projectToProfiles = new Map<string, string[]>();
+      for (const row of (accessRows || []) as Record<string, unknown>[]) {
+        const pcId = row.project_config_id as string;
+        const pId = row.profile_id as string;
+        if (!projectToProfiles.has(pcId)) {
+          projectToProfiles.set(pcId, []);
+        }
+        projectToProfiles.get(pcId)!.push(pId);
+      }
+
+      // Build per-profile task list
+      const projectProfileMap = new Map<string, {
+        email: string;
+        fullName: string | null;
+        emailEnabled: boolean;
+        prefs: Record<string, boolean> | null;
+        lastReminder: string | null;
+        tasks: ReminderTaskItem[];
+      }>();
+
+      for (const row of projectRows as Record<string, unknown>[]) {
+        const profileIdsForProject = projectToProfiles.get(row.project_config_id as string) || [];
+        for (const pid of profileIdsForProject) {
+          if (!projectProfileMap.has(pid)) {
+            const p = (projectProfiles || []).find((pp: Record<string, unknown>) => pp.id === pid) as Record<string, unknown> | undefined;
+            if (!p) continue;
+            projectProfileMap.set(pid, {
+              email: p.email as string,
+              fullName: p.full_name as string | null,
+              emailEnabled: p.email_notifications as boolean,
+              prefs: p.notification_preferences as Record<string, boolean> | null,
+              lastReminder: p.last_project_reminder_sent_at as string | null,
+              tasks: [],
+            });
+          }
+          const lastActivity = row.last_activity_at as string | null;
+          const daysPending = lastActivity
+            ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86_400_000)
+            : 0;
+          projectProfileMap.get(pid)!.tasks.push({
+            taskId: row.clickup_id as string,
+            taskName: row.name as string,
+            status: "Ihre Rückmeldung",
+            daysPending: Math.max(daysPending, 0),
+          });
+        }
+      }
+
+      for (const [profileId, profile] of projectProfileMap) {
+        const remindersEnabled = profile.prefs?.reminders !== false;
+        if (!remindersEnabled || !profile.emailEnabled) { projectSkipped++; continue; }
+
+        // Attempt atomic claim: only update if cooldown has expired
+        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: claimed } = await supabase
+          .from("profiles")
+          .update({ last_project_reminder_sent_at: new Date().toISOString() })
+          .eq("id", profileId)
+          .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
+          .select("id");
+
+        if (!claimed || claimed.length === 0) {
+          // Another execution claimed this profile first, or cooldown not expired
+          projectSkipped++;
+          continue;
+        }
+
+        const firstName = profile.fullName?.split(" ")[0] || null;
+        const { subject, html } = buildReminderHtml(
+          profile.tasks,
+          firstName,
+          "de",
+          "project_reminder",
+          `${portalUrl}/projekte`
+        );
+
+        const success = await sendMailjet(
+          { email: profile.email, name: profile.fullName || undefined },
+          subject,
+          html,
+          log
+        );
+
+        if (success) {
+          projectSent++;
+        } else {
+          // Email failed but claim was already set — log warning
+          log.warn("Project reminder email failed after atomic claim", { profileId: "[REDACTED]" });
+        }
+      }
+
+      log.info("Project reminder job complete", { projectSent, projectSkipped });
+    }
 
     return new Response(
-      JSON.stringify({ ok: true, code: "REMINDERS_SENT", message: `Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}`, correlationId: requestId, sent, skipped, errors }),
+      JSON.stringify({ ok: true, code: "REMINDERS_SENT", message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}`, correlationId: requestId, sent, skipped, errors, projectSent, projectSkipped }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
