@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { fetchWpSiteAudit, formatAuditForPrompt, WpSiteAudit } from "../_shared/wp-audit.ts";
+import { TRIAGE_AGENT_PROMPT } from "../_shared/skills/triage-agent-prompt.ts";
 
 // ---------------------------------------------------------------------------
 // Local fetchWithTimeout — defined here per project convention (not shared)
@@ -217,9 +218,7 @@ Deno.serve(async (req: Request) => {
     // ------------------------------------------------------------------
     // 4. Read skill prompt from disk
     // ------------------------------------------------------------------
-    const skillPrompt = await Deno.readTextFile(
-      new URL("../_shared/skills/triage_agent.md", import.meta.url).pathname,
-    );
+    const skillPrompt = TRIAGE_AGENT_PROMPT;
 
     // ------------------------------------------------------------------
     // 5. Build user message
