@@ -9,6 +9,9 @@ dist-ssr/
 .env
 .env.*
 *.local
+# But allow the example file (no secrets, documentation only)
+!.env.example
+!**/.env.example
 
 # Logs
 logs/
