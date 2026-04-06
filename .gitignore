@@ -63,3 +63,7 @@ supabase/.temp/
 tasks/*.js
 tasks/session.json
 scripts/*-production.json
+
+# Generated staging artifacts
+staging-schema*.sql
+.supabase/

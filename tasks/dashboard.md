@@ -1,13 +1,14 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-03-31_
+_Status: active_ · _Last updated: 2026-04-06_
 
 ## Current State
-**Portal is LIVE at https://portal.kamanin.at**
+**Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
+**Staging is LIVE at https://staging.portal.kamanin.at** (`staging` branch, Cloud Supabase)
 First production client: MBM (Nadin Bonin). Auto-deploys from `main` via Vercel.
+Git rollback anchor: `v1.0-stable` tag on `main`.
 
 ## Open Items
-- Magic link login hidden — GoTrue SMTP needs configuration on self-hosted Supabase
 - MBM modules: tickets + support active; projects not yet configured
 
 ## Completed Today (2026-03-25)
@@ -29,6 +30,14 @@ First production client: MBM (Nadin Bonin). Auto-deploys from `main` via Vercel.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+### Staging Environment ✅ (2026-04-06)
+- `staging` branch created from `main`
+- Cloud Supabase free-tier project `ahlthosftngdcryltapu` provisioned (17 tables, RLS, 15 secrets, 17 Edge Functions)
+- Vercel staging environment: `staging.portal.kamanin.at` with branch-specific env vars
+- GitHub Actions: `deploy-edge-functions-staging.yml` auto-deploys Edge Functions on staging push
+- Scripts: `sync-staging-secrets.ts`, `sync-staging-schema.ts`
+- Git tag `v1.0-stable` anchored on `main`
+
 ### TASK-017: Hilfe FAQ Page ✅ (2026-03-31)
 - Full FAQ page replacing placeholder: 6 accordion sections, 20 items, German Sie-form
 - New components: `FaqItem` (AnimatePresence accordion), `FaqSection` (icon card)
