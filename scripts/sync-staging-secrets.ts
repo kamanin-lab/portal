@@ -234,6 +234,10 @@ const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "g
   // Optional — only set if present in Coolify
   { name: "PROJECT_MEMORY_OPERATOR_EMAILS", action: "copy" },
   { name: "OPENROUTER_API_KEY",        action: "copy" },
+  // Triage Agent
+  { name: "TRIAGE_ENABLED_LIST_IDS",   action: "copy" },
+  { name: "WP_MCP_USER",               action: "copy" },
+  { name: "WP_MCP_APP_PASS",           action: "copy" },
   // Auth email hook — needs to point to staging
   { name: "GOTRUE_HOOK_SEND_EMAIL_URI", action: "override" },
 ];
