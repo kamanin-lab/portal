@@ -3,7 +3,6 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/auth/v1/:path*", "destination": "https://portal.db.kamanin.at/auth/v1/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

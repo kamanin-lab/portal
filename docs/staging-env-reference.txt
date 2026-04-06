@@ -1,0 +1,24 @@
+# .env.staging.example
+# Copy relevant variables into .env.local to enable staging scripts.
+# Never commit actual values — .env.local is in .gitignore.
+
+# ── Staging Cloud Supabase ──────────────────────────────────────────────────
+# Get from: supabase.com → Project Settings → API
+STAGING_SUPABASE_URL=https://your-staging-ref.supabase.co
+STAGING_ANON_KEY=eyJ...
+STAGING_SERVICE_ROLE_KEY=eyJ...
+STAGING_PROJECT_REF=your-staging-ref
+
+# Get from: supabase.com → Dashboard → Account → Access Tokens
+SUPABASE_ACCESS_TOKEN=sbp_...
+
+# ── Staging Database (for schema migration) ─────────────────────────────────
+# Get from: supabase.com → Project Settings → Database → Connection String (URI)
+# Mode: Transaction pooler (port 6543) or Direct (port 5432)
+STAGING_DB_CONNECTION_STRING=postgresql://postgres.your-ref:your-password@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+
+# ── Production SSH (already in .env.local — reused by staging scripts) ──────
+SUPABASE_SERVER_HOST=91.99.172.34
+SUPABASE_SERVER_USER=root
+SUPABASE_SERVER_PORT=22
+SUPABASE_SSH_KEY=C:/Users/upan/.ssh/id_315
