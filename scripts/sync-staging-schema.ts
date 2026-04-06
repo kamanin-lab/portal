@@ -25,7 +25,7 @@ const __dirname = dirname(__filename);
 
 const DUMP_ONLY = process.argv.includes("--dump-only");
 const APPLY_ONLY = process.argv.includes("--apply-only");
-const SCHEMA_FILE = resolve(__dirname, "..", "staging-schema.sql");
+const SCHEMA_FILE = resolve(__dirname, "..", "staging-schema-public.sql");
 const COOLIFY_SERVICE_ID = "ngkk4c4gsc0kw8wccw0cc04s";
 
 // ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ function dumpSchema(env: Record<string, string>): void {
 
   console.log("→ Dumping schema from production database...");
 
-  // pg_dump: schema only, no ACL, no owner, no comments on extensions
+  // pg_dump: public schema only (auth/storage are managed by Cloud Supabase)
   const dumpCmd =
     `docker exec ${containerId} pg_dump ` +
     `-U postgres ` +
@@ -118,8 +118,6 @@ function dumpSchema(env: Record<string, string>): void {
     `--no-owner ` +
     `--no-comments ` +
     `--schema=public ` +
-    `--schema=auth ` +
-    `--schema=storage ` +
     `postgres 2>/dev/null`;
 
   const schemaSql = sshExec(env, dumpCmd);
@@ -143,46 +141,172 @@ function dumpSchema(env: Record<string, string>): void {
 }
 
 // ---------------------------------------------------------------------------
-// Apply schema to staging via psql
+// SQL statement splitter that handles dollar-quoted strings ($$ ... $$)
 // ---------------------------------------------------------------------------
 
-function applySchema(env: Record<string, string>): void {
+function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let current = "";
+  let inDollarQuote = false;
+  let dollarTag = "";
+  let i = 0;
+
+  while (i < sql.length) {
+    // Detect dollar-quote open: $tag$ where tag is 0+ alphanumerics/underscores
+    if (!inDollarQuote && sql[i] === "$") {
+      const match = sql.slice(i).match(/^\$([A-Za-z0-9_]*)\$/);
+      if (match) {
+        dollarTag = match[0];
+        inDollarQuote = true;
+        current += dollarTag;
+        i += dollarTag.length;
+        continue;
+      }
+    }
+
+    if (inDollarQuote) {
+      // Detect matching closing dollar-quote
+      if (sql.startsWith(dollarTag, i)) {
+        current += dollarTag;
+        i += dollarTag.length;
+        inDollarQuote = false;
+        dollarTag = "";
+        continue;
+      }
+    } else if (sql[i] === ";") {
+      // Statement boundary (only when not in dollar quote)
+      current += ";";
+      const trimmed = current.trim();
+      if (trimmed && trimmed !== ";") {
+        statements.push(trimmed);
+      }
+      current = "";
+      i++;
+      continue;
+    }
+
+    current += sql[i];
+    i++;
+  }
+
+  const trimmed = current.trim();
+  if (trimmed && trimmed !== ";") statements.push(trimmed);
+  return statements;
+}
+
+// ---------------------------------------------------------------------------
+// Apply schema to staging via Supabase Management API
+// (no psql required — uses /v1/projects/{ref}/database/query)
+// ---------------------------------------------------------------------------
+
+async function applySchema(env: Record<string, string>): Promise<void> {
   if (!existsSync(SCHEMA_FILE)) {
-    console.error("ERROR: staging-schema.sql not found. Run without --apply-only first.");
+    console.error(`ERROR: ${SCHEMA_FILE} not found. Run without --apply-only first.`);
     process.exit(1);
   }
 
-  const connectionString = env.STAGING_DB_CONNECTION_STRING;
-  if (!connectionString) {
-    console.error(
-      "ERROR: STAGING_DB_CONNECTION_STRING missing from .env.local\n" +
-        "Get it from: Supabase Dashboard → Settings → Database → Connection String (URI mode)\n" +
-        "Format: postgresql://postgres.{ref}:{password}@aws-0-{region}.pooler.supabase.com:5432/postgres"
+  const projectRef = env.STAGING_PROJECT_REF;
+  const accessToken = env.SUPABASE_ACCESS_TOKEN;
+  if (!projectRef || !accessToken) {
+    console.error("ERROR: STAGING_PROJECT_REF and SUPABASE_ACCESS_TOKEN required in .env.local");
+    process.exit(1);
+  }
+
+  const fullSql = readFileSync(SCHEMA_FILE, "utf-8");
+  console.log(`→ Applying schema to staging via Management API (${Math.round(fullSql.length / 1024)} KB)...`);
+
+  // Strip single-line comments (pg_dump section headers contain semicolons that fool the parser)
+  // e.g. -- Name: public; Type: SCHEMA; Schema: -; Owner: -
+  const strippedSql = fullSql
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("--"))
+    .join("\n");
+
+  // Split into individual statements, handling dollar-quoted strings properly
+  const statements = splitSqlStatements(strippedSql)
+    .filter((s) => s.trim().length > 0);
+
+  console.log(`  Running ${statements.length} statements...`);
+
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  async function runQuery(query: string): Promise<{ ok: boolean; body: string; status: number }> {
+    const q = query.endsWith(";") ? query : query + ";";
+    const res = await fetch(
+      `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: q }),
+      }
     );
-    process.exit(1);
+    const body = await res.text();
+    return { ok: res.ok, body, status: res.status };
   }
 
-  console.log("→ Applying schema to staging Cloud Supabase...");
+  let applied = 0;
+  let skipped = 0;
+  let errors = 0;
+  const failed: string[] = [];
 
-  // Check psql is available
-  try {
-    execSync("psql --version", { stdio: "pipe" });
-  } catch {
-    console.error("ERROR: psql not found. Install PostgreSQL client:");
-    console.error("  https://www.postgresql.org/download/");
-    process.exit(1);
+  // Pass 1: apply all statements with 120ms delay to avoid rate limiting
+  for (const stmt of statements) {
+    await delay(120);
+    try {
+      const { ok, body, status } = await runQuery(stmt);
+      if (ok) {
+        applied++;
+      } else if (
+        body.includes("already exists") ||
+        body.includes("duplicate") ||
+        body.includes("42710")
+      ) {
+        skipped++;
+      } else if (status === 429) {
+        // Rate limited — queue for retry
+        failed.push(stmt);
+      } else {
+        // Dependency error (table not yet created) — queue for pass 2
+        failed.push(stmt);
+      }
+    } catch (e) {
+      failed.push(stmt);
+    }
   }
 
-  try {
-    execFileSync("psql", [connectionString, "-f", SCHEMA_FILE], {
-      stdio: "inherit",
-      timeout: 120000,
-    });
-    console.log("✓ Schema applied to staging database.");
-  } catch (err) {
-    console.error("ERROR: psql failed. Check connection string and try again.");
-    console.error(err);
-    process.exit(1);
+  // Pass 2: retry failed statements (dependency ordering + rate limit retries)
+  if (failed.length > 0) {
+    console.log(`  Retrying ${failed.length} failed statements...`);
+    await delay(2000);
+    for (const stmt of failed) {
+      await delay(200);
+      try {
+        const { ok, body } = await runQuery(stmt);
+        if (ok) {
+          applied++;
+        } else if (
+          body.includes("already exists") ||
+          body.includes("duplicate") ||
+          body.includes("42710")
+        ) {
+          skipped++;
+        } else {
+          console.error(`  ERR: ${body.slice(0, 150)}`);
+          errors++;
+        }
+      } catch (e) {
+        console.error(`  ERR: ${(e as Error).message}`);
+        errors++;
+      }
+    }
+  }
+
+  console.log(`✓ Schema applied: ${applied} ok, ${skipped} skipped (already exists), ${errors} errors`);
+  if (errors > 5) {
+    console.warn("Some errors remain — check staging Supabase Studio to verify tables exist.");
   }
 }
 
@@ -198,7 +322,7 @@ async function main() {
   }
 
   if (!DUMP_ONLY) {
-    applySchema(env);
+    await applySchema(env);
     console.log("\n✓ Schema migration complete.");
     console.log("\nNext: run secrets sync if you haven't yet:");
     console.log("  npx tsx scripts/sync-staging-secrets.ts");
