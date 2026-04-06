@@ -202,16 +202,41 @@ async function pushSecrets(
 }
 
 // ---------------------------------------------------------------------------
-// Keys that should be skipped (system vars, frontend-only, will be overridden)
+// Allow-list: only these Edge Function vars are pushed to staging.
+// Coolify has 130+ infrastructure vars — we only want the 18 app-level ones.
+// "override" = replace with staging value; "copy" = take from Coolify as-is.
 // ---------------------------------------------------------------------------
 
-const SKIP_KEYS = new Set([
-  "HOME", "PATH", "HOSTNAME", "TERM", "SHELL", "LANG", "LC_ALL", "USER",
-  "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "VITE_MEMORY_OPERATOR_EMAILS",
-  // Overridden below with staging values:
-  "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY",
-  "JWT_SECRET", "CRON_SECRET",
-]);
+const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "generate" }> = [
+  // NOTE: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY are
+  // automatically injected by Cloud Supabase — cannot be set via Management API.
+  // Security tokens — generate fresh for staging
+  { name: "JWT_SECRET",                action: "generate" },
+  { name: "CRON_SECRET",               action: "generate" },
+  // ClickUp — copy from production
+  { name: "CLICKUP_API_TOKEN",         action: "copy" },
+  { name: "CLICKUP_WORKSPACE_ID",      action: "copy" },
+  { name: "CLICKUP_WEBHOOK_SECRET",    action: "copy" },
+  { name: "CLICKUP_CREDITS_FIELD_ID",  action: "copy" },
+  { name: "CLICKUP_VISIBLE_FIELD_ID",  action: "copy" },
+  // Email — copy from production
+  { name: "MAILJET_API_KEY",           action: "copy" },
+  { name: "MAILJET_API_SECRET",        action: "copy" },
+  // Nextcloud — copy from production
+  { name: "NEXTCLOUD_URL",             action: "copy" },
+  { name: "NEXTCLOUD_USER",            action: "copy" },
+  { name: "NEXTCLOUD_PASS",            action: "copy" },
+  // AI
+  { name: "ANTHROPIC_API_KEY",         action: "copy" }, // used by fetch-project-tasks
+  // Auth/access
+  { name: "VERIFY_JWT",                action: "copy" },
+  { name: "FUNCTIONS_VERIFY_JWT",      action: "copy" },
+  // Optional — only set if present in Coolify
+  { name: "PROJECT_MEMORY_OPERATOR_EMAILS", action: "copy" },
+  { name: "OPENROUTER_API_KEY",        action: "copy" },
+  // Auth email hook — needs to point to staging
+  { name: "GOTRUE_HOOK_SEND_EMAIL_URI", action: "override" },
+];
 
 function maskValue(name: string, value: string): string {
   const isSensitive =
@@ -246,20 +271,25 @@ async function main() {
   // 1. Read env vars from Coolify via SSH
   const coolifyVars = readCoolifyEnv(env);
 
-  // 2. Build final staging secrets
+  // 2. Build staging secrets using allow-list only
   const stagingVars: Record<string, string> = {};
-  for (const [k, v] of Object.entries(coolifyVars)) {
-    if (!SKIP_KEYS.has(k) && !k.startsWith("VITE_")) {
-      stagingVars[k] = v;
+
+  for (const { name, action } of EDGE_FUNCTION_VARS) {
+    if (action === "override") {
+      if (name === "GOTRUE_HOOK_SEND_EMAIL_URI") {
+        // Point auth email hook to staging Edge Function
+        stagingVars[name] = `${env.STAGING_SUPABASE_URL}/functions/v1/auth-email`;
+      }
+    } else if (action === "generate") {
+      stagingVars[name] = randomBytes(32).toString("hex");
+    } else if (action === "copy") {
+      const val = coolifyVars[name];
+      if (val !== undefined) {
+        stagingVars[name] = val;
+      }
+      // if not in Coolify, skip silently
     }
   }
-
-  // Override / add staging-specific values
-  stagingVars["SUPABASE_URL"] = env.STAGING_SUPABASE_URL;
-  stagingVars["SUPABASE_SERVICE_ROLE_KEY"] = env.STAGING_SERVICE_ROLE_KEY;
-  stagingVars["SUPABASE_ANON_KEY"] = env.STAGING_ANON_KEY;
-  stagingVars["JWT_SECRET"] = randomBytes(32).toString("hex");
-  stagingVars["CRON_SECRET"] = randomBytes(32).toString("hex");
 
   const secrets = Object.entries(stagingVars).map(([name, value]) => ({ name, value }));
 
