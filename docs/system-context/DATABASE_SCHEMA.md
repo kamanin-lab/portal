@@ -23,6 +23,7 @@ User configuration and ClickUp mapping. One row per authenticated user.
 | support_task_id | text | | ClickUp task ID used as dedicated support chat channel |
 | clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |
 | nextcloud_client_root | text | | WebDAV path to the client's root folder in Nextcloud (e.g., `/clients/muster-gmbh/`). Used by `nextcloud-files` Edge Function for the client-level file browser. NULL means files are not yet configured for this client. |
+| last_project_reminder_sent_at | timestamptz | | Timestamp of the last project-task reminder email sent to this user. Used by `send-reminders` Edge Function to enforce the 3-day cooldown between project reminder emails. Separate from ticket reminder tracking. Added 2026-04-04. |
 
 **RLS Policy:** Users can read/update only their own row (`auth.uid() = id`).
 

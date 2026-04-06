@@ -51,6 +51,7 @@ All notifications are gated by the ClickUp custom field "Visible in client porta
   - `support_response` — Team reply in support chat
   - `step_ready` — Project step moved to Client Review
   - `project_reply` — Team reply on a project step
+  - `project_reminder` — Project step/task idle in Client Review for 3+ days (CTA: `/projekte`)
 - All emails include `firstName`, `taskName`, and `taskId` for deep linking
 
 ### Granular Notification Preferences
@@ -65,7 +66,7 @@ Users can control which email types they receive via the Account page (`/konto`)
 | `team_question` | `team_comment` | Neue Nachricht vom Team | ON |
 | `project_reply` | `team_comment` | (same preference as team_comment) | ON |
 | `support_response` | `support_response` | Support-Antwort | ON |
-| _(no trigger yet)_ | `reminders` | Erinnerungen (coming soon) | ON |
+| `project_reminder` | `reminders` | Erinnerungen | ON |
 
 The webhook function uses `shouldSendEmail(profile, emailType)` to check the appropriate preference key. If the JSONB column is null (pre-migration users), it falls back to the legacy `email_notifications` boolean.
 
@@ -73,7 +74,19 @@ In-app (bell) notifications are always sent regardless of email preferences.
 
 ## Automated Reminders
 
+### Ticket Reminders (support/task module)
 For tasks remaining in `needs_attention` (Client Review) without client action, automated email reminders are sent on a 3-5-10 day schedule. These reminders prompt the client to review and act on pending tasks.
+
+### Project Task Reminders (projects module)
+For project tasks in `client review` status that have been idle for 3+ days, a `project_reminder` email is sent every 3 days. The CTA links to `/projekte`.
+
+- **Trigger:** `send-reminders` Edge Function — separate block from ticket reminders
+- **Source table:** `project_task_cache` (idle 3+ days in `client review`)
+- **Recipient resolution:** via `project_access` table (maps project → profile)
+- **Email type:** `project_reminder`
+- **Cooldown tracking:** `profiles.last_project_reminder_sent_at` (timestamptz) — prevents re-send within 3-day window
+- **Concurrency safety:** atomic claim pattern to prevent duplicate sends in parallel invocations
+- **Preference gate:** `profiles.notification_preferences.reminders` key
 
 ## Deduplication
 

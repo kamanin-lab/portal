@@ -18,7 +18,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 - **State:** TanStack React Query (server) + React Context (UI)
 - **Backend:** Supabase — PostgreSQL + RLS, Auth (email/password + magic link), Edge Functions (Deno), Realtime, Storage
 - **Integrations:** ClickUp (webhooks + API proxied through Edge Functions), Nextcloud (WebDAV, file storage source of truth), Mailjet (email via Edge Functions)
-- **Deploy:** Vercel (frontend, auto-deploy from `main` → portal.kamanin.at), Coolify → self-hosted Supabase (backend + Edge Functions), GitHub CLI for PRs
+- **Deploy:** Vercel (frontend, `main` → portal.kamanin.at, `staging` → staging.portal.kamanin.at), Coolify → self-hosted Supabase (production backend + Edge Functions), Cloud Supabase free tier (staging backend, project `ahlthosftngdcryltapu`), GitHub CLI for PRs
 - **Fonts:** DM Sans (UI) + DM Mono (code/metadata)
 
 ### Design Tools (available to all agents)
@@ -67,16 +67,21 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
+| `supabase/functions/send-reminders/` | Dual-purpose reminder scheduler: (1) ticket reminders — tasks idle in Client Review 5+ days; (2) project reminders — project_task_cache entries idle in `client review` 3+ days → `project_reminder` email every 3 days, tracked via `profiles.last_project_reminder_sent_at` |
 | `supabase/functions/nextcloud-files/` | WebDAV proxy: list, download, upload (XHR progress), mkdir, delete, delete-client |
 | `src/shared/lib/upload-with-progress.ts` | Shared XHR upload utility — wraps XMLHttpRequest to expose `onProgress` (0–100) for all file uploads |
 | `src/modules/files/components/UploadProgressBar.tsx` | Animated per-file progress bar; exports `UploadItem` interface; auto-dismisses at completion |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
 | `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
 | `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache |
+| `scripts/sync-staging-secrets.ts` | SSH to prod Coolify → reads 15 Edge Function secrets → pushes to staging Cloud Supabase via Management API |
+| `scripts/sync-staging-schema.ts` | pg_dump prod public schema → apply to staging Cloud Supabase; flags: `--dump-only`, `--apply-only` |
+| `docs/staging-env-reference.txt` | Staging environment variables, project refs, service role keys, site URL |
+| `.github/workflows/deploy-edge-functions-staging.yml` | CI: on push to `staging` → deploy all Edge Functions to staging Cloud Supabase via Supabase CLI |
 | `src/shared/lib/hilfe-faq-data.ts` | FAQ content: `FaqItemData` / `FaqSectionData` types + `FAQ_SECTIONS` array (6 sections, 20 items, German) |
 | `src/shared/components/help/FaqItem.tsx` | Accordion item — AnimatePresence height animation, chevron rotation, `isLast` separator |
 | `src/shared/components/help/FaqSection.tsx` | FAQ section card — Hugeicons icon + h2 + FaqItem list |
-| `vercel.json` | SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint |
+| `vercel.json` | `main` branch: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint. `staging` branch: SPA rewrites only (proxy removed — Cloud Supabase handles CORS natively) |
 
 ## Commands
 
@@ -104,6 +109,67 @@ node scripts/openrouter-review.cjs --branch main    # diff vs branch
 node scripts/openrouter-review.cjs -o review.md     # output to file
 node scripts/openrouter-review.cjs --context "..."  # add task context
 ```
+
+## Staging Environment
+
+**Staging URL:** https://staging.portal.kamanin.at (Vercel, `staging` branch)
+**Staging backend:** Cloud Supabase free tier, project ref `ahlthosftngdcryltapu` (eu-central-1)
+**Production URL:** https://portal.kamanin.at (Vercel, `main` branch)
+**Production backend:** Self-hosted Supabase on Coolify
+
+### Branch Strategy
+
+| Branch | Deploys to | Backend |
+|--------|-----------|---------|
+| `staging` | staging.portal.kamanin.at | Cloud Supabase (`ahlthosftngdcryltapu`) |
+| `main` | portal.kamanin.at | Self-hosted Supabase (Coolify) |
+
+### Development Workflow
+
+```bash
+# Feature work
+git checkout staging
+# make changes, test locally
+git push origin staging        # auto-deploys to staging.portal.kamanin.at + deploys Edge Functions via CI
+
+# After staging validation, promote to production
+git checkout main
+git merge staging
+git push origin main           # auto-deploys to portal.kamanin.at (PRODUCTION)
+```
+
+### Rollback Production
+
+```bash
+git tag --list                 # list stable tags (e.g. v1.0-stable)
+git revert <commits>           # safe revert — creates a new commit, keeps history clean
+git push origin main           # redeploys immediately
+```
+
+### Schema Migration Workflow
+
+```bash
+# 1. Dump prod schema
+npx tsx scripts/sync-staging-schema.ts --dump-only
+
+# 2. Apply to staging
+npx tsx scripts/sync-staging-schema.ts --apply-only
+
+# 3. Push new migrations to staging via Supabase CLI
+supabase link --project-ref ahlthosftngdcryltapu
+supabase db push
+```
+
+### Re-sync Secrets (when production secrets change)
+
+```bash
+npx tsx scripts/sync-staging-secrets.ts
+# SSH to Coolify → reads 15 Edge Function secrets → pushes to staging via Management API
+```
+
+### Key Difference: `vercel.json` on staging vs main
+
+The `staging` branch `vercel.json` does NOT have the `/auth/v1/*` proxy block. Cloud Supabase handles CORS natively — the proxy is only needed for the self-hosted instance on `main`.
 
 ## Project Structure
 
@@ -204,8 +270,10 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │       ├── send-support-message/
 │       └── update-task-status/
 ├── scripts/
-│   ├── openrouter-review.cjs   # Post-code review via GPT-5.4-mini (OpenRouter API)
-│   └── onboard-client.ts       # Client onboarding automation (auth user + profile + workspaces + credits)
+│   ├── openrouter-review.cjs        # Post-code review via GPT-5.4-mini (OpenRouter API)
+│   ├── onboard-client.ts            # Client onboarding automation (auth user + profile + workspaces + credits)
+│   ├── sync-staging-secrets.ts      # SSH prod Coolify → push 15 secrets to staging Cloud Supabase
+│   └── sync-staging-schema.ts       # pg_dump prod schema → apply to staging Cloud Supabase
 ├── vercel.json                 # SPA rewrites + /auth/v1/* proxy to self-hosted Supabase
 ├── vite.config.ts
 ├── vitest.config.ts

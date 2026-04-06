@@ -1,5 +1,72 @@
 # Changelog
 
+## Staging Environment Setup — 2026-04-06
+
+### Infrastructure
+- **Git tag `v1.0-stable`** — rollback anchor created on `main` branch HEAD before staging work began
+- **`staging` branch** — created from `main`; now the standard pre-production integration branch
+
+### vercel.json (staging branch only)
+- Removed `/auth/v1/*` proxy block — Cloud Supabase (supabase.co) handles CORS natively, proxy not needed for staging
+
+### New GitHub Actions workflow
+- **`.github/workflows/deploy-edge-functions-staging.yml`** — on push to `staging` branch: uses Supabase CLI to deploy all 17 Edge Functions to the staging Cloud Supabase project (`ahlthosftngdcryltapu`)
+
+### New scripts
+- **`scripts/sync-staging-secrets.ts`** — SSH to production Coolify server, reads Edge Function secrets, pushes all 15 to staging project via Supabase Management API
+- **`scripts/sync-staging-schema.ts`** — `pg_dump` production public schema, apply to staging via Management API; supports `--dump-only` and `--apply-only` flags
+
+### New reference doc
+- **`docs/staging-env-reference.txt`** — staging environment variables, project refs, service role keys, site URL
+
+### Cloud Supabase staging project (`ahlthosftngdcryltapu`)
+- 17 tables created: profiles, task_cache, comment_cache, notifications, project_config, project_task_cache, step_enrichment, client_workspaces, credit_transactions, credit_packages, project_access, project_memory, project_chapters, project_steps, support_tasks, support_messages, channel_subscriptions
+- All RLS policies applied; functions and triggers in place
+- 15 Edge Function secrets configured
+- Auth `site_url` set to `https://staging.portal.kamanin.at`
+- 17 Edge Functions deployed
+
+### Vercel staging
+- Branch-specific env vars added: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` pointing to staging Cloud Supabase
+- Custom domain `staging.portal.kamanin.at` mapped to `staging` branch
+
+### GitHub Secrets
+- Added `STAGING_PROJECT_REF` (ahlthosftngdcryltapu) and `SUPABASE_ACCESS_TOKEN` for CI workflow
+
+---
+
+## Bug Fixes Batch — 2026-04-04
+
+### Task 1: Disable Aufgaben module for Thomas Oeben
+- **DB only:** Set `client_workspaces.is_active = false` for thomas.oeben@helferportal.de's `tickets` workspace entry
+- No code changes required — `useWorkspaces` already filters `is_active = true`, so the module disappears from sidebar automatically
+
+### Task 2: Phase transition emails
+- **Finding only:** Phase transition emails are already implemented in `supabase/functions/clickup-webhook/index.ts` (line 761) via chapter completion check
+- No changes needed
+
+### Task 3: Project task reminder emails (every 3 days)
+- **`supabase/functions/_shared/emailCopy.ts`** — added `project_reminder` email type with German copy and CTA to `/projekte`
+- **`supabase/functions/send-mailjet-email/index.ts`** — added `project_reminder` case
+- **`supabase/functions/send-reminders/index.ts`** — new block queries `project_task_cache` for tasks in `client review` status idle 3+ days, resolves recipient profiles via `project_access` table, atomic claim pattern for concurrency safety; uses separate `profiles.last_project_reminder_sent_at` column (distinct from ticket reminder tracking)
+- **DB migration:** `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_project_reminder_sent_at timestamptz`
+
+### Task 4: Mobile sidebar Verlauf/credit history navigation bug
+- **`src/shared/components/layout/CreditBalance.tsx`** — added optional `onNavigate?: () => void` prop; `Link to="/konto#guthaben"` now calls `onNavigate` on click to close the mobile sidebar before navigation
+- **`src/shared/components/layout/SidebarUtilities.tsx`** — passes `onNavigate` callback to `CreditBalance`
+
+### Task 5: Desktop sidebar UX overhaul (persistent expand/collapse)
+- **`src/shared/components/layout/AppShell.tsx`** — sidebar expanded state lifted here from `Sidebar.tsx`; backed by `localStorage` key `portal-sidebar-expanded`, default `true` (expanded); passes `expanded` + `onToggle` props to `Sidebar`
+- **`src/shared/components/layout/Sidebar.tsx`** — now accepts `expanded: boolean` + `onToggle: () => void` props; removed hover auto-expand behavior; added toggle button (`SidebarLeft01Icon` from Hugeicons) in logo area
+- **Main content layout** — uses `md:ml-[260px]` when expanded, `md:ml-14` when collapsed, with `transition-[margin-left] duration-200` for smooth animation
+
+### Task 6: Support Chat icon update
+- **`src/shared/components/layout/SidebarUtilities.tsx`** — replaced `CustomerServiceIcon` (headset) with `BubbleChatIcon` (chat bubble)
+- **`src/shared/components/layout/BottomNav.tsx`** — same icon replacement
+- **`src/modules/projects/components/SidebarWorkspaces.tsx`** — same icon replacement (if applicable)
+
+---
+
 ## Docs correction: Magic Link status — 2026-03-31
 
 - **`docs/ARCHITECTURE.md`** — corrected line stating "Magic link disabled until GoTrue SMTP is configured"; Magic Link is enabled and working via Mailjet + `auth-email` Edge Function

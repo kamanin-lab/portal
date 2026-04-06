@@ -274,6 +274,26 @@
 
 **Consequences:** CLAUDE.md Stack section updated. All agent definitions updated. Designer agent's icon strategy section already reflected this (added during 984a424). New components use Hugeicons by default.
 
+## ADR-028: Cloud Supabase free tier for staging (not local or self-hosted)
+**Date:** 2026-04-06
+**Status:** Accepted
+
+**Context:** A proper staging environment is needed to test Edge Function deploys, schema changes, and UI integrations before they reach production. Three options were considered:
+1. Local Supabase (`supabase start`) — no public URL, cannot test Vercel-hosted frontend against it, cannot test webhooks from ClickUp
+2. Second Coolify service (self-hosted) — adds ops overhead, uses server resources, requires full SSH-based deploy pipeline
+3. Cloud Supabase free tier — zero ops overhead, public URL, Supabase CLI deploys natively, Management API available for secret/schema sync
+
+**Decision:** Use a dedicated Cloud Supabase free-tier project (`ahlthosftngdcryltapu`, region: eu-central-1) as the staging backend. Frontend staging is served by Vercel's branch deployment on `staging` → `staging.portal.kamanin.at`. Edge Functions are deployed via GitHub Actions on every push to `staging`. Production remains on self-hosted Supabase via Coolify.
+
+**Consequences:**
+- Full end-to-end staging environment with a public URL — Vercel frontend, Cloud Supabase backend, real Edge Functions
+- `vercel.json` on the staging branch has the `/auth/v1/*` proxy removed (Cloud Supabase handles CORS natively; proxy was only needed for self-hosted)
+- Two new scripts: `sync-staging-secrets.ts` (15 secrets from prod Coolify → staging) and `sync-staging-schema.ts` (pg_dump → Management API)
+- GitHub Actions workflow `deploy-edge-functions-staging.yml` deploys all functions on staging push
+- Free-tier limits apply to staging only — no persistent storage guarantees; data is ephemeral/test-only
+- Schema migrations must be run against both prod (via Coolify volume) and staging (via `sync-staging-schema.ts --apply-only` or `supabase db push`)
+- `v1.0-stable` git tag on `main` provides a clean rollback anchor before staging merges
+
 ## ADR-027: Magic Link authentication enabled on self-hosted Supabase
 **Date:** 2026-03-31
 **Status:** Accepted
