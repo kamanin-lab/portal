@@ -401,6 +401,150 @@ async function findProfilesForTask(
   return { profileIds: [], source: "none" };
 }
 
+// ---- TRIAGE: handleTaskCreated — invokes triage-agent fire-and-forget for monitored lists ----
+async function handleTaskCreated(
+  payload: { task_id?: string; task_name?: string; history_items?: unknown[] },
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>
+): Promise<void> {
+  const taskId = payload.task_id;
+  if (!taskId) {
+    log.warn("taskCreated payload missing task_id — skipping triage");
+    return;
+  }
+
+  // Check if list is monitored
+  const enabledListIdsRaw = Deno.env.get("TRIAGE_ENABLED_LIST_IDS") ?? "";
+  const enabledListIds = enabledListIdsRaw.split(",").map(s => s.trim()).filter(Boolean);
+  if (enabledListIds.length === 0) {
+    log.debug("TRIAGE_ENABLED_LIST_IDS not configured — skipping triage");
+    return;
+  }
+
+  // Fetch task details from ClickUp to get list_id, task_name, description
+  // (taskCreated webhook payload does NOT reliably include these fields)
+  const clickupToken = Deno.env.get("CLICKUP_API_TOKEN");
+  if (!clickupToken) {
+    log.warn("CLICKUP_API_TOKEN not set — cannot fetch task for triage");
+    return;
+  }
+
+  const taskResp = await fetchWithTimeout(
+    `https://api.clickup.com/api/v2/task/${taskId}`,
+    { headers: { Authorization: clickupToken, "Content-Type": "application/json" } },
+    10000
+  );
+  if (!taskResp.ok) {
+    log.warn("Failed to fetch task details for triage", { taskId, status: taskResp.status });
+    return;
+  }
+
+  const task = await taskResp.json();
+  const listId: string = task.list?.id ?? "";
+  const listName: string = task.list?.name ?? "";
+  const taskName: string = task.name ?? "";
+  const description: string = task.description ?? "";
+
+  if (!enabledListIds.includes(listId)) {
+    log.debug("Task list not in TRIAGE_ENABLED_LIST_IDS — skipping triage", { listId });
+    return;
+  }
+
+  // Look up profile_id from task_cache (may not exist yet for very new tasks)
+  const { data: cachedTask } = await supabase
+    .from("task_cache")
+    .select("profile_id")
+    .eq("clickup_id", taskId)
+    .maybeSingle();
+  const profileId: string | null = cachedTask?.profile_id ?? null;
+
+  log.info("Invoking triage-agent for new task", { taskId, listId, listName });
+
+  // Fire-and-forget — do NOT await, must not block webhook 200 response
+  supabase.functions.invoke("triage-agent", {
+    body: {
+      clickup_task_id: taskId,
+      clickup_task_name: taskName,
+      description,
+      list_id: listId,
+      list_name: listName,
+      profile_id: profileId,
+    },
+  }).catch((err: Error) => log.error("triage-agent invocation failed", { error: err.message }));
+}
+
+// ---- TRIAGE: handleTriageHitl — detects [approve]/[reject] developer responses in comments ----
+async function handleTriageHitl(
+  payload: { task_id?: string; history_items?: Array<{ comment?: { text_content?: string }; text?: string }> },
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>
+): Promise<void> {
+  const taskId = payload.task_id;
+  if (!taskId) return;
+
+  // Extract comment text from webhook payload
+  const historyItem = payload.history_items?.[0];
+  const rawText = (historyItem?.comment?.text_content ?? historyItem?.text ?? "").trim();
+  if (!rawText) return;
+
+  // Pattern matching (case-insensitive, anchored)
+  const approveSimple = /^\[approve\]$/i.test(rawText);
+  const approveDetailed = /^\[approve:\s*(\d+(?:\.\d+)?)h\s+(\d+(?:\.\d+)?)cr\]$/i.exec(rawText);
+  const rejectMatch = /^\[reject:\s*(.+)\]$/i.exec(rawText);
+
+  if (!approveSimple && !approveDetailed && !rejectMatch) {
+    return; // Not a HITL command — ignore silently
+  }
+
+  // Find most recent awaiting_hitl job for this task
+  const { data: job } = await supabase
+    .from("agent_jobs")
+    .select("id")
+    .eq("clickup_task_id", taskId)
+    .eq("status", "awaiting_hitl")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!job) {
+    log.warn("HITL comment received but no awaiting_hitl job found", { taskId, rawText });
+    return;
+  }
+
+  // Build update payload
+  let updatePayload: Record<string, unknown>;
+  if (approveSimple) {
+    updatePayload = { status: "approved", hitl_action: "approved", hitl_at: new Date().toISOString() };
+  } else if (approveDetailed) {
+    updatePayload = {
+      status: "approved",
+      hitl_action: "approved",
+      hitl_hours: parseFloat(approveDetailed[1]),
+      hitl_credits: parseFloat(approveDetailed[2]),
+      hitl_at: new Date().toISOString(),
+    };
+  } else {
+    // rejectMatch
+    updatePayload = {
+      status: "rejected",
+      hitl_action: "rejected",
+      hitl_comment: rejectMatch![1].trim(),
+      hitl_at: new Date().toISOString(),
+    };
+  }
+
+  const { error: updateErr } = await supabase
+    .from("agent_jobs")
+    .update(updatePayload)
+    .eq("id", job.id);
+
+  if (updateErr) {
+    log.error("Failed to update agent_jobs for HITL", { error: updateErr.message, jobId: job.id });
+  } else {
+    log.info("HITL action recorded", { jobId: job.id, action: updatePayload.hitl_action, taskId });
+  }
+}
+
 // Check thread context for a comment: is it a reply? If so, is the parent thread client-facing?
 async function checkCommentThreadContext(
   taskId: string,
@@ -1030,6 +1174,18 @@ Deno.serve(async (req) => {
     }
     // ============ END PROJECT ROUTING — fall through to ticket handlers ============
 
+    // ---- TRIAGE: handleTaskCreated for monitored lists (independent of project/ticket routing) ----
+    // Note: project tasks already returned above inside the project routing block.
+    // This only runs for non-project tasks (or when projectConfigId check failed).
+    if (payload.event === "taskCreated" && taskId && isValidTaskId(taskId)) {
+      // Fire-and-forget triage invocation — does not affect webhook response
+      await handleTaskCreated(payload, supabase, log);
+      return new Response(
+        JSON.stringify({ success: true, context: "triage_check" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Handle task status updates
     if (payload.event === "taskStatusUpdated" && historyItem) {
       const statusAfter = historyItem.after?.status;
@@ -1619,6 +1775,11 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // ---- TRIAGE HITL: check for [approve]/[reject] developer responses ----
+      // MUST run before checkCommentThreadContext — thread filter would drop these internal comments
+      await handleTriageHitl(payload, supabase, log);
+      // HITL handler does not return early — always continues to existing notification logic
 
       // Always check thread context to determine if this is a reply and whether the thread is client-facing
       let isThreadedReply = false;
