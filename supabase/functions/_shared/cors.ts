@@ -3,6 +3,7 @@
 
 const ALLOWED_ORIGINS = [
   'https://portal.kamanin.at',
+  'https://staging.portal.kamanin.at',
   'http://localhost:5173',
   'http://localhost:5174',
 ];
