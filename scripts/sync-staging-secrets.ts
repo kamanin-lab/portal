@@ -174,6 +174,46 @@ function readCoolifyEnv(env: Record<string, string>): Record<string, string> {
 }
 
 // ---------------------------------------------------------------------------
+// Disable verify_jwt on all staging Edge Functions
+// Cloud Supabase uses ES256 JWT — gateway verify_jwt must be false.
+// Functions still enforce auth internally via supabase.auth.getUser().
+// ---------------------------------------------------------------------------
+
+async function disableVerifyJwt(
+  projectRef: string,
+  accessToken: string
+): Promise<void> {
+  // List all deployed functions
+  const listRes = await fetch(
+    `https://api.supabase.com/v1/projects/${projectRef}/functions`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!listRes.ok) {
+    console.warn("  ⚠ Could not list functions to disable verify_jwt");
+    return;
+  }
+  const functions: Array<{ slug: string }> = await listRes.json();
+
+  let ok = 0;
+  for (const fn of functions) {
+    const res = await fetch(
+      `https://api.supabase.com/v1/projects/${projectRef}/functions/${fn.slug}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ verify_jwt: false }),
+      }
+    );
+    if (res.ok) ok++;
+    else console.warn(`  ⚠ Could not set verify_jwt=false on ${fn.slug}`);
+  }
+  console.log(`  ✓ verify_jwt=false set on ${ok}/${functions.length} functions`);
+}
+
+// ---------------------------------------------------------------------------
 // Push secrets to Supabase Management API
 // ---------------------------------------------------------------------------
 
@@ -228,9 +268,9 @@ const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "g
   { name: "NEXTCLOUD_PASS",            action: "copy" },
   // AI
   { name: "ANTHROPIC_API_KEY",         action: "copy" }, // used by fetch-project-tasks
-  // Auth/access
-  { name: "VERIFY_JWT",                action: "copy" },
-  { name: "FUNCTIONS_VERIFY_JWT",      action: "copy" },
+  // NOTE: FUNCTIONS_VERIFY_JWT intentionally omitted.
+  // Cloud Supabase uses ES256 JWT — verify_jwt must be set to false via
+  // Management API per-function (see post-deploy step below).
   // Optional — only set if present in Coolify
   { name: "PROJECT_MEMORY_OPERATOR_EMAILS", action: "copy" },
   { name: "OPENROUTER_API_KEY",        action: "copy" },
@@ -315,6 +355,10 @@ async function main() {
     `→ Pushing ${secrets.length} secrets to staging project ${env.STAGING_PROJECT_REF}...`
   );
   await pushSecrets(secrets, env.STAGING_PROJECT_REF, env.SUPABASE_ACCESS_TOKEN);
+
+  // 5. Disable verify_jwt on all functions (ES256 JWT compatibility)
+  console.log("\n→ Disabling verify_jwt on all staging Edge Functions...");
+  await disableVerifyJwt(env.STAGING_PROJECT_REF, env.SUPABASE_ACCESS_TOKEN);
 
   console.log(`\n✓ Done! ${secrets.length} secrets set on staging project.`);
   console.log("\nNext steps:");
