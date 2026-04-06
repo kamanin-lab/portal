@@ -73,7 +73,7 @@ Plans:
 **Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05
 **Success Criteria** (what must be TRUE):
   1. A client on the OverviewPage can read the project context section — and an operator can manage its entries without database access
-  2. The FilesTab clearly states its data source and links point to the correct destination — no ambiguity about where files come from
+  2. The FilesTab clearly states its data source and links point to the correct destination — no ambiguity about where files comes from
   3. Navigating between project tabs fades and slides in — no jarring instantaneous content swaps
   4. While project data is loading, the PhaseTimeline shows a skeleton placeholder — never a blank space or broken layout
   5. ProjectContextAdminPanel is under 150 lines with MemoryEntryForm extracted as a separate component
@@ -85,6 +85,25 @@ Plans:
 - [x] 05-02-PLAN.md — Motion tab transitions + PhaseTimeline loading skeleton
 - [x] 05-03-PLAN.md — Webhook auto-mkdir on taskCreated + env var verification
 
+### Phase 6: Triage Agent
+**Goal**: New ClickUp tasks in monitored lists are automatically assessed by an AI agent and get a structured cost/time estimate comment within 15 seconds of creation
+**Depends on**: Phase 5
+**Requirements**: TRIAGE-01, TRIAGE-02, TRIAGE-03, TRIAGE-04, TRIAGE-05, TRIAGE-06
+**Success Criteria** (what must be TRUE):
+  1. A task created in a monitored ClickUp list receives a `[Triage]` comment with type, complexity, hours, credits, confidence, and reasoning within 15 seconds
+  2. A client creating a task via the portal gets the same triage result as a manually created task
+  3. When `wp_mcp_url` is configured for the task's client, the triage comment includes a "Site context" line with real WordPress data
+  4. When `wp_mcp_url` is null or Maxi AI Core is unreachable, triage completes successfully without site context (`audit_fetched = false`)
+  5. A developer replying `[approve]`, `[approve: Xh Ycr]`, or `[reject: reason]` updates the `agent_jobs` row status correctly
+  6. Tasks in non-monitored lists are silently ignored — no `agent_jobs` row created
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — DB migration (agent_jobs + wp_mcp_url) + skill file + wp-audit.ts helper
+- [ ] 06-02-PLAN.md — triage-agent Edge Function (OpenRouter + ClickUp comment + cost tracking)
+- [ ] 06-03-PLAN.md — clickup-webhook extension (taskCreated handler + HITL detection) + sync-staging-secrets update
+- [ ] 06-04-PLAN.md — .env.example + setup documentation
+
 ---
 
 ## Progress
@@ -95,3 +114,4 @@ Plans:
 | 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
 | 4. PhaseTimeline Redesign | 3/3 | Complete |  |
 | 5. Data Unification & Polish | 4/4 | Complete   | 2026-03-29 |
+| 6. Triage Agent | 0/4 | Planned | — |
