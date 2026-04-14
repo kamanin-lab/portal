@@ -9,9 +9,10 @@ import type { ClickUpTask } from '../types/tasks'
 interface Props {
   recommendations: ClickUpTask[]
   onTaskClick: (id: string) => void
+  onSnooze?: (id: string) => void
 }
 
-export function RecommendationsBlock({ recommendations, onTaskClick }: Props) {
+export function RecommendationsBlock({ recommendations, onTaskClick, onSnooze }: Props) {
   if (recommendations.length === 0) return null
 
   return (
@@ -46,6 +47,7 @@ export function RecommendationsBlock({ recommendations, onTaskClick }: Props) {
             <RecommendationCard
               task={task}
               onTaskClick={onTaskClick}
+              onSnooze={onSnooze}
             />
           </motion.div>
         ))}

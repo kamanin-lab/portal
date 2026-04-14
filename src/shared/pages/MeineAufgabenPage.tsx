@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { TaskDone01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
@@ -7,8 +7,10 @@ import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
 import { EmptyState } from '@/shared/components/common/EmptyState'
 import { TaskCard } from '@/modules/tickets/components/TaskCard'
 import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet'
+import { RecommendationsBlock } from '@/modules/tickets/components/RecommendationsBlock'
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
+import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { mapStatus } from '@/modules/tickets/lib/status-mapping'
 import type { ClickUpTask } from '@/modules/tickets/types/tasks'
@@ -32,7 +34,6 @@ function groupByList(tasks: ClickUpTask[]): Map<string, ClickUpTask[]> {
     if (group) group.push(t)
     else map.set(key, [t])
   }
-  // Sort groups alphabetically
   return new Map([...map.entries()].sort(([a], [b]) => a.localeCompare(b, 'de')))
 }
 
@@ -41,6 +42,16 @@ export function MeineAufgabenPage() {
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
   const { taskUnread } = useUnreadCounts(user?.id)
+
+  const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set())
+  const { recommendations: allRecommendations } = useRecommendations(tasks)
+  const recommendations = useMemo(
+    () => allRecommendations.filter(r => !snoozedIds.has(r.clickup_id)),
+    [allRecommendations, snoozedIds],
+  )
+  const snoozeRecommendation = (id: string) => {
+    setSnoozedIds(prev => { const next = new Set(prev); next.add(id); return next })
+  }
 
   const activeTaskId = searchParams.get('taskId')
 
@@ -62,20 +73,22 @@ export function MeineAufgabenPage() {
     setSearchParams({}, { replace: true })
   }
 
+  const totalCount = attentionTasks.length + recommendations.length
+
   return (
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-1">
         <HugeiconsIcon icon={TaskDone01Icon} size={20} className="text-accent" />
         <h1 className="text-lg font-semibold text-text-primary">Meine Aufgaben</h1>
-        {attentionTasks.length > 0 && (
+        {totalCount > 0 && (
           <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-cta text-white text-xxs font-bold flex items-center justify-center">
-            {attentionTasks.length}
+            {totalCount}
           </span>
         )}
       </div>
       <p className="text-body text-text-tertiary mb-6">
-        Aufgaben, die Ihre Rückmeldung erfordern
+        Aufgaben und Empfehlungen, die Ihre Entscheidung erfordern
       </p>
 
       {/* Loading */}
@@ -84,7 +97,7 @@ export function MeineAufgabenPage() {
       )}
 
       {/* Empty state */}
-      {!isLoading && attentionTasks.length === 0 && (
+      {!isLoading && attentionTasks.length === 0 && recommendations.length === 0 && (
         <div className="py-8">
           <EmptyState message="Keine offenen Aufgaben — alles erledigt!" icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} className="text-green-500" />} />
         </div>
@@ -93,7 +106,6 @@ export function MeineAufgabenPage() {
       {/* Grouped task list */}
       {!isLoading && [...grouped.entries()].map(([listName, groupTasks]) => (
         <div key={listName} className="mb-6">
-          {/* Section divider */}
           <div className="flex items-center gap-3 mb-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider shrink-0">
@@ -101,8 +113,6 @@ export function MeineAufgabenPage() {
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
-
-          {/* Tasks */}
           <div className="flex flex-col gap-2.5">
             {groupTasks.map(task => (
               <TaskCard
@@ -115,6 +125,15 @@ export function MeineAufgabenPage() {
           </div>
         </div>
       ))}
+
+      {/* Recommendations block */}
+      {!isLoading && recommendations.length > 0 && (
+        <RecommendationsBlock
+          recommendations={recommendations}
+          onTaskClick={openTask}
+          onSnooze={snoozeRecommendation}
+        />
+      )}
 
       {/* Task detail sheet */}
       <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />

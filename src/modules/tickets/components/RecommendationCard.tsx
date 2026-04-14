@@ -1,6 +1,7 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, Calendar03Icon, Idea01Icon } from '@hugeicons/core-free-icons'
 import { motion } from 'motion/react'
+import { Button } from '@/shared/components/ui/button'
 import { StatusBadge } from '@/shared/components/common/StatusBadge'
 import { PriorityIcon } from './PriorityIcon'
 import { CreditBadge } from './CreditBadge'
@@ -11,6 +12,7 @@ interface Props {
   task: ClickUpTask
   unreadCount?: number
   onTaskClick: (id: string) => void
+  onSnooze?: (id: string) => void
 }
 
 function formatDueDate(date: string | null): string | null {
@@ -32,7 +34,7 @@ const STATUS_BORDER_COLORS: Record<string, string> = {
   cancelled:       '#EF4444',
 }
 
-export function RecommendationCard({ task, unreadCount = 0, onTaskClick }: Props) {
+export function RecommendationCard({ task, unreadCount = 0, onTaskClick, onSnooze }: Props) {
   const portalStatus = mapStatus(task.status)
   const preview = task.description?.trim() || 'Keine Beschreibung verfügbar.'
   const dueDate = formatDueDate(task.due_date)
@@ -101,6 +103,20 @@ export function RecommendationCard({ task, unreadCount = 0, onTaskClick }: Props
               <HugeiconsIcon icon={UserIcon} size={12} />
               {task.created_by_name || 'Team'}
             </span>
+
+            {onSnooze && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-0.5 px-1.5 text-xs text-text-tertiary hover:text-text-secondary"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSnooze(task.clickup_id)
+                }}
+              >
+                Später
+              </Button>
+            )}
           </div>
         </div>
       </button>
