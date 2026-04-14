@@ -1,32 +1,21 @@
 // ============ DEPLOYMENT VERSION ============
-// Version: 2026-04-14-v3-unread-digest-48h
+// Version: 2026-04-15-v4-org-grouped-reminders
 // Feature: Digest email reminders for pending approval tasks (every 5 days)
 // Feature: Unread message digest — 48h cooldown, respects unread_digest preference
+// Feature: ORG-BE-07 — ticket and project reminders grouped by org, sent to admin only
 // =============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getEmailCopy, type EmailLocale } from "../_shared/emailCopy.ts";
+import { getOrgMemberIds } from "../_shared/org.ts";
 
 interface ReminderTaskItem {
   taskId: string;
   taskName: string;
   status: string;
   daysPending: number;
-}
-
-interface PendingTaskRow {
-  profile_id: string;
-  email: string;
-  full_name: string | null;
-  notification_preferences: Record<string, boolean> | null;
-  email_notifications: boolean;
-  last_reminder_sent_at: string | null;
-  clickup_id: string;
-  task_name: string;
-  status: string;
-  last_activity_at: string | null;
 }
 
 // Status label mapping (ClickUp raw status -> German label)
@@ -434,6 +423,284 @@ async function sendRecommendationReminders(
   return { sent, skipped, errors };
 }
 
+// ORG-BE-07: Ticket reminders — org-grouped, sent to admin only
+async function sendTicketReminders(
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>,
+): Promise<{ sent: number; skipped: number; errors: number }> {
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  // Fetch all org admins with their profile + org config
+  const { data: adminRows, error: adminErr } = await supabase
+    .from("org_members")
+    .select(`
+      organization_id,
+      profile_id,
+      organizations!inner (
+        id,
+        name,
+        clickup_list_ids
+      ),
+      profiles!inner (
+        id,
+        email,
+        full_name,
+        email_notifications,
+        notification_preferences,
+        last_reminder_sent_at
+      )
+    `)
+    .eq("role", "admin");
+
+  if (adminErr) {
+    log.error("Failed to fetch org admins for ticket reminders", { error: adminErr.message });
+    return { sent: 0, skipped: 0, errors: 1 };
+  }
+
+  const cooldownMs = 5 * 24 * 60 * 60 * 1000; // 5 days
+  const minAgeMs = 3 * 24 * 60 * 60 * 1000;   // 3 days task idle
+
+  for (const row of adminRows ?? []) {
+    const org = (row as unknown as { organizations: { id: string; name: string; clickup_list_ids: unknown } }).organizations;
+    const profile = (row as unknown as { profiles: {
+      id: string;
+      email: string;
+      full_name: string | null;
+      email_notifications: boolean;
+      notification_preferences: Record<string, boolean> | null;
+      last_reminder_sent_at: string | null;
+    } }).profiles;
+
+    // Respect email_notifications opt-out
+    if (!profile.email_notifications) { skipped++; continue; }
+
+    // Respect notification_preferences.reminders if present
+    const prefs = profile.notification_preferences ?? {};
+    if (prefs.reminders === false) { skipped++; continue; }
+
+    // 5-day cooldown
+    if (profile.last_reminder_sent_at) {
+      const age = Date.now() - new Date(profile.last_reminder_sent_at).getTime();
+      if (age < cooldownMs) { skipped++; continue; }
+    }
+
+    const listIds: string[] = Array.isArray(org.clickup_list_ids) ? (org.clickup_list_ids as string[]) : [];
+    if (listIds.length === 0) { skipped++; continue; }
+
+    // Query task_cache for pending tasks in this org's lists.
+    // Per Pitfall 4: query by the ADMIN's profile_id (most complete cache).
+    const { data: pendingTasks } = await supabase
+      .from("task_cache")
+      .select("clickup_id, name, status, last_activity_at, list_id")
+      .eq("profile_id", profile.id)
+      .in("list_id", listIds)
+      .in("status", ["client review", "awaiting approval"])
+      .eq("is_visible", true);
+
+    // Filter tasks idle >= 3 days
+    const idleTasks = (pendingTasks ?? []).filter((t: { last_activity_at: string | null }) => {
+      if (!t.last_activity_at) return false;
+      return Date.now() - new Date(t.last_activity_at).getTime() >= minAgeMs;
+    });
+
+    if (idleTasks.length === 0) { skipped++; continue; }
+
+    const reminderItems: ReminderTaskItem[] = idleTasks.map((t: { clickup_id: string; name: string; status: string; last_activity_at: string | null }) => {
+      const daysPending = t.last_activity_at
+        ? Math.floor((Date.now() - new Date(t.last_activity_at).getTime()) / 86_400_000)
+        : 0;
+      return {
+        taskId: t.clickup_id,
+        taskName: t.name,
+        status: STATUS_LABELS[t.status] || t.status,
+        daysPending: Math.max(daysPending, 0),
+      };
+    });
+
+    try {
+      const firstName = profile.full_name?.split(" ")[0] ?? null;
+      const { subject, html } = buildReminderHtml(reminderItems, firstName, "de", "pending_reminder", `${portalUrl}/tickets`);
+
+      const success = await sendMailjet(
+        { email: profile.email, name: profile.full_name || undefined },
+        subject,
+        html,
+        log,
+      );
+
+      if (success) {
+        sent++;
+        // Update admin's last_reminder_sent_at
+        await supabase
+          .from("profiles")
+          .update({ last_reminder_sent_at: new Date().toISOString() })
+          .eq("id", profile.id);
+      } else {
+        errors++;
+      }
+    } catch (e) {
+      log.error("Failed to send ticket reminder to org admin", {
+        orgId: org.id,
+        adminProfileId: "[REDACTED]",
+        error: (e as Error).message,
+      });
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
+}
+
+// ORG-BE-07: Project reminders — org-grouped, sent to admin only
+async function sendProjectReminders(
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>,
+): Promise<{ sent: number; skipped: number; errors: number }> {
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  // Fetch org admins — read last_project_reminder_sent_at
+  const { data: adminRows, error: adminErr } = await supabase
+    .from("org_members")
+    .select(`
+      organization_id,
+      profile_id,
+      organizations!inner ( id, name ),
+      profiles!inner (
+        id,
+        email,
+        full_name,
+        email_notifications,
+        notification_preferences,
+        last_project_reminder_sent_at
+      )
+    `)
+    .eq("role", "admin");
+
+  if (adminErr) {
+    log.error("Failed to fetch org admins for project reminders", { error: adminErr.message });
+    return { sent: 0, skipped: 0, errors: 1 };
+  }
+
+  const cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
+  const minIdleMs = 3 * 24 * 60 * 60 * 1000;  // 3 days idle in client review
+
+  for (const row of adminRows ?? []) {
+    const org = (row as unknown as { organizations: { id: string; name: string } }).organizations;
+    const profile = (row as unknown as { profiles: {
+      id: string;
+      email: string;
+      full_name: string | null;
+      email_notifications: boolean;
+      notification_preferences: Record<string, boolean> | null;
+      last_project_reminder_sent_at: string | null;
+    } }).profiles;
+
+    if (!profile.email_notifications) { skipped++; continue; }
+
+    const prefs = profile.notification_preferences ?? {};
+    if (prefs.reminders === false) { skipped++; continue; }
+
+    // 3-day cooldown
+    if (profile.last_project_reminder_sent_at) {
+      const age = Date.now() - new Date(profile.last_project_reminder_sent_at).getTime();
+      if (age < cooldownMs) { skipped++; continue; }
+    }
+
+    // Resolve project_config_ids visible to any org member (uses all member IDs for project_access lookup)
+    const allOrgMemberIds = await getOrgMemberIds(supabase, org.id);
+    if (allOrgMemberIds.length === 0) { skipped++; continue; }
+
+    const { data: accessRows } = await supabase
+      .from("project_access")
+      .select("project_config_id")
+      .in("profile_id", allOrgMemberIds);
+
+    const projectConfigIds = Array.from(
+      new Set((accessRows ?? []).map((r: { project_config_id: string }) => r.project_config_id)),
+    );
+    if (projectConfigIds.length === 0) { skipped++; continue; }
+
+    // project_task_cache is shared (not profile-scoped) — filter by project_config_id
+    const { data: pendingProjectTasks } = await supabase
+      .from("project_task_cache")
+      .select("clickup_task_id, name, status, last_activity_at, project_config_id")
+      .in("project_config_id", projectConfigIds)
+      .eq("status", "client review");
+
+    const idleProjectTasks = (pendingProjectTasks ?? []).filter((t: { last_activity_at: string | null }) => {
+      if (!t.last_activity_at) return false;
+      return Date.now() - new Date(t.last_activity_at).getTime() >= minIdleMs;
+    });
+
+    if (idleProjectTasks.length === 0) { skipped++; continue; }
+
+    const reminderItems: ReminderTaskItem[] = idleProjectTasks.map((t: { clickup_task_id: string; name: string; status: string; last_activity_at: string | null }) => {
+      const daysPending = t.last_activity_at
+        ? Math.floor((Date.now() - new Date(t.last_activity_at).getTime()) / 86_400_000)
+        : 0;
+      return {
+        taskId: t.clickup_task_id,
+        taskName: t.name,
+        status: "Ihre Rückmeldung",
+        daysPending: Math.max(daysPending, 0),
+      };
+    });
+
+    try {
+      const firstName = profile.full_name?.split(" ")[0] ?? null;
+      const { subject, html } = buildReminderHtml(
+        reminderItems,
+        firstName,
+        "de",
+        "project_reminder",
+        `${portalUrl}/projekte`,
+      );
+
+      // Attempt atomic claim: only proceed if cooldown has expired (prevents double-send)
+      const threeDaysAgo = new Date(Date.now() - cooldownMs).toISOString();
+      const { data: claimed } = await supabase
+        .from("profiles")
+        .update({ last_project_reminder_sent_at: new Date().toISOString() })
+        .eq("id", profile.id)
+        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
+        .select("id");
+
+      if (!claimed || claimed.length === 0) {
+        // Cooldown not expired or another execution claimed first
+        skipped++;
+        continue;
+      }
+
+      const success = await sendMailjet(
+        { email: profile.email, name: profile.full_name || undefined },
+        subject,
+        html,
+        log,
+      );
+
+      if (success) {
+        sent++;
+      } else {
+        log.warn("Project reminder email failed after atomic claim", { adminProfileId: "[REDACTED]" });
+        errors++;
+      }
+    } catch (e) {
+      log.error("Failed to send project reminder to org admin", {
+        orgId: org.id,
+        adminProfileId: "[REDACTED]",
+        error: (e as Error).message,
+      });
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
+}
+
 async function sendMailjet(
   to: { email: string; name?: string },
   subject: string,
@@ -512,277 +779,21 @@ Deno.serve(async (req) => {
 
     log.info("Starting reminder job");
 
-    // Query pending tasks with eligible profiles (5-day cooldown)
-    const { data: rows, error: queryError } = await supabase.rpc("get_pending_reminder_tasks");
+    // ===== TICKET REMINDERS (ORG-BE-07: org-grouped, admin-only, 5-day cooldown) =====
+    const ticketStats = await sendTicketReminders(supabase, log);
+    log.info("Ticket reminder job complete", ticketStats);
 
-    // Fallback: if RPC doesn't exist yet, use direct query
-    let pendingRows: PendingTaskRow[];
-    if (queryError) {
-      log.warn("RPC not found, using direct query", { error: String(queryError) });
-      const { data, error } = await supabase
-        .from("task_cache")
-        .select(`
-          clickup_id,
-          name,
-          status,
-          last_activity_at,
-          profile_id,
-          profiles!inner (
-            id,
-            email,
-            full_name,
-            notification_preferences,
-            email_notifications,
-            last_reminder_sent_at
-          )
-        `)
-        .in("status", ["client review", "awaiting approval"])
-        .eq("is_visible", true);
+    const sent = ticketStats.sent;
+    const skipped = ticketStats.skipped;
+    const errors = ticketStats.errors;
 
-      if (error) {
-        log.error("Query failed", { error: String(error) });
-        return new Response(
-          JSON.stringify({ ok: false, code: "QUERY_ERROR", message: "Failed to query pending tasks", correlationId: requestId }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // ===== PROJECT TASK REMINDERS (ORG-BE-07: org-grouped, admin-only, 3-day cooldown) =====
+    const projectStats = await sendProjectReminders(supabase, log);
+    log.info("Project reminder job complete", projectStats);
 
-      // Map joined result to flat rows
-      pendingRows = (data || []).map((row: Record<string, unknown>) => {
-        const profile = row.profiles as Record<string, unknown>;
-        return {
-          profile_id: profile.id as string,
-          email: profile.email as string,
-          full_name: profile.full_name as string | null,
-          notification_preferences: profile.notification_preferences as Record<string, boolean> | null,
-          email_notifications: profile.email_notifications as boolean,
-          last_reminder_sent_at: profile.last_reminder_sent_at as string | null,
-          clickup_id: row.clickup_id as string,
-          task_name: row.name as string,
-          status: row.status as string,
-          last_activity_at: row.last_activity_at as string | null,
-        };
-      });
-    } else {
-      pendingRows = (rows || []) as PendingTaskRow[];
-    }
-
-    // Group by profile
-    const profileMap = new Map<string, {
-      email: string;
-      fullName: string | null;
-      prefs: Record<string, boolean> | null;
-      emailEnabled: boolean;
-      lastReminder: string | null;
-      tasks: ReminderTaskItem[];
-    }>();
-
-    for (const row of pendingRows) {
-      if (!profileMap.has(row.profile_id)) {
-        profileMap.set(row.profile_id, {
-          email: row.email,
-          fullName: row.full_name,
-          prefs: row.notification_preferences,
-          emailEnabled: row.email_notifications,
-          lastReminder: row.last_reminder_sent_at,
-          tasks: [],
-        });
-      }
-
-      const daysPending = row.last_activity_at
-        ? Math.floor((Date.now() - new Date(row.last_activity_at).getTime()) / 86_400_000)
-        : 0;
-
-      profileMap.get(row.profile_id)!.tasks.push({
-        taskId: row.clickup_id,
-        taskName: row.task_name,
-        status: STATUS_LABELS[row.status] || row.status,
-        daysPending: Math.max(daysPending, 0),
-      });
-    }
-
-    let sent = 0;
-    let skipped = 0;
-    let errors = 0;
-
-    for (const [profileId, profile] of profileMap) {
-      // Check opt-out: reminders preference (default true) + global email toggle
-      const remindersEnabled = profile.prefs?.reminders !== false;
-      if (!remindersEnabled || !profile.emailEnabled) {
-        skipped++;
-        continue;
-      }
-
-      // Check 5-day cooldown
-      if (profile.lastReminder) {
-        const lastSent = new Date(profile.lastReminder).getTime();
-        const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
-        if (Date.now() - lastSent < fiveDaysMs) {
-          skipped++;
-          continue;
-        }
-      }
-
-      // Extract first name for greeting
-      const firstName = profile.fullName?.split(" ")[0] || null;
-      const { subject, html } = buildReminderHtml(profile.tasks, firstName);
-
-      const success = await sendMailjet(
-        { email: profile.email, name: profile.fullName || undefined },
-        subject,
-        html,
-        log
-      );
-
-      if (success) {
-        // Update last_reminder_sent_at
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ last_reminder_sent_at: new Date().toISOString() })
-          .eq("id", profileId);
-
-        if (updateError) {
-          log.warn("Failed to update last_reminder_sent_at", { profileId: "[REDACTED]" });
-        }
-        sent++;
-      } else {
-        errors++;
-      }
-    }
-
-    log.info("Ticket reminder job complete", { sent, skipped, errors, totalProfiles: profileMap.size });
-
-    // ===== PROJECT TASK REMINDERS (3-day cooldown) =====
-    let projectSent = 0;
-    let projectSkipped = 0;
-
-    const { data: projectRows, error: projectQueryError } = await supabase
-      .from("project_task_cache")
-      .select(`
-        clickup_id,
-        name,
-        status,
-        last_activity_at,
-        project_config_id
-      `)
-      .eq("status", "client review")
-      .eq("is_visible", true)
-      .lt("last_activity_at", new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
-
-    if (projectQueryError) {
-      log.warn("Project task query failed", { error: String(projectQueryError) });
-    } else if (projectRows && projectRows.length > 0) {
-      // Get unique project_config_ids
-      const projectConfigIds = [...new Set(projectRows.map((r: Record<string, unknown>) => r.project_config_id as string).filter(Boolean))];
-
-      // Get all profile_ids with access to these projects
-      const { data: accessRows } = await supabase
-        .from("project_access")
-        .select("profile_id, project_config_id")
-        .in("project_config_id", projectConfigIds);
-
-      // Get profile details for these users
-      const projectProfileIds = [...new Set((accessRows || []).map((r: Record<string, unknown>) => r.profile_id as string))];
-
-      const { data: projectProfiles } = await supabase
-        .from("profiles")
-        .select("id, email, full_name, email_notifications, notification_preferences, last_project_reminder_sent_at")
-        .in("id", projectProfileIds);
-
-      // Build project_config_id -> profile_ids map
-      const projectToProfiles = new Map<string, string[]>();
-      for (const row of (accessRows || []) as Record<string, unknown>[]) {
-        const pcId = row.project_config_id as string;
-        const pId = row.profile_id as string;
-        if (!projectToProfiles.has(pcId)) {
-          projectToProfiles.set(pcId, []);
-        }
-        projectToProfiles.get(pcId)!.push(pId);
-      }
-
-      // Build per-profile task list
-      const projectProfileMap = new Map<string, {
-        email: string;
-        fullName: string | null;
-        emailEnabled: boolean;
-        prefs: Record<string, boolean> | null;
-        lastReminder: string | null;
-        tasks: ReminderTaskItem[];
-      }>();
-
-      for (const row of projectRows as Record<string, unknown>[]) {
-        const profileIdsForProject = projectToProfiles.get(row.project_config_id as string) || [];
-        for (const pid of profileIdsForProject) {
-          if (!projectProfileMap.has(pid)) {
-            const p = (projectProfiles || []).find((pp: Record<string, unknown>) => pp.id === pid) as Record<string, unknown> | undefined;
-            if (!p) continue;
-            projectProfileMap.set(pid, {
-              email: p.email as string,
-              fullName: p.full_name as string | null,
-              emailEnabled: p.email_notifications as boolean,
-              prefs: p.notification_preferences as Record<string, boolean> | null,
-              lastReminder: p.last_project_reminder_sent_at as string | null,
-              tasks: [],
-            });
-          }
-          const lastActivity = row.last_activity_at as string | null;
-          const daysPending = lastActivity
-            ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86_400_000)
-            : 0;
-          projectProfileMap.get(pid)!.tasks.push({
-            taskId: row.clickup_id as string,
-            taskName: row.name as string,
-            status: "Ihre Rückmeldung",
-            daysPending: Math.max(daysPending, 0),
-          });
-        }
-      }
-
-      for (const [profileId, profile] of projectProfileMap) {
-        const remindersEnabled = profile.prefs?.reminders !== false;
-        if (!remindersEnabled || !profile.emailEnabled) { projectSkipped++; continue; }
-
-        // Attempt atomic claim: only update if cooldown has expired
-        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: claimed } = await supabase
-          .from("profiles")
-          .update({ last_project_reminder_sent_at: new Date().toISOString() })
-          .eq("id", profileId)
-          .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
-          .select("id");
-
-        if (!claimed || claimed.length === 0) {
-          // Another execution claimed this profile first, or cooldown not expired
-          projectSkipped++;
-          continue;
-        }
-
-        const firstName = profile.fullName?.split(" ")[0] || null;
-        const { subject, html } = buildReminderHtml(
-          profile.tasks,
-          firstName,
-          "de",
-          "project_reminder",
-          `${portalUrl}/projekte`
-        );
-
-        const success = await sendMailjet(
-          { email: profile.email, name: profile.fullName || undefined },
-          subject,
-          html,
-          log
-        );
-
-        if (success) {
-          projectSent++;
-        } else {
-          // Email failed but claim was already set — log warning
-          log.warn("Project reminder email failed after atomic claim", { profileId: "[REDACTED]" });
-        }
-      }
-
-      log.info("Project reminder job complete", { projectSent, projectSkipped });
-    }
+    const projectSent = projectStats.sent;
+    const projectSkipped = projectStats.skipped;
+    const projectErrors = projectStats.errors;
 
     // ===== UNREAD MESSAGE DIGEST (24h cooldown) =====
     const unreadStats = await sendUnreadMessageReminders(supabase, log);
@@ -796,10 +807,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         code: "REMINDERS_SENT",
-        message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}. Unread digest - Sent: ${unreadStats.sent}, Skipped: ${unreadStats.skipped}, Errors: ${unreadStats.errors}. Recommendations - Sent: ${recStats.sent}, Skipped: ${recStats.skipped}, Errors: ${recStats.errors}`,
+        message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}, Errors: ${projectErrors}. Unread digest - Sent: ${unreadStats.sent}, Skipped: ${unreadStats.skipped}, Errors: ${unreadStats.errors}. Recommendations - Sent: ${recStats.sent}, Skipped: ${recStats.skipped}, Errors: ${recStats.errors}`,
         correlationId: requestId,
         sent, skipped, errors,
-        projectSent, projectSkipped,
+        projectSent, projectSkipped, projectErrors,
         unreadSent: unreadStats.sent,
         unreadSkipped: unreadStats.skipped,
         unreadErrors: unreadStats.errors,
