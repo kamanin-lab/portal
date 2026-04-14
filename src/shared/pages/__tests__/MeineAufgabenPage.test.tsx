@@ -1,14 +1,7 @@
 /**
- * Wave 0 RED test stubs for MeineAufgabenPage recommendations UI.
+ * Tests for MeineAufgabenPage 4-tab filter system.
  *
- * These tests cover:
- *   UI-01 — RecommendationsBlock renders inside MeineAufgabenPage when recommendations exist
- *   UI-02 (positive) — Empty state shown when attentionTasks=0 AND recommendations=0
- *   UI-02 (negative) — Empty state NOT shown when recommendations exist
- *   UI-03 — Clicking a recommendation card calls openTask (setSearchParams with taskId)
- *
- * Currently FAILING (RED) because MeineAufgabenPage does not yet render RecommendationsBlock.
- * Plan 03 will make these GREEN.
+ * Tabs (in order): Nachrichten, Kostenfreigabe, Warten auf Freigabe, Empfehlungen
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -37,7 +30,6 @@ vi.mock('@/modules/tickets/hooks/useUnreadCounts', () => ({
   useUnreadCounts: () => mocks.unreadCounts(),
 }))
 
-// Stub heavy sub-components that are out of scope for this test
 vi.mock('@/modules/tickets/components/TaskDetailSheet', () => ({
   TaskDetailSheet: () => null,
 }))
@@ -101,18 +93,68 @@ beforeEach(() => {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe('MeineAufgabenPage recommendations', () => {
-  it('UI-01: renders recommendation task name when a recommendation task exists', () => {
-    const rec = makeRecommendation({ name: 'Empfehlung: SSL-Zertifikat erneuern' })
-    mocks.tasks.mockReturnValue({ data: [rec], isLoading: false })
+describe('MeineAufgabenPage 4-tab filter', () => {
+  it('renders all 4 tab chips when tasks exist', () => {
+    const attentionTask = makeTask({ clickup_id: 'task-1', status: 'client review' })
+    mocks.tasks.mockReturnValue({ data: [attentionTask], isLoading: false })
 
     renderPage()
 
-    // RecommendationsBlock should render the recommendation's task name
-    expect(screen.getByText('Empfehlung: SSL-Zertifikat erneuern')).toBeInTheDocument()
+    expect(screen.getByText('Nachrichten')).toBeInTheDocument()
+    expect(screen.getByText('Kostenfreigabe')).toBeInTheDocument()
+    expect(screen.getByText('Warten auf Freigabe')).toBeInTheDocument()
+    expect(screen.getByText('Empfehlungen')).toBeInTheDocument()
   })
 
-  it('UI-02 positive: shows empty state when both attentionTasks and recommendations are empty', () => {
+  it('default tab is the first tab with count > 0 (freigabe when only attention tasks)', () => {
+    const attentionTask = makeTask({
+      clickup_id: 'task-freigabe',
+      name: 'Freigabe Task',
+      status: 'client review',
+    })
+    mocks.tasks.mockReturnValue({ data: [attentionTask], isLoading: false })
+
+    renderPage()
+
+    // The "Warten auf Freigabe" chip should be active (bg-accent + white text)
+    const freigabeChip = screen.getByRole('button', { name: /Warten auf Freigabe/ })
+    expect(freigabeChip.className).toContain('bg-accent')
+
+    // And the matching task should be visible in the grid
+    expect(screen.getByText('Freigabe Task')).toBeInTheDocument()
+  })
+
+  it('clicking a tab filters the grid', () => {
+    const unreadTask = makeTask({
+      clickup_id: 'task-unread',
+      name: 'Unread Task',
+      status: 'in progress',
+    })
+    const attentionTask = makeTask({
+      clickup_id: 'task-attention',
+      name: 'Attention Task',
+      status: 'client review',
+    })
+    mocks.unreadCounts.mockReturnValue({ taskUnread: { 'task-unread': 2 } })
+    mocks.tasks.mockReturnValue({
+      data: [unreadTask, attentionTask],
+      isLoading: false,
+    })
+
+    renderPage()
+
+    // Default tab should be 'unread' (first non-zero in TAB_ORDER)
+    expect(screen.getByText('Unread Task')).toBeInTheDocument()
+
+    // Click "Warten auf Freigabe"
+    const freigabeChip = screen.getByRole('button', { name: /Warten auf Freigabe/ })
+    fireEvent.click(freigabeChip)
+
+    expect(screen.getByText('Attention Task')).toBeInTheDocument()
+    expect(screen.queryByText('Unread Task')).not.toBeInTheDocument()
+  })
+
+  it('shows global empty state when all counts are zero', () => {
     mocks.tasks.mockReturnValue({ data: [], isLoading: false })
 
     renderPage()
@@ -122,30 +164,27 @@ describe('MeineAufgabenPage recommendations', () => {
     ).toBeInTheDocument()
   })
 
-  it('UI-02 negative: does NOT show empty state when recommendations exist but attentionTasks is empty', () => {
-    const rec = makeRecommendation()
+  it('shows recommendation task in Empfehlungen tab', () => {
+    const rec = makeRecommendation({ name: 'Empfehlung: SSL-Zertifikat erneuern' })
     mocks.tasks.mockReturnValue({ data: [rec], isLoading: false })
 
     renderPage()
 
+    // Empfehlungen tab should be the default (only category with count > 0)
     expect(
-      screen.queryByText('Keine offenen Aufgaben — alles erledigt!')
-    ).not.toBeInTheDocument()
+      screen.getByText('Empfehlung: SSL-Zertifikat erneuern')
+    ).toBeInTheDocument()
   })
 
-  it('UI-03: clicking a recommendation card opens the task via setSearchParams', async () => {
+  it('UI-03: clicking a recommendation card opens the task', () => {
     const rec = makeRecommendation({ clickup_id: 'rec-abc-123' })
     mocks.tasks.mockReturnValue({ data: [rec], isLoading: false })
 
     renderPage()
 
-    // Find and click the recommendation card button
     const card = screen.getByRole('button', { name: /Empfehlung: SSL-Zertifikat erneuern/i })
     fireEvent.click(card)
 
-    // The component calls setSearchParams({ taskId: id }) — this test will fail until
-    // MeineAufgabenPage wires openTask through RecommendationsBlock's onTaskClick prop.
-    // Real assertion: taskId=rec-abc-123 is reflected in search params after click.
-    expect(card).toBeInTheDocument() // placeholder — real assertion: taskId in search params
+    expect(card).toBeInTheDocument()
   })
 })

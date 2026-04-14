@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { TaskDone01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
@@ -7,35 +8,19 @@ import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
 import { EmptyState } from '@/shared/components/common/EmptyState'
 import { TaskCard } from '@/modules/tickets/components/TaskCard'
 import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet'
-import { RecommendationsBlock } from '@/modules/tickets/components/RecommendationsBlock'
+import { RecommendationCard } from '@/modules/tickets/components/RecommendationCard'
+import {
+  MeineAufgabenFilters,
+  type MeineAufgabenTab,
+} from '@/modules/tickets/components/MeineAufgabenFilters'
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
 import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { mapStatus } from '@/modules/tickets/lib/status-mapping'
-import type { ClickUpTask } from '@/modules/tickets/types/tasks'
+import { cardVariants } from '@/modules/tickets/lib/task-list-utils'
 
-const PRIORITY_ORDER: Record<string, number> = { '1': 0, '2': 1, '3': 2, '4': 3 }
-
-function sortTasks(tasks: ClickUpTask[]): ClickUpTask[] {
-  return [...tasks].sort((a, b) => {
-    const pa = PRIORITY_ORDER[a.priority ?? '3'] ?? 2
-    const pb = PRIORITY_ORDER[b.priority ?? '3'] ?? 2
-    if (pa !== pb) return pa - pb
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  })
-}
-
-function groupByList(tasks: ClickUpTask[]): Map<string, ClickUpTask[]> {
-  const map = new Map<string, ClickUpTask[]>()
-  for (const t of tasks) {
-    const key = t.list_name || 'Sonstige'
-    const group = map.get(key)
-    if (group) group.push(t)
-    else map.set(key, [t])
-  }
-  return new Map([...map.entries()].sort(([a], [b]) => a.localeCompare(b, 'de')))
-}
+const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
 
 export function MeineAufgabenPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -55,15 +40,43 @@ export function MeineAufgabenPage() {
 
   const activeTaskId = searchParams.get('taskId')
 
-  const attentionTasks = useMemo(
-    () => tasks.filter(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; }),
-    [tasks],
-  )
+  const counts = useMemo(() => ({
+    unread: tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0).length,
+    kostenfreigabe: tasks.filter(t => mapStatus(t.status) === 'awaiting_approval').length,
+    freigabe: tasks.filter(t => mapStatus(t.status) === 'needs_attention').length,
+    empfehlungen: recommendations.length,
+  }), [tasks, taskUnread, recommendations])
 
-  const grouped = useMemo(
-    () => groupByList(sortTasks(attentionTasks)),
-    [attentionTasks],
-  )
+  const totalCount = useMemo(() => {
+    const ids = new Set<string>([
+      ...tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0).map(t => t.clickup_id),
+      ...tasks.filter(t => {
+        const s = mapStatus(t.status)
+        return s === 'needs_attention' || s === 'awaiting_approval'
+      }).map(t => t.clickup_id),
+      ...recommendations.map(t => t.clickup_id),
+    ])
+    return ids.size
+  }, [tasks, taskUnread, recommendations])
+
+  const [activeTab, setActiveTab] = useState<MeineAufgabenTab | null>(null)
+  useEffect(() => {
+    if (!isLoading && activeTab === null) {
+      const defaultTab = TAB_ORDER.find(tab => counts[tab] > 0) ?? 'unread'
+      setActiveTab(defaultTab)
+    }
+  }, [isLoading, counts, activeTab])
+
+  const visibleTasks = useMemo(() => {
+    if (!activeTab) return []
+    switch (activeTab) {
+      case 'unread': return tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0)
+      case 'kostenfreigabe': return tasks.filter(t => mapStatus(t.status) === 'awaiting_approval')
+      case 'freigabe': return tasks.filter(t => mapStatus(t.status) === 'needs_attention')
+      case 'empfehlungen': return recommendations
+      default: return []
+    }
+  }, [activeTab, tasks, taskUnread, recommendations])
 
   function openTask(id: string) {
     setSearchParams({ taskId: id }, { replace: true })
@@ -72,8 +85,6 @@ export function MeineAufgabenPage() {
   function closeTask() {
     setSearchParams({}, { replace: true })
   }
-
-  const totalCount = attentionTasks.length + recommendations.length
 
   return (
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
@@ -91,53 +102,51 @@ export function MeineAufgabenPage() {
         Aufgaben und Empfehlungen, die Ihre Entscheidung erfordern
       </p>
 
-      {/* Loading */}
-      {isLoading && (
-        <LoadingSkeleton lines={5} height="72px" className="py-4" />
-      )}
+      {isLoading && <LoadingSkeleton lines={5} height="72px" className="py-4" />}
 
-      {/* Empty state */}
-      {!isLoading && attentionTasks.length === 0 && recommendations.length === 0 && (
+      {!isLoading && totalCount === 0 && (
         <div className="py-8">
-          <EmptyState message="Keine offenen Aufgaben — alles erledigt!" icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} className="text-green-500" />} />
+          <EmptyState
+            message="Keine offenen Aufgaben — alles erledigt!"
+            icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} className="text-green-500" />}
+          />
         </div>
       )}
 
-      {/* Grouped task list */}
-      {!isLoading && [...grouped.entries()].map(([listName, groupTasks]) => (
-        <div key={listName} className="mb-6">
-          {grouped.size > 1 && (
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider shrink-0">
-                {listName}
-              </span>
-              <div className="h-px flex-1 bg-border" />
+      {!isLoading && totalCount > 0 && activeTab !== null && (
+        <MeineAufgabenFilters active={activeTab} onChange={setActiveTab} counts={counts} />
+      )}
+
+      {!isLoading && activeTab !== null && activeTab !== 'empfehlungen' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+          {visibleTasks.map((task, i) => (
+            <motion.div key={task.clickup_id} custom={i} variants={cardVariants} initial="hidden" animate="visible">
+              <TaskCard task={task} unreadCount={taskUnread[task.clickup_id] ?? 0} onTaskClick={openTask} />
+            </motion.div>
+          ))}
+          {visibleTasks.length === 0 && (
+            <div className="col-span-2">
+              <EmptyState message="Keine Aufgaben in dieser Kategorie" />
             </div>
           )}
-          <div className="flex flex-col gap-2.5">
-            {groupTasks.map(task => (
-              <TaskCard
-                key={task.clickup_id}
-                task={task}
-                unreadCount={taskUnread[task.clickup_id] ?? 0}
-                onTaskClick={openTask}
-              />
-            ))}
-          </div>
         </div>
-      ))}
-
-      {/* Recommendations block */}
-      {!isLoading && recommendations.length > 0 && (
-        <RecommendationsBlock
-          recommendations={recommendations}
-          onTaskClick={openTask}
-          onSnooze={snoozeRecommendation}
-        />
       )}
 
-      {/* Task detail sheet */}
+      {!isLoading && activeTab === 'empfehlungen' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+          {recommendations.map((task, i) => (
+            <motion.div key={task.clickup_id} custom={i} variants={cardVariants} initial="hidden" animate="visible">
+              <RecommendationCard task={task} onTaskClick={openTask} onSnooze={snoozeRecommendation} />
+            </motion.div>
+          ))}
+          {recommendations.length === 0 && (
+            <div className="col-span-2">
+              <EmptyState message="Keine Empfehlungen" />
+            </div>
+          )}
+        </div>
+      )}
+
       <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />
     </ContentContainer>
   )
