@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Organisations
-status: defining_requirements
+status: planning
 stopped_at: —
 last_updated: "2026-04-14T00:00:00.000Z"
 last_activity: 2026-04-14
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,10 +21,10 @@ progress:
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap created — ready for phase planning)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-14 — Milestone v2.0 Organisations started
+Status: Planning
+Last activity: 2026-04-14 — Milestone v2.0 Organisations roadmap created (Phases 9–13)
 
 ## Previous Milestone
 
@@ -79,10 +79,6 @@ Phase 1: Portal Frontend — Complete
 - AnimatePresence requires conditional rendering (not TabsContent) — Radix CSS hides inactive tabs blocking exit animations (Phase 05-02)
 - Controlled Tabs (useState activeTab) needed for AnimatePresence keyed transitions in OverviewTabs (Phase 05-02)
 - DATA-01 (ProjectContextSection) and DATA-05 (AdminPanel refactor) deferred to admin dashboard scope (Phase 05-02)
-
-### Roadmap Evolution
-
-- Phase 7 added: Empfehlungen in Reminders and Meine Aufgaben with decision workflow
 
 ### Blockers/Concerns
 

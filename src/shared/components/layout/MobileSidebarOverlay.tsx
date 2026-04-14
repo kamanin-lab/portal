@@ -1,13 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
-import { supabase } from '@/shared/lib/supabase'
 import fullLogo from '@/assets/KAMANIN-logo-white.svg'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useWorkspaces } from '@/shared/hooks/useWorkspaces'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
+import { useNeedsAttentionCount } from '@/shared/hooks/useNeedsAttentionCount'
 import { SidebarGlobalNav } from './SidebarGlobalNav'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { SidebarUtilities } from './SidebarUtilities'
@@ -20,23 +19,6 @@ interface Props {
 
 function Divider() {
   return <div className="mx-3 h-px bg-white/10 shrink-0" />
-}
-
-function useNeedsAttentionCount(profileId: string | undefined) {
-  return useQuery({
-    queryKey: ['needs-attention-count', profileId],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('task_cache')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', profileId!)
-        .eq('is_visible', true)
-        .in('status', ['client review', 'approved'])
-      return count ?? 0
-    },
-    enabled: !!profileId,
-    staleTime: 60_000,
-  })
 }
 
 export function MobileSidebarOverlay({ open, onClose }: Props) {

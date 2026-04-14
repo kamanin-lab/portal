@@ -1,14 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { SidebarLeft01Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import iconLogo from '@/assets/Icon_transparent_white.svg'
 import fullLogo from '@/assets/KAMANIN-logo-white.svg'
-import { supabase } from '@/shared/lib/supabase'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useWorkspaces } from '@/shared/hooks/useWorkspaces'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
+import { useNeedsAttentionCount } from '@/shared/hooks/useNeedsAttentionCount'
 import { SidebarGlobalNav } from './SidebarGlobalNav'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { SidebarUtilities } from './SidebarUtilities'
@@ -16,37 +15,6 @@ import { SidebarUserFooter } from './SidebarUserFooter'
 
 function Divider() {
   return <div className="mx-3 h-px bg-white/10 shrink-0" />
-}
-
-function useNeedsAttentionCount(profileId: string | undefined) {
-  return useQuery({
-    queryKey: ['needs-attention-count', profileId],
-    queryFn: async () => {
-      // Attention tasks: client review + approved
-      const { count: attentionCount } = await supabase
-        .from('task_cache')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', profileId!)
-        .eq('is_visible', true)
-        .in('status', ['client review', 'approved'])
-
-      // Recommendations: to do + tag "recommendation"
-      const { data: recTasks } = await supabase
-        .from('task_cache')
-        .select('tags')
-        .eq('profile_id', profileId!)
-        .eq('is_visible', true)
-        .eq('status', 'to do')
-
-      const recCount = (recTasks ?? []).filter(t =>
-        Array.isArray(t.tags) && t.tags.some((tag: { name: string }) => tag.name === 'recommendation')
-      ).length
-
-      return (attentionCount ?? 0) + recCount
-    },
-    enabled: !!profileId,
-    staleTime: 60_000,
-  })
 }
 
 interface Props {
@@ -58,10 +26,8 @@ export function Sidebar({ expanded, onToggle }: Props) {
   const { profile } = useAuth()
   const { data: workspaces = [] } = useWorkspaces()
   const { notifications } = useNotifications(profile?.id)
-  const { supportUnread, taskUnread } = useUnreadCounts(profile?.id)
+  const { supportUnread } = useUnreadCounts(profile?.id)
   const { data: attentionCount = 0 } = useNeedsAttentionCount(profile?.id)
-
-  const ticketsUnread = Object.values(taskUnread).reduce((sum, n) => sum + n, 0)
 
   const inboxNotifications = notifications.filter(
     n => !profile?.support_task_id || n.task_id !== profile.support_task_id
@@ -124,7 +90,6 @@ export function Sidebar({ expanded, onToggle }: Props) {
           expanded={expanded}
           workspaces={workspaces}
           supportUnread={supportUnread}
-          ticketsUnread={ticketsUnread}
         />
       </div>
 
