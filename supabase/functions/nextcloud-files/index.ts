@@ -37,6 +37,7 @@ import {
   corsHeaders as defaultCorsHeaders,
 } from "../_shared/cors.ts";
 import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
+import { getOrgForUser } from "../_shared/org.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -336,6 +337,18 @@ Deno.serve(async (req) => {
     }
 
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ORG-BE-03: Hoisted nextcloud_client_root lookup (replaces 7 inline reads).
+    // Dual-read: org → profile → null. Individual actions check for null and return
+    // NEXTCLOUD_NOT_CONFIGURED / FORBIDDEN as they did before.
+    const org = await getOrgForUser(supabaseService, user.id);
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("nextcloud_client_root")
+      .eq("id", user.id)
+      .maybeSingle();
+    const clientRoot: string | null =
+      org?.nextcloud_client_root ?? (profileRow as { nextcloud_client_root: string | null } | null)?.nextcloud_client_root ?? null;
 
     // --- Parse request body / form-data ---------------------------------
     const contentType = req.headers.get("content-type") || "";
@@ -799,26 +812,12 @@ Deno.serve(async (req) => {
     // ACTION: browse-client
     // ====================================================================
     if (action === "browse-client") {
-      // Derive client root from the authenticated user's own profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for browse-client");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for browse-client");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -924,26 +923,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Derive client root from the authenticated user's profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for download-client-file");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for download-client-file");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -1001,26 +986,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Derive client root from the authenticated user's profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for upload-client-file");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for upload-client-file");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -1118,26 +1089,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Derive client root from the authenticated user's profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for mkdir-client");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for mkdir-client");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -1215,26 +1172,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Derive client root from the authenticated user's profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for delete-client");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for delete-client");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -1339,26 +1282,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Derive client root from the user's profile
-      const { data: profileRow, error: profileErr } = await supabase
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !profileRow) {
-        log.warn("Profile not found for upload-task-file");
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
+      if (!clientRoot) {
+        log.warn("No client root for upload-task-file");
         return new Response(
           JSON.stringify({ ok: false, code: "FORBIDDEN", correlationId: requestId }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const clientRoot: string | null = (profileRow as { nextcloud_client_root: string | null }).nextcloud_client_root;
-      if (!clientRoot) {
-        return new Response(
-          JSON.stringify({ ok: false, code: "NEXTCLOUD_NOT_CONFIGURED", message: "No client root configured", correlationId: requestId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -1502,13 +1431,7 @@ Deno.serve(async (req) => {
     // ACTION: sync_activity_client (client-root Nextcloud activity sync)
     // ====================================================================
     if (action === "sync_activity_client") {
-      const { data: profile } = await supabaseService
-        .from("profiles")
-        .select("nextcloud_client_root")
-        .eq("id", user.id)
-        .single();
-
-      const clientRoot = (profile as { nextcloud_client_root: string | null } | null)?.nextcloud_client_root;
+      // clientRoot resolved via hoisted dual-read (org → profile → null) above.
       if (!clientRoot) {
         return new Response(
           JSON.stringify({ ok: true, code: "OK", correlationId: requestId, data: { inserted: 0 } }),
