@@ -45,8 +45,13 @@ export function matchesTaskSearch(task: ClickUpTask, query: string): boolean {
     .some(value => value.toLowerCase().includes(normalized))
 }
 
+function isRecommendation(task: ClickUpTask): boolean {
+  return task.tags?.some(tag => tag.name.toLowerCase() === 'recommendation') ?? false
+}
+
 export function filterTasks(tasks: ClickUpTask[], filter: TaskFilter, query: string, activeFilters?: ActiveFilters): ClickUpTask[] {
-  let result = tasks
+  // Recommendations belong to Meine Aufgaben only — exclude from Tickets
+  let result = tasks.filter(t => !isRecommendation(t))
 
   // When a search query is active, bypass the status filter so results span all statuses
   if (!query.trim()) {

@@ -19,8 +19,12 @@ interface Props {
   tasks: ClickUpTask[]
 }
 
+function isRecommendation(task: ClickUpTask): boolean {
+  return task.tags?.some(tag => tag.name.toLowerCase() === 'recommendation') ?? false
+}
+
 function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
-  return tasks.filter(t => {
+  return tasks.filter(t => !isRecommendation(t)).filter(t => {
     const s = mapStatus(t.status)
     switch (filter) {
       case 'ready':       return s === 'ready'
