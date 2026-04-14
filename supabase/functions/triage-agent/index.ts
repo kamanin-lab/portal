@@ -67,7 +67,7 @@ async function callOpenRouter(
         "X-Title": "KAMANIN Triage Agent",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5-20251001",
+        model: "anthropic/claude-haiku-4.5",
         max_tokens: 512,
         temperature: 0,
         response_format: { type: "json_object" },
@@ -190,7 +190,7 @@ Deno.serve(async (req: Request) => {
           list_id: input.list_id,
           list_name: input.list_name,
         },
-        model_used: "anthropic/claude-haiku-4-5-20251001",
+        model_used: "anthropic/claude-haiku-4.5",
       })
       .select()
       .single();
