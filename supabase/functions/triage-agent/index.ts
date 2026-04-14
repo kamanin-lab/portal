@@ -323,8 +323,7 @@ Deno.serve(async (req: Request) => {
     commentText += `📋 Type: ${parsed.task_type}\n`;
     commentText += `⚡ Complexity: ${parsed.complexity}\n`;
     commentText += `⏱ Estimated time: ${parsed.hours_estimate}h\n`;
-    commentText += `💳 Client cost: ${parsed.credits} credit(s) (~€${parsed.credits * 100})\n`;
-    commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
+commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
     commentText += `💭 Reasoning:\n${parsed.reasoning}\n`;
 
     if (parsed.questions && parsed.questions.length > 0) {
