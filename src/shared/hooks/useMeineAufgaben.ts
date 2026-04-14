@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
 import { mapStatus, isTerminal } from '@/modules/tickets/lib/status-mapping'
 import type { ClickUpTask } from '@/modules/tickets/types/tasks'
-import { TAB_ORDER } from '@/modules/tickets/components/MeineAufgabenFilters'
 import type { MeineAufgabenTab } from '@/modules/tickets/components/MeineAufgabenFilters'
 
 export function useMeineAufgaben(
@@ -43,7 +42,7 @@ export function useMeineAufgaben(
   const [activeTab, setActiveTab] = useState<MeineAufgabenTab | null>(null)
   useEffect(() => {
     if (!isLoading && activeTab === null) {
-      const defaultTab = TAB_ORDER.find(tab => counts[tab] > 0) ?? 'unread'
+      const defaultTab: MeineAufgabenTab = 'unread'
       setActiveTab(defaultTab)
     }
   }, [isLoading, counts, activeTab])
