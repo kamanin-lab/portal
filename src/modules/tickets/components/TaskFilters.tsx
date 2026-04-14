@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
-  ArrowDown01Icon, AlertCircleIcon, CircleIcon, PlayCircleIcon, Clock01Icon,
+  ArrowDown01Icon, CircleIcon, PlayCircleIcon, Clock01Icon,
   CheckmarkCircle02Icon, TickDouble01Icon, PauseCircleIcon, CancelCircleIcon, Layers01Icon,
 } from '@hugeicons/core-free-icons'
 import { mapStatus } from '../lib/status-mapping'
@@ -12,7 +11,7 @@ import { useBreakpoint } from '@/shared/hooks/useBreakpoint'
 import { cn } from '@/shared/lib/utils'
 import type { ClickUpTask } from '../types/tasks'
 
-export type TaskFilter = 'all' | 'attention' | 'ready' | 'open' | 'in_progress' | 'approved' | 'done' | 'on_hold' | 'cancelled'
+export type TaskFilter = 'all' | 'ready' | 'open' | 'in_progress' | 'approved' | 'done' | 'on_hold' | 'cancelled'
 
 interface Props {
   active: TaskFilter
@@ -24,7 +23,6 @@ function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
   return tasks.filter(t => {
     const s = mapStatus(t.status)
     switch (filter) {
-      case 'attention':   return s === 'needs_attention' || s === 'awaiting_approval'
       case 'ready':       return s === 'ready'
       case 'open':        return s === 'open'
       case 'in_progress': return s === 'in_progress'
@@ -37,13 +35,12 @@ function countByFilter(tasks: ClickUpTask[], filter: TaskFilter): number {
   }).length
 }
 
-const PRIMARY_FILTERS: TaskFilter[] = ['attention', 'open', 'ready', 'in_progress', 'approved', 'done']
+const PRIMARY_FILTERS: TaskFilter[] = ['open', 'in_progress', 'ready', 'approved', 'done']
 const MORE_FILTERS: TaskFilter[] = ['on_hold', 'cancelled', 'all']
 const ALL_FILTERS: TaskFilter[] = [...PRIMARY_FILTERS, ...MORE_FILTERS]
 
 const FILTER_LABELS: Record<TaskFilter, string> = {
   all:         STATUS_LABELS.all,
-  attention:   STATUS_LABELS.needs_attention,
   ready:       STATUS_LABELS.ready,
   open:        STATUS_LABELS.open,
   in_progress: STATUS_LABELS.in_progress,
@@ -54,7 +51,6 @@ const FILTER_LABELS: Record<TaskFilter, string> = {
 }
 
 const STATUS_ICONS: Partial<Record<TaskFilter, IconSvgElement>> = {
-  attention:   AlertCircleIcon,
   ready:       PlayCircleIcon,
   open:        CircleIcon,
   in_progress: Clock01Icon,
@@ -84,12 +80,10 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
     }
   }, [])
 
-  function chipClass(isActive: boolean, isAttention: boolean) {
+  function chipClass(isActive: boolean) {
     return cn(
       'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap',
-      isActive && isAttention
-        ? 'bg-rose-600 text-white border-rose-600'
-        : isActive
+      isActive
         ? 'bg-accent text-white border-accent'
         : 'bg-surface border-border text-text-secondary hover:border-accent hover:text-accent'
     )
@@ -107,17 +101,12 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
         {PRIMARY_FILTERS.map(f => {
           const count = countByFilter(tasks, f)
           const isActive = active === f
-          const isAttention = f === 'attention'
           const Icon = STATUS_ICONS[f]
           return (
-            <motion.button
+            <button
               key={f}
               onClick={() => onChange(f)}
-              className={chipClass(isActive, isAttention)}
-              {...(isAttention && count > 0 ? {
-                animate: { x: [0, -3, 3, -3, 0] },
-                transition: { duration: 0.4, ease: 'easeInOut', repeat: 2, delay: 0.6 }
-              } : {})}
+              className={chipClass(isActive)}
             >
               {Icon && <HugeiconsIcon icon={Icon} size={11} />}
               {FILTER_LABELS[f]}
@@ -125,7 +114,7 @@ export function TaskFilters({ active, onChange, tasks }: Props) {
                 'min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center',
                 isActive ? 'bg-white/25 text-white' : 'bg-surface-raised text-text-tertiary'
               )}>{count}</span>
-            </motion.button>
+            </button>
           )
         })}
       </div>

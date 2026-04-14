@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { FlashIcon, TimeScheduleIcon, Comment01Icon, PreferenceHorizontalIcon } from '@hugeicons/core-free-icons'
@@ -12,17 +12,14 @@ import { TaskFilterPanel, type ActiveFilters } from '../components/TaskFilterPan
 import { SupportSheet } from '../components/SupportSheet'
 import { NewTicketDialog } from '../components/NewTicketDialog'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
-import { useRecommendations } from '../hooks/useRecommendations'
-import { RecommendationsBlock } from '../components/RecommendationsBlock'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
-import { mapStatus } from '../lib/status-mapping'
 import { cn } from '@/shared/lib/utils'
 
 export function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filter, setFilter] = useState<TaskFilter>('attention')
+  const [filter, setFilter] = useState<TaskFilter>('open')
   const [searchQuery, setSearchQuery] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filterPanelOpen, setFilterPanelOpen] = useState(false)
@@ -30,30 +27,12 @@ export function TicketsPage() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ priorities: [], datePreset: null })
 
   const { data: tasks = [], isLoading } = useClickUpTasks()
-  const { recommendations } = useRecommendations(tasks)
   const { user } = useAuth()
   const { taskUnread, supportUnread } = useUnreadCounts(user?.id)
   const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
 
   const activeTaskId = searchParams.get('taskId')
   const filterCount = activeFilters.priorities.length + (activeFilters.datePreset ? 1 : 0)
-
-  // Auto-select filter: "Ihre Rückmeldung" if any exist, otherwise fallback to "Offen"
-  useEffect(() => {
-    if (!isLoading && tasks.length > 0 && filter === 'attention') {
-      const hasAttention = tasks.some(t => { const s = mapStatus(t.status); return s === 'needs_attention' || s === 'awaiting_approval'; })
-      if (!hasAttention) setFilter('open')
-    }
-  }, [isLoading, tasks]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Handle ?filter= param from MeineAufgabenPage redirect
-  useEffect(() => {
-    const filterParam = searchParams.get('filter')
-    if (filterParam === 'needs_attention') {
-      setFilter('attention')
-      setSearchParams(p => { p.delete('filter'); return p }, { replace: true })
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openTask(id: string) {
     setFilterPanelOpen(false)
@@ -162,14 +141,6 @@ export function TicketsPage() {
         activeFilters={activeFilters}
         onTaskClick={openTask}
       />
-
-      {/* Recommendations block — Needs Attention tab only */}
-      {filter === 'attention' && recommendations.length > 0 && (
-        <RecommendationsBlock
-          recommendations={recommendations}
-          onTaskClick={openTask}
-        />
-      )}
 
       {/* Sheet: task detail (URL-based) */}
       <TaskDetailSheet taskId={activeTaskId} onClose={closeTask} tasks={tasks} isTasksLoading={isLoading} />
