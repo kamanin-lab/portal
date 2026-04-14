@@ -22,7 +22,7 @@ const TAB_LABELS: Record<MeineAufgabenTab, string> = {
   empfehlungen: 'Empfehlungen',
 }
 
-const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
+export const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
 
 export function MeineAufgabenFilters({ active, onChange, counts }: Props) {
   return (

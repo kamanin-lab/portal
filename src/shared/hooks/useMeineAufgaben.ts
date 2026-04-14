@@ -2,9 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
 import { mapStatus } from '@/modules/tickets/lib/status-mapping'
 import type { ClickUpTask } from '@/modules/tickets/types/tasks'
+import { TAB_ORDER } from '@/modules/tickets/components/MeineAufgabenFilters'
 import type { MeineAufgabenTab } from '@/modules/tickets/components/MeineAufgabenFilters'
-
-const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
 
 export function useMeineAufgaben(
   tasks: ClickUpTask[],
