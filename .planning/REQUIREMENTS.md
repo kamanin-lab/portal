@@ -10,16 +10,16 @@
 
 ### DB Foundation (ORG-DB)
 
-- [ ] **ORG-DB-01**: `organizations` table created with columns: `id`, `name`, `slug` (unique), `clickup_list_ids` (jsonb), `nextcloud_client_root` (text), `support_task_id` (text), `clickup_chat_channel_id` (text), `created_at`, `updated_at`
-- [ ] **ORG-DB-02**: `org_members` table created with columns: `id`, `organization_id` (FK → organizations), `profile_id` (FK → profiles), `role` (check: admin/member/viewer), `created_at`; unique constraint on (organization_id, profile_id)
-- [ ] **ORG-DB-03**: `user_org_ids()` SQL function created — `SECURITY DEFINER STABLE`, `SET search_path = ''`, returns `SETOF uuid` of org IDs for `auth.uid()`
-- [ ] **ORG-DB-04**: `user_org_role(org_id uuid)` SQL function created — `SECURITY DEFINER STABLE`, returns role text for current user in given org
-- [ ] **ORG-DB-05**: Nullable `organization_id` FK column added to `credit_packages`, `client_workspaces`, `profiles`; nullable `organization_id` added to `credit_transactions` (kept alongside `profile_id` for audit trail)
-- [ ] **ORG-DB-06**: Data migration executed: one org created per existing profile (name from profile, slug from email domain), profile inserted as admin in `org_members`, org fields populated from profile's `clickup_list_ids`/`nextcloud_client_root`/`support_task_id`/`clickup_chat_channel_id`
-- [ ] **ORG-DB-07**: After migration, NOT NULL constraints added on `organization_id` in `credit_packages` and `client_workspaces`; `profiles.organization_id` stays nullable for backward safety
-- [ ] **ORG-DB-08**: New org-scoped RLS policies added on `credit_packages` and `client_workspaces` using `(SELECT user_org_ids())` wrapper; old `profile_id = auth.uid()` policies kept in parallel during transition
-- [ ] **ORG-DB-09**: Migration verification gate: `count(org_members) = count(profiles)` passes; no org rows have NULL `clickup_list_ids`
-- [ ] **ORG-DB-10**: `notifications_type_check` constraint extended to include `member_invited` and `member_removed` event types
+- [x] **ORG-DB-01**: `organizations` table created with columns: `id`, `name`, `slug` (unique), `clickup_list_ids` (jsonb), `nextcloud_client_root` (text), `support_task_id` (text), `clickup_chat_channel_id` (text), `created_at`, `updated_at`
+- [x] **ORG-DB-02**: `org_members` table created with columns: `id`, `organization_id` (FK → organizations), `profile_id` (FK → profiles), `role` (check: admin/member/viewer), `created_at`; unique constraint on (organization_id, profile_id)
+- [x] **ORG-DB-03**: `user_org_ids()` SQL function created — `SECURITY DEFINER STABLE`, `SET search_path = ''`, returns `SETOF uuid` of org IDs for `auth.uid()`
+- [x] **ORG-DB-04**: `user_org_role(org_id uuid)` SQL function created — `SECURITY DEFINER STABLE`, returns role text for current user in given org
+- [x] **ORG-DB-05**: Nullable `organization_id` FK column added to `credit_packages`, `client_workspaces`, `profiles`; nullable `organization_id` added to `credit_transactions` (kept alongside `profile_id` for audit trail)
+- [x] **ORG-DB-06**: Data migration executed: one org created per existing profile (name from profile, slug from email domain), profile inserted as admin in `org_members`, org fields populated from profile's `clickup_list_ids`/`nextcloud_client_root`/`support_task_id`/`clickup_chat_channel_id`
+- [x] **ORG-DB-07**: After migration, NOT NULL constraints added on `organization_id` in `credit_packages` and `client_workspaces`; `profiles.organization_id` stays nullable for backward safety
+- [x] **ORG-DB-08**: New org-scoped RLS policies added on `credit_packages` and `client_workspaces` using `(SELECT user_org_ids())` wrapper; old `profile_id = auth.uid()` policies kept in parallel during transition
+- [x] **ORG-DB-09**: Migration verification gate: `count(org_members) = count(profiles)` passes; no org rows have NULL `clickup_list_ids`
+- [x] **ORG-DB-10**: `notifications_type_check` constraint extended to include `member_invited` and `member_removed` event types
 
 ### Backend / Edge Functions (ORG-BE)
 
@@ -104,16 +104,16 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ORG-DB-01 | Phase 9 | Pending |
-| ORG-DB-02 | Phase 9 | Pending |
-| ORG-DB-03 | Phase 9 | Pending |
-| ORG-DB-04 | Phase 9 | Pending |
-| ORG-DB-05 | Phase 9 | Pending |
-| ORG-DB-06 | Phase 9 | Pending |
-| ORG-DB-07 | Phase 9 | Pending |
-| ORG-DB-08 | Phase 9 | Pending |
-| ORG-DB-09 | Phase 9 | Pending |
-| ORG-DB-10 | Phase 9 | Pending |
+| ORG-DB-01 | Phase 9 | Complete |
+| ORG-DB-02 | Phase 9 | Complete |
+| ORG-DB-03 | Phase 9 | Complete |
+| ORG-DB-04 | Phase 9 | Complete |
+| ORG-DB-05 | Phase 9 | Complete |
+| ORG-DB-06 | Phase 9 | Complete |
+| ORG-DB-07 | Phase 9 | Complete |
+| ORG-DB-08 | Phase 9 | Complete |
+| ORG-DB-09 | Phase 9 | Complete |
+| ORG-DB-10 | Phase 9 | Complete |
 | ORG-BE-01 | Phase 10 | Pending |
 | ORG-BE-02 | Phase 10 | Pending |
 | ORG-BE-03 | Phase 10 | Pending |

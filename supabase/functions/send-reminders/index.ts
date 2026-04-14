@@ -1,7 +1,7 @@
 // ============ DEPLOYMENT VERSION ============
-// Version: 2026-04-14-v2-unread-digest
+// Version: 2026-04-14-v3-unread-digest-48h
 // Feature: Digest email reminders for pending approval tasks (every 5 days)
-// Feature: Daily unread message digest — reminds clients with unread task chat messages (24h cooldown)
+// Feature: Unread message digest — 48h cooldown, respects unread_digest preference
 // =============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
@@ -254,7 +254,7 @@ async function sendUnreadMessageReminders(
   }
 
   // 6. For each profile with unread messages: check prefs + cooldown, then send
-  const oneDayMs = 24 * 60 * 60 * 1000;
+  const twoDaysMs = 48 * 60 * 60 * 1000;
 
   for (const profile of profiles as Record<string, unknown>[]) {
     const taskMap = profileUnread.get(profile.id as string);
@@ -262,18 +262,19 @@ async function sendUnreadMessageReminders(
 
     // Preference checks
     const prefs = profile.notification_preferences as Record<string, boolean> | null;
+    const unreadDigestEnabled = prefs?.unread_digest !== false;
     const remindersEnabled = prefs?.reminders !== false;
     const teamCommentEnabled = prefs?.team_comment !== false;
     const supportEnabled = prefs?.support_response !== false;
 
-    if (!remindersEnabled || (!teamCommentEnabled && !supportEnabled)) {
+    if (!unreadDigestEnabled || !remindersEnabled || (!teamCommentEnabled && !supportEnabled)) {
       skipped++; continue;
     }
 
-    // 24h cooldown check
+    // 48h cooldown check
     if (profile.last_unread_digest_sent_at) {
       const lastSent = new Date(profile.last_unread_digest_sent_at as string).getTime();
-      if (Date.now() - lastSent < oneDayMs) { skipped++; continue; }
+      if (Date.now() - lastSent < twoDaysMs) { skipped++; continue; }
     }
 
     // Build per-pref-filtered task list
@@ -304,12 +305,12 @@ async function sendUnreadMessageReminders(
 
     if (success) {
       // Atomic update with cooldown guard (prevents double-send on concurrent runs)
-      const oneDayAgo = new Date(Date.now() - oneDayMs).toISOString();
+      const twoDaysAgo = new Date(Date.now() - twoDaysMs).toISOString();
       await supabase
         .from("profiles")
         .update({ last_unread_digest_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${oneDayAgo}`);
+        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${twoDaysAgo}`);
       sent++;
     } else {
       errors++;

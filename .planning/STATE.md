@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Organisations
-status: planning
-stopped_at: —
-last_updated: "2026-04-14T00:00:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: verifying
+last_updated: "2026-04-14T20:51:12.665Z"
 last_activity: 2026-04-14
 progress:
-  total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 13
+  completed_phases: 8
+  total_plans: 19
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -21,10 +20,10 @@ progress:
 
 ## Current Position
 
-Phase: Not started (roadmap created — ready for phase planning)
-Plan: —
-Status: Planning
-Last activity: 2026-04-14 — Milestone v2.0 Organisations roadmap created (Phases 9–13)
+Phase: 09 (org-db-foundation) — COMPLETE
+Plan: 1 of 1 — DONE
+Status: Phase 09 complete — V1-V8 all passed (48/48), ready for Phase 10
+Last activity: 2026-04-14 — 09-01 migration verified on staging
 
 ## Previous Milestone
 
@@ -45,6 +44,8 @@ Phase 1: Portal Frontend — Complete
 | 260330-sl4 | Fix new_recommendation inbox notifications — DB constraint, TS type, TypeBadge amber badge | 2026-03-30 | `635bdc4` | Verified | [260330-sl4-fix-new-recommendation-inbox-notificatio](./quick/260330-sl4-fix-new-recommendation-inbox-notificatio/) |
 | 260403-euc | Fix projects module realtime and task open button | 2026-04-03 | `9527675` | Verified | [260403-euc-fix-projects-module-realtime-and-task-op](./quick/260403-euc-fix-projects-module-realtime-and-task-op/) |
 | 260403-fnr | Fix optimistic update flicker in project steps — cancelQueries before setQueryData, comments invalidation | 2026-04-03 | `4e2ca26` | Done | [260403-fnr-fix-optimistic-update-flicker-in-project](./quick/260403-fnr-fix-optimistic-update-flicker-in-project/) |
+| 260414-u8j | Fix sidebar badge not updating — invalidate needs-attention-count on realtime + 30s poll | 2026-04-14 | `212caa5` | Done | [20260414-sidebar-badge-fix](./quick/20260414-sidebar-badge-fix/) |
+| 260414-uwc | Nachrichten: tasks stay visible until client replies to team comment (needsReply logic) | 2026-04-14 | `69b03f5` | Done | [20260414-nachrichten-needs-reply](./quick/20260414-nachrichten-needs-reply/) |
 
 ### Key Decisions
 
@@ -79,6 +80,8 @@ Phase 1: Portal Frontend — Complete
 - AnimatePresence requires conditional rendering (not TabsContent) — Radix CSS hides inactive tabs blocking exit animations (Phase 05-02)
 - Controlled Tabs (useState activeTab) needed for AnimatePresence keyed transitions in OverviewTabs (Phase 05-02)
 - DATA-01 (ProjectContextSection) and DATA-05 (AdminPanel refactor) deferred to admin dashboard scope (Phase 05-02)
+- organizations.clickup_list_ids is jsonb; profiles.clickup_list_ids is text[] on staging — use to_jsonb() cast in data migration (Phase 09-01)
+- Supabase Management API (api.supabase.com/v1/projects/{ref}/database/query) used for direct migration apply when CLI tracking table is empty (Phase 09-01)
 
 ### Blockers/Concerns
 

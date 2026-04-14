@@ -11,6 +11,7 @@ import { mapStatus } from '@/modules/tickets/lib/status-mapping'
  */
 export function useNeedsAttentionCount(userId: string | undefined) {
   const { data: tasks = [] } = useClickUpTasks()
+<<<<<<< HEAD
   const { taskUnread, needsReply } = useUnreadCounts(userId)
   const { recommendations } = useRecommendations(tasks)
 

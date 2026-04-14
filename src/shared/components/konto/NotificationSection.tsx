@@ -56,6 +56,7 @@ const TASK_OPTIONS: OptionDef[] = [
   { key: 'support_response',   label: 'Support-Antwort',               description: 'Benachrichtigung bei neuen Antworten im Support-Chat.' },
   { key: 'reminders',          label: 'Erinnerungen',                  description: 'Erinnerung alle 5 Tage bei ausstehender Prüfung oder Kostenfreigabe.' },
   { key: 'new_recommendation', label: 'Neue Empfehlung',               description: 'Benachrichtigung, wenn das Team eine neue Empfehlung für Sie erstellt hat.' },
+  { key: 'unread_digest',      label: 'Ungelesene Nachrichten',        description: 'Erinnerung alle 2 Tage bei ungelesenen Nachrichten vom Team.' },
 ]
 
 const PROJECT_OPTIONS: OptionDef[] = [
