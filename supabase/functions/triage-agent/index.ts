@@ -2,10 +2,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { fetchWpSiteAudit, formatAuditForPrompt, WpSiteAudit } from "../_shared/wp-audit.ts";
+import { WP_TRIAGE_TOOLS, WpToolDef, executeWpTool } from "../_shared/wp-tools.ts";
 import { TRIAGE_AGENT_PROMPT } from "../_shared/skills/triage-agent-prompt.ts";
 
 // ---------------------------------------------------------------------------
-// Local fetchWithTimeout — defined here per project convention (not shared)
+// Local fetchWithTimeout
 // ---------------------------------------------------------------------------
 async function fetchWithTimeout(
   url: string,
@@ -22,10 +23,12 @@ async function fetchWithTimeout(
 }
 
 // ---------------------------------------------------------------------------
-// Cost tracking (Anthropic Claude Haiku pricing approximation via OpenRouter)
+// Cost tracking (Claude Haiku via OpenRouter)
 // ---------------------------------------------------------------------------
 const INPUT_COST_PER_TOKEN = 0.8 / 1_000_000;
 const OUTPUT_COST_PER_TOKEN = 4.0 / 1_000_000;
+
+const MAX_TOOL_ITERATIONS = 5;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +39,7 @@ interface TriageInput {
   description: string;
   list_id: string;
   list_name: string;
-  profile_id: string | null; // used to look up wp_mcp_url
+  profile_id: string | null;
 }
 
 interface TriageOutput {
@@ -49,13 +52,30 @@ interface TriageOutput {
   questions: string[];
 }
 
+type Message = { role: string; content: unknown; tool_calls?: unknown };
+
 // ---------------------------------------------------------------------------
-// OpenRouter call helper
+// OpenRouter call — with optional tools (agentic mode)
 // ---------------------------------------------------------------------------
 async function callOpenRouter(
-  messages: { role: string; content: string }[],
+  messages: Message[],
   openrouterKey: string,
+  tools?: WpToolDef[],
 ): Promise<Response> {
+  const body: Record<string, unknown> = {
+    model: "anthropic/claude-haiku-4.5",
+    max_tokens: tools?.length ? 2048 : 512,
+    temperature: 0,
+    messages,
+  };
+
+  if (tools?.length) {
+    body.tools = tools;
+    // response_format: json_object is incompatible with tool use
+  } else {
+    body.response_format = { type: "json_object" };
+  }
+
   return await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
@@ -66,68 +86,131 @@ async function callOpenRouter(
         "HTTP-Referer": "https://portal.kamanin.at",
         "X-Title": "KAMANIN Triage Agent",
       },
-      body: JSON.stringify({
-        model: "anthropic/claude-haiku-4.5",
-        max_tokens: 512,
-        temperature: 0,
-        response_format: { type: "json_object" },
-        messages,
-      }),
+      body: JSON.stringify(body),
     },
     30000,
   );
 }
 
 // ---------------------------------------------------------------------------
-// Parse OpenRouter response → TriageOutput | null
+// Parse JSON estimate from a text string (handles markdown fences + preamble)
 // ---------------------------------------------------------------------------
-async function parseTriageResponse(
-  resp: Response,
-  log: ReturnType<typeof createLogger>,
-): Promise<{ parsed: TriageOutput | null; inputTokens: number; outputTokens: number }> {
-  if (!resp.ok) {
-    const errBody = await resp.text();
-    log.error("OpenRouter returned non-OK response", { status: resp.status, body: errBody.slice(0, 500) });
-    return { parsed: null, inputTokens: 0, outputTokens: 0 };
-  }
-  const data = await resp.json();
-  const inputTokens: number = data.usage?.prompt_tokens ?? 0;
-  const outputTokens: number = data.usage?.completion_tokens ?? 0;
-  let text: string = data.choices?.[0]?.message?.content ?? "";
-  if (!text) {
-    log.error("OpenRouter returned empty content", { raw: JSON.stringify(data).slice(0, 300) });
-    return { parsed: null, inputTokens: 0, outputTokens: 0 };
-  }
-  // strip markdown fences
-  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-  // fallback: extract JSON object if model added preamble text
-  if (!text.startsWith("{")) {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) text = match[0];
+function extractJson(text: string): TriageOutput | null {
+  let t = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  if (!t.startsWith("{")) {
+    const match = t.match(/\{[\s\S]*\}/);
+    if (match) t = match[0];
   }
   try {
-    return { parsed: JSON.parse(text) as TriageOutput, inputTokens, outputTokens };
+    return JSON.parse(t) as TriageOutput;
   } catch {
-    log.error("JSON.parse failed after extraction", { text: text.slice(0, 300) });
-    return { parsed: null, inputTokens, outputTokens };
+    return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Agentic triage loop
+// Returns parsed output + total token counts
+// ---------------------------------------------------------------------------
+async function runAgenticTriage(
+  systemPrompt: string,
+  userMessage: string,
+  openrouterKey: string,
+  wpBase: string | null,
+  wpAuth: string | null,
+  log: ReturnType<typeof createLogger>,
+): Promise<{ parsed: TriageOutput | null; inputTokens: number; outputTokens: number }> {
+  const tools = wpBase && wpAuth ? WP_TRIAGE_TOOLS : [];
+  const messages: Message[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userMessage },
+  ];
+
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let parsed: TriageOutput | null = null;
+
+  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+    const resp = await callOpenRouter(messages, openrouterKey, tools);
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      log.error("OpenRouter non-OK response", { status: resp.status, body: errBody.slice(0, 400) });
+      break;
+    }
+
+    const data = await resp.json();
+    inputTokens += data.usage?.prompt_tokens ?? 0;
+    outputTokens += data.usage?.completion_tokens ?? 0;
+
+    const choice = data.choices?.[0];
+    if (!choice) {
+      log.error("OpenRouter returned no choices", { raw: JSON.stringify(data).slice(0, 300) });
+      break;
+    }
+
+    const assistantMessage = choice.message;
+    const finishReason: string = choice.finish_reason ?? "stop";
+    const toolCalls = assistantMessage?.tool_calls;
+
+    // Push assistant message to history
+    messages.push({
+      role: "assistant",
+      content: assistantMessage?.content ?? null,
+      tool_calls: toolCalls,
+    });
+
+    // ---- Final answer ----
+    if (finishReason === "stop" || !toolCalls?.length) {
+      const text: string = assistantMessage?.content ?? "";
+      if (!text) {
+        log.error("OpenRouter returned empty content on final turn");
+        break;
+      }
+      parsed = extractJson(text);
+      if (!parsed) {
+        log.warn("JSON parse failed on final turn", { text: text.slice(0, 300) });
+      }
+      log.info(`Agentic loop complete in ${i + 1} iteration(s)`);
+      break;
+    }
+
+    // ---- Tool calls — execute in parallel ----
+    log.info(`Tool calls in iteration ${i + 1}`, {
+      tools: toolCalls.map((tc: { function: { name: string } }) => tc.function.name),
+    });
+
+    const toolResults = await Promise.all(
+      toolCalls.map(async (tc: { id: string; function: { name: string; arguments: string } }) => {
+        let toolInput: Record<string, unknown> = {};
+        try {
+          toolInput = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+        } catch { /* ignore parse error, use empty input */ }
+
+        const result = await executeWpTool(wpBase!, wpAuth!, tc.function.name, toolInput);
+        log.info(`Tool result: ${tc.function.name}`, { resultLen: result.length });
+        return { role: "tool", tool_call_id: tc.id, content: result };
+      }),
+    );
+
+    messages.push(...toolResults);
+  }
+
+  return { parsed, inputTokens, outputTokens };
 }
 
 // ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   const correlationId = crypto.randomUUID().slice(0, 8);
   const log = createLogger("triage-agent", correlationId);
-
   log.info("Triage agent invoked", { method: req.method });
 
-  // Service-role Supabase client (never anon key)
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -207,9 +290,12 @@ Deno.serve(async (req: Request) => {
     log.info("agent_jobs row created", { jobId });
 
     // ------------------------------------------------------------------
-    // 3. WordPress site audit (optional, non-blocking)
+    // 3. WordPress site audit (basic context: plugins, WP version, operator notes)
     // ------------------------------------------------------------------
     let siteAudit: WpSiteAudit | null = null;
+    let wpBase: string | null = null;
+    let wpAuth: string | null = null;
+
     if (input.profile_id) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -217,7 +303,17 @@ Deno.serve(async (req: Request) => {
         .eq("id", input.profile_id)
         .maybeSingle();
 
-      siteAudit = await fetchWpSiteAudit(profile?.wp_mcp_url ?? null, log);
+      const wpMcpUrl = profile?.wp_mcp_url ?? null;
+      siteAudit = await fetchWpSiteAudit(wpMcpUrl, log);
+
+      // Prepare credentials for tool execution in agentic loop
+      const wpUser = Deno.env.get("WP_MCP_USER");
+      const wpPass = Deno.env.get("WP_MCP_APP_PASS");
+      if (wpMcpUrl && wpUser && wpPass) {
+        wpBase = wpMcpUrl.replace(/\/$/, "");
+        wpAuth = `Basic ${btoa(`${wpUser}:${wpPass}`)}`;
+      }
+
       if (siteAudit) {
         log.info("WordPress site audit fetched", {
           siteName: siteAudit.site_name,
@@ -231,20 +327,7 @@ Deno.serve(async (req: Request) => {
     const auditFetched = siteAudit !== null;
 
     // ------------------------------------------------------------------
-    // 4. Read skill prompt from disk
-    // ------------------------------------------------------------------
-    const skillPrompt = TRIAGE_AGENT_PROMPT;
-
-    // ------------------------------------------------------------------
-    // 5. Build user message
-    // ------------------------------------------------------------------
-    let userMessage = `Task: ${input.clickup_task_name}\nDescription: ${input.description || "No description provided."}\nList: ${input.list_name}`;
-    if (siteAudit) {
-      userMessage += `\n\n${formatAuditForPrompt(siteAudit)}`;
-    }
-
-    // ------------------------------------------------------------------
-    // 6. Call OpenRouter (Claude Haiku) — with one JSON retry
+    // 4. Check OpenRouter key
     // ------------------------------------------------------------------
     const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!openrouterKey) {
@@ -260,45 +343,46 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const baseMessages = [
-      { role: "system", content: skillPrompt },
-      { role: "user", content: userMessage },
-    ];
-
-    log.info("Calling OpenRouter (first attempt)");
-    const firstResp = await callOpenRouter(baseMessages, openrouterKey);
-    const firstResult = await parseTriageResponse(firstResp, log);
-
-    let parsed: TriageOutput | null = firstResult.parsed;
-    let inputTokens = firstResult.inputTokens;
-    let outputTokens = firstResult.outputTokens;
-
-    if (!parsed) {
-      // Retry once with explicit JSON instruction
-      log.warn("First Claude response was not valid JSON — retrying");
-      const retryMessages = [
-        ...baseMessages,
-        { role: "user", content: "Your previous response was not valid JSON. Reply with ONLY the JSON object — no text before or after." },
-      ];
-      const retryResp = await callOpenRouter(retryMessages, openrouterKey);
-      const retryResult = await parseTriageResponse(retryResp, log);
-      parsed = retryResult.parsed;
-      inputTokens += retryResult.inputTokens;
-      outputTokens += retryResult.outputTokens;
+    // ------------------------------------------------------------------
+    // 5. Build user message
+    // ------------------------------------------------------------------
+    let userMessage = `Task: ${input.clickup_task_name}\nDescription: ${input.description || "No description provided."}\nList: ${input.list_name}`;
+    if (siteAudit) {
+      userMessage += `\n\n${formatAuditForPrompt(siteAudit)}`;
+    }
+    if (wpBase) {
+      userMessage += `\n\nWordPress tools are available. Use them to gather relevant context before estimating.`;
     }
 
     // ------------------------------------------------------------------
-    // 7. Handle second failure — update job to failed and return
+    // 6. Run agentic triage loop
+    // ------------------------------------------------------------------
+    log.info("Starting agentic triage", {
+      hasTools: wpBase !== null,
+      toolCount: wpBase ? WP_TRIAGE_TOOLS.length : 0,
+    });
+
+    const { parsed, inputTokens, outputTokens } = await runAgenticTriage(
+      TRIAGE_AGENT_PROMPT,
+      userMessage,
+      openrouterKey,
+      wpBase,
+      wpAuth,
+      log,
+    );
+
+    // ------------------------------------------------------------------
+    // 7. Handle failure
     // ------------------------------------------------------------------
     if (!parsed) {
-      log.error("Claude returned invalid JSON twice — marking job as failed");
+      log.error("Agentic triage returned no valid JSON — marking job as failed");
       await supabase.from("agent_jobs").update({
         status: "failed",
-        error_message: "Claude returned invalid JSON twice",
+        error_message: "Triage agent returned no valid JSON",
         duration_ms: Date.now() - startedAt,
       }).eq("id", jobId);
       return new Response(
-        JSON.stringify({ ok: false, code: "TRIAGE_FAILED", message: "Claude returned invalid JSON twice", correlationId }),
+        JSON.stringify({ ok: false, code: "TRIAGE_FAILED", message: "Triage agent returned no valid JSON", correlationId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -317,13 +401,13 @@ Deno.serve(async (req: Request) => {
     const costUsd = inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN;
 
     // ------------------------------------------------------------------
-    // 9. Build ClickUp comment text
+    // 9. Build ClickUp comment
     // ------------------------------------------------------------------
     let commentText = `[Triage] 🤖 Automated Task Assessment\n\n`;
     commentText += `📋 Type: ${parsed.task_type}\n`;
     commentText += `⚡ Complexity: ${parsed.complexity}\n`;
     commentText += `⏱ Estimated time: ${parsed.hours_estimate}h\n`;
-commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
+    commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
     commentText += `💭 Reasoning:\n${parsed.reasoning}\n`;
 
     if (parsed.questions && parsed.questions.length > 0) {
@@ -335,9 +419,7 @@ commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
 
     if (auditFetched && siteAudit) {
       const pluginCount = siteAudit.active_plugins.length;
-      const productPart =
-        siteAudit.product_count !== null ? `, ${siteAudit.product_count} products` : "";
-      commentText += `\n🔍 Site context: ${siteAudit.site_name} — WP ${siteAudit.wp_version}, ${pluginCount} plugins${productPart}\n`;
+      commentText += `\n🔍 Site context: ${siteAudit.site_name} — WP ${siteAudit.wp_version}, ${pluginCount} plugins\n`;
     }
 
     commentText += `\n---\nReply with:\n`;
@@ -385,7 +467,7 @@ commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
     }
 
     // ------------------------------------------------------------------
-    // 11. Update agent_jobs with terminal status
+    // 11. Update agent_jobs
     // ------------------------------------------------------------------
     await supabase.from("agent_jobs").update({
       status: commentPosted ? "awaiting_hitl" : "failed",
@@ -418,9 +500,6 @@ commentText += `🎯 Confidence: ${parsed.confidence}\n\n`;
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    // ------------------------------------------------------------------
-    // Global error handler — always update job to failed, always return 200
-    // ------------------------------------------------------------------
     log.error("Unhandled error in triage-agent", { error: String(err) });
 
     if (jobId) {

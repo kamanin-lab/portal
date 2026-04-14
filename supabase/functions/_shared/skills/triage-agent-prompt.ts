@@ -73,4 +73,18 @@ Respond ONLY with valid JSON. No markdown. No text outside the JSON.
 
 Set confidence "low" and populate questions[] when the description is vague
 or missing critical details. questions[] must be [] when confidence is high or medium.
-</output_format>`;
+</output_format>
+
+<tool_use>
+When WordPress tools are available, use them to gather relevant context BEFORE estimating.
+Be efficient: 1–3 targeted calls is enough. Do not call tools for generic tasks with clear scope.
+
+Suggested approach by task type:
+- Any task: call wp_get_plugins first to understand the tech stack
+- SEO / meta / Yoast: list pages with wp_list_content(post_type=page), then check a few with wp_get_meta(meta_key=_yoast_wpseo_metadesc)
+- WooCommerce: call wp_list_content(post_type=product, per_page=1) to get product count
+- Content update: call wp_search_content to find the relevant page
+- Design / theme: check active page builder plugin from wp_get_plugins result
+
+After gathering context, respond with ONLY valid JSON — no text before or after.
+</tool_use>`;
