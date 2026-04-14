@@ -27,9 +27,9 @@
 - [x] **ORG-BE-02**: `fetch-single-task` validates task access via org's `clickup_list_ids`; dual-read fallback
 - [x] **ORG-BE-03**: `nextcloud-files` reads `nextcloud_client_root` from `organizations`; dual-read fallback
 - [x] **ORG-BE-04**: `create-clickup-task` reads `clickup_list_ids` and `clickup_chat_channel_id` from org; dual-read fallback
-- [ ] **ORG-BE-05**: `clickup-webhook` `findProfilesForTask()` resolves profiles via `org_members` (all members of the org that owns the list); notifications fanned out to all org members; dedup prevents duplicate bell entries per profile per event
-- [ ] **ORG-BE-06**: `clickup-webhook` support chat fan-out: when new comment on `support_task_id`, inserts N rows in `comment_cache` — one per org member (consistent with `task_cache` pattern)
-- [ ] **ORG-BE-07**: `send-reminders` sends reminder emails to org admin only (v1); groups by `organization_id`
+- [x] **ORG-BE-05**: `clickup-webhook` `findProfilesForTask()` resolves profiles via `org_members` (all members of the org that owns the list); notifications fanned out to all org members; dedup prevents duplicate bell entries per profile per event
+- [x] **ORG-BE-06**: `clickup-webhook` support chat fan-out: when new comment on `support_task_id`, inserts N rows in `comment_cache` — one per org member (consistent with `task_cache` pattern)
+- [x] **ORG-BE-07**: `send-reminders` sends reminder emails to org admin only (v1); groups by `organization_id`
 - [ ] **ORG-BE-08**: New `invite-member` Edge Function added to main router: accepts `{ organizationId, email, role }`, calls `auth.admin.createUser({ email_confirm: true })`, calls `auth.admin.generateLink({ type: 'recovery', email, redirectTo: '/passwort-setzen' })`, sends invite email via `send-mailjet-email` using existing `auth-email` `"invite"` email copy, inserts row in `org_members`, copies `project_access` rows from org admin to new member
 - [ ] **ORG-BE-09**: `invite-member` enforces role-based guard: only org admin can invite; non-admin request returns 403
 - [ ] **ORG-BE-10**: `invite-member` handles duplicate invite gracefully (user already in org → return 409 with descriptive error)
@@ -118,9 +118,9 @@
 | ORG-BE-02 | Phase 10 | Complete |
 | ORG-BE-03 | Phase 10 | Complete |
 | ORG-BE-04 | Phase 10 | Complete |
-| ORG-BE-05 | Phase 10 | Pending |
-| ORG-BE-06 | Phase 10 | Pending |
-| ORG-BE-07 | Phase 10 | Pending |
+| ORG-BE-05 | Phase 10 | Complete |
+| ORG-BE-06 | Phase 10 | Complete |
+| ORG-BE-07 | Phase 10 | Complete |
 | ORG-BE-08 | Phase 10 | Pending |
 | ORG-BE-09 | Phase 10 | Pending |
 | ORG-BE-10 | Phase 10 | Pending |
