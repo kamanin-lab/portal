@@ -3,6 +3,7 @@ import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
 import { getVisibilityFromFields } from "../_shared/clickup-contract.ts";
+import { getOrgForUser } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -355,7 +356,19 @@ Deno.serve(async (req) => {
 
     log.info("Request received", { debug: debugMode });
 
-    // Get user's ClickUp list IDs from profile
+    // ORG-BE-01: Resolve org config via service role (bypasses RLS on org_members)
+    const supabaseServiceKeyEarly = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseServiceKeyEarly) {
+      log.error("SUPABASE_SERVICE_ROLE_KEY missing");
+      return new Response(
+        JSON.stringify({ error: "Server misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKeyEarly);
+    const org = await getOrgForUser(supabaseAdmin, user.id);
+
+    // Get user's ClickUp list IDs from profile (fallback)
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("clickup_list_ids")
@@ -370,7 +383,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const listIds = profile?.clickup_list_ids || [];
+    const listIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
     
     if (listIds.length === 0) {
       log.info("No ClickUp list IDs configured for user");
@@ -515,9 +528,9 @@ Deno.serve(async (req) => {
     // Cache visible tasks with activity timestamp
     // Trigger ensures last_activity_at never decreases
     if (visibleTasks.length > 0) {
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      if (supabaseServiceKey) {
-        const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+      // supabaseAdmin already constructed above for org lookup — reuse it
+      {
+        const supabaseService = supabaseAdmin;
         
         // Batch upsert (50 tasks per batch) with error handling
         const BATCH_SIZE = 50;

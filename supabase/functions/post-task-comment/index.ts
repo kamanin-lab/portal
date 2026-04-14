@@ -6,6 +6,7 @@ import { normalizeAttachmentType } from "../_shared/utils.ts";
 import {
   resolvePublicThreadRootId,
 } from "../_shared/clickup-contract.ts";
+import { getUserOrgRole } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -372,6 +373,20 @@ Deno.serve(async (req) => {
     // Get user profile for the name
     const userId = user.id;
     const userEmail = user.email || '';
+
+    // ORG-BE-11: Role guard — viewer cannot post comments
+    if (supabaseServiceKey) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const orgRole = await getUserOrgRole(supabaseAdmin, userId);
+      if (orgRole === "viewer") {
+        log.warn("Viewer role blocked from post-task-comment", { userId });
+        return new Response(
+          JSON.stringify({ error: "Insufficient permissions" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name')

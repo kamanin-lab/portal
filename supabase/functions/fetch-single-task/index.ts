@@ -3,6 +3,7 @@ import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { isTaskVisible } from "../_shared/clickup-contract.ts";
 import { parseClickUpTimestamp } from "../_shared/utils.ts";
+import { getOrgForUser } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -204,7 +205,19 @@ Deno.serve(async (req) => {
 
     log.info("Fetching single task");
 
-    // Get user's ClickUp list IDs from profile to verify access
+    // ORG-BE-01: Resolve org config via service role (bypasses RLS on org_members)
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseServiceKey) {
+      log.error("SUPABASE_SERVICE_ROLE_KEY missing");
+      return new Response(
+        JSON.stringify({ error: "Server misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const org = await getOrgForUser(supabaseAdmin, user.id);
+
+    // Get user's ClickUp list IDs from profile to verify access (fallback)
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("clickup_list_ids")
@@ -219,7 +232,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const userListIds = profile?.clickup_list_ids || [];
+    const userListIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
 
     // Fetch the task directly from ClickUp API
     log.debug("Fetching task from ClickUp API");
@@ -325,9 +338,8 @@ Deno.serve(async (req) => {
     };
 
     // Write to task_cache so Realtime subscribers pick up the update
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (supabaseServiceKey) {
-      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // supabaseAdmin already constructed above for org lookup — reuse it
+    {
       const { error: upsertError } = await supabaseAdmin
         .from("task_cache")
         .upsert({

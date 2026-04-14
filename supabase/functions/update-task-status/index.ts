@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { getCorsHeaders, corsHeaders as defaultCorsHeaders } from "../_shared/cors.ts";
 import { resolvePublicThreadRootId, resolveStatusForAction } from "../_shared/clickup-contract.ts";
+import { getUserOrgRole } from "../_shared/org.ts";
 
 async function fetchWithTimeout(
   url: string,
@@ -175,6 +176,19 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const userEmail = user.email || '';
     log.info("User attempting to update task status");
+
+    // ORG-BE-11: Role guard — viewer cannot update task status
+    if (supabaseServiceKey) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const orgRole = await getUserOrgRole(supabaseAdmin, userId);
+      if (orgRole === "viewer") {
+        log.warn("Viewer role blocked from update-task-status", { userId });
+        return new Response(
+          JSON.stringify({ error: "Insufficient permissions" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     const body = await req.json();
     const { taskId, action, comment, dueDate } = body;

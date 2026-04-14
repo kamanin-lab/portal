@@ -6,6 +6,7 @@ import {
   resolveChapterConfigId,
   TEST_FOLDER_CONTRACT,
 } from "../_shared/clickup-contract.ts";
+import { getOrgForUser, getUserOrgRole } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -192,6 +193,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ORG-BE-11: Role guard — viewer cannot create tasks
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseServiceKey) {
+      log.error("SUPABASE_SERVICE_ROLE_KEY missing");
+      return new Response(
+        JSON.stringify({ error: "Server misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const orgRole = await getUserOrgRole(supabaseAdmin, user.id);
+    if (orgRole === "viewer") {
+      log.warn("Viewer role blocked from create-clickup-task", { userId: user.id });
+      return new Response(
+        JSON.stringify({ error: "Insufficient permissions" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    // orgRole === null → legacy user, permissive (treat as member)
+
     log.info("Creating task for user", {
       approvedFolderUrl: TEST_FOLDER_CONTRACT.approvedFolderUrl,
     });
@@ -276,7 +297,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get user's ClickUp list IDs and chat channel from profile
+    // ORG-BE-02: Resolve org config for dual-read (supabaseAdmin already constructed above)
+    const org = await getOrgForUser(supabaseAdmin, user.id);
+
+    // Get user's ClickUp list IDs and chat channel from profile (fallback)
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("clickup_list_ids, full_name, clickup_chat_channel_id")
@@ -291,12 +315,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use explicit listId from request (project mode) or fall back to profile's list
+    // Dual-read fallback: org first, then profile
+    const listIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
+    const chatChannelId: string | null = org?.clickup_chat_channel_id ?? profile?.clickup_chat_channel_id ?? null;
+    // full_name stays in profiles — no org fallback needed
+    const fullNameFromProfile: string | null = profile?.full_name ?? null;
+
+    // Use explicit listId from request (project mode) or fall back to org/profile list
     let listId: string;
     if (body.listId) {
       listId = body.listId;
     } else {
-      const listIds = profile?.clickup_list_ids || [];
       if (listIds.length === 0) {
         log.info("No ClickUp list IDs configured for user");
         return new Response(
@@ -353,9 +382,8 @@ Deno.serve(async (req) => {
     const taskData = await createTaskResponse.json();
     log.info("Task created successfully");
 
-    // Upsert cache with creator info (service role client)
-    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || supabaseAnonKey);
-    const fullName = (profile.full_name || '').trim();
+    // Upsert cache with creator info (supabaseAdmin already constructed above — reuse)
+    const fullName = (fullNameFromProfile || '').trim();
     const firstName = fullName.split(' ').filter(Boolean)[0] || 'Portal User';
 
     const isProjectTask = !!body.listId;
@@ -505,7 +533,7 @@ Deno.serve(async (req) => {
     }
 
     // Send notification to ClickUp Chat channel if configured
-    const chatChannelId = profile.clickup_chat_channel_id;
+    // chatChannelId already resolved via dual-read (org ?? profile) above
     const workspaceId = Deno.env.get("CLICKUP_WORKSPACE_ID");
 
     if (chatChannelId && workspaceId) {
@@ -516,13 +544,13 @@ Deno.serve(async (req) => {
         4: "🟢 Low"
       };
 
-      const fullName = profile.full_name || "Client";
+      const chatDisplayName = fullNameFromProfile || "Client";
 
       const chatMessage = `📋 **New Task Submitted via Client Portal**
 
 **Task:** ${body.name.trim()}
 **Priority:** ${priorityLabels[body.priority]}
-**Created by:** ${fullName}
+**Created by:** ${chatDisplayName}
 
 [View task](${taskData.url})`;
 
