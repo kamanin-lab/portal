@@ -1,6 +1,7 @@
 // ============ DEPLOYMENT VERSION ============
-// Version: 2026-03-27-v1-initial
+// Version: 2026-04-14-v2-unread-digest
 // Feature: Digest email reminders for pending approval tasks (every 5 days)
+// Feature: Daily unread message digest — reminds clients with unread task chat messages (24h cooldown)
 // =============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
@@ -106,6 +107,216 @@ function buildReminderHtml(
     </div></body></html>`;
 
   return { subject, html };
+}
+
+interface UnreadTaskItem {
+  taskId: string;
+  taskName: string;
+  unreadCount: number;
+  isSupport: boolean;
+}
+
+function buildUnreadDigestHtml(
+  items: UnreadTaskItem[],
+  firstName: string | null,
+  locale: EmailLocale = "de"
+): { subject: string; html: string } {
+  const copy = getEmailCopy("unread_digest", locale);
+  const greeting = typeof copy.greeting === "function"
+    ? copy.greeting(firstName || undefined)
+    : copy.greeting;
+  const totalCount = items.reduce((sum, i) => sum + i.unreadCount, 0);
+  const subject = typeof copy.subject === "function"
+    ? copy.subject(totalCount)
+    : copy.subject;
+
+  const taskListHtml = items
+    .map((item) => {
+      const countLabel = item.unreadCount === 1
+        ? "1 neue Nachricht"
+        : `${item.unreadCount} neue Nachrichten`;
+      return `<div class="task-item">
+        <span class="task-name">${item.taskName}</span>
+        <span class="reply-count"> &mdash; ${countLabel}</span>
+      </div>`;
+    })
+    .join("");
+
+  const notesHtml = copy.notes
+    ?.map((n) => `<p class="muted">${n}</p>`)
+    .join("") ?? "";
+
+  const html = `<!DOCTYPE html><html><head>${styles}</head><body>
+    <div class="wrapper">
+      <div class="logo-section">
+        <img src="${logoUrl}" alt="KAMANIN" width="50" height="50" style="height: 50px; width: 50px; max-height: 50px; max-width: 50px; display: block;" />
+      </div>
+      <div class="card">
+        <h1 class="title">${copy.title}</h1>
+        <p class="text">${greeting}</p>
+        <p class="text">${copy.body as string}</p>
+        <div class="task-list">${taskListHtml}</div>
+        <a href="${portalUrl}/tickets" class="button">${copy.cta}</a>
+        ${notesHtml}
+      </div>
+      <div class="footer">
+        <p class="footer-text">KAMANIN Client Portal</p>
+      </div>
+    </div></body></html>`;
+
+  return { subject, html };
+}
+
+async function sendUnreadMessageReminders(
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>
+): Promise<{ sent: number; skipped: number; errors: number }> {
+  let sent = 0, skipped = 0, errors = 0;
+
+  // 1. Fetch all profiles with email enabled
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, email_notifications, notification_preferences, last_unread_digest_sent_at, support_task_id")
+    .eq("email_notifications", true);
+
+  if (profilesError || !profiles?.length) {
+    log.warn("Unread digest: no eligible profiles", { error: String(profilesError) });
+    return { sent, skipped, errors };
+  }
+
+  // 2. Bulk fetch team comments from last 60 days
+  const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: teamComments } = await supabase
+    .from("comment_cache")
+    .select("profile_id, task_id, clickup_created_at")
+    .eq("is_from_portal", false)
+    .gt("clickup_created_at", since60Days)
+    .in("profile_id", profiles.map((p: Record<string, unknown>) => p.id));
+
+  if (!teamComments?.length) {
+    log.info("Unread digest: no team comments in last 60 days");
+    return { sent, skipped: profiles.length, errors };
+  }
+
+  // 3. Bulk fetch read receipts for all eligible profiles
+  const { data: readReceipts } = await supabase
+    .from("read_receipts")
+    .select("profile_id, context_type, last_read_at")
+    .in("profile_id", profiles.map((p: Record<string, unknown>) => p.id));
+
+  // Build receipt lookup: `${profile_id}:${context_type}` -> last_read_at
+  const receiptMap = new Map<string, string>();
+  for (const r of (readReceipts ?? []) as Record<string, string>[]) {
+    receiptMap.set(`${r.profile_id}:${r.context_type}`, r.last_read_at);
+  }
+
+  // 4. Compute unread counts per (profile_id, task_id)
+  const profileUnread = new Map<string, Map<string, number>>();
+  for (const comment of teamComments as Record<string, string>[]) {
+    const profile = (profiles as Record<string, unknown>[]).find((p) => p.id === comment.profile_id);
+    if (!profile) continue;
+
+    const isSupport = profile.support_task_id === comment.task_id;
+    const contextType = isSupport ? "support" : `task:${comment.task_id}`;
+    const lastRead = receiptMap.get(`${comment.profile_id}:${contextType}`);
+    const isUnread = !lastRead || new Date(comment.clickup_created_at) > new Date(lastRead);
+
+    if (isUnread) {
+      if (!profileUnread.has(comment.profile_id)) {
+        profileUnread.set(comment.profile_id, new Map());
+      }
+      const taskMap = profileUnread.get(comment.profile_id)!;
+      taskMap.set(comment.task_id, (taskMap.get(comment.task_id) ?? 0) + 1);
+    }
+  }
+
+  if (!profileUnread.size) {
+    log.info("Unread digest: all messages are read");
+    return { sent, skipped: profiles.length, errors };
+  }
+
+  // 5. Collect all unread task IDs for bulk name lookup
+  const allUnreadTaskIds = new Set<string>();
+  for (const taskMap of profileUnread.values()) {
+    for (const taskId of taskMap.keys()) {
+      allUnreadTaskIds.add(taskId);
+    }
+  }
+
+  const { data: taskRows } = await supabase
+    .from("task_cache")
+    .select("clickup_id, name")
+    .in("clickup_id", [...allUnreadTaskIds]);
+
+  const taskNameMap = new Map<string, string>();
+  for (const t of (taskRows ?? []) as Record<string, string>[]) {
+    taskNameMap.set(t.clickup_id, t.name);
+  }
+
+  // 6. For each profile with unread messages: check prefs + cooldown, then send
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  for (const profile of profiles as Record<string, unknown>[]) {
+    const taskMap = profileUnread.get(profile.id as string);
+    if (!taskMap?.size) { skipped++; continue; }
+
+    // Preference checks
+    const prefs = profile.notification_preferences as Record<string, boolean> | null;
+    const remindersEnabled = prefs?.reminders !== false;
+    const teamCommentEnabled = prefs?.team_comment !== false;
+    const supportEnabled = prefs?.support_response !== false;
+
+    if (!remindersEnabled || (!teamCommentEnabled && !supportEnabled)) {
+      skipped++; continue;
+    }
+
+    // 24h cooldown check
+    if (profile.last_unread_digest_sent_at) {
+      const lastSent = new Date(profile.last_unread_digest_sent_at as string).getTime();
+      if (Date.now() - lastSent < oneDayMs) { skipped++; continue; }
+    }
+
+    // Build per-pref-filtered task list
+    const unreadItems: UnreadTaskItem[] = [];
+    for (const [taskId, count] of taskMap) {
+      const isSupport = profile.support_task_id === taskId;
+      if (isSupport && !supportEnabled) continue;
+      if (!isSupport && !teamCommentEnabled) continue;
+      unreadItems.push({
+        taskId,
+        taskName: isSupport ? "Support-Chat" : (taskNameMap.get(taskId) ?? taskId),
+        unreadCount: count,
+        isSupport,
+      });
+    }
+
+    if (!unreadItems.length) { skipped++; continue; }
+
+    const firstName = (profile.full_name as string | null)?.split(" ")[0] ?? null;
+    const { subject, html } = buildUnreadDigestHtml(unreadItems, firstName);
+
+    const success = await sendMailjet(
+      { email: profile.email as string, name: (profile.full_name as string) || undefined },
+      subject,
+      html,
+      log
+    );
+
+    if (success) {
+      // Atomic update with cooldown guard (prevents double-send on concurrent runs)
+      const oneDayAgo = new Date(Date.now() - oneDayMs).toISOString();
+      await supabase
+        .from("profiles")
+        .update({ last_unread_digest_sent_at: new Date().toISOString() })
+        .eq("id", profile.id)
+        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${oneDayAgo}`);
+      sent++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
 }
 
 async function sendMailjet(
@@ -458,8 +669,22 @@ Deno.serve(async (req) => {
       log.info("Project reminder job complete", { projectSent, projectSkipped });
     }
 
+    // ===== UNREAD MESSAGE DIGEST (24h cooldown) =====
+    const unreadStats = await sendUnreadMessageReminders(supabase, log);
+    log.info("Unread digest job complete", unreadStats);
+
     return new Response(
-      JSON.stringify({ ok: true, code: "REMINDERS_SENT", message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}`, correlationId: requestId, sent, skipped, errors, projectSent, projectSkipped }),
+      JSON.stringify({
+        ok: true,
+        code: "REMINDERS_SENT",
+        message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}. Unread digest - Sent: ${unreadStats.sent}, Skipped: ${unreadStats.skipped}, Errors: ${unreadStats.errors}`,
+        correlationId: requestId,
+        sent, skipped, errors,
+        projectSent, projectSkipped,
+        unreadSent: unreadStats.sent,
+        unreadSkipped: unreadStats.skipped,
+        unreadErrors: unreadStats.errors,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
