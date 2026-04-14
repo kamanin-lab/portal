@@ -16,6 +16,7 @@ import {
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
 import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
+import { findOrgByListId, findOrgBySupportTaskId } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -342,7 +343,7 @@ async function fetchTaskForVisibilityCheck(
   }
 }
 
-type ProfileResolutionSource = "task_cache" | "list_fallback" | "none" | "ambiguous_fallback";
+type ProfileResolutionSource = "org_members" | "task_cache" | "list_fallback" | "none" | "ambiguous_fallback";
 
 interface ProfileResolutionResult {
   profileIds: string[];
@@ -351,8 +352,9 @@ interface ProfileResolutionResult {
 
 /**
  * Find profile IDs that should receive notifications for a given task.
- * 1. Try task_cache first (fast, exact match).
- * 2. Fallback to list ownership only when it resolves to a single recipient.
+ * 1. Try org_members first (primary — org-first resolution via findOrgByListId).
+ * 2. Try task_cache fallback (fast, exact match).
+ * 3. Fallback to list ownership only when it resolves to a single recipient.
  */
 async function findProfilesForTask(
   supabase: ReturnType<typeof createClient>,
@@ -360,6 +362,19 @@ async function findProfilesForTask(
   listId: string | null,
   log: ReturnType<typeof createLogger>
 ): Promise<ProfileResolutionResult> {
+  // Step 1 (NEW): org_members primary lookup
+  if (listId) {
+    const orgResult = await findOrgByListId(supabase, listId);
+    if (orgResult && orgResult.profileIds.length > 0) {
+      log.info("Profiles resolved via org_members", {
+        taskId,
+        count: orgResult.profileIds.length,
+      });
+      return { profileIds: orgResult.profileIds, source: "org_members" };
+    }
+  }
+
+  // Step 2 (existing): task_cache fallback
   const { data: cacheEntries } = await supabase
     .from("task_cache")
     .select("profile_id")
@@ -1812,90 +1827,122 @@ Deno.serve(async (req) => {
 
       // ============ CHECK IF THIS IS A SUPPORT TASK ============
       log.debug(`Checking if task is a support task`, { taskId });
-      
+
       // Normalize task ID
       const normalizedTaskId = taskId.replace(/^#/, '');
-      
-      // Check if this task is a support task for any profile
-      const { data: supportProfiles, error: supportLookupError } = await supabase
-        .from("profiles")
-        .select("id, email, full_name, email_notifications, notification_preferences")
-        .eq("support_task_id", normalizedTaskId);
 
-      if (supportLookupError) {
-        log.error("Support profile lookup error", { error: supportLookupError.message });
+      // ORG-BE-06: Org-first support chat fan-out
+      const supportOrgResult = await findOrgBySupportTaskId(supabase, normalizedTaskId);
+      let supportProfileIds: string[];
+      if (supportOrgResult && supportOrgResult.profileIds.length > 0) {
+        supportProfileIds = supportOrgResult.profileIds;
+        log.info("Support task resolved via org_members", {
+          taskId: normalizedTaskId,
+          count: supportProfileIds.length,
+        });
+      } else {
+        // Fallback: existing profiles.support_task_id lookup
+        const { data: supportProfiles, error: supportLookupError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("support_task_id", normalizedTaskId);
+        if (supportLookupError) {
+          log.error("Support profile lookup error", { error: supportLookupError.message });
+        }
+        supportProfileIds = (supportProfiles ?? []).map((p: { id: string }) => p.id);
+        log.info("Support task resolved via profiles fallback", {
+          taskId: normalizedTaskId,
+          count: supportProfileIds.length,
+        });
       }
 
-      log.info(`Support profiles found`, { count: supportProfiles?.length || 0, taskId: normalizedTaskId });
+      log.info(`Support profiles found`, { count: supportProfileIds.length, taskId: normalizedTaskId });
 
-      if (supportProfiles && supportProfiles.length > 0) {
-        // This is a SUPPORT TASK comment - save to comment_cache
+      if (supportProfileIds.length > 0) {
+        // This is a SUPPORT TASK comment - fan out to all org members
         log.info(`Task is a support task - routing to unified pipeline`, { taskId });
-        
-        const profile = supportProfiles[0];
+
         const firstName = commenterName.split(" ")[0];
+        let activityUpdated = false;
 
-        // Save to comment_cache for unified pipeline (no attachments from ClickUp)
-        const { error: cacheError } = await supabase
-          .from("comment_cache")
-          .upsert({
-            clickup_comment_id: commentId,
-            task_id: taskId,
-            profile_id: profile.id,
-            comment_text: commentText,
-            display_text: displayTextForClient,
-            author_id: historyItem.user.id,
-            author_name: firstName,
-            author_email: commenterEmail,
-            author_avatar: historyItem.user.profilePicture || null,
-            clickup_created_at: new Date(parseInt(historyItem.date)).toISOString(),
-            last_synced: new Date().toISOString(),
-            is_from_portal: false,
-            attachments: null, // No ClickUp attachments - can't guarantee binding
-          }, {
-            onConflict: "clickup_comment_id,profile_id",
-          });
+        for (const profileId of supportProfileIds) {
+          // Load per-member profile for notification preferences
+          const { data: memberProfile } = await supabase
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .eq("id", profileId)
+            .maybeSingle();
 
-        if (cacheError) {
-          log.error("Failed to cache support comment", { error: cacheError.message });
-        } else {
-          log.info("Support comment cached for realtime updates");
-          
-          // Update task activity for support task
-          const supportCommentTimestamp = parseClickUpTimestamp(historyItem.date);
-          await updateTaskActivity(supabase, taskId, supportCommentTimestamp, log);
-        }
+          if (!memberProfile) {
+            log.warn("Member profile not found — skipping fan-out for profile", { profileId });
+            continue;
+          }
 
-        // Create in-app notification
-        const { error: notifyError } = await supabase
-          .from("notifications")
-          .insert({
-            profile_id: profile.id,
-            type: "team_reply",
-            title: `Nachricht von ${firstName}`,
-            message: displayTextForClient.substring(0, 200) + (displayTextForClient.length > 200 ? "..." : ""),
-            task_id: taskId,
-            comment_id: commentId,
-            is_read: false,
-          });
+          // Save to comment_cache for unified pipeline (no attachments from ClickUp)
+          const { error: cacheError } = await supabase
+            .from("comment_cache")
+            .upsert({
+              clickup_comment_id: commentId,
+              task_id: taskId,
+              profile_id: profileId,
+              comment_text: commentText,
+              display_text: displayTextForClient,
+              author_id: historyItem.user.id,
+              author_name: firstName,
+              author_email: commenterEmail,
+              author_avatar: historyItem.user.profilePicture || null,
+              clickup_created_at: new Date(parseInt(historyItem.date)).toISOString(),
+              last_synced: new Date().toISOString(),
+              is_from_portal: false,
+              attachments: null, // No ClickUp attachments - can't guarantee binding
+            }, {
+              onConflict: "clickup_comment_id,profile_id",
+            });
 
-        if (notifyError) {
-          log.error("Error creating notification", { error: notifyError.message });
-        } else {
-          log.info("Support notification created");
-        }
+          if (cacheError) {
+            log.error("Failed to cache support comment", { error: cacheError.message, profileId });
+          } else {
+            log.info("Support comment cached for realtime updates", { profileId });
 
-        // Send email notification for support response
-        if (shouldSendEmail(profile, "support_response")) {
-          await sendMailjetEmail("support_response", {
-            email: profile.email,
-            name: profile.full_name,
-          }, {
-            firstName: profile.full_name?.split(" ")[0],
-            teamMemberName: firstName,
-            messagePreview: displayTextForClient.substring(0, 300),
-          }, log);
-          log.info("Support response email sent");
+            // Update task activity once (not per-member)
+            if (!activityUpdated) {
+              const supportCommentTimestamp = parseClickUpTimestamp(historyItem.date);
+              await updateTaskActivity(supabase, taskId, supportCommentTimestamp, log);
+              activityUpdated = true;
+            }
+          }
+
+          // Create in-app notification
+          const { error: notifyError } = await supabase
+            .from("notifications")
+            .insert({
+              profile_id: profileId,
+              type: "team_reply",
+              title: `Nachricht von ${firstName}`,
+              message: displayTextForClient.substring(0, 200) + (displayTextForClient.length > 200 ? "..." : ""),
+              task_id: taskId,
+              comment_id: commentId,
+              is_read: false,
+            });
+
+          if (notifyError) {
+            log.error("Error creating notification", { error: notifyError.message, profileId });
+          } else {
+            log.info("Support notification created", { profileId });
+          }
+
+          // Send email notification for support response (respects per-member preferences)
+          if (shouldSendEmail(memberProfile, "support_response")) {
+            await sendMailjetEmail("support_response", {
+              email: memberProfile.email,
+              name: memberProfile.full_name,
+            }, {
+              firstName: memberProfile.full_name?.split(" ")[0],
+              teamMemberName: firstName,
+              messagePreview: displayTextForClient.substring(0, 300),
+            }, log);
+            log.info("Support response email sent", { profileId });
+          }
         }
 
         return new Response(
