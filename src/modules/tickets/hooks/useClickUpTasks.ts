@@ -158,6 +158,7 @@ export function useClickUpTasks() {
         if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
         realtimeDebounceRef.current = setTimeout(() => {
           queryClient.refetchQueries({ queryKey: ['clickup-tasks'] });
+          queryClient.invalidateQueries({ queryKey: ['needs-attention-count'] });
         }, 300);
       })
       .subscribe();
@@ -175,6 +176,7 @@ export function useClickUpTasks() {
     if (!userId) return;
     const interval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['needs-attention-count'] });
     }, 30000);
     return () => clearInterval(interval);
   }, [userId, queryClient]);
