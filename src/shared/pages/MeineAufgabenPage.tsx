@@ -106,13 +106,15 @@ export function MeineAufgabenPage() {
       {/* Grouped task list */}
       {!isLoading && [...grouped.entries()].map(([listName, groupTasks]) => (
         <div key={listName} className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider shrink-0">
-              {listName}
-            </span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
+          {grouped.size > 1 && (
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider shrink-0">
+                {listName}
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          )}
           <div className="flex flex-col gap-2.5">
             {groupTasks.map(task => (
               <TaskCard

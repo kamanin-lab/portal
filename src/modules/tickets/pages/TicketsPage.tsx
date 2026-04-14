@@ -32,7 +32,7 @@ export function TicketsPage() {
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { recommendations } = useRecommendations(tasks)
   const { user } = useAuth()
-  const { taskUnread } = useUnreadCounts(user?.id)
+  const { taskUnread, supportUnread } = useUnreadCounts(user?.id)
   const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
 
   const activeTaskId = searchParams.get('taskId')
@@ -108,10 +108,15 @@ export function TicketsPage() {
           />
           <button
             onClick={() => setSupportOpen(true)}
-            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold border border-accent/40 text-accent bg-transparent hover:bg-accent hover:text-white rounded-[var(--r-md)] transition-colors cursor-pointer shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-4 py-2 text-body font-semibold border border-accent/40 text-accent bg-transparent hover:bg-accent hover:text-white rounded-[var(--r-md)] transition-colors cursor-pointer shrink-0 relative"
           >
             <HugeiconsIcon icon={Comment01Icon} size={15} />
             Support
+            {supportUnread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center leading-none">
+                {supportUnread > 99 ? '99+' : supportUnread}
+              </span>
+            )}
           </button>
         </div>
       </div>

@@ -22,13 +22,27 @@ function useNeedsAttentionCount(profileId: string | undefined) {
   return useQuery({
     queryKey: ['needs-attention-count', profileId],
     queryFn: async () => {
-      const { count } = await supabase
+      // Attention tasks: client review + approved
+      const { count: attentionCount } = await supabase
         .from('task_cache')
         .select('id', { count: 'exact', head: true })
         .eq('profile_id', profileId!)
         .eq('is_visible', true)
         .in('status', ['client review', 'approved'])
-      return count ?? 0
+
+      // Recommendations: to do + tag "recommendation"
+      const { data: recTasks } = await supabase
+        .from('task_cache')
+        .select('tags')
+        .eq('profile_id', profileId!)
+        .eq('is_visible', true)
+        .eq('status', 'to do')
+
+      const recCount = (recTasks ?? []).filter(t =>
+        Array.isArray(t.tags) && t.tags.some((tag: { name: string }) => tag.name === 'recommendation')
+      ).length
+
+      return (attentionCount ?? 0) + recCount
     },
     enabled: !!profileId,
     staleTime: 60_000,
@@ -44,8 +58,10 @@ export function Sidebar({ expanded, onToggle }: Props) {
   const { profile } = useAuth()
   const { data: workspaces = [] } = useWorkspaces()
   const { notifications } = useNotifications(profile?.id)
-  const { supportUnread } = useUnreadCounts(profile?.id)
+  const { supportUnread, taskUnread } = useUnreadCounts(profile?.id)
   const { data: attentionCount = 0 } = useNeedsAttentionCount(profile?.id)
+
+  const ticketsUnread = Object.values(taskUnread).reduce((sum, n) => sum + n, 0)
 
   const inboxNotifications = notifications.filter(
     n => !profile?.support_task_id || n.task_id !== profile.support_task_id
@@ -108,6 +124,7 @@ export function Sidebar({ expanded, onToggle }: Props) {
           expanded={expanded}
           workspaces={workspaces}
           supportUnread={supportUnread}
+          ticketsUnread={ticketsUnread}
         />
       </div>
 

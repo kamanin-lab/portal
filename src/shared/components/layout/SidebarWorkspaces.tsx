@@ -32,6 +32,7 @@ interface Props {
   expanded: boolean
   workspaces: ClientWorkspace[]
   supportUnread: number
+  ticketsUnread?: number
   onNavigate?: () => void
 }
 
@@ -44,7 +45,7 @@ function WorkspaceBadge({ count }: { count: number }) {
   )
 }
 
-export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavigate }: Props) {
+export function SidebarWorkspaces({ expanded, workspaces, supportUnread, ticketsUnread = 0, onNavigate }: Props) {
   const visibleWorkspaces = (workspaces.length > 0 ? workspaces : DEFAULT_WORKSPACES).filter(ws => ws.module_key !== 'support')
   const { projects } = useProjects()
 
@@ -68,7 +69,9 @@ export function SidebarWorkspaces({ expanded, workspaces, supportUnread, onNavig
         const staticChildren = WORKSPACE_CHILDREN[ws.module_key] ?? []
         // For projects workspace, use dynamically populated children
         const children = ws.module_key === 'projects' ? projectChildren : staticChildren
-        const badge = ws.module_key === 'support' ? supportUnread : 0
+        const badge = ws.module_key === 'support' ? supportUnread
+          : ws.module_key === 'tickets' ? ticketsUnread
+          : 0
 
         return (
           <div key={ws.id}>
