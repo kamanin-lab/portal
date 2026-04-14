@@ -102,10 +102,45 @@
 
 ## Traceability
 
-| Requirement | Phase |
-|-------------|-------|
-| ORG-DB-01 to ORG-DB-10 | Phase 9 |
-| ORG-BE-01 to ORG-BE-11 | Phase 10 |
-| ORG-FE-AUTH-01 to ORG-FE-AUTH-06 | Phase 11 |
-| ORG-FE-UI-01 to ORG-FE-UI-08 | Phase 12 |
-| ORG-CLEANUP-01 to ORG-CLEANUP-05 | Phase 13 |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ORG-DB-01 | Phase 9 | Pending |
+| ORG-DB-02 | Phase 9 | Pending |
+| ORG-DB-03 | Phase 9 | Pending |
+| ORG-DB-04 | Phase 9 | Pending |
+| ORG-DB-05 | Phase 9 | Pending |
+| ORG-DB-06 | Phase 9 | Pending |
+| ORG-DB-07 | Phase 9 | Pending |
+| ORG-DB-08 | Phase 9 | Pending |
+| ORG-DB-09 | Phase 9 | Pending |
+| ORG-DB-10 | Phase 9 | Pending |
+| ORG-BE-01 | Phase 10 | Pending |
+| ORG-BE-02 | Phase 10 | Pending |
+| ORG-BE-03 | Phase 10 | Pending |
+| ORG-BE-04 | Phase 10 | Pending |
+| ORG-BE-05 | Phase 10 | Pending |
+| ORG-BE-06 | Phase 10 | Pending |
+| ORG-BE-07 | Phase 10 | Pending |
+| ORG-BE-08 | Phase 10 | Pending |
+| ORG-BE-09 | Phase 10 | Pending |
+| ORG-BE-10 | Phase 10 | Pending |
+| ORG-BE-11 | Phase 10 | Pending |
+| ORG-FE-AUTH-01 | Phase 11 | Pending |
+| ORG-FE-AUTH-02 | Phase 11 | Pending |
+| ORG-FE-AUTH-03 | Phase 11 | Pending |
+| ORG-FE-AUTH-04 | Phase 11 | Pending |
+| ORG-FE-AUTH-05 | Phase 11 | Pending |
+| ORG-FE-AUTH-06 | Phase 11 | Pending |
+| ORG-FE-UI-01 | Phase 12 | Pending |
+| ORG-FE-UI-02 | Phase 12 | Pending |
+| ORG-FE-UI-03 | Phase 12 | Pending |
+| ORG-FE-UI-04 | Phase 12 | Pending |
+| ORG-FE-UI-05 | Phase 12 | Pending |
+| ORG-FE-UI-06 | Phase 12 | Pending |
+| ORG-FE-UI-07 | Phase 12 | Pending |
+| ORG-FE-UI-08 | Phase 12 | Pending |
+| ORG-CLEANUP-01 | Phase 13 | Pending |
+| ORG-CLEANUP-02 | Phase 13 | Pending |
+| ORG-CLEANUP-03 | Phase 13 | Pending |
+| ORG-CLEANUP-04 | Phase 13 | Pending |
+| ORG-CLEANUP-05 | Phase 13 | Pending |

@@ -104,6 +104,117 @@ Plans:
 - [x] 06-03-PLAN.md — clickup-webhook extension (taskCreated handler + HITL detection) + sync-staging-secrets update
 - [x] 06-04-PLAN.md — .env.example + setup documentation
 
+### Phase 7: Empfehlungen in Reminders and Meine Aufgaben with decision workflow
+**Goal**: Clients receive reminder emails and a dedicated Meine Aufgaben surface for pending recommendations with an inline Ja/Nein/Später decision workflow
+**Depends on**: Phase 6
+**Requirements**: REMIND-01, REMIND-02, REMIND-03, UI-01, UI-02, UI-03, EMAIL-01
+**Success Criteria** (what must be TRUE):
+  1. The profiles table has a last_recommendation_reminder_sent_at column applied to both prod and staging
+  2. send-reminders Edge Function runs a sendRecommendationReminders job on every cron tick with 5-day cooldown and 3-day minimum task age
+  3. A client with pending recommendations older than 3 days receives a German recommendation_reminder email linking to /meine-aufgaben
+  4. MeineAufgabenPage shows a RecommendationsBlock below the attention-task list when recommendations exist
+  5. Clicking a recommendation opens TaskDetailSheet with the existing RecommendationApproval (Ja/Nein) UI
+  6. A Später button on each recommendation card hides it for the current session without any backend write
+  7. The empty state shows only when both attention tasks and visible recommendations are zero
+**Plans**: 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — DB migration + schema push + Wave 0 RED tests for MeineAufgabenPage and emailCopy
+- [ ] 07-02-PLAN.md — Backend: recommendation_reminder emailCopy entry + sendRecommendationReminders job in send-reminders Edge Function
+- [ ] 07-03-PLAN.md — Frontend: MeineAufgabenPage RecommendationsBlock + session-only Später snooze + human verify checkpoint
+
+### Phase 8: Meine Aufgaben Redesign — 4-Tab Filter System
+**Goal**: Replace MeineAufgabenPage flat list with a 4-tab filter system (Nachrichten, Kostenfreigabe, Warten auf Freigabe, Empfehlungen); remove recommendations from TicketsPage; 2-column task grid
+**Depends on**: Phase 7
+**Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05
+**Success Criteria** (what must be TRUE):
+  1. MeineAufgabenPage shows 4 tab chips with count bubbles (Nachrichten, Kostenfreigabe, Warten auf Freigabe, Empfehlungen)
+  2. Clicking each tab filters the 2-column task grid to that category only
+  3. Default active tab is the first tab with count > 0
+  4. RecommendationsBlock is removed from TicketsPage (belongs on MeineAufgaben only)
+  5. All existing tests pass; MeineAufgabenPage and MeineAufgabenFilters each stay under 150 lines
+**Plans**: 1 plan
+
+Plans:
+- [x] 08-01-PLAN.md — MeineAufgabenFilters component + MeineAufgabenPage rewrite + TicketsPage cleanup
+
+---
+
+## Milestone 3: Organisations
+
+### Phases
+
+- [ ] **Phase 9: org-db-foundation** — Create organizations + org_members tables, SQL helper functions, data migration to org-scoped schema, RLS transition
+- [ ] **Phase 10: org-edge-functions** — Update 5 existing Edge Functions to read from organizations; add invite-member function; role enforcement on mutating ops
+- [ ] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role
+- [ ] **Phase 12: org-admin-page** — /organisation admin page, InviteMemberDialog, role management, member removal, /passwort-setzen route, sidebar link
+- [ ] **Phase 13: org-onboarding-cleanup** — Rewrite onboard-client.ts, drop legacy RLS policies and FK columns, remove dual-read fallbacks
+
+---
+
+### Phase 9: org-db-foundation
+**Goal**: The database carries the full organisation schema — tables, helper functions, migrated data, and dual-mode RLS — while existing portal functionality continues working without any code changes
+**Depends on**: Phase 8
+**Requirements**: ORG-DB-01, ORG-DB-02, ORG-DB-03, ORG-DB-04, ORG-DB-05, ORG-DB-06, ORG-DB-07, ORG-DB-08, ORG-DB-09, ORG-DB-10
+**Success Criteria** (what must be TRUE):
+  1. The `organizations` and `org_members` tables exist in staging and every existing profile has exactly one matching org and one admin row in `org_members`
+  2. `SELECT user_org_ids()` and `SELECT user_org_role(org_id)` return correct results for any authenticated user in a psql session
+  3. `credit_packages` and `client_workspaces` carry a non-null `organization_id` FK on every row; `profiles.organization_id` is populated for all existing profiles
+  4. Both old `profile_id` RLS policies and new `organization_id` RLS policies are active in parallel — data is accessible via either path during transition
+  5. The migration gate passes: `count(org_members) = count(profiles)` and no org row has a null `clickup_list_ids`
+**Plans**: TBD
+
+### Phase 10: org-edge-functions
+**Goal**: All Edge Functions resolve their client-scoped configuration from `organizations` instead of `profiles`, with dual-read fallback ensuring zero downtime, and a new `invite-member` function handles the full invite flow
+**Depends on**: Phase 9
+**Requirements**: ORG-BE-01, ORG-BE-02, ORG-BE-03, ORG-BE-04, ORG-BE-05, ORG-BE-06, ORG-BE-07, ORG-BE-08, ORG-BE-09, ORG-BE-10, ORG-BE-11
+**Success Criteria** (what must be TRUE):
+  1. A task sync triggered for any existing client returns the correct task list — reading from org `clickup_list_ids` with no regressions versus the profile-based behaviour
+  2. A new comment on the org's `support_task_id` triggers a `comment_cache` row for every org member — not just one profile
+  3. The `invite-member` function accepts `{ organizationId, email, role }` from an admin caller and creates an auth user, generates a set-password link, and sends the invite email — returning 403 for non-admin callers and 409 for duplicate invites
+  4. A viewer-role user calling `create-clickup-task`, `post-task-comment`, or `update-task-status` receives a 403 response
+  5. `send-reminders` emails go only to the org admin (not all members) and group reminders by organisation
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 11: org-frontend-auth
+**Goal**: Every component in the portal knows the current user's organisation and role, shared data (workspaces, credits) is fetched at org scope, and viewer-role users cannot trigger mutating actions
+**Depends on**: Phase 10
+**Requirements**: ORG-FE-AUTH-01, ORG-FE-AUTH-02, ORG-FE-AUTH-03, ORG-FE-AUTH-04, ORG-FE-AUTH-05, ORG-FE-AUTH-06
+**Success Criteria** (what must be TRUE):
+  1. Any component using `useOrg()` receives `organization`, `orgRole`, `isAdmin`, `isMember`, and `isViewer` without an additional network call (data served from OrgContext cache)
+  2. The sidebar workspaces section shows the same list for all members of the same org — not per-user data
+  3. The credit balance displayed in the UI reflects the shared org pool, not an individual profile balance
+  4. A user logged in with a viewer role sees no "Neue Aufgabe" button, no Kostenfreigabe approval button, and no task status action buttons (Freigeben / Änderungen anfordern)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 12: org-admin-page
+**Goal**: Organisation admins can manage their team from a dedicated portal page — inviting new members, changing roles, and removing members — while invited users can set their password via the invite landing page
+**Depends on**: Phase 11
+**Requirements**: ORG-FE-UI-01, ORG-FE-UI-02, ORG-FE-UI-03, ORG-FE-UI-04, ORG-FE-UI-05, ORG-FE-UI-06, ORG-FE-UI-07, ORG-FE-UI-08
+**Success Criteria** (what must be TRUE):
+  1. Navigating to `/organisation` as an admin renders the org info section (name, slug, credit info) and the full team member table (name, email, role, joined date)
+  2. Non-admin users are immediately redirected away from `/organisation` — the page is never rendered for them
+  3. An admin submitting the invite dialog with a valid email and role triggers the invite flow; the new member appears in the team table as "Einladung ausstehend"; the admin sees a success toast
+  4. An admin can change a member's role (Mitglied ↔ Betrachter) and cannot demote themselves or the last admin — guard errors shown as toasts
+  5. An admin can remove a member after confirming the confirmation dialog; cannot remove themselves if last admin
+  6. A newly invited user opening the invite link lands on `/passwort-setzen`, sets a password, and is redirected to `/tickets` on success
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 13: org-onboarding-cleanup
+**Goal**: The onboarding script creates orgs as first-class entities, all legacy `profile_id`-based policies and columns are removed, and Edge Functions read exclusively from `organizations` with no fallback debt
+**Depends on**: Phase 12
+**Requirements**: ORG-CLEANUP-01, ORG-CLEANUP-02, ORG-CLEANUP-03, ORG-CLEANUP-04, ORG-CLEANUP-05
+**Success Criteria** (what must be TRUE):
+  1. Running `onboard-client.ts` with a new config creates an org, an admin user, an `org_members` row, and optional initial members — no manual SQL needed
+  2. The `pg_policies` view shows zero rows with `profile_id = auth.uid()` policy conditions on `credit_packages` and `client_workspaces`
+  3. The `credit_packages` and `client_workspaces` tables have no `profile_id` column; `credit_transactions` still has `profile_id` for audit trail
+  4. All four updated Edge Functions (`fetch-clickup-tasks`, `fetch-single-task`, `nextcloud-files`, `create-clickup-task`) contain no `?? profile?.field` dual-read fallback patterns
+  5. The `profiles` table has no `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, or `clickup_chat_channel_id` columns
+**Plans**: TBD
+
 ---
 
 ## Progress
@@ -114,4 +225,11 @@ Plans:
 | 3. AI Enrichment | 1/1 | Complete   | 2026-03-29 |
 | 4. PhaseTimeline Redesign | 3/3 | Complete |  |
 | 5. Data Unification & Polish | 4/4 | Complete   | 2026-03-29 |
-| 6. Triage Agent | 0/4 | Planned | — |
+| 6. Triage Agent | 4/4 | Complete | 2026-04-14 |
+| 7. Empfehlungen Reminders + MeineAufgaben | 3/3 | Complete | 2026-04-14 |
+| 8. Meine Aufgaben Redesign — 4-Tab Filter | 0/1 | Planned | — |
+| 9. org-db-foundation | 0/? | Not started | — |
+| 10. org-edge-functions | 0/? | Not started | — |
+| 11. org-frontend-auth | 0/? | Not started | — |
+| 12. org-admin-page | 0/? | Not started | — |
+| 13. org-onboarding-cleanup | 0/? | Not started | — |
