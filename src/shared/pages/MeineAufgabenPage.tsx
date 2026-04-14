@@ -1,4 +1,3 @@
-import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -9,74 +8,29 @@ import { EmptyState } from '@/shared/components/common/EmptyState'
 import { TaskCard } from '@/modules/tickets/components/TaskCard'
 import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet'
 import { RecommendationCard } from '@/modules/tickets/components/RecommendationCard'
-import {
-  MeineAufgabenFilters,
-  type MeineAufgabenTab,
-} from '@/modules/tickets/components/MeineAufgabenFilters'
+import { MeineAufgabenFilters } from '@/modules/tickets/components/MeineAufgabenFilters'
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
-import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
 import { useAuth } from '@/shared/hooks/useAuth'
-import { mapStatus } from '@/modules/tickets/lib/status-mapping'
+import { useMeineAufgaben } from '@/shared/hooks/useMeineAufgaben'
 import { cardVariants } from '@/modules/tickets/lib/task-list-utils'
-
-const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
 
 export function MeineAufgabenPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
   const { taskUnread } = useUnreadCounts(user?.id)
-
-  const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set())
-  const { recommendations: allRecommendations } = useRecommendations(tasks)
-  const recommendations = useMemo(
-    () => allRecommendations.filter(r => !snoozedIds.has(r.clickup_id)),
-    [allRecommendations, snoozedIds],
-  )
-  const snoozeRecommendation = (id: string) => {
-    setSnoozedIds(prev => { const next = new Set(prev); next.add(id); return next })
-  }
+  const {
+    counts,
+    activeTab,
+    setActiveTab,
+    visibleTasks,
+    totalCount,
+    recommendations,
+    snoozeRecommendation,
+  } = useMeineAufgaben(tasks, taskUnread, isLoading)
 
   const activeTaskId = searchParams.get('taskId')
-
-  const counts = useMemo(() => ({
-    unread: tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0).length,
-    kostenfreigabe: tasks.filter(t => mapStatus(t.status) === 'awaiting_approval').length,
-    freigabe: tasks.filter(t => mapStatus(t.status) === 'needs_attention').length,
-    empfehlungen: recommendations.length,
-  }), [tasks, taskUnread, recommendations])
-
-  const totalCount = useMemo(() => {
-    const ids = new Set<string>([
-      ...tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0).map(t => t.clickup_id),
-      ...tasks.filter(t => {
-        const s = mapStatus(t.status)
-        return s === 'needs_attention' || s === 'awaiting_approval'
-      }).map(t => t.clickup_id),
-      ...recommendations.map(t => t.clickup_id),
-    ])
-    return ids.size
-  }, [tasks, taskUnread, recommendations])
-
-  const [activeTab, setActiveTab] = useState<MeineAufgabenTab | null>(null)
-  useEffect(() => {
-    if (!isLoading && activeTab === null) {
-      const defaultTab = TAB_ORDER.find(tab => counts[tab] > 0) ?? 'unread'
-      setActiveTab(defaultTab)
-    }
-  }, [isLoading, counts, activeTab])
-
-  const visibleTasks = useMemo(() => {
-    if (!activeTab) return []
-    switch (activeTab) {
-      case 'unread': return tasks.filter(t => (taskUnread[t.clickup_id] ?? 0) > 0)
-      case 'kostenfreigabe': return tasks.filter(t => mapStatus(t.status) === 'awaiting_approval')
-      case 'freigabe': return tasks.filter(t => mapStatus(t.status) === 'needs_attention')
-      case 'empfehlungen': return recommendations
-      default: return []
-    }
-  }, [activeTab, tasks, taskUnread, recommendations])
 
   function openTask(id: string) {
     setSearchParams({ taskId: id }, { replace: true })
