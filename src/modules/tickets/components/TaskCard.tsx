@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserIcon, Calendar03Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, Calendar03Icon, Idea01Icon } from '@hugeicons/core-free-icons'
 import { motion } from 'motion/react'
 import { StatusBadge } from '@/shared/components/common/StatusBadge'
 import { PriorityIcon } from './PriorityIcon'
@@ -42,6 +42,7 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
   const dueDate = formatDueDate(task.due_date)
   const borderColor = STATUS_BORDER_COLORS[portalStatus] ?? 'var(--border)'
   const hasDescription = Boolean(task.description?.trim())
+  const isRecommendation = task.tags?.some(tag => tag.name.toLowerCase() === 'recommendation') ?? false
 
   return (
     <motion.div
@@ -64,6 +65,13 @@ export function TaskCard({ task, unreadCount = 0, onTaskClick }: Props) {
           {/* Title — max 2 lines */}
           <h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">
             {task.name}
+            {isRecommendation && (
+              <HugeiconsIcon
+                icon={Idea01Icon}
+                size={13}
+                className="inline-block ml-1.5 align-middle text-[var(--phase-3)] shrink-0"
+              />
+            )}
             {unreadCount > 0 && (
               <span className="inline-flex items-center justify-center ml-2 min-w-[18px] h-[18px] px-1.5 rounded-full bg-cta text-white text-2xs font-bold align-middle">
                 {unreadCount}
