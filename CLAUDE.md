@@ -84,6 +84,86 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `src/shared/components/help/FaqSection.tsx` | FAQ section card — Hugeicons icon + h2 + FaqItem list |
 | `vercel.json` | `main` branch: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint. `staging` branch: SPA rewrites only (proxy removed — Cloud Supabase handles CORS natively) |
 
+## Testing
+
+**TDD is the default** for all new features and bug fixes in this project.
+
+### Methodology: vertical slices (red → green per behavior)
+
+Write ONE failing test → implement minimal code to pass → repeat. Never batch all tests first and all implementation second.
+
+```
+RIGHT:  test1 → impl1 → test2 → impl2 → ...
+WRONG:  test1, test2, test3 → impl1, impl2, impl3
+```
+
+### Commands
+
+```bash
+npm run test              # run all tests once
+npm run test:watch        # watch mode during development
+npm run test:coverage     # run with coverage report + threshold enforcement
+```
+
+### Coverage thresholds (enforced by `npm run test:coverage`)
+
+| Metric | Threshold | Rationale |
+|--------|-----------|-----------|
+| Lines | 85% | Primary indicator — every line of logic must be reachable |
+| Functions | 90% | Every exported function must be callable by at least one test |
+| Branches | 70% | Defensive `??` null-checks in data transforms inflate denominator |
+| Statements | 80% | Complex store/transform code has reachable but low-risk paths |
+
+### Test file locations
+
+Tests live in `__tests__/` subdirectories co-located with the module they cover:
+- `src/modules/projects/__tests__/*.test.ts`
+- `src/modules/tickets/__tests__/*.test.ts`
+- `src/shared/__tests__/*.test.ts`
+- `src/shared/components/**/__tests__/*.test.tsx`
+
+### What to test
+
+**Always test (pure business logic):**
+- All functions in `*/lib/` directories — status mappings, transforms, helpers, validators
+- All exported utility functions
+
+**Test with component rendering (`@testing-library/react`):**
+- Components with non-trivial interaction logic or animation behavior
+- Use `QueryClientProvider` wrapper when the component tree uses React Query
+
+**Do NOT unit test:**
+- Static config and data files (`dictionary.ts`, `hilfe-faq-data.ts`, `workspace-routes.ts`)
+- XHR/browser API wrappers (`upload-with-progress.ts`) — integration-level only
+- React JSX utilities (`linkify.tsx`) — behavior verified in component tests
+- Timer/event-based infrastructure (`session-timeout.ts`) — E2E scope
+
+### Mock patterns
+
+```typescript
+// React Query wrapper (any component using useQuery/useMutation)
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    {children}
+  </QueryClientProvider>
+)
+
+// Supabase client mock (hooks that call supabase directly)
+vi.mock('@/shared/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({ select: vi.fn() })),
+    channel: vi.fn(() => ({ on: vi.fn(() => ({ subscribe: vi.fn() })) })),
+  },
+}))
+
+// Memory test adapter (project memory tests)
+import { installMemoryTestAdapter, resetMemoryStore } from '../lib/memory-store'
+```
+
+### Skill
+
+The `tdd` skill (from `mattpocock/skills`) is installed globally at `~/.agents/skills/tdd/`. Invoke it before any feature or bug fix implementation. It enforces vertical slices and prevents the horizontal-slice anti-pattern.
+
 ## Commands
 
 ```bash

@@ -34,6 +34,11 @@ vi.mock('../hooks/useProjectActivity', () => ({
   useProjectActivity: vi.fn(() => ({ events: [] })),
 }));
 
+vi.mock('../hooks/useProjectFileActivity', () => ({
+  useProjectFileActivity: vi.fn(() => ({ data: [] })),
+  useSyncFileActivity: vi.fn(() => ({ mutate: vi.fn() })),
+}));
+
 vi.mock('../components/overview/UpdatesFeed', () => ({ ActivityFeed: () => <div data-testid="activity-feed" /> }));
 vi.mock('../components/overview/MessagesTab', () => ({ MessagesTab: () => <div data-testid="messages-tab" /> }));
 vi.mock('../components/overview/FilesTab', () => ({ FilesTab: () => <div data-testid="files-tab" /> }));
