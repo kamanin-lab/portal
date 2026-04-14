@@ -16,6 +16,7 @@ export type EmailType =
   | "credit_approval"
   | "pending_reminder"
   | "project_reminder"
+  | "unread_digest"
   | "new_recommendation"
   | "magic_link"
   | "password_reset"
@@ -141,6 +142,37 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "View in portal",
       notes: [
         "You receive this reminder every 3 days while project steps are pending.",
+        "You can disable reminders in your account settings.",
+      ],
+    },
+  },
+
+  unread_digest: {
+    de: {
+      subject: (count: number) =>
+        count === 1
+          ? "Eine ungelesene Nachricht in Ihrem Portal"
+          : `${count} ungelesene Nachrichten in Ihrem Portal`,
+      title: "Ungelesene Nachrichten",
+      greeting: greetDe,
+      body: "Sie haben ungelesene Nachrichten, die auf Ihre Antwort warten:",
+      cta: "Im Portal ansehen",
+      notes: [
+        "Sie erhalten diese Erinnerung einmal täglich, solange ungelesene Nachrichten vorliegen.",
+        "Sie können Erinnerungen in Ihren Kontoeinstellungen deaktivieren.",
+      ],
+    },
+    en: {
+      subject: (count: number) =>
+        count === 1
+          ? "One unread message in your portal"
+          : `${count} unread messages in your portal`,
+      title: "Unread Messages",
+      greeting: greetEn,
+      body: "You have unread messages waiting for your reply:",
+      cta: "View in portal",
+      notes: [
+        "You receive this reminder once daily while unread messages remain.",
         "You can disable reminders in your account settings.",
       ],
     },
