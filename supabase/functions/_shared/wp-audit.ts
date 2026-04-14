@@ -54,15 +54,17 @@ export async function fetchWpSiteAudit(
   const base = wpMcpUrl.replace(/\/$/, "");
   const auth = `Basic ${btoa(`${user}:${pass}`)}`;
   const headers = { Authorization: auth, "Content-Type": "application/json" };
-  const endpoint = `${base}/wp-json/maxi-ai/v1/run-ability`;
 
   const call = async (ability: string, args?: Record<string, unknown>) => {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ ability, ...(args ? { args } : {}) }),
-      signal: AbortSignal.timeout(8000),
-    });
+    const res = await fetch(
+      `${base}/wp-json/wp-abilities/v1/abilities/${ability}/run`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(args ?? {}),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
     if (!res.ok) return null;
     const json = await res.json();
     return json?.success ? json.data : null;
