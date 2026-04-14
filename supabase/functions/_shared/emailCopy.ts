@@ -18,6 +18,7 @@ export type EmailType =
   | "project_reminder"
   | "unread_digest"
   | "new_recommendation"
+  | "recommendation_reminder"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -471,6 +472,33 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "Confirm Email Change",
       notes: [
         "If you didn't request this, you can safely ignore this email.",
+      ],
+    },
+  },
+
+  recommendation_reminder: {
+    de: {
+      subject: (count: number) =>
+        `Erinnerung: ${count} offene Empfehlung${count === 1 ? '' : 'en'} warte${count === 1 ? 't' : 'n'} auf Ihre Entscheidung`,
+      title: "Offene Empfehlungen",
+      greeting: greetDe,
+      body: "Die folgenden Empfehlungen unseres Teams warten auf Ihre Entscheidung:",
+      cta: "Im Portal ansehen",
+      notes: [
+        "Sie erhalten diese Erinnerung alle 5 Tage, solange offene Empfehlungen bestehen.",
+        "Sie können Erinnerungen in Ihren Kontoeinstellungen deaktivieren.",
+      ],
+    },
+    en: {
+      subject: (count: number) =>
+        `Reminder: ${count} pending recommendation${count === 1 ? '' : 's'} await${count === 1 ? 's' : ''} your decision`,
+      title: "Pending recommendations",
+      greeting: greetEn,
+      body: "The following recommendations from our team are waiting for your decision:",
+      cta: "Open in portal",
+      notes: [
+        "You receive this reminder every 5 days while recommendations remain pending.",
+        "You can disable reminders in your account settings.",
       ],
     },
   },
