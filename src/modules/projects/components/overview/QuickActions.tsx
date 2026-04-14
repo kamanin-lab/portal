@@ -47,7 +47,7 @@ export function QuickActions({ overview, onOpenStep, onCreateTask }: QuickAction
   if (cards.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2.5 mb-6 max-[768px]:grid-cols-2 max-[420px]:grid-cols-1">
+    <div className="grid grid-cols-4 gap-2.5 mb-6 max-[768px]:grid-cols-2 max-[420px]:grid-cols-1">
       {cards.map((card) => (
         <QACard key={card.id} {...card} />
       ))}
