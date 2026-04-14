@@ -27,6 +27,7 @@ const STAGING_BYPASS_PROFILE: Profile = {
     support_response: true,
     reminders: true,
     new_recommendation: true,
+    unread_digest: true,
     project_task_ready: true,
     project_step_completed: true,
     project_messages: true,
