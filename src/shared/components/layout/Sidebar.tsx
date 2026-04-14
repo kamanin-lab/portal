@@ -58,10 +58,8 @@ export function Sidebar({ expanded, onToggle }: Props) {
   const { profile } = useAuth()
   const { data: workspaces = [] } = useWorkspaces()
   const { notifications } = useNotifications(profile?.id)
-  const { supportUnread, taskUnread } = useUnreadCounts(profile?.id)
+  const { supportUnread } = useUnreadCounts(profile?.id)
   const { data: attentionCount = 0 } = useNeedsAttentionCount(profile?.id)
-
-  const ticketsUnread = Object.values(taskUnread).reduce((sum, n) => sum + n, 0)
 
   const inboxNotifications = notifications.filter(
     n => !profile?.support_task_id || n.task_id !== profile.support_task_id
@@ -124,7 +122,6 @@ export function Sidebar({ expanded, onToggle }: Props) {
           expanded={expanded}
           workspaces={workspaces}
           supportUnread={supportUnread}
-          ticketsUnread={ticketsUnread}
         />
       </div>
 
