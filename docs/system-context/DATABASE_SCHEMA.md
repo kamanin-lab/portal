@@ -25,6 +25,7 @@ User configuration and ClickUp mapping. One row per authenticated user.
 | nextcloud_client_root | text | | WebDAV path to the client's root folder in Nextcloud (e.g., `/clients/muster-gmbh/`). Used by `nextcloud-files` Edge Function for the client-level file browser. NULL means files are not yet configured for this client. |
 | last_project_reminder_sent_at | timestamptz | | Timestamp of the last project-task reminder email sent to this user. Used by `send-reminders` Edge Function to enforce the 3-day cooldown between project reminder emails. Separate from ticket reminder tracking. Added 2026-04-04. |
 | last_unread_digest_sent_at | timestamptz | | Timestamp of the last unread message digest email sent to this user. Used by `send-reminders` to enforce the 24h cooldown for daily unread chat reminders. Added 2026-04-14. |
+| last_recommendation_reminder_sent_at | timestamptz | NULL | Cooldown timestamp for recommendation_reminder emails (5-day). Used by `send-reminders` to avoid spamming clients about open recommendations. Added 2026-04-14. |
 
 **RLS Policy:** Users can read/update only their own row (`auth.uid() = id`).
 
