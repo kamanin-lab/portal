@@ -16,7 +16,7 @@ interface Props {
 }
 
 const TAB_LABELS: Record<MeineAufgabenTab, string> = {
-  unread: 'Nachrichten',
+  unread: 'Warten auf Antwort',
   kostenfreigabe: 'Kostenfreigabe',
   freigabe: 'Warten auf Freigabe',
   empfehlungen: 'Empfehlungen',
