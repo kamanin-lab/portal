@@ -67,9 +67,10 @@ async function callOpenRouter(
         "X-Title": "KAMANIN Triage Agent",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5",
+        model: "anthropic/claude-haiku-4-5-20251001",
         max_tokens: 512,
         temperature: 0,
+        response_format: { type: "json_object" },
         messages,
       }),
     },
@@ -80,20 +81,34 @@ async function callOpenRouter(
 // ---------------------------------------------------------------------------
 // Parse OpenRouter response → TriageOutput | null
 // ---------------------------------------------------------------------------
-async function parseTriageResponse(resp: Response): Promise<{
-  parsed: TriageOutput | null;
-  inputTokens: number;
-  outputTokens: number;
-}> {
+async function parseTriageResponse(
+  resp: Response,
+  log: ReturnType<typeof createLogger>,
+): Promise<{ parsed: TriageOutput | null; inputTokens: number; outputTokens: number }> {
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    log.error("OpenRouter returned non-OK response", { status: resp.status, body: errBody.slice(0, 500) });
+    return { parsed: null, inputTokens: 0, outputTokens: 0 };
+  }
   const data = await resp.json();
   const inputTokens: number = data.usage?.prompt_tokens ?? 0;
   const outputTokens: number = data.usage?.completion_tokens ?? 0;
   let text: string = data.choices?.[0]?.message?.content ?? "";
-  // Strip markdown code fences if model wraps JSON in them
+  if (!text) {
+    log.error("OpenRouter returned empty content", { raw: JSON.stringify(data).slice(0, 300) });
+    return { parsed: null, inputTokens: 0, outputTokens: 0 };
+  }
+  // strip markdown fences
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  // fallback: extract JSON object if model added preamble text
+  if (!text.startsWith("{")) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) text = match[0];
+  }
   try {
     return { parsed: JSON.parse(text) as TriageOutput, inputTokens, outputTokens };
   } catch {
+    log.error("JSON.parse failed after extraction", { text: text.slice(0, 300) });
     return { parsed: null, inputTokens, outputTokens };
   }
 }
@@ -175,7 +190,7 @@ Deno.serve(async (req: Request) => {
           list_id: input.list_id,
           list_name: input.list_name,
         },
-        model_used: "anthropic/claude-haiku-4-5",
+        model_used: "anthropic/claude-haiku-4-5-20251001",
       })
       .select()
       .single();
@@ -252,7 +267,7 @@ Deno.serve(async (req: Request) => {
 
     log.info("Calling OpenRouter (first attempt)");
     const firstResp = await callOpenRouter(baseMessages, openrouterKey);
-    const firstResult = await parseTriageResponse(firstResp);
+    const firstResult = await parseTriageResponse(firstResp, log);
 
     let parsed: TriageOutput | null = firstResult.parsed;
     let inputTokens = firstResult.inputTokens;
@@ -263,10 +278,10 @@ Deno.serve(async (req: Request) => {
       log.warn("First Claude response was not valid JSON — retrying");
       const retryMessages = [
         ...baseMessages,
-        { role: "assistant", content: "Return ONLY valid JSON, no text outside the JSON object." },
+        { role: "user", content: "Your previous response was not valid JSON. Reply with ONLY the JSON object — no text before or after." },
       ];
       const retryResp = await callOpenRouter(retryMessages, openrouterKey);
-      const retryResult = await parseTriageResponse(retryResp);
+      const retryResult = await parseTriageResponse(retryResp, log);
       parsed = retryResult.parsed;
       inputTokens += retryResult.inputTokens;
       outputTokens += retryResult.outputTokens;

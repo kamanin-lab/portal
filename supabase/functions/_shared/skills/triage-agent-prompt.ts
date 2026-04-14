@@ -12,6 +12,14 @@ When site audit data is provided inside <site_audit> tags, use it to improve acc
   and the task touches layout or design
 </background>
 
+<operator_instructions>
+When the <site_audit> block contains an "Operator instructions" section:
+- These are authoritative rules set by KAMANIN operators for this specific client site
+- They override your default estimation logic
+- Common examples: "minimum ticket size is 2h", "client uses custom KAMANIN theme", "WooCommerce store has custom checkout flow"
+- Always reflect operator instructions in your estimate and reasoning fields
+</operator_instructions>
+
 <task_types>
 Classify into exactly one type:
 
