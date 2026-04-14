@@ -3,4 +3,268 @@
 // grep -rn "TRIGGER.*auth.users" supabase/migrations/ → 0 results
 // Therefore: invite-member MUST manually insert a profiles row after createUser
 
-// TODO: Full implementation follows in Task 2
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
+import { createLogger } from "../_shared/logger.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { getEmailCopy } from "../_shared/emailCopy.ts";
+
+const log = createLogger("invite-member");
+
+Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const mailjetApiKey = Deno.env.get("MAILJET_API_KEY");
+  const mailjetSecretKey = Deno.env.get("MAILJET_SECRET_KEY");
+
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !mailjetApiKey || !mailjetSecretKey) {
+    log.error("Missing required env vars");
+    return new Response(
+      JSON.stringify({ error: "Server misconfigured" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Auth: verify caller
+  const authHeader = req.headers.get("authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Parse body
+  let body: { organizationId?: string; email?: string; role?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const { organizationId, email, role } = body;
+  if (!organizationId || !email || !role) {
+    return new Response(
+      JSON.stringify({ error: "Missing required fields: organizationId, email, role" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // SECURITY: role validation — admin MUST NOT be grantable via this endpoint (spoofing threat)
+  if (role !== "member" && role !== "viewer") {
+    return new Response(
+      JSON.stringify({ error: "Invalid role: must be 'member' or 'viewer'" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Admin role guard — caller must be admin of THIS specific organizationId
+  const { data: callerRoleRow } = await supabaseAdmin
+    .from("org_members")
+    .select("role")
+    .eq("profile_id", user.id)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if ((callerRoleRow as { role: string } | null)?.role !== "admin") {
+    log.warn("Non-admin invite attempt blocked", { userId: user.id, organizationId });
+    return new Response(
+      JSON.stringify({ error: "Insufficient permissions" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Duplicate check: does a user with this email exist AND is already in THIS org?
+  const normalizedEmail = email.toLowerCase().trim();
+  const { data: existingProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existingProfile) {
+    const existingId = (existingProfile as { id: string }).id;
+    const { data: existingMembership } = await supabaseAdmin
+      .from("org_members")
+      .select("id")
+      .eq("profile_id", existingId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    if (existingMembership) {
+      return new Response(
+        JSON.stringify({ error: "Member already exists in organization" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  // Create auth user (email_confirm=true — user will set password via recovery link)
+  const { data: createData, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail,
+      email_confirm: true,
+    });
+  if (createError || !createData?.user) {
+    log.error("auth.admin.createUser failed", { error: createError?.message });
+    return new Response(
+      JSON.stringify({ error: "Failed to create user" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const newUser = createData.user;
+
+  // Generate recovery link (GoTrue SMTP broken — we send our own email)
+  const { data: linkData, error: linkError } =
+    await supabaseAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email: normalizedEmail,
+      options: { redirectTo: `${Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at"}/passwort-setzen` },
+    });
+  if (linkError || !linkData?.properties?.action_link) {
+    log.error("auth.admin.generateLink failed", { error: linkError?.message });
+    await supabaseAdmin.auth.admin.deleteUser(newUser.id); // rollback
+    return new Response(
+      JSON.stringify({ error: "Failed to generate recovery link — invite rolled back" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const recoveryUrl = (linkData.properties as { action_link: string }).action_link;
+
+  // Send invite email via Mailjet (direct — same pattern as send-reminders)
+  const copy = getEmailCopy("invite", "de");
+  // copy.cta is the button label; copy.notes[0] is the footer disclaimer
+  const ctaLabel = typeof copy.cta === "string" ? copy.cta : "Einladung annehmen";
+  const footerNote = copy.notes?.[0] ?? "";
+  let emailSent = false;
+  try {
+    const mailjetResp = await fetch("https://api.mailjet.com/v3.1/send", {
+      method: "POST",
+      headers: {
+        "Authorization": "Basic " + btoa(`${mailjetApiKey}:${mailjetSecretKey}`),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        Messages: [{
+          From: { Email: "noreply@kamanin.at", Name: "KAMANIN Portal" },
+          To: [{ Email: normalizedEmail }],
+          Subject: typeof copy.subject === "string" ? copy.subject : "Einladung zum KAMANIN Portal",
+          HTMLPart: `
+            <p>${typeof copy.greeting === "string" ? copy.greeting : copy.greeting()}</p>
+            <p>${typeof copy.body === "string" ? copy.body : Array.isArray(copy.body) ? (copy.body as string[]).join("</p><p>") : copy.body()}</p>
+            <p><a href="${recoveryUrl}" style="display:inline-block;padding:12px 24px;background:#0E0E0E;color:#fff;text-decoration:none;border-radius:8px;">${ctaLabel}</a></p>
+            ${footerNote ? `<p style="color:#666;font-size:12px;">${footerNote}</p>` : ""}
+          `,
+        }],
+      }),
+    });
+    emailSent = mailjetResp.ok;
+    if (!emailSent) {
+      const errBody = await mailjetResp.text();
+      log.error("Mailjet send failed", { status: mailjetResp.status, body: errBody });
+    }
+  } catch (e) {
+    log.error("Mailjet fetch threw", { error: (e as Error).message });
+    emailSent = false;
+  }
+
+  if (!emailSent) {
+    // Rollback: delete created user
+    await supabaseAdmin.auth.admin.deleteUser(newUser.id);
+    return new Response(
+      JSON.stringify({ error: "Email send failed — invite rolled back" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // A1-conditional: manually insert profiles row — no handle_new_user trigger exists
+  const { error: profileInsertError } = await supabaseAdmin
+    .from("profiles")
+    .insert({
+      id: newUser.id,
+      email: normalizedEmail,
+      full_name: null,
+    });
+  if (profileInsertError) {
+    // Profile may already exist (race) — ignore unique-violation
+    if (!profileInsertError.message.includes("duplicate") && !profileInsertError.message.includes("unique")) {
+      log.error("profiles insert failed after invite", { error: profileInsertError.message });
+      // Do NOT rollback here — email was already sent; admin can recover manually
+    }
+  }
+
+  // Insert org_members row
+  const { error: memberInsertError } = await supabaseAdmin
+    .from("org_members")
+    .insert({
+      organization_id: organizationId,
+      profile_id: newUser.id,
+      role,
+    });
+  if (memberInsertError) {
+    log.error("org_members insert failed", { error: memberInsertError.message });
+    // Don't rollback auth user — email is out, user can log in even if we fix org_members manually
+    return new Response(
+      JSON.stringify({ error: "User created but org_members insert failed — contact support", userId: newUser.id }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Copy project_access rows from the org's first admin to the new member
+  const { data: firstAdmin } = await supabaseAdmin
+    .from("org_members")
+    .select("profile_id")
+    .eq("organization_id", organizationId)
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle();
+
+  if (firstAdmin) {
+    const adminProfileId = (firstAdmin as { profile_id: string }).profile_id;
+    const { data: adminAccess } = await supabaseAdmin
+      .from("project_access")
+      .select("project_config_id")
+      .eq("profile_id", adminProfileId);
+    for (const row of adminAccess ?? []) {
+      const projectConfigId = (row as { project_config_id: string }).project_config_id;
+      await supabaseAdmin.from("project_access").insert({
+        profile_id: newUser.id,
+        project_config_id: projectConfigId,
+      });
+    }
+  }
+
+  log.info("Invite sent successfully", { newUserId: newUser.id, organizationId, role });
+  return new Response(
+    JSON.stringify({ success: true, userId: newUser.id }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+});
