@@ -70,3 +70,10 @@ scripts/*-production.json
 # Generated staging artifacts
 staging-schema*.sql
 .supabase/
+
+# Tool caches and logs
+.playwright-mcp/
+.superpowers/
+
+# Local backups
+portal_backup_*.dump
