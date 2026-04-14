@@ -1,0 +1,138 @@
+// Shared org resolution helpers for Phase 10 Edge Functions.
+// All functions require a service role client — org_members and organizations
+// have NO client-facing RLS read policies (Phase 9 deferred). Using an anon
+// client will silently return empty rows.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
+
+export interface OrgConfig {
+  organization_id: string;
+  clickup_list_ids: string[];
+  nextcloud_client_root: string | null;
+  support_task_id: string | null;
+  clickup_chat_channel_id: string | null;
+}
+
+/**
+ * Resolves org configuration for a given user via org_members JOIN organizations.
+ * Uses service role client to bypass RLS.
+ * Returns null if user has no org_members row — caller must fall back to profiles.
+ */
+export async function getOrgForUser(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<OrgConfig | null> {
+  const { data, error } = await supabaseAdmin
+    .from("org_members")
+    .select(`
+      organization_id,
+      organizations!inner (
+        clickup_list_ids,
+        nextcloud_client_root,
+        support_task_id,
+        clickup_chat_channel_id
+      )
+    `)
+    .eq("profile_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const org = (data as { organizations: {
+    clickup_list_ids: unknown;
+    nextcloud_client_root: string | null;
+    support_task_id: string | null;
+    clickup_chat_channel_id: string | null;
+  } }).organizations;
+
+  // clickup_list_ids is jsonb in organizations — coerce to string[]
+  const listIds: string[] = Array.isArray(org.clickup_list_ids)
+    ? (org.clickup_list_ids as string[])
+    : [];
+
+  return {
+    organization_id: (data as { organization_id: string }).organization_id,
+    clickup_list_ids: listIds,
+    nextcloud_client_root: org.nextcloud_client_root ?? null,
+    support_task_id: org.support_task_id ?? null,
+    clickup_chat_channel_id: org.clickup_chat_channel_id ?? null,
+  };
+}
+
+/**
+ * Returns all profile_ids in the given org.
+ * Used by clickup-webhook for fan-out.
+ */
+export async function getOrgMemberIds(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  organizationId: string,
+): Promise<string[]> {
+  const { data } = await supabaseAdmin
+    .from("org_members")
+    .select("profile_id")
+    .eq("organization_id", organizationId);
+
+  return (data ?? []).map((row: { profile_id: string }) => row.profile_id);
+}
+
+/**
+ * Returns org role for the given user, or null if no org_members row.
+ * Legacy users (no row) → null → callers treat as 'member' (permissive).
+ */
+export async function getUserOrgRole(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("org_members")
+    .select("role")
+    .eq("profile_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  return (data as { role: string } | null)?.role ?? null;
+}
+
+/**
+ * Finds the org whose clickup_list_ids jsonb array contains listId.
+ * Returns null if no match OR if >1 orgs match (ambiguous).
+ * Used by clickup-webhook findProfilesForTask.
+ */
+export async function findOrgByListId(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  listId: string,
+): Promise<{ organizationId: string; profileIds: string[] } | null> {
+  const { data: orgs } = await supabaseAdmin
+    .from("organizations")
+    .select("id")
+    .contains("clickup_list_ids", [listId]);
+
+  if (!orgs || orgs.length === 0) return null;
+  if (orgs.length > 1) return null;
+
+  const organizationId = (orgs[0] as { id: string }).id;
+  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId);
+  return { organizationId, profileIds };
+}
+
+/**
+ * Finds the org that owns the given support_task_id.
+ * Used by clickup-webhook support chat fan-out.
+ */
+export async function findOrgBySupportTaskId(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  taskId: string,
+): Promise<{ organizationId: string; profileIds: string[] } | null> {
+  const { data } = await supabaseAdmin
+    .from("organizations")
+    .select("id")
+    .eq("support_task_id", taskId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const organizationId = (data as { id: string }).id;
+  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId);
+  return { organizationId, profileIds };
+}
