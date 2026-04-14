@@ -64,7 +64,7 @@ async function callOpenRouter(
 ): Promise<Response> {
   const body: Record<string, unknown> = {
     model: "anthropic/claude-haiku-4.5",
-    max_tokens: tools?.length ? 2048 : 512,
+    max_tokens: tools?.length ? 4096 : 512,
     temperature: 0,
     messages,
   };
@@ -96,13 +96,12 @@ async function callOpenRouter(
 // Parse JSON estimate from a text string (handles markdown fences + preamble)
 // ---------------------------------------------------------------------------
 function extractJson(text: string): TriageOutput | null {
-  let t = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-  if (!t.startsWith("{")) {
-    const match = t.match(/\{[\s\S]*\}/);
-    if (match) t = match[0];
-  }
+  // Greedy match from first { to last } — handles plain JSON, markdown fences,
+  // and any explanatory text Claude may add before or after the JSON block.
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
   try {
-    return JSON.parse(t) as TriageOutput;
+    return JSON.parse(match[0]) as TriageOutput;
   } catch {
     return null;
   }
