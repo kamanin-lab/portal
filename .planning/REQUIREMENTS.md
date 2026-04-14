@@ -25,7 +25,7 @@
 
 - [ ] **ORG-BE-01**: `fetch-clickup-tasks` reads `clickup_list_ids` from `organizations` via `org_members`; dual-read fallback to `profiles` during transition
 - [ ] **ORG-BE-02**: `fetch-single-task` validates task access via org's `clickup_list_ids`; dual-read fallback
-- [ ] **ORG-BE-03**: `nextcloud-files` reads `nextcloud_client_root` from `organizations`; dual-read fallback
+- [x] **ORG-BE-03**: `nextcloud-files` reads `nextcloud_client_root` from `organizations`; dual-read fallback
 - [ ] **ORG-BE-04**: `create-clickup-task` reads `clickup_list_ids` and `clickup_chat_channel_id` from org; dual-read fallback
 - [ ] **ORG-BE-05**: `clickup-webhook` `findProfilesForTask()` resolves profiles via `org_members` (all members of the org that owns the list); notifications fanned out to all org members; dedup prevents duplicate bell entries per profile per event
 - [ ] **ORG-BE-06**: `clickup-webhook` support chat fan-out: when new comment on `support_task_id`, inserts N rows in `comment_cache` — one per org member (consistent with `task_cache` pattern)
@@ -116,7 +116,7 @@
 | ORG-DB-10 | Phase 9 | Complete |
 | ORG-BE-01 | Phase 10 | Pending |
 | ORG-BE-02 | Phase 10 | Pending |
-| ORG-BE-03 | Phase 10 | Pending |
+| ORG-BE-03 | Phase 10 | Complete |
 | ORG-BE-04 | Phase 10 | Pending |
 | ORG-BE-05 | Phase 10 | Pending |
 | ORG-BE-06 | Phase 10 | Pending |

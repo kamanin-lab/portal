@@ -174,8 +174,16 @@ Plans:
   3. The `invite-member` function accepts `{ organizationId, email, role }` from an admin caller and creates an auth user, generates a set-password link, and sends the invite email — returning 403 for non-admin callers and 409 for duplicate invites
   4. A viewer-role user calling `create-clickup-task`, `post-task-comment`, or `update-task-status` receives a 403 response
   5. `send-reminders` emails go only to the org admin (not all members) and group reminders by organisation
-**Plans**: TBD
+**Plans**: 6 plans
 **UI hint**: no
+
+Plans:
+- [x] 10-01-PLAN.md — Create _shared/org.ts helper (Wave 0 prerequisite for all other plans)
+- [ ] 10-02-PLAN.md — Org dual-read + viewer guards: fetch-clickup-tasks, fetch-single-task, create-clickup-task, post-task-comment, update-task-status
+- [x] 10-03-PLAN.md — nextcloud-files hoisted org lookup (7 profile reads → 1)
+- [ ] 10-04-PLAN.md — clickup-webhook org-first findProfilesForTask + support chat N-member fan-out
+- [ ] 10-05-PLAN.md — send-reminders org-grouped admin-only ticket and project reminders
+- [ ] 10-06-PLAN.md — New invite-member Edge Function (admin guard, duplicate check, atomic rollback)
 
 ### Phase 11: org-frontend-auth
 **Goal**: Every component in the portal knows the current user's organisation and role, shared data (workspaces, credits) is fetched at org scope, and viewer-role users cannot trigger mutating actions
@@ -229,7 +237,7 @@ Plans:
 | 7. Empfehlungen Reminders + MeineAufgaben | 3/3 | Complete | 2026-04-14 |
 | 8. Meine Aufgaben Redesign — 4-Tab Filter | 0/1 | Planned | — |
 | 9. org-db-foundation | 0/? | Not started | — |
-| 10. org-edge-functions | 0/? | Not started | — |
+| 10. org-edge-functions | 2/6 | In Progress|  |
 | 11. org-frontend-auth | 0/? | Not started | — |
 | 12. org-admin-page | 0/? | Not started | — |
 | 13. org-onboarding-cleanup | 0/? | Not started | — |
