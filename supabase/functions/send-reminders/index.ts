@@ -64,7 +64,7 @@ function buildReminderHtml(
   tasks: ReminderTaskItem[],
   firstName: string | null,
   locale: EmailLocale = "de",
-  emailType: "pending_reminder" | "project_reminder" = "pending_reminder",
+  emailType: "pending_reminder" | "project_reminder" | "recommendation_reminder" = "pending_reminder",
   ctaUrl: string = `${portalUrl}/tickets`
 ): { subject: string; html: string } {
   const copy = getEmailCopy(emailType, locale);
@@ -312,6 +312,120 @@ async function sendUnreadMessageReminders(
         .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${oneDayAgo}`);
       sent++;
     } else {
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
+}
+
+async function sendRecommendationReminders(
+  supabase: ReturnType<typeof createClient>,
+  log: ReturnType<typeof createLogger>
+): Promise<{ sent: number; skipped: number; errors: number }> {
+  let sent = 0, skipped = 0, errors = 0;
+
+  // 1. Fetch profiles with email notifications enabled
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, email_notifications, notification_preferences, last_recommendation_reminder_sent_at")
+    .eq("email_notifications", true);
+
+  if (profilesError || !profiles?.length) {
+    log.warn("Recommendation reminder: no eligible profiles", { error: String(profilesError) });
+    return { sent, skipped, errors };
+  }
+
+  // 2. Fetch candidate tasks: status=to do, is_visible=true, last_activity_at older than 3 days
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: candidateTasks } = await supabase
+    .from("task_cache")
+    .select("clickup_id, name, profile_id, last_activity_at, status, tags")
+    .eq("status", "to do")
+    .eq("is_visible", true)
+    .lt("last_activity_at", threeDaysAgo)
+    .in("profile_id", profiles.map((p: Record<string, unknown>) => p.id));
+
+  // 3. JS-side tag filter: keep only tasks tagged "recommendation"
+  const recommendations = (candidateTasks ?? []).filter((t: Record<string, unknown>) =>
+    Array.isArray(t.tags) && (t.tags as { name: string }[]).some((tag) => tag.name === "recommendation")
+  );
+
+  if (!recommendations.length) {
+    log.info("Recommendation reminder: no pending recommendations older than 3 days");
+    return { sent, skipped: profiles.length, errors };
+  }
+
+  // 4. Group recommendations by profile_id
+  const profileRecMap = new Map<string, ReminderTaskItem[]>();
+  for (const task of recommendations as Record<string, unknown>[]) {
+    const pid = task.profile_id as string;
+    if (!profileRecMap.has(pid)) {
+      profileRecMap.set(pid, []);
+    }
+    const lastActivity = task.last_activity_at as string | null;
+    const daysPending = lastActivity
+      ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86_400_000)
+      : 0;
+    profileRecMap.get(pid)!.push({
+      taskId: task.clickup_id as string,
+      taskName: task.name as string,
+      status: "Offen",
+      daysPending: Math.max(daysPending, 0),
+    });
+  }
+
+  // 5. Per-profile loop with atomic claim (5-day cooldown)
+  const portalUrlEnv = Deno.env.get("PORTAL_URL") ?? "https://portal.kamanin.at";
+  const cooldownBoundary = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+
+  for (const profile of profiles as Record<string, unknown>[]) {
+    const tasksForProfile = profileRecMap.get(profile.id as string);
+    if (!tasksForProfile?.length) { skipped++; continue; }
+
+    // Skip if reminders preference is explicitly disabled
+    const prefs = profile.notification_preferences as Record<string, boolean> | null;
+    if (prefs?.reminders === false) { skipped++; continue; }
+
+    // Atomic claim: only proceed if cooldown has expired (prevents double-send)
+    const { data: claimed, error: claimError } = await supabase
+      .from("profiles")
+      .update({ last_recommendation_reminder_sent_at: new Date().toISOString() })
+      .eq("id", profile.id)
+      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt.${cooldownBoundary}`)
+      .select("id");
+
+    if (claimError) {
+      log.error("Recommendation reminder: claim error", { error: String(claimError) });
+      errors++;
+      continue;
+    }
+
+    if (!claimed?.length) {
+      // Cooldown not expired or another execution claimed first
+      skipped++;
+      continue;
+    }
+
+    try {
+      const firstName = (profile.full_name as string | null)?.split(" ")[0] ?? null;
+      const { subject, html } = buildReminderHtml(
+        tasksForProfile,
+        firstName,
+        "de",
+        "recommendation_reminder",
+        `${portalUrlEnv}/meine-aufgaben`
+      );
+
+      await sendMailjet(
+        { email: profile.email as string, name: (profile.full_name as string) || undefined },
+        subject,
+        html,
+        log
+      );
+      sent++;
+    } catch (err) {
+      log.error("Recommendation reminder: send failed", { error: String(err) });
       errors++;
     }
   }
@@ -673,17 +787,24 @@ Deno.serve(async (req) => {
     const unreadStats = await sendUnreadMessageReminders(supabase, log);
     log.info("Unread digest job complete", unreadStats);
 
+    // ===== RECOMMENDATION REMINDERS (5-day cooldown) =====
+    const recStats = await sendRecommendationReminders(supabase, log);
+    log.info("recommendation_reminder stats", recStats);
+
     return new Response(
       JSON.stringify({
         ok: true,
         code: "REMINDERS_SENT",
-        message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}. Unread digest - Sent: ${unreadStats.sent}, Skipped: ${unreadStats.skipped}, Errors: ${unreadStats.errors}`,
+        message: `Tickets - Sent: ${sent}, Skipped: ${skipped}, Errors: ${errors}. Projects - Sent: ${projectSent}, Skipped: ${projectSkipped}. Unread digest - Sent: ${unreadStats.sent}, Skipped: ${unreadStats.skipped}, Errors: ${unreadStats.errors}. Recommendations - Sent: ${recStats.sent}, Skipped: ${recStats.skipped}, Errors: ${recStats.errors}`,
         correlationId: requestId,
         sent, skipped, errors,
         projectSent, projectSkipped,
         unreadSent: unreadStats.sent,
         unreadSkipped: unreadStats.skipped,
         unreadErrors: unreadStats.errors,
+        recSent: recStats.sent,
+        recSkipped: recStats.skipped,
+        recErrors: recStats.errors,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
