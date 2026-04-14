@@ -1,5 +1,24 @@
 # Changelog
 
+## Triage Agent — Maxi AI Core v3.3.0 Support — 2026-04-14
+
+### `supabase/functions/_shared/wp-audit.ts`
+- Added `bootstrap-session` as the first ability call before any other Maxi AI Core requests (v3.3.0 requirement — other abilities are blocked until bootstrap succeeds)
+- Graceful degradation: bootstrap failure does not block triage; audit proceeds without site context
+- Added `WpOperatorNote` interface for the new operator-notes data shape
+- Added `language` and `timezone` fields to `WpSiteAudit` (sourced from `get-site-info`)
+- Added `operator_notes` field to `WpSiteAudit` — active, site-specific operator instructions fetched from WordPress
+- Updated `formatAuditForPrompt` to include language, timezone, and an "Operator Instructions" section in the prompt sent to Claude
+- Added `VALID_PRIORITIES` set for safe priority validation
+
+### `supabase/functions/_shared/skills/triage_agent.md`
+- Added "Site-Specific Operator Instructions" section instructing Claude to treat operator-notes as authoritative rules that override default estimation logic
+
+### `src/__tests__/wp-audit.test.ts`
+- Added 8 new tests covering: bootstrap call ordering, operator-notes formatting, priority sorting, and graceful degradation on bootstrap failure
+
+---
+
 ## Staging Environment Setup — 2026-04-06
 
 ### Infrastructure

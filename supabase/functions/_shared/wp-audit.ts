@@ -1,14 +1,27 @@
 import { createLogger } from "./logger.ts";
 
+export interface WpOperatorNote {
+  id: number;
+  title: string;
+  content: string;
+  topic: string;
+  priority: "low" | "normal" | "high" | "critical";
+}
+
 export interface WpSiteAudit {
   wp_version: string;
   site_url: string;
   site_name: string;
+  language: string;
+  timezone: string;
   active_plugins: { slug: string; name: string; version: string }[];
   post_types: string[];
   product_count: number | null;
+  operator_notes: WpOperatorNote[];
   fetched_at: string;
 }
+
+const VALID_PRIORITIES = new Set<string>(["low", "normal", "high", "critical"]);
 
 /**
  * Fetch a minimal WordPress site audit via Maxi AI Core REST API.
@@ -56,6 +69,34 @@ export async function fetchWpSiteAudit(
   };
 
   try {
+    // 0. Bootstrap session (mandatory for Maxi AI v3.3.0+).
+    // Wrapped in its own try/catch: older plugin versions or transient
+    // failures must NOT abort the audit — we degrade to empty operator_notes.
+    let operatorNotes: WpOperatorNote[] = [];
+    try {
+      const bootstrapData = await call("maxi/bootstrap-session");
+      if (bootstrapData && Array.isArray(bootstrapData.operator_notes)) {
+        operatorNotes = (bootstrapData.operator_notes as unknown[])
+          .filter(
+            (n): n is Record<string, unknown> =>
+              typeof n === "object" &&
+              n !== null &&
+              VALID_PRIORITIES.has(String((n as Record<string, unknown>).priority)),
+          )
+          .map((n) => ({
+            id: Number(n.id ?? 0),
+            title: String(n.title ?? ""),
+            content: String(n.content ?? ""),
+            topic: String(n.topic ?? ""),
+            priority: String(n.priority) as WpOperatorNote["priority"],
+          }));
+      }
+    } catch (err) {
+      logger.warn(
+        `maxi/bootstrap-session failed for ${base}: ${String(err)} — continuing without operator notes`,
+      );
+    }
+
     // 1. Site info
     const siteData = await call("maxi/get-site-info");
     if (!siteData) {
@@ -105,9 +146,12 @@ export async function fetchWpSiteAudit(
       wp_version: siteData.wp_version ?? "unknown",
       site_url: siteData.url ?? base,
       site_name: siteData.name ?? "",
+      language: siteData.language ?? "unknown",
+      timezone: siteData.timezone ?? "unknown",
       active_plugins: activePlugins,
       post_types: postTypes,
       product_count: productCount,
+      operator_notes: operatorNotes,
       fetched_at: new Date().toISOString(),
     };
   } catch (err) {
@@ -115,6 +159,13 @@ export async function fetchWpSiteAudit(
     return null;
   }
 }
+
+const PRIORITY_ORDER: Record<WpOperatorNote["priority"], number> = {
+  critical: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+};
 
 /**
  * Format audit as compact text for Claude prompt.
@@ -130,12 +181,23 @@ export function formatAuditForPrompt(audit: WpSiteAudit): string {
       ? `Products: ${audit.product_count}`
       : "WooCommerce: not installed";
 
+  let operatorSection = "";
+  if (audit.operator_notes.length > 0) {
+    const sorted = [...audit.operator_notes].sort(
+      (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority],
+    );
+    const lines = sorted
+      .map((n) => `[${n.priority.toUpperCase()}] ${n.title}: ${n.content}`)
+      .join("\n");
+    operatorSection = `\nOperator instructions (${audit.operator_notes.length}):\n${lines}`;
+  }
+
   return `<site_audit>
 Site: ${audit.site_name} (${audit.site_url})
-WordPress: ${audit.wp_version}
+WordPress: ${audit.wp_version} | Language: ${audit.language} | Timezone: ${audit.timezone}
 ${productLine}
 Post types: ${audit.post_types.join(", ")}
 Active plugins (${audit.active_plugins.length}):
-${plugins}
+${plugins}${operatorSection}
 </site_audit>`;
 }

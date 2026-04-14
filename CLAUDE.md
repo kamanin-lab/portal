@@ -65,6 +65,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/CHANGELOG.md` | What changed, when, why |
 | `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
+| `supabase/functions/_shared/wp-audit.ts` | WordPress site audit via Maxi AI Core REST API — fetches plugins, WP version, product count, language, timezone, and active operator-notes; `bootstrap-session` is called first (v3.3.0+ requirement); graceful degradation on any failure |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
 | `supabase/functions/send-reminders/` | Dual-purpose reminder scheduler: (1) ticket reminders — tasks idle in Client Review 5+ days; (2) project reminders — project_task_cache entries idle in `client review` 3+ days → `project_reminder` email every 3 days, tracked via `profiles.last_project_reminder_sent_at` |

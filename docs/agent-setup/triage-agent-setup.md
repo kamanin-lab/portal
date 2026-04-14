@@ -10,7 +10,7 @@ in ClickUp, and the webhook updates the `agent_jobs` database record accordingly
 
 ## Prerequisites
 
-- [ ] Maxi AI Core v3+ installed and active on the WordPress site (required for site audit)
+- [ ] Maxi AI Core **v3.3.0+** installed and active on the WordPress site (required for site audit; v3.3.0 introduced `bootstrap-session` and operator-notes)
 - [ ] WordPress Application Password created for the service account user (`kamanin-agent`)
 - [ ] ClickUp list IDs identified for all lists to be monitored by the triage agent
 - [ ] `OPENROUTER_API_KEY` configured in Coolify (already used by `fetch-project-tasks`)
@@ -69,9 +69,9 @@ a plugin or `define('WP_APPLICATION_PASSWORDS_ENABLED', false)` in `wp-config.ph
 
 ## 3. Enable WordPress Site Audit for a Client
 
-The triage agent fetches WordPress site context (plugins, WP version, product count) when
-a `wp_mcp_url` is set on the client's profile. Without this, triage still works but without
-site-specific context.
+The triage agent fetches WordPress site context (plugins, WP version, product count, language,
+timezone, and active operator instructions) when a `wp_mcp_url` is set on the client's profile.
+Without this, triage still works but without site-specific context.
 
 **Enable WP site audit for a client:**
 
@@ -81,8 +81,8 @@ SET wp_mcp_url = 'https://staging.client-site.com'
 WHERE email = 'client@example.com';
 ```
 
-The URL must be the WordPress site root (no trailing slash). Maxi AI Core must be installed
-and active at that URL, and `WP_MCP_USER` / `WP_MCP_APP_PASS` must be valid credentials.
+The URL must be the WordPress site root (no trailing slash). Maxi AI Core v3.3.0+ must be
+installed and active at that URL, and `WP_MCP_USER` / `WP_MCP_APP_PASS` must be valid credentials.
 
 **Disable (revert to audit-less triage):**
 
@@ -94,6 +94,55 @@ WHERE email = 'client@example.com';
 
 When `wp_mcp_url` is NULL, the `[Triage]` comment is posted without the "Site context" line.
 Triage always completes — the audit is optional and its failure never blocks the estimate.
+
+### How the audit works (v3.3.0+ sequence)
+
+1. **`bootstrap-session`** — called first; initialises the Maxi AI Core session. If this fails,
+   the entire audit is skipped gracefully and triage continues without site context.
+2. **`get-site-info`** — fetches WP version, product count, active plugins, language, and timezone.
+3. **`get-active-context`** — fetches active operator-notes (see below).
+
+### Operator Notes
+
+Operator notes are site-specific instructions that tell Claude how to estimate work on this
+particular WordPress installation. They override Claude's default estimation logic when present.
+
+**Examples of useful operator notes:**
+- "This site uses a custom page-builder plugin — all layout changes take 2× the normal time."
+- "All plugin updates must be tested on staging first — add 1h for any plugin update task."
+- "WooCommerce store has 5000+ products — bulk operations take significantly longer."
+
+**How to create operator notes in WordPress:**
+
+1. Log in to WordPress Admin on the client site
+2. Go to **Maxi AI → Notes** (or the equivalent notes management screen in Maxi AI Core v3.3.0+)
+3. Click **Add New Note**
+4. Set **Type** = `operator-note`
+5. Set **Status** = `active`
+6. Enter the instruction text in the note body (plain text, one instruction per note)
+7. Save — the note is immediately active and will be included in the next triage audit
+
+Only notes with `type = operator-note` and `status = active` are fetched. Drafts and archived
+notes are ignored.
+
+**How operator notes appear in the `[Triage]` comment:**
+
+When operator notes are present, the `[Triage]` comment includes an "Operator Instructions"
+section before the estimate:
+
+```
+[Triage]
+Site context: WordPress 6.5.2, 12 plugins active, 847 products, de_AT, Europe/Vienna
+Operator Instructions:
+- All plugin updates must be tested on staging first — add 1h for any plugin update task.
+- Custom checkout flow — payment-related tasks take 2× estimated time.
+
+Estimate: 3h / 3 credits
+Confidence: medium
+Reasoning: ...
+```
+
+When no operator notes exist, the "Operator Instructions" section is omitted entirely.
 
 ## 4. Re-register the ClickUp Webhook
 
@@ -192,7 +241,8 @@ After the `[Triage]` comment appears on a ClickUp task:
 | No `agent_jobs` row created | `taskCreated` webhook event not registered | Re-register the webhook (Section 4) |
 | `status = 'failed'`, error about JSON | Claude returned invalid JSON twice | Check OpenRouter quota and model availability at openrouter.ai |
 | `status = 'failed'`, ClickUp comment error | `CLICKUP_API_TOKEN` missing or expired | Verify token in Coolify environment variables |
-| `audit_fetched = false` with `wp_mcp_url` set | Maxi AI Core unreachable or credentials wrong | Check `WP_MCP_USER`, `WP_MCP_APP_PASS`, and that Maxi AI Core plugin is active |
+| `audit_fetched = false` with `wp_mcp_url` set | `bootstrap-session` failed or Maxi AI Core unreachable | Check `WP_MCP_USER`, `WP_MCP_APP_PASS`, that Maxi AI Core v3.3.0+ is active, and that the REST API is reachable |
+| `audit_fetched = false`, no operator instructions in `[Triage]` comment | Maxi AI Core older than v3.3.0 | Upgrade Maxi AI Core to v3.3.0+ on the client site |
 | HITL comment not detected | Comment text does not exactly match pattern | Must match `[approve]`, `[approve: Xh Ycr]`, or `[reject: reason]` — no extra text before bracket |
 | `[Triage]` comment missing site context line | `wp_mcp_url` is NULL for this client | Run the `UPDATE profiles SET wp_mcp_url = ...` SQL from Section 3 |
 | Triage fires on wrong tasks | Monitored list IDs too broad | Narrow `TRIAGE_ENABLED_LIST_IDS` to only the intended lists |

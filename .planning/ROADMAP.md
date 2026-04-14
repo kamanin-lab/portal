@@ -99,10 +99,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — DB migration (agent_jobs + wp_mcp_url) + skill file + wp-audit.ts helper
-- [ ] 06-02-PLAN.md — triage-agent Edge Function (OpenRouter + ClickUp comment + cost tracking)
-- [ ] 06-03-PLAN.md — clickup-webhook extension (taskCreated handler + HITL detection) + sync-staging-secrets update
-- [ ] 06-04-PLAN.md — .env.example + setup documentation
+- [x] 06-01-PLAN.md — DB migration (agent_jobs + wp_mcp_url) + skill file + wp-audit.ts helper
+- [x] 06-02-PLAN.md — triage-agent Edge Function (OpenRouter + ClickUp comment + cost tracking)
+- [x] 06-03-PLAN.md — clickup-webhook extension (taskCreated handler + HITL detection) + sync-staging-secrets update
+- [x] 06-04-PLAN.md — .env.example + setup documentation
 
 ---
 

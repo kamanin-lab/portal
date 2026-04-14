@@ -35,6 +35,15 @@
 - [x] **DATA-04**: PhaseTimeline shows shadcn Skeleton state while useProject is loading
 - [ ] **DATA-05**: ProjectContextAdminPanel refactored to < 150 lines (extract MemoryEntryForm)
 
+### Triage Agent (TRIAGE)
+
+- [ ] **TRIAGE-01**: `agent_jobs` table created with correct schema, RLS enabled (service role only)
+- [ ] **TRIAGE-02**: `triage-agent` Edge Function created — receives task input, calls Claude Haiku via OpenRouter, posts formatted `[Triage]` comment to ClickUp
+- [ ] **TRIAGE-03**: `clickup-webhook` extended to handle `taskCreated` — fetches task details via ClickUp API, invokes `triage-agent` for monitored lists only
+- [ ] **TRIAGE-04**: WordPress site audit integrated — `wp-audit.ts` helper fetches WP version, active plugins, post types via Maxi AI Core REST API (non-blocking, failure-safe)
+- [ ] **TRIAGE-05**: HITL loop — `taskCommentPosted` detects `[approve]`/`[approve: Xh Ycr]`/`[reject: reason]` patterns and updates `agent_jobs` status
+- [ ] **TRIAGE-06**: Setup documentation + `.env.example` updated with new secrets
+
 ## Future Requirements (deferred)
 
 - PWA with push notifications
@@ -71,3 +80,9 @@
 | DATA-03 | Phase 5 | Complete |
 | DATA-04 | Phase 5 | Complete |
 | DATA-05 | Phase 5 | Pending |
+| TRIAGE-01 | Phase 6 | Pending |
+| TRIAGE-02 | Phase 6 | Pending |
+| TRIAGE-03 | Phase 6 | Pending |
+| TRIAGE-04 | Phase 6 | Pending |
+| TRIAGE-05 | Phase 6 | Pending |
+| TRIAGE-06 | Phase 6 | Pending |
