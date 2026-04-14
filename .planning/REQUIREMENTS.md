@@ -1,88 +1,111 @@
-# Milestone v1.1: Projects Module v2 — Requirements
+# Milestone v2.0: Organisations — Requirements
 
-**PRD Source:** `docs/audits/projects-module-audit.md` (22 findings, 7 categories)
-**Created:** 2026-03-29
+**Created:** 2026-04-14
+**Branch:** `feature-organisation`
+**Staging DB only:** all development against Cloud Supabase (`ahlthosftngdcryltapu`), NOT production
 
-## v1.1 Requirements
+---
 
-### Critical Fixes (CRIT)
+## v2.0 Requirements
 
-- [x] **CRIT-01**: TasksPage shows project tasks from project_task_cache (not hardcoded empty array)
-- [x] **CRIT-02**: MessagesPage uses useProjectComments hook for live comment data (not stale step.messages)
-- [x] **CRIT-03**: ContextStrip ETA field either shows valid data or is removed entirely
-- [x] **CRIT-04**: StepOverviewTab hides empty enrichment sections (no blank expandable areas)
+### DB Foundation (ORG-DB)
 
-### AI Enrichment (ENRICH)
+- [ ] **ORG-DB-01**: `organizations` table created with columns: `id`, `name`, `slug` (unique), `clickup_list_ids` (jsonb), `nextcloud_client_root` (text), `support_task_id` (text), `clickup_chat_channel_id` (text), `created_at`, `updated_at`
+- [ ] **ORG-DB-02**: `org_members` table created with columns: `id`, `organization_id` (FK → organizations), `profile_id` (FK → profiles), `role` (check: admin/member/viewer), `created_at`; unique constraint on (organization_id, profile_id)
+- [ ] **ORG-DB-03**: `user_org_ids()` SQL function created — `SECURITY DEFINER STABLE`, `SET search_path = ''`, returns `SETOF uuid` of org IDs for `auth.uid()`
+- [ ] **ORG-DB-04**: `user_org_role(org_id uuid)` SQL function created — `SECURITY DEFINER STABLE`, returns role text for current user in given org
+- [ ] **ORG-DB-05**: Nullable `organization_id` FK column added to `credit_packages`, `client_workspaces`, `profiles`; nullable `organization_id` added to `credit_transactions` (kept alongside `profile_id` for audit trail)
+- [ ] **ORG-DB-06**: Data migration executed: one org created per existing profile (name from profile, slug from email domain), profile inserted as admin in `org_members`, org fields populated from profile's `clickup_list_ids`/`nextcloud_client_root`/`support_task_id`/`clickup_chat_channel_id`
+- [ ] **ORG-DB-07**: After migration, NOT NULL constraints added on `organization_id` in `credit_packages` and `client_workspaces`; `profiles.organization_id` stays nullable for backward safety
+- [ ] **ORG-DB-08**: New org-scoped RLS policies added on `credit_packages` and `client_workspaces` using `(SELECT user_org_ids())` wrapper; old `profile_id = auth.uid()` policies kept in parallel during transition
+- [ ] **ORG-DB-09**: Migration verification gate: `count(org_members) = count(profiles)` passes; no org rows have NULL `clickup_list_ids`
+- [ ] **ORG-DB-10**: `notifications_type_check` constraint extended to include `member_invited` and `member_removed` event types
 
-- [x] **ENRICH-01**: Step enrichment re-generates when task name/description changes (hash-based detection)
-- [ ] **ENRICH-02**: Operator can manually trigger re-enrichment per step via admin UI
-- [x] **ENRICH-03**: DynamicHero shows AI-generated whyItMatters text when available
-- [x] **ENRICH-04**: step_enrichment.sort_order is populated from milestone_order custom field
+### Backend / Edge Functions (ORG-BE)
 
-### PhaseTimeline (TIMELINE)
+- [ ] **ORG-BE-01**: `fetch-clickup-tasks` reads `clickup_list_ids` from `organizations` via `org_members`; dual-read fallback to `profiles` during transition
+- [ ] **ORG-BE-02**: `fetch-single-task` validates task access via org's `clickup_list_ids`; dual-read fallback
+- [ ] **ORG-BE-03**: `nextcloud-files` reads `nextcloud_client_root` from `organizations`; dual-read fallback
+- [ ] **ORG-BE-04**: `create-clickup-task` reads `clickup_list_ids` and `clickup_chat_channel_id` from org; dual-read fallback
+- [ ] **ORG-BE-05**: `clickup-webhook` `findProfilesForTask()` resolves profiles via `org_members` (all members of the org that owns the list); notifications fanned out to all org members; dedup prevents duplicate bell entries per profile per event
+- [ ] **ORG-BE-06**: `clickup-webhook` support chat fan-out: when new comment on `support_task_id`, inserts N rows in `comment_cache` — one per org member (consistent with `task_cache` pattern)
+- [ ] **ORG-BE-07**: `send-reminders` sends reminder emails to org admin only (v1); groups by `organization_id`
+- [ ] **ORG-BE-08**: New `invite-member` Edge Function added to main router: accepts `{ organizationId, email, role }`, calls `auth.admin.createUser({ email_confirm: true })`, calls `auth.admin.generateLink({ type: 'recovery', email, redirectTo: '/passwort-setzen' })`, sends invite email via `send-mailjet-email` using existing `auth-email` `"invite"` email copy, inserts row in `org_members`, copies `project_access` rows from org admin to new member
+- [ ] **ORG-BE-09**: `invite-member` enforces role-based guard: only org admin can invite; non-admin request returns 403
+- [ ] **ORG-BE-10**: `invite-member` handles duplicate invite gracefully (user already in org → return 409 with descriptive error)
+- [ ] **ORG-BE-11**: Edge Function role enforcement: `create-clickup-task`, `post-task-comment`, `update-task-status` check caller's `org_members.role`; viewer role returns 403 on mutating operations
 
-- [x] **TIMELINE-01**: PhaseTimeline nodes are 28-32px stepper indicators with phase icons and per-phase colors
-- [x] **TIMELINE-02**: Connector lines show completion fill based on left chapter status (completed=100%, current=progress, upcoming=0%)
-- [x] **TIMELINE-03**: State transitions use Motion spring animations (state label entry/exit) and CSS GPU-accelerated pulse
-- [x] **TIMELINE-04**: Mobile view (< 768px) shows all phases in horizontal overflow scroll
-- [x] **TIMELINE-05**: Tooltip on hover shows chapter narrative text
+### Frontend — Auth & Data Layer (ORG-FE-AUTH)
 
-### Data Unification (DATA)
+- [ ] **ORG-FE-AUTH-01**: `OrgContext` created — provides `organization`, `orgRole`, `isAdmin`, `isMember`, `isViewer` to all components; fetched once at login and cached in React Query
+- [ ] **ORG-FE-AUTH-02**: `useWorkspaces` hook updated to query `client_workspaces` by `organization_id` (via org from `OrgContext`)
+- [ ] **ORG-FE-AUTH-03**: `useCredits` hook updated to fetch credit balance summed by `organization_id`
+- [ ] **ORG-FE-AUTH-04**: `NewTicketDialog` hidden for viewer role (cannot create tasks)
+- [ ] **ORG-FE-AUTH-05**: Kostenfreigabe (credit approval) button hidden for viewer role
+- [ ] **ORG-FE-AUTH-06**: Task status action buttons (Freigeben, Änderungen anfordern) hidden for viewer role
 
-- [ ] **DATA-01**: ProjectContextSection rendered in OverviewPage (operator manages, client reads)
-- [x] **DATA-02**: FilesTab clearly labels data source ("ClickUp-Anhange") and link destination
-- [x] **DATA-03**: Page transitions use Motion fade+slide animations (opacity 0→1, y 8→0)
-- [x] **DATA-04**: PhaseTimeline shows shadcn Skeleton state while useProject is loading
-- [ ] **DATA-05**: ProjectContextAdminPanel refactored to < 150 lines (extract MemoryEntryForm)
+### Frontend — Organisation Admin Page (ORG-FE-UI)
 
-### Triage Agent (TRIAGE)
+- [ ] **ORG-FE-UI-01**: `/organisation` route added; non-admin users are redirected to `/tickets` on access
+- [ ] **ORG-FE-UI-02**: `OrganisationPage` renders `OrgInfoSection` (org name, slug, credit package info — read-only) and `TeamSection` (member table)
+- [ ] **ORG-FE-UI-03**: `TeamSection` shows a table with columns: Name, Email, Rolle, Hinzugefügt am; pending invites show "Einladung ausstehend" in the Rolle column
+- [ ] **ORG-FE-UI-04**: `InviteMemberDialog` (admin-only) accepts email + role (Mitglied / Betrachter); submits to `invite-member` Edge Function; shows success/error toast
+- [ ] **ORG-FE-UI-05**: Admin can change a member's role (Mitglied ↔ Betrachter) from the team table; cannot demote themselves; cannot demote last admin
+- [ ] **ORG-FE-UI-06**: Admin can remove a member from the org; cannot remove themselves if last admin; confirmation dialog required
+- [ ] **ORG-FE-UI-07**: `/passwort-setzen` route created — reads GoTrue session from URL hash on mount, shows password-set form, calls `supabase.auth.updateUser({ password })`, redirects to `/tickets` on success
+- [ ] **ORG-FE-UI-08**: Sidebar "Ihre Organisation" link added to Utilities zone (visible to admin only); Hugeicons building/office icon
 
-- [ ] **TRIAGE-01**: `agent_jobs` table created with correct schema, RLS enabled (service role only)
-- [ ] **TRIAGE-02**: `triage-agent` Edge Function created — receives task input, calls Claude Haiku via OpenRouter, posts formatted `[Triage]` comment to ClickUp
-- [ ] **TRIAGE-03**: `clickup-webhook` extended to handle `taskCreated` — fetches task details via ClickUp API, invokes `triage-agent` for monitored lists only
-- [ ] **TRIAGE-04**: WordPress site audit integrated — `wp-audit.ts` helper fetches WP version, active plugins, post types via Maxi AI Core REST API (non-blocking, failure-safe)
-- [ ] **TRIAGE-05**: HITL loop — `taskCommentPosted` detects `[approve]`/`[approve: Xh Ycr]`/`[reject: reason]` patterns and updates `agent_jobs` status
-- [ ] **TRIAGE-06**: Setup documentation + `.env.example` updated with new secrets
+### Onboarding + Cleanup (ORG-CLEANUP)
+
+- [ ] **ORG-CLEANUP-01**: `onboard-client.ts` script rewritten to create org first, then admin user, then `org_members` row; accepts optional `members[]` array for initial team setup
+- [ ] **ORG-CLEANUP-02**: Old `profile_id = auth.uid()` RLS policies dropped from `credit_packages` and `client_workspaces` after production validation
+- [ ] **ORG-CLEANUP-03**: `profile_id` FK column dropped from `credit_packages` and `client_workspaces` (retained in `credit_transactions` for audit trail)
+- [ ] **ORG-CLEANUP-04**: Dual-read fallbacks (`org?.field ?? profile?.field`) removed from all 4 updated Edge Functions
+- [ ] **ORG-CLEANUP-05**: `profiles` columns `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id` dropped (moved to `organizations`)
+
+---
+
+## Architecture Decisions (captured during requirements)
+
+| Decision | Rationale |
+|----------|-----------|
+| `inviteUserByEmail` NOT used | GoTrue SMTP broken on self-hosted; use `createUser` + `generateLink({ type: 'recovery' })` instead |
+| `project_access` copied from admin at invite time | New members automatically see org projects; simpler than migrating FK to org_id |
+| `comment_cache` fan-out (N rows per member) | Consistent with `task_cache` pattern; supports future per-user read-state |
+| Dual-read fallback in Edge Functions | Zero-downtime: functions work before and after data migration; fallbacks removed in cleanup phase |
+| `(SELECT user_org_ids())` wrapper in RLS | Forces Postgres initPlan caching — prevents per-row function calls and query performance collapse |
+| Admin-only send-reminders for v1 | Simpler; upgrade path to per-member digest documented for v2.1 |
+| Staging DB only throughout | feature-organisation branch targets Cloud Supabase staging; no production changes until full validation |
+
+---
 
 ## Future Requirements (deferred)
 
-- PWA with push notifications
-- Dashboard / Ubersicht single-page overview
-- Client review reminders (auto-nudge)
+- Per-member send-reminders digest (v2.1 — after admin-only v1 is validated)
+- Granular per-module role overrides (e.g. `{ tickets: 'member', projects: 'viewer' }`)
+- Org creation UI (admin creates their own org — no KAMANIN operator needed)
+- Audit log for org membership changes
+- Multi-org membership (one user in multiple orgs)
+- SSO / SAML integration
+- Billing admin role (separate from org admin)
+- Agency/SaaS layer (`agency_id` on `organizations`) — architecture supports this without rewrite
 
-## Out of Scope
+## Out of Scope (v2.0)
 
-- Real-time collaborative editing of project memory — no use case for this milestone
-- ClickUp webhook-triggered enrichment refresh — manual + sync-time is sufficient
-- Vertical timeline layout variant — horizontal stepper is the established pattern
-- AI enrichment model upgrade — stay with current gpt-4o-mini, proven reliable
-- Multi-language support — all clients are German-speaking
+- Multi-tenant SaaS (multiple agencies) — single KAMANIN operator only
+- Org creation via UI — KAMANIN onboards clients via `onboard-client.ts`
+- Per-module role overrides — flat admin/member/viewer for all modules
+- Magic link login — GoTrue SMTP broken; password login only
+- Native mobile app — PWA handles this need
+
+---
 
 ## Traceability
 
-| REQ-ID | Phase | Status |
-|--------|-------|--------|
-| CRIT-01 | Phase 2 | Complete |
-| CRIT-02 | Phase 2 | Complete |
-| CRIT-03 | Phase 2 | Complete |
-| CRIT-04 | Phase 2 | Complete |
-| ENRICH-01 | Phase 3 | Complete |
-| ENRICH-02 | Phase 3 | Pending |
-| ENRICH-03 | Phase 3 | Complete |
-| ENRICH-04 | Phase 3 | Complete |
-| TIMELINE-01 | Phase 4 | Complete |
-| TIMELINE-02 | Phase 4 | Complete |
-| TIMELINE-03 | Phase 4 | Complete |
-| TIMELINE-04 | Phase 4 | Complete |
-| TIMELINE-05 | Phase 4 | Complete |
-| DATA-01 | Phase 5 | Pending |
-| DATA-02 | Phase 5 | Complete |
-| DATA-03 | Phase 5 | Complete |
-| DATA-04 | Phase 5 | Complete |
-| DATA-05 | Phase 5 | Pending |
-| TRIAGE-01 | Phase 6 | Pending |
-| TRIAGE-02 | Phase 6 | Pending |
-| TRIAGE-03 | Phase 6 | Pending |
-| TRIAGE-04 | Phase 6 | Pending |
-| TRIAGE-05 | Phase 6 | Pending |
-| TRIAGE-06 | Phase 6 | Pending |
+| Requirement | Phase |
+|-------------|-------|
+| ORG-DB-01 to ORG-DB-10 | Phase 9 |
+| ORG-BE-01 to ORG-BE-11 | Phase 10 |
+| ORG-FE-AUTH-01 to ORG-FE-AUTH-06 | Phase 11 |
+| ORG-FE-UI-01 to ORG-FE-UI-08 | Phase 12 |
+| ORG-CLEANUP-01 to ORG-CLEANUP-05 | Phase 13 |
