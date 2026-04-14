@@ -1,31 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-04-06T20:27:07.894Z"
-last_activity: 2026-04-06
+milestone: v2.0
+milestone_name: Organisations
+status: defining_requirements
+stopped_at: —
+last_updated: "2026-04-14T00:00:00.000Z"
+last_activity: 2026-04-14
 progress:
-  total_phases: 6
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 11
-  percent: 79
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-04-06
+**Last activity:** 2026-04-14
 
 ## Current Position
 
-Phase: 06 (triage-agent) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 06
-Stopped At: Completed 05-02-PLAN.md
-Last activity: 2026-04-06 -- Phase 06 execution started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-14 — Milestone v2.0 Organisations started
 
 ## Previous Milestone
 
@@ -80,6 +79,10 @@ Phase 1: Portal Frontend — Complete
 - AnimatePresence requires conditional rendering (not TabsContent) — Radix CSS hides inactive tabs blocking exit animations (Phase 05-02)
 - Controlled Tabs (useState activeTab) needed for AnimatePresence keyed transitions in OverviewTabs (Phase 05-02)
 - DATA-01 (ProjectContextSection) and DATA-05 (AdminPanel refactor) deferred to admin dashboard scope (Phase 05-02)
+
+### Roadmap Evolution
+
+- Phase 7 added: Empfehlungen in Reminders and Meine Aufgaben with decision workflow
 
 ### Blockers/Concerns
 

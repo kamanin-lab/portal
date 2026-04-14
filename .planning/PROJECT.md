@@ -8,17 +8,21 @@ Modular B2B client portal for KAMANIN IT Solutions (web agency, Salzburg, Austri
 
 Clients always know what needs their attention and can act on it in one click — approve, request changes, or communicate — without any project management complexity.
 
-## Current Milestone: v1.1 Projects Module v2
+## Current Milestone: v2.0 Organisations
 
-**Goal:** Fix all broken pipelines in the Projects module, improve AI enrichment lifecycle, redesign the PhaseTimeline with Motion animations, and unify data sources — implementing all 22 findings from the formal audit.
+**Goal:** Enable multiple users per client company with shared resources (credits, workspaces, files, support chat) and role-based access control — allowing firm owners to invite employees and observers to the portal.
 
 **Target features:**
-- Fix 4 critical broken data pipelines (TasksPage, MessagesPage, ContextStrip ETA, empty enrichment sections)
-- AI enrichment improvements (hash-based re-enrichment, manual trigger, hero surfacing)
-- PhaseTimeline redesign (Motion animations, partial progress, mobile responsive, tooltips)
-- Data unification and polish (ProjectContext integration, FilesTab clarity, page transitions)
+- Organization entity: shared credits, workspaces, Nextcloud root, ClickUp list_ids, support chat
+- Role system: admin (invite, manage package), member (create tasks, approve credits), viewer (read-only)
+- DB migration: organizations + org_members tables, migrate existing profiles to org admins, move shared fields off profiles
+- Backend: RLS via user_org_ids(), update all Edge Functions to resolve data from org-level fields
+- Frontend: /organisation admin page (team management, invite dialog), role-based UI visibility, auth context with orgRole
+- Onboarding update: onboard-client.ts creates org + admin + optional initial members
 
-**PRD:** `docs/audits/projects-module-audit.md`
+**Branch:** `feature-organisation` (all work here, staging DB only — not production)
+
+**Previous Milestone (v1.1):** Projects Module v2
 
 ## Requirements
 
