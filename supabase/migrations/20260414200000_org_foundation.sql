@@ -136,7 +136,7 @@ begin
     values (
       coalesce(p.company_name, split_part(p.email, '@', 1)),
       org_slug,
-      coalesce(p.clickup_list_ids, '[]'::jsonb),
+      coalesce(to_jsonb(p.clickup_list_ids), '[]'::jsonb),
       p.nextcloud_client_root,
       p.support_task_id,
       p.clickup_chat_channel_id
