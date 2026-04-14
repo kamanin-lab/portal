@@ -52,25 +52,46 @@ async function fetchUnreadCounts(userId: string): Promise<UnreadCounts> {
     supportCount = count ?? 0;
   }
 
-  // 4. Per-task unread counts
-  const { data: comments, error: commentsError } = await supabase
+  // 4. Per-task unread counts + needsReply detection
+  const { data: allComments, error: commentsError } = await supabase
     .from('comment_cache')
-    .select('task_id, clickup_created_at')
-    .eq('profile_id', userId)
-    .eq('is_from_portal', false);
+    .select('task_id, clickup_created_at, is_from_portal')
+    .eq('profile_id', userId);
 
   if (commentsError) console.warn('Failed to fetch task comments', { error: commentsError.message });
 
   const taskCounts: Record<string, number> = {};
-  comments?.forEach((c: { task_id: string; clickup_created_at: string }) => {
+  const lastTeamAt: Record<string, string> = {};
+  const lastClientAt: Record<string, string> = {};
+
+  allComments?.forEach((c: { task_id: string; clickup_created_at: string; is_from_portal: boolean | null }) => {
     if (supportTaskId && c.task_id === supportTaskId) return;
-    const lastRead = receiptsMap[`task:${c.task_id}`];
-    if (!lastRead || new Date(c.clickup_created_at) > new Date(lastRead)) {
-      taskCounts[c.task_id] = (taskCounts[c.task_id] ?? 0) + 1;
+    const isTeam = c.is_from_portal === false;
+    if (isTeam) {
+      // Track unread count for team comments
+      const lastRead = receiptsMap[`task:${c.task_id}`];
+      if (!lastRead || new Date(c.clickup_created_at) > new Date(lastRead)) {
+        taskCounts[c.task_id] = (taskCounts[c.task_id] ?? 0) + 1;
+      }
+      // Track latest team comment timestamp
+      if (!lastTeamAt[c.task_id] || c.clickup_created_at > lastTeamAt[c.task_id]) {
+        lastTeamAt[c.task_id] = c.clickup_created_at;
+      }
+    } else {
+      // Track latest client comment timestamp (is_from_portal === true)
+      if (!lastClientAt[c.task_id] || c.clickup_created_at > lastClientAt[c.task_id]) {
+        lastClientAt[c.task_id] = c.clickup_created_at;
+      }
     }
   });
 
-  return { support: supportCount, tasks: taskCounts };
+  // needsReply: task has a team comment newer than the last client reply
+  const needsReply: Record<string, boolean> = {};
+  Object.keys(lastTeamAt).forEach(taskId => {
+    needsReply[taskId] = lastTeamAt[taskId] > (lastClientAt[taskId] ?? '0');
+  });
+
+  return { support: supportCount, tasks: taskCounts, needsReply };
 }
 
 async function markContextAsRead(userId: string, contextType: string): Promise<void> {
@@ -136,7 +157,7 @@ export function useUnreadCounts(userId: string | undefined) {
       await queryClient.cancelQueries({ queryKey: ['unread-counts', userId] });
       const previousData = queryClient.getQueryData<UnreadCounts>(['unread-counts', userId]);
       queryClient.setQueryData(['unread-counts', userId], (old: UnreadCounts | undefined) => {
-        if (!old) return { support: 0, tasks: {} };
+        if (!old) return { support: 0, tasks: {}, needsReply: {} };
         if (contextType === 'support') return { ...old, support: 0 };
         if (contextType.startsWith('task:')) {
           const taskId = contextType.replace('task:', '');
@@ -157,11 +178,12 @@ export function useUnreadCounts(userId: string | undefined) {
     },
   });
 
-  const counts = query.data ?? { support: 0, tasks: {} };
+  const counts = query.data ?? { support: 0, tasks: {}, needsReply: {} };
 
   return {
     supportUnread: counts.support,
     taskUnread: counts.tasks,
+    needsReply: counts.needsReply,
     isLoading: query.isLoading,
     markAsRead: useCallback((ctx: string) => markReadMutation.mutate(ctx), [markReadMutation]),
     refresh: useCallback(() => queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] }), [queryClient, userId]),

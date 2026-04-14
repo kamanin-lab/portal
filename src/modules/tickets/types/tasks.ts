@@ -158,4 +158,5 @@ export interface Notification {
 export interface UnreadCounts {
   support: number;
   tasks: Record<string, number>;
+  needsReply: Record<string, boolean>;
 }

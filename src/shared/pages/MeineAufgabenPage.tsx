@@ -19,7 +19,7 @@ export function MeineAufgabenPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
-  const { taskUnread } = useUnreadCounts(user?.id)
+  const { taskUnread, needsReply } = useUnreadCounts(user?.id)
   const {
     counts,
     activeTab,
@@ -28,7 +28,7 @@ export function MeineAufgabenPage() {
     totalCount,
     recommendations,
     snoozeRecommendation,
-  } = useMeineAufgaben(tasks, taskUnread, isLoading)
+  } = useMeineAufgaben(tasks, taskUnread, isLoading, needsReply)
 
   const activeTaskId = searchParams.get('taskId')
 
