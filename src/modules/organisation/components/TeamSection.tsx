@@ -51,13 +51,14 @@ export function TeamSection() {
             <span></span>
           </div>
           {members.map(m => {
-            const isPending = !m.profile?.full_name
+            const profile = Array.isArray(m.profile) ? m.profile[0] : m.profile
+            const isPending = !profile?.full_name
             return (
               <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
                 <span className="text-sm text-text-primary truncate">
-                  {isPending ? <em className="text-text-tertiary">Einladung ausstehend</em> : m.profile?.full_name}
+                  {isPending ? <em className="text-text-tertiary">Einladung ausstehend</em> : profile?.full_name}
                 </span>
-                <span className="text-sm text-text-secondary truncate">{m.profile?.email ?? '—'}</span>
+                <span className="text-sm text-text-secondary truncate">{profile?.email ?? '—'}</span>
                 <span className="text-sm text-text-primary">{ROLE_LABELS[m.role]}</span>
                 <span className="text-sm text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
                 <MemberRowActions member={m} members={members} />

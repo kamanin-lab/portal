@@ -159,11 +159,41 @@ Deno.serve(async (req) => {
   }
   const recoveryUrl = (linkData.properties as { action_link: string }).action_link;
 
-  // Send invite email via Mailjet (direct — same pattern as send-reminders)
+  // Send invite email via Mailjet — uses same HTML template as send-reminders
   const copy = getEmailCopy("invite", "de");
-  // copy.cta is the button label; copy.notes[0] is the footer disclaimer
+  const greeting = typeof copy.greeting === "function" ? copy.greeting() : copy.greeting;
+  const bodyText = typeof copy.body === "string" ? copy.body : Array.isArray(copy.body) ? (copy.body as string[]).join("</p><p>") : (copy.body as () => string)();
   const ctaLabel = typeof copy.cta === "string" ? copy.cta : "Einladung annehmen";
-  const footerNote = copy.notes?.[0] ?? "";
+  const notesHtml = (copy.notes ?? []).map((n) => `<p class="muted">${n}</p>`).join("");
+  const logoUrl = "https://portal.kamanin.at/favicon.png";
+  const styles = `<style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px 0; background-color: #f5f5f5; }
+    .wrapper { max-width: 600px; margin: 0 auto; padding: 0 20px; }
+    .logo-section { text-align: left; padding: 20px 0; }
+    .logo-section img { height: 50px; width: auto; max-height: 50px; max-width: 50px; }
+    .card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 40px; text-align: center; }
+    .title { color: #1a1a1a; font-size: 22px; font-weight: 600; margin: 0 0 24px 0; }
+    .text { color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0; }
+    .button { display: inline-block; background-color: #2563eb; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 15px; margin: 24px 0 8px 0; }
+    .footer { text-align: center; padding: 24px 0; }
+    .footer-text { color: #999; font-size: 12px; margin: 0; }
+    .muted { font-size: 13px; color: #888; margin: 8px 0 0 0; }
+  </style>`;
+  const htmlPart = `<!DOCTYPE html><html><head>${styles}</head><body>
+    <div class="wrapper">
+      <div class="logo-section">
+        <img src="${logoUrl}" alt="KAMANIN" width="50" height="50" style="height:50px;width:50px;display:block;" />
+      </div>
+      <div class="card">
+        <h1 class="title">${copy.title}</h1>
+        <p class="text">${greeting}</p>
+        <p class="text">${bodyText}</p>
+        <a href="${recoveryUrl}" class="button">${ctaLabel}</a>
+        ${notesHtml}
+      </div>
+      <div class="footer"><p class="footer-text">KAMANIN Client Portal</p></div>
+    </div></body></html>`;
+
   let emailSent = false;
   try {
     const mailjetResp = await fetch("https://api.mailjet.com/v3.1/send", {
@@ -177,12 +207,7 @@ Deno.serve(async (req) => {
           From: { Email: "noreply@kamanin.at", Name: "KAMANIN Portal" },
           To: [{ Email: normalizedEmail }],
           Subject: typeof copy.subject === "string" ? copy.subject : "Einladung zum KAMANIN Portal",
-          HTMLPart: `
-            <p>${typeof copy.greeting === "string" ? copy.greeting : copy.greeting()}</p>
-            <p>${typeof copy.body === "string" ? copy.body : Array.isArray(copy.body) ? (copy.body as string[]).join("</p><p>") : copy.body()}</p>
-            <p><a href="${recoveryUrl}" style="display:inline-block;padding:12px 24px;background:#0E0E0E;color:#fff;text-decoration:none;border-radius:8px;">${ctaLabel}</a></p>
-            ${footerNote ? `<p style="color:#666;font-size:12px;">${footerNote}</p>` : ""}
-          `,
+          HTMLPart: htmlPart,
         }],
       }),
     });

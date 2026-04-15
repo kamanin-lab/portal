@@ -18,10 +18,9 @@ export function OrgInfoSection() {
 
       <div className="flex flex-col gap-3">
         <Field label="Name" value={organization.name} />
-        <Field label="Kürzel" value={organization.slug} />
         <Field
           label="Guthaben"
-          value={credits.isLoading ? 'Lädt...' : `${credits.balance} Impulse`}
+          value={credits.isLoading ? 'Lädt...' : `${credits.balance} Credits`}
         />
       </div>
     </section>

@@ -61,7 +61,7 @@ export function MemberRowActions({ member, members }: Props) {
       <ConfirmDialog
         open={removeOpen}
         title="Mitglied entfernen"
-        message={`Möchten Sie ${member.profile?.full_name ?? member.profile?.email ?? 'dieses Mitglied'} wirklich aus der Organisation entfernen?`}
+        message={`Möchten Sie ${(Array.isArray(member.profile) ? member.profile[0] : member.profile)?.full_name ?? (Array.isArray(member.profile) ? member.profile[0] : member.profile)?.email ?? 'dieses Mitglied'} wirklich aus der Organisation entfernen?`}
         confirmLabel="Entfernen"
         cancelLabel="Abbrechen"
         destructive={true}
