@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useOrg } from '@/shared/hooks/useOrg';
 import { useTaskActions } from '@/modules/tickets/hooks/useTaskActions';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -16,6 +17,7 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
   const [commentText, setCommentText] = useState('');
 
   const queryClient = useQueryClient();
+  const { isViewer } = useOrg();
   const { approveTask, requestChanges, isLoading } = useTaskActions({
     onSuccess: async () => {
       // cancelQueries prevents any in-flight refetch from overwriting the optimistic state.
@@ -70,6 +72,8 @@ export function StepActionBar({ taskId, projectId, onSuccess }: StepActionBarPro
       request_changes: { success: 'Änderungen wurden angefordert', error: 'Aenderungsanforderung fehlgeschlagen' },
     },
   });
+
+  if (isViewer) return null;
 
   function handleSubmit() {
     if (isLoading) return;
