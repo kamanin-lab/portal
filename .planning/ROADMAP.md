@@ -194,8 +194,14 @@ Plans:
   2. The sidebar workspaces section shows the same list for all members of the same org — not per-user data
   3. The credit balance displayed in the UI reflects the shared org pool, not an individual profile balance
   4. A user logged in with a viewer role sees no "Neue Aufgabe" button, no Kostenfreigabe approval button, and no task status action buttons (Freigeben / Änderungen anfordern)
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+- [x] 11-01-PLAN.md — Migration: RLS on org_members/organizations + get_org_credit_balance RPC + staging apply
+- [ ] 11-02-PLAN.md — useOrg.ts (OrgContext + OrgProvider + hook) + App.tsx provider insert + unit tests
+- [ ] 11-03-PLAN.md — useWorkspaces + useCredits org-scope migration (cache keys, RPC, realtime)
+- [ ] 11-04-PLAN.md — Viewer role guards on TaskActions, CreditApproval, TicketsPage NewTaskButton + human verify
 
 ### Phase 12: org-admin-page
 **Goal**: Organisation admins can manage their team from a dedicated portal page — inviting new members, changing roles, and removing members — while invited users can set their password via the invite landing page
@@ -238,6 +244,6 @@ Plans:
 | 8. Meine Aufgaben Redesign — 4-Tab Filter | 0/1 | Planned | — |
 | 9. org-db-foundation | 0/? | Not started | — |
 | 10. org-edge-functions | 3/6 | In Progress|  |
-| 11. org-frontend-auth | 0/? | Not started | — |
+| 11. org-frontend-auth | 1/4 | In Progress|  |
 | 12. org-admin-page | 0/? | Not started | — |
 | 13. org-onboarding-cleanup | 0/? | Not started | — |

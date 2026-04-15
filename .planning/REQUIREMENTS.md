@@ -37,9 +37,9 @@
 
 ### Frontend — Auth & Data Layer (ORG-FE-AUTH)
 
-- [ ] **ORG-FE-AUTH-01**: `OrgContext` created — provides `organization`, `orgRole`, `isAdmin`, `isMember`, `isViewer` to all components; fetched once at login and cached in React Query
+- [x] **ORG-FE-AUTH-01**: `OrgContext` created — provides `organization`, `orgRole`, `isAdmin`, `isMember`, `isViewer` to all components; fetched once at login and cached in React Query
 - [ ] **ORG-FE-AUTH-02**: `useWorkspaces` hook updated to query `client_workspaces` by `organization_id` (via org from `OrgContext`)
-- [ ] **ORG-FE-AUTH-03**: `useCredits` hook updated to fetch credit balance summed by `organization_id`
+- [x] **ORG-FE-AUTH-03**: `useCredits` hook updated to fetch credit balance summed by `organization_id`
 - [ ] **ORG-FE-AUTH-04**: `NewTicketDialog` hidden for viewer role (cannot create tasks)
 - [ ] **ORG-FE-AUTH-05**: Kostenfreigabe (credit approval) button hidden for viewer role
 - [ ] **ORG-FE-AUTH-06**: Task status action buttons (Freigeben, Änderungen anfordern) hidden for viewer role
@@ -125,9 +125,9 @@
 | ORG-BE-09 | Phase 10 | Complete |
 | ORG-BE-10 | Phase 10 | Complete |
 | ORG-BE-11 | Phase 10 | Complete |
-| ORG-FE-AUTH-01 | Phase 11 | Pending |
+| ORG-FE-AUTH-01 | Phase 11 | Complete |
 | ORG-FE-AUTH-02 | Phase 11 | Pending |
-| ORG-FE-AUTH-03 | Phase 11 | Pending |
+| ORG-FE-AUTH-03 | Phase 11 | Complete |
 | ORG-FE-AUTH-04 | Phase 11 | Pending |
 | ORG-FE-AUTH-05 | Phase 11 | Pending |
 | ORG-FE-AUTH-06 | Phase 11 | Pending |
