@@ -367,23 +367,14 @@ Deno.serve(async (req) => {
     }
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKeyEarly);
     const org = await getOrgForUser(supabaseAdmin, user.id);
-
-    // Get user's ClickUp list IDs from profile (fallback)
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("clickup_list_ids")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError) {
-      log.error("Failed to fetch profile");
+    if (!org) {
+      log.error("No org_members row for user — returning empty task list");
       return new Response(
-        JSON.stringify({ error: "Failed to fetch user profile" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ tasks: [], message: "Organisation nicht konfiguriert" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const listIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
+    const listIds: string[] = org.clickup_list_ids;
     
     if (listIds.length === 0) {
       log.info("No ClickUp list IDs configured for user");

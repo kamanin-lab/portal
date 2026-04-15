@@ -216,23 +216,14 @@ Deno.serve(async (req) => {
     }
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const org = await getOrgForUser(supabaseAdmin, user.id);
-
-    // Get user's ClickUp list IDs from profile to verify access (fallback)
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("clickup_list_ids")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError) {
-      log.error("Failed to fetch profile");
+    if (!org) {
+      log.error("No org_members row for user");
       return new Response(
-        JSON.stringify({ error: "Failed to fetch user profile" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Organisation nicht konfiguriert" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const userListIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
+    const userListIds: string[] = org.clickup_list_ids;
 
     // Fetch the task directly from ClickUp API
     log.debug("Fetching task from ClickUp API");
