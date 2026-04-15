@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Notification03Icon, TickDouble01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { useBreakpoint } from '@/shared/hooks/useBreakpoint'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 import type { Notification } from '@/modules/tickets/hooks/useNotifications'
@@ -17,6 +18,7 @@ import { formatDate } from '@/shared/components/inbox/notification-utils'
 
 export function InboxPage() {
   const { profile } = useAuth()
+  const { organization } = useOrg()
   const { isMobile } = useBreakpoint()
   const navigate = useNavigate()
   const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications(profile?.id)
@@ -24,7 +26,7 @@ export function InboxPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   // Exclude support task notifications
   const inboxItems = notifications.filter(
-    n => !profile?.support_task_id || n.task_id !== profile.support_task_id
+    n => !organization?.support_task_id || n.task_id !== organization.support_task_id
   )
 
   const unreadCount = inboxItems.filter(n => !n.is_read).length

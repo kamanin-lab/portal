@@ -4,17 +4,19 @@ import type { IconSvgElement } from '@hugeicons/react'
 import { InboxIcon, ClipboardIcon, BubbleChatIcon, FolderOpenIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 
 export function BottomNav() {
   const location = useLocation()
   const { profile } = useAuth()
-  const { supportUnread } = useUnreadCounts(profile?.id)
+  const { organization } = useOrg()
+  const { supportUnread } = useUnreadCounts(profile?.id, organization?.support_task_id ?? null)
   const { notifications } = useNotifications(profile?.id)
 
   const inboxUnread = notifications.filter(
-    n => !n.is_read && (!profile?.support_task_id || n.task_id !== profile.support_task_id)
+    n => !n.is_read && (!organization?.support_task_id || n.task_id !== organization.support_task_id)
   ).length
 
   const items: { to: string; icon: IconSvgElement; label: string; badge: number }[] = [

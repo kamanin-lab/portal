@@ -3,6 +3,7 @@ import { MultiplicationSignIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import fullLogo from '@/assets/KAMANIN-logo-white.svg'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { useWorkspaces } from '@/shared/hooks/useWorkspaces'
 import { useNotifications } from '@/modules/tickets/hooks/useNotifications'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
@@ -23,13 +24,14 @@ function Divider() {
 
 export function MobileSidebarOverlay({ open, onClose }: Props) {
   const { profile } = useAuth()
+  const { organization } = useOrg()
   const { data: workspaces = [] } = useWorkspaces()
   const { notifications } = useNotifications(profile?.id)
-  const { supportUnread } = useUnreadCounts(profile?.id)
+  const { supportUnread } = useUnreadCounts(profile?.id, organization?.support_task_id ?? null)
   const { data: attentionCount = 0 } = useNeedsAttentionCount(profile?.id)
 
   const inboxNotifications = notifications.filter(
-    n => !profile?.support_task_id || n.task_id !== profile.support_task_id
+    n => !organization?.support_task_id || n.task_id !== organization.support_task_id
   )
   const inboxUnread = inboxNotifications.filter(n => !n.is_read).length
 

@@ -18,7 +18,6 @@ const STAGING_BYPASS_PROFILE: Profile = {
   email: 'yuri@kamanin.at',
   full_name: 'Yuri Kamanin',
   company_name: 'KAMANIN',
-  clickup_list_ids: null,
   email_notifications: true,
   notification_preferences: {
     task_review: true,
@@ -33,8 +32,6 @@ const STAGING_BYPASS_PROFILE: Profile = {
     project_messages: true,
   },
   avatar_url: null,
-  support_task_id: null,
-  clickup_chat_channel_id: null,
 }
 
 interface AuthContextValue {

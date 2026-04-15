@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { useOrg } from '@/shared/hooks/useOrg';
 import { useTaskComments, usePostComment } from './useTaskComments';
 import { createLogger } from '../lib/logger';
 import type { TaskComment, FileData } from '../types/tasks';
@@ -18,11 +19,12 @@ export interface SupportTaskChatResult {
   supportTaskId: string | null;
 }
 
-// Thin wrapper: support chat = comment thread for the user's support_task_id.
+// Thin wrapper: support chat = comment thread for the org's support_task_id.
 // Uses the identical pipeline as TaskDetail comments.
 export function useSupportTaskChat(): SupportTaskChatResult {
   const { profile, user } = useAuth();
-  const supportTaskId = profile?.support_task_id ?? null;
+  const { organization } = useOrg();
+  const supportTaskId = organization?.support_task_id ?? null;
 
   const { data: comments = [], isLoading, error, refetch } = useTaskComments(supportTaskId);
   const { mutateAsync: postComment, isPending: isSending } = usePostComment();
