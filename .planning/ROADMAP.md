@@ -146,7 +146,7 @@ Plans:
 
 - [ ] **Phase 9: org-db-foundation** — Create organizations + org_members tables, SQL helper functions, data migration to org-scoped schema, RLS transition
 - [ ] **Phase 10: org-edge-functions** — Update 5 existing Edge Functions to read from organizations; add invite-member function; role enforcement on mutating ops
-- [ ] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role
+- [x] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role (completed 2026-04-15)
 - [ ] **Phase 12: org-admin-page** — /organisation admin page, InviteMemberDialog, role management, member removal, /passwort-setzen route, sidebar link
 - [ ] **Phase 13: org-onboarding-cleanup** — Rewrite onboard-client.ts, drop legacy RLS policies and FK columns, remove dual-read fallbacks
 
@@ -200,7 +200,7 @@ Plans:
 Plans:
 - [x] 11-01-PLAN.md — Migration: RLS on org_members/organizations + get_org_credit_balance RPC + staging apply
 - [x] 11-02-PLAN.md — useOrg.ts (OrgContext + OrgProvider + hook) + App.tsx provider insert + unit tests
-- [ ] 11-03-PLAN.md — useWorkspaces + useCredits org-scope migration (cache keys, RPC, realtime)
+- [x] 11-03-PLAN.md — useWorkspaces + useCredits org-scope migration (cache keys, RPC, realtime)
 - [x] 11-04-PLAN.md — Viewer role guards on TaskActions, CreditApproval, TicketsPage NewTaskButton + human verify
 
 ### Phase 12: org-admin-page
@@ -244,6 +244,6 @@ Plans:
 | 8. Meine Aufgaben Redesign — 4-Tab Filter | 0/1 | Planned | — |
 | 9. org-db-foundation | 0/? | Not started | — |
 | 10. org-edge-functions | 3/6 | In Progress|  |
-| 11. org-frontend-auth | 3/4 | In Progress|  |
+| 11. org-frontend-auth | 4/4 | Complete   | 2026-04-15 |
 | 12. org-admin-page | 0/? | Not started | — |
 | 13. org-onboarding-cleanup | 0/? | Not started | — |
