@@ -20,8 +20,16 @@ vi.mock('@/shared/hooks/useOrg', () => ({
   }),
 }))
 
+vi.mock('@/shared/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'p-current-admin' } }),
+}))
+
 vi.mock('@/shared/lib/supabase', () => ({
   supabase: { functions: { invoke: vi.fn() } },
+}))
+
+vi.mock('../hooks/useMemberActions', () => ({
+  useMemberActions: () => ({ changeRole: vi.fn(), removeMember: vi.fn() }),
 }))
 
 vi.mock('sonner', () => ({

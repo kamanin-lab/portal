@@ -4,6 +4,7 @@ import { UserMultipleIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/shared/components/ui/button'
 import { useOrgMembers, type OrgMember } from '../hooks/useOrgMembers'
 import { InviteMemberDialog } from './InviteMemberDialog'
+import { MemberRowActions } from './MemberRowActions'
 
 const ROLE_LABELS: Record<OrgMember['role'], string> = {
   admin: 'Administrator',
@@ -42,22 +43,24 @@ export function TeamSection() {
         <div className="py-6 text-center text-sm text-text-tertiary">Noch keine Mitglieder vorhanden.</div>
       ) : (
         <div className="flex flex-col">
-          <div className="grid grid-cols-[1fr_1fr_120px_100px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
+          <div className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
             <span>Name</span>
             <span>E-Mail</span>
             <span>Rolle</span>
             <span>Hinzugefügt</span>
+            <span></span>
           </div>
           {members.map(m => {
             const isPending = !m.profile?.full_name
             return (
-              <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_100px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
+              <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
                 <span className="text-sm text-text-primary truncate">
                   {isPending ? <em className="text-text-tertiary">Einladung ausstehend</em> : m.profile?.full_name}
                 </span>
                 <span className="text-sm text-text-secondary truncate">{m.profile?.email ?? '—'}</span>
                 <span className="text-sm text-text-primary">{ROLE_LABELS[m.role]}</span>
                 <span className="text-sm text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
+                <MemberRowActions member={m} members={members} />
               </div>
             )
           })}
