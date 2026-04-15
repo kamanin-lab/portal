@@ -241,11 +241,11 @@ Plans:
 **Goal:** Close viewer-role gaps left after Phase 11 — hide StepActionBar action buttons from viewers in the projects module, and filter step_ready/task_review emails to admin/member roles only (bell notifications unchanged).
 **Requirements**: VIEWER-GUARD-FE-01, VIEWER-GUARD-BE-01
 **Depends on:** Phase 13
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md — Frontend viewer guard on StepActionBar (Wave 1, TDD)
-- [ ] 14-02-PLAN.md — Backend email filtering for step_ready + task_review (Wave 1)
+- [x] 14-01-PLAN.md — Frontend viewer guard on StepActionBar (Wave 1, TDD)
+- [x] 14-02-PLAN.md — Backend email filtering for step_ready + task_review (Wave 1)
 
 ---
 
