@@ -88,7 +88,10 @@ ALTER TABLE public.client_workspaces
 -- These columns were migrated to organizations in Phase 9 (ORG-DB-06 data migration).
 -- All Edge Function fallback reads were removed in Plan 13-02.
 -- All frontend reads were removed in Plan 13-01.
--- No FK constraints reference these columns from other tables.
+--
+-- Drop any triggers that reference these columns before dropping the columns.
+
+DROP TRIGGER IF EXISTS on_profile_list_change ON public.profiles;
 
 ALTER TABLE public.profiles DROP COLUMN IF EXISTS clickup_list_ids;
 ALTER TABLE public.profiles DROP COLUMN IF EXISTS nextcloud_client_root;
