@@ -1,5 +1,28 @@
 # Changelog
 
+## Phase 14: role-based-guards — Viewer role gaps closed — 2026-04-15
+
+### `src/modules/projects/components/steps/StepActionBar.tsx`
+- Added `useOrg().isViewer` guard: returns `null` early when the current user is a viewer
+- Viewer-role users no longer see "Freigeben" / "Änderungen anfordern" action bar when a project step is in CLIENT REVIEW
+
+### `src/modules/projects/components/steps/__tests__/StepActionBar.test.tsx` (new file)
+- 2 new tests: (1) renders action bar for admin/member users; (2) renders nothing for viewer-role users
+
+### `supabase/functions/_shared/org.ts`
+- Added `getNonViewerProfileIds(supabase, profileIds)` batch helper
+- Queries `org_members` for all supplied profile IDs, returns only those with `role IN ('admin', 'member')`
+- Permissive fallback: returns full input array on query error (safe degradation)
+
+### `supabase/functions/clickup-webhook/index.ts`
+- Applied `getNonViewerProfileIds` filter in both `task_review` and `step_ready` email dispatch blocks
+- Viewer-role org members no longer receive action-required emails (task_review, step_ready)
+- Bell (in-app) notifications remain unfiltered — viewers still see notification badges
+
+**Verification:** 8/8 PASS. Build clean. 2 new tests pass. 382 existing tests pass.
+
+---
+
 ## Triage Agent — Maxi AI Core v3.3.0 Support — 2026-04-14
 
 ### `supabase/functions/_shared/wp-audit.ts`

@@ -265,3 +265,4 @@ Plans:
 | 11. org-frontend-auth | 4/4 | Complete   | 2026-04-15 |
 | 12. org-admin-page | 5/5 | Complete   | 2026-04-15 |
 | 13. org-onboarding-cleanup | 4/4 | Complete   | 2026-04-15 |
+| 14. role-based-guards | 2/2 | Complete   | 2026-04-15 |

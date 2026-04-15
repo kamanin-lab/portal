@@ -22,6 +22,21 @@ pg_cron (monthly) → credit-topup Edge Function → credit_transactions insert
 - RLS on all tables — profile_id filter
 - Realtime subscriptions debounced 300ms, fallback 30s polling via React Query staleTime
 
+## Role-Based Access Control (Viewer Guard)
+
+Viewer-role users (`org_members.role = 'viewer'`) are restricted from mutating actions at both the frontend and backend layers.
+
+### Frontend guards (via `useOrg().isViewer`)
+- `TaskActions` — no Freigeben / Änderungen anfordern buttons (tickets module, Phase 11)
+- `CreditApproval` — no cost approval button (tickets module, Phase 11)
+- `TicketsPage` NewTaskButton — hidden for viewers (tickets module, Phase 11)
+- `StepActionBar` — returns null for viewers; no action bar shown when a project step is in CLIENT REVIEW (projects module, Phase 14)
+
+### Backend guards (`supabase/functions/_shared/org.ts`)
+- `getNonViewerProfileIds(supabase, profileIds)` — batch helper that filters a list of profile IDs to admin/member roles only; permissive fallback (returns full list) on DB error
+- Applied in `clickup-webhook/index.ts`: `task_review` and `step_ready` email sends are filtered — viewers do not receive action-required emails
+- Bell (in-app) notifications remain unfiltered — all org members including viewers see notification badges
+
 ## Module Structure
 - `src/shared/` — auth, layout, hooks, lib, types; also contains `pages/HilfePage` (FAQ) and `components/help/` (FaqItem, FaqSection)
 - `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
