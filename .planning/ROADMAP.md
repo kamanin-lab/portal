@@ -236,6 +236,16 @@ Plans:
 - [x] 13-03-PLAN.md — DB migration: drop legacy RLS policies and columns (Wave 2)
 - [x] 13-04-PLAN.md — Onboarding script org-first rewrite (Wave 1)
 
+### Phase 14: role-based-guards — Hide Freigeben/approval actions for viewer role in projects module; filter task_review, step_ready, and reminder emails to admin/member only (exclude viewer from action-required notifications)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 14 to break down)
+
 ---
 
 ## Progress

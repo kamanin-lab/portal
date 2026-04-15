@@ -91,6 +91,11 @@ Phase 1: Portal Frontend — Complete
 - Radix DropdownMenu in jsdom requires pointerDown+click sequence to open — openDropdown() helper added in MemberRowActions test (Phase 12-04)
 - MemberRowActions returns null for self-row and admin rows — UI-level guard; hook enforces server-level last-admin guards (Phase 12-04)
 
+## Accumulated Context
+
+### Roadmap Evolution
+- Phase 14 added: role-based-guards — Hide Freigeben/approval actions for viewer role in projects module; filter task_review, step_ready, and reminder emails to admin/member only (exclude viewer from action-required notifications)
+
 ### Blockers/Concerns
 
 None
