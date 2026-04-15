@@ -7,6 +7,7 @@ import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { LoadingSkeleton } from '@/shared/components/common/LoadingSkeleton'
 
 const LoginPage = lazy(() => import('@/shared/pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const PasswortSetzenPage = lazy(() => import('@/shared/pages/PasswortSetzenPage').then(m => ({ default: m.PasswortSetzenPage })))
 const InboxPage = lazy(() => import('@/shared/pages/InboxPage').then(m => ({ default: m.InboxPage })))
 const MeineAufgabenPage = lazy(() => import('@/shared/pages/MeineAufgabenPage').then(m => ({ default: m.MeineAufgabenPage })))
 const HilfePage = lazy(() => import('@/shared/pages/HilfePage').then(m => ({ default: m.HilfePage })))
@@ -36,6 +37,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
       <Route path="/login" element={withRouteLoading(<LoginPage />)} />
+      <Route path="/passwort-setzen" element={withRouteLoading(<PasswortSetzenPage />)} />
 
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route path="/inbox" element={withRouteLoading(<InboxPage />)} />
