@@ -1,17 +1,32 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, type FormEvent } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { supabase } from '@/shared/lib/supabase'
 import logo from '@/assets/KAMANIN-icon-colour.svg'
 
 export function PasswortSetzenPage() {
   const { session, isLoading, updatePassword } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [verifying, setVerifying] = useState(false)
 
-  if (isLoading) {
+  // Invite flow: ?token=HASH&type=recovery — verify OTP directly, no GoTrue redirect needed
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const type = searchParams.get('type')
+    if (!token || type !== 'recovery') return
+    setVerifying(true)
+    supabase.auth.verifyOtp({ token_hash: token, type: 'recovery' }).then(({ error }) => {
+      if (error) setError('Dieser Einladungslink ist abgelaufen oder ungültig.')
+      setVerifying(false)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isLoading || verifying) {
     return <div className="min-h-screen bg-bg flex items-center justify-center p-4" />
   }
 
@@ -26,7 +41,7 @@ export function PasswortSetzenPage() {
           <div className="bg-surface rounded-[14px] border border-border p-6 shadow-md">
             <h2 className="text-base font-semibold text-text-primary mb-3">Link abgelaufen</h2>
             <p className="text-sm text-text-secondary mb-4">
-              Dieser Einladungslink ist abgelaufen oder ungültig. Bitte wenden Sie sich an Ihren Administrator für eine neue Einladung.
+              {error ?? 'Dieser Einladungslink ist abgelaufen oder ungültig. Bitte wenden Sie sich an Ihren Administrator für eine neue Einladung.'}
             </p>
             <Link to="/login" className="text-sm text-accent hover:underline">Zur Anmeldung</Link>
           </div>

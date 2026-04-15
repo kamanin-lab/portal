@@ -185,12 +185,12 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-  // Build recovery URL manually — GoTrue's action_link always uses SUPABASE_URL (portal.db.kamanin.at),
-  // but we need portal.kamanin.at which proxies /auth/v1/* to GoTrue via vercel.json.
+  // Build recovery URL pointing directly to the frontend password-set page.
+  // The frontend calls supabase.auth.verifyOtp({ token_hash, type: 'recovery' }) itself,
+  // bypassing GoTrue's redirect entirely (GoTrue redirect always uses API_EXTERNAL_URL = portal.db.kamanin.at).
   const siteUrl = Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at";
-  const redirectTo = encodeURIComponent(`${siteUrl}/passwort-setzen`);
   const hashedToken = (linkData.properties as { hashed_token: string }).hashed_token;
-  const recoveryUrl = `${siteUrl}/auth/v1/verify?token=${hashedToken}&type=recovery&redirect_to=${redirectTo}`;
+  const recoveryUrl = `${siteUrl}/passwort-setzen?token=${hashedToken}&type=recovery`;
 
   // Send invite email via Mailjet — uses same HTML template as send-reminders
   const copy = getEmailCopy("invite", "de");
