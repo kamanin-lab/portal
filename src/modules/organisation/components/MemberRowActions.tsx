@@ -19,11 +19,14 @@ export function MemberRowActions({ member, members }: Props) {
 
   // Hide actions for current user row (self-protection at UI level)
   if (member.profile_id === user?.id) return null
-  // Hide actions for admins (role change on admins not supported via this menu)
-  if (member.role === 'admin') return null
 
-  const nextRole: 'member' | 'viewer' = member.role === 'member' ? 'viewer' : 'member'
-  const nextRoleLabel = nextRole === 'viewer' ? 'zu Betrachter' : 'zu Mitglied'
+  type OrgRole = 'admin' | 'member' | 'viewer'
+  const roleOptions: { value: OrgRole; label: string }[] = [
+    { value: 'admin', label: 'Administrator' },
+    { value: 'member', label: 'Mitglied' },
+    { value: 'viewer', label: 'Betrachter' },
+  ]
+  const otherRoles = roleOptions.filter(r => r.value !== member.role)
 
   return (
     <>
@@ -42,12 +45,15 @@ export function MemberRowActions({ member, members }: Props) {
             sideOffset={4}
             className="min-w-[180px] bg-surface rounded-[10px] border border-border shadow-lg py-1 z-50"
           >
-            <DropdownMenu.Item
-              onSelect={() => { changeRole({ memberId: member.id, nextRole }).catch(() => {}) }}
-              className="px-3 py-2 text-sm text-text-primary hover:bg-surface-hover cursor-pointer outline-none"
-            >
-              Rolle ändern ({nextRoleLabel})
-            </DropdownMenu.Item>
+            {otherRoles.map(r => (
+              <DropdownMenu.Item
+                key={r.value}
+                onSelect={() => { changeRole({ memberId: member.id, nextRole: r.value }).catch(() => {}) }}
+                className="px-3 py-2 text-sm text-text-primary hover:bg-surface-hover cursor-pointer outline-none"
+              >
+                Zu {r.label} ändern
+              </DropdownMenu.Item>
+            ))}
             <DropdownMenu.Item
               onSelect={() => setRemoveOpen(true)}
               className="px-3 py-2 text-sm text-awaiting hover:bg-surface-hover cursor-pointer outline-none"

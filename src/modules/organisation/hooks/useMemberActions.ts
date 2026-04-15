@@ -15,10 +15,10 @@ export function useMemberActions({ members, currentUserId }: Options) {
     return members.filter(m => m.role === 'admin').length
   }
 
-  async function changeRole({ memberId, nextRole }: { memberId: string; nextRole: 'member' | 'viewer' }) {
+  async function changeRole({ memberId, nextRole }: { memberId: string; nextRole: 'admin' | 'member' | 'viewer' }) {
     const target = members.find(m => m.id === memberId)
     if (!target) throw new Error('Mitglied nicht gefunden')
-    if (target.role === 'admin' && adminCount() <= 1) {
+    if (target.role === 'admin' && nextRole !== 'admin' && adminCount() <= 1) {
       toast.error('Rollenänderung nicht möglich.', { description: 'Es muss mindestens einen Administrator geben.' })
       throw new Error('Cannot demote last admin')
     }

@@ -17,7 +17,7 @@ export function InviteMemberDialog({ open, onClose }: Props) {
   const { organization } = useOrg()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'member' | 'viewer'>('member')
+  const [role, setRole] = useState<'admin' | 'member' | 'viewer'>('member')
   const [isPending, setIsPending] = useState(false)
 
   function handleClose() {
@@ -74,9 +74,10 @@ export function InviteMemberDialog({ open, onClose }: Props) {
               <select
                 id="invite-role"
                 value={role}
-                onChange={e => setRole(e.target.value as 'member' | 'viewer')}
+                onChange={e => setRole(e.target.value as 'admin' | 'member' | 'viewer')}
                 className="h-10 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent"
               >
+                <option value="admin">Administrator</option>
                 <option value="member">Mitglied</option>
                 <option value="viewer">Betrachter</option>
               </select>

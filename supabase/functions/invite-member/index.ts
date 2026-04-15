@@ -78,10 +78,10 @@ Deno.serve(async (req) => {
     );
   }
 
-  // SECURITY: role validation — admin MUST NOT be grantable via this endpoint (spoofing threat)
-  if (role !== "member" && role !== "viewer") {
+  // SECURITY: role validation — only known roles permitted
+  if (role !== "member" && role !== "viewer" && role !== "admin") {
     return new Response(
-      JSON.stringify({ error: "Invalid role: must be 'member' or 'viewer'" }),
+      JSON.stringify({ error: "Invalid role: must be 'admin', 'member', or 'viewer'" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
@@ -128,19 +128,45 @@ Deno.serve(async (req) => {
   }
 
   // Create auth user (email_confirm=true — user will set password via recovery link)
+  // If user already exists in auth (from a previous failed invite attempt), reuse them
+  let newUser: { id: string };
+  let userWasPreexisting = false;
   const { data: createData, error: createError } =
     await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       email_confirm: true,
     });
-  if (createError || !createData?.user) {
-    log.error("auth.admin.createUser failed", { error: createError?.message });
+  if (createError) {
+    if (createError.message.includes("already been registered") || createError.message.includes("already registered")) {
+      // User exists in auth — look them up by email
+      const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      const existingAuthUser = listData?.users?.find((u) => u.email === normalizedEmail);
+      if (listError || !existingAuthUser) {
+        log.error("auth.admin.createUser failed and could not find existing user", { error: createError.message });
+        return new Response(
+          JSON.stringify({ error: "Failed to create user" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      newUser = existingAuthUser;
+      userWasPreexisting = true;
+      log.info("Reusing existing auth user for invite", { userId: newUser.id });
+    } else {
+      log.error("auth.admin.createUser failed", { error: createError.message });
+      return new Response(
+        JSON.stringify({ error: "Failed to create user" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  } else if (!createData?.user) {
+    log.error("auth.admin.createUser returned no user");
     return new Response(
       JSON.stringify({ error: "Failed to create user" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  } else {
+    newUser = createData.user;
   }
-  const newUser = createData.user;
 
   // Generate recovery link (GoTrue SMTP broken — we send our own email)
   const { data: linkData, error: linkError } =
@@ -151,7 +177,9 @@ Deno.serve(async (req) => {
     });
   if (linkError || !linkData?.properties?.action_link) {
     log.error("auth.admin.generateLink failed", { error: linkError?.message });
-    await supabaseAdmin.auth.admin.deleteUser(newUser.id); // rollback
+    if (!userWasPreexisting) {
+      await supabaseAdmin.auth.admin.deleteUser(newUser.id); // rollback only if we created them
+    }
     return new Response(
       JSON.stringify({ error: "Failed to generate recovery link — invite rolled back" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
