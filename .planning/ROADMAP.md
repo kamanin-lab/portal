@@ -227,7 +227,13 @@ Plans:
   3. The `credit_packages` and `client_workspaces` tables have no `profile_id` column; `credit_transactions` still has `profile_id` for audit trail
   4. All four updated Edge Functions (`fetch-clickup-tasks`, `fetch-single-task`, `nextcloud-files`, `create-clickup-task`) contain no `?? profile?.field` dual-read fallback patterns
   5. The `profiles` table has no `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, or `clickup_chat_channel_id` columns
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Frontend cleanup: remove profile.support_task_id reads, update useUnreadCounts signature
+- [ ] 13-02-PLAN.md — Edge Function cleanup: remove dual-read fallbacks from 4 functions
+- [ ] 13-03-PLAN.md — DB migration: drop legacy RLS policies, profile_id columns, profiles org-config columns
+- [ ] 13-04-PLAN.md — Onboarding script rewrite: org-first flow with optional members[]
 
 ---
 
