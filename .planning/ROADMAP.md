@@ -229,11 +229,12 @@ Plans:
   5. The `profiles` table has no `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, or `clickup_chat_channel_id` columns
 **Plans**: 4 plans
 
+**Plans**: 4 plans
 Plans:
-- [ ] 13-01-PLAN.md — Frontend cleanup: remove profile.support_task_id reads, update useUnreadCounts signature
-- [x] 13-02-PLAN.md — Edge Function cleanup: remove dual-read fallbacks from 4 functions
-- [ ] 13-03-PLAN.md — DB migration: drop legacy RLS policies, profile_id columns, profiles org-config columns
-- [x] 13-04-PLAN.md — Onboarding script rewrite: org-first flow with optional members[]
+- [x] 13-01-PLAN.md — Frontend cleanup: remove profile org-config reads (Wave 1)
+- [x] 13-02-PLAN.md — Edge Function dual-read removal (Wave 1)
+- [x] 13-03-PLAN.md — DB migration: drop legacy RLS policies and columns (Wave 2)
+- [x] 13-04-PLAN.md — Onboarding script org-first rewrite (Wave 1)
 
 ---
 

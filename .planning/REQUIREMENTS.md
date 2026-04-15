@@ -58,10 +58,10 @@
 ### Onboarding + Cleanup (ORG-CLEANUP)
 
 - [x] **ORG-CLEANUP-01**: `onboard-client.ts` script rewritten to create org first, then admin user, then `org_members` row; accepts optional `members[]` array for initial team setup
-- [ ] **ORG-CLEANUP-02**: Old `profile_id = auth.uid()` RLS policies dropped from `credit_packages` and `client_workspaces` after production validation
-- [ ] **ORG-CLEANUP-03**: `profile_id` FK column dropped from `credit_packages` and `client_workspaces` (retained in `credit_transactions` for audit trail)
+- [x] **ORG-CLEANUP-02**: Old `profile_id = auth.uid()` RLS policies dropped from `credit_packages` and `client_workspaces` after production validation
+- [x] **ORG-CLEANUP-03**: `profile_id` FK column dropped from `credit_packages` and `client_workspaces` (retained in `credit_transactions` for audit trail)
 - [x] **ORG-CLEANUP-04**: Dual-read fallbacks (`org?.field ?? profile?.field`) removed from all 4 updated Edge Functions
-- [ ] **ORG-CLEANUP-05**: `profiles` columns `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id` dropped (moved to `organizations`)
+- [x] **ORG-CLEANUP-05**: `profiles` columns `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id` dropped (moved to `organizations`)
 
 ---
 
@@ -140,7 +140,7 @@
 | ORG-FE-UI-07 | Phase 12 | Complete |
 | ORG-FE-UI-08 | Phase 12 | Complete |
 | ORG-CLEANUP-01 | Phase 13 | Complete |
-| ORG-CLEANUP-02 | Phase 13 | Pending |
-| ORG-CLEANUP-03 | Phase 13 | Pending |
+| ORG-CLEANUP-02 | Phase 13 | Complete |
+| ORG-CLEANUP-03 | Phase 13 | Complete |
 | ORG-CLEANUP-04 | Phase 13 | Complete |
-| ORG-CLEANUP-05 | Phase 13 | Pending |
+| ORG-CLEANUP-05 | Phase 13 | Complete |
