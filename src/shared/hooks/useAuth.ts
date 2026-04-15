@@ -106,7 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'INITIAL_SESSION') return
       if (event === 'PASSWORD_RECOVERY') {
         // Recovery link clicked (invite flow) — redirect to dedicated password-set page
-        window.location.href = '/passwort-setzen'
+        // Only redirect if not already there (prevents loop)
+        if (!window.location.pathname.startsWith('/passwort-setzen')) {
+          window.location.href = '/passwort-setzen'
+        }
         return
       }
       setSession(session)
