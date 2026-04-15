@@ -238,13 +238,14 @@ Plans:
 
 ### Phase 14: role-based-guards — Hide Freigeben/approval actions for viewer role in projects module; filter task_review, step_ready, and reminder emails to admin/member only (exclude viewer from action-required notifications)
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Close viewer-role gaps left after Phase 11 — hide StepActionBar action buttons from viewers in the projects module, and filter step_ready/task_review emails to admin/member roles only (bell notifications unchanged).
+**Requirements**: VIEWER-GUARD-FE-01, VIEWER-GUARD-BE-01
 **Depends on:** Phase 13
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 14 to break down)
+- [ ] 14-01-PLAN.md — Frontend viewer guard on StepActionBar (Wave 1, TDD)
+- [ ] 14-02-PLAN.md — Backend email filtering for step_ready + task_review (Wave 1)
 
 ---
 
