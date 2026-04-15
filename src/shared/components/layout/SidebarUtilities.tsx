@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { HelpCircleIcon, Settings02Icon, BubbleChatIcon } from '@hugeicons/core-free-icons'
+import { HelpCircleIcon, Settings02Icon, BubbleChatIcon, Building05Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import { CreditBalance } from '@/modules/tickets/components/CreditBalance'
+import { useOrg } from '@/shared/hooks/useOrg'
 
 interface Props {
   expanded: boolean
@@ -11,6 +12,8 @@ interface Props {
 }
 
 export function SidebarUtilities({ expanded, supportUnread = 0, onNavigate }: Props) {
+  const { isAdmin } = useOrg()
+
   return (
     <div className="py-1 flex flex-col gap-0.5">
       <CreditBalance compact={!expanded} onNavigate={onNavigate} />
@@ -49,6 +52,22 @@ export function SidebarUtilities({ expanded, supportUnread = 0, onNavigate }: Pr
           <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">FAQ</span>
         )}
       </NavLink>
+      {isAdmin && (
+        <NavLink
+          to="/organisation"
+          onClick={onNavigate}
+          className={({ isActive }) => cn(
+            'flex items-center h-10 px-3.5 mx-1.5 rounded-[8px] transition-colors',
+            'text-text-sidebar hover:bg-sidebar-hover hover:text-white',
+            isActive && 'bg-sidebar-active text-white'
+          )}
+        >
+          <HugeiconsIcon icon={Building05Icon} size={20} className="shrink-0" />
+          {expanded && (
+            <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">Ihre Organisation</span>
+          )}
+        </NavLink>
+      )}
       <NavLink
         to="/konto"
         onClick={onNavigate}

@@ -17,6 +17,7 @@ const DateienPage = lazy(() => import('@/modules/files/pages/DateienPage').then(
 const TicketsPage = lazy(() => import('@/modules/tickets/pages/TicketsPage').then(m => ({ default: m.TicketsPage })))
 const SupportPage = lazy(() => import('@/modules/tickets/pages/SupportPage').then(m => ({ default: m.SupportPage })))
 const KontoPage = lazy(() => import('@/shared/pages/KontoPage').then(m => ({ default: m.KontoPage })))
+const OrganisationPage = lazy(() => import('@/modules/organisation/pages/OrganisationPage').then(m => ({ default: m.OrganisationPage })))
 
 function RouteLoading() {
   return (
@@ -58,6 +59,7 @@ export function AppRoutes() {
         <Route path="/dateien" element={withRouteLoading(<WorkspaceGuard moduleKey="files"><DateienPage /></WorkspaceGuard>)} />
         <Route path="/hilfe" element={withRouteLoading(<HilfePage />)} />
         <Route path="/konto" element={withRouteLoading(<KontoPage />)} />
+        <Route path="/organisation" element={withRouteLoading(<OrganisationPage />)} />
       </Route>
 
       <Route path="*" element={withRouteLoading(<NotFoundPage />)} />
