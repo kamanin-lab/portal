@@ -11,19 +11,8 @@ interface ReadReceipt {
   last_read_at: string;
 }
 
-async function fetchUnreadCounts(userId: string): Promise<UnreadCounts> {
-  // 1. Get support_task_id from profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('support_task_id')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (profileError) console.warn('Failed to fetch profile', { error: profileError.message });
-
-  const supportTaskId = profile?.support_task_id ?? null;
-
-  // 2. Read receipts
+async function fetchUnreadCounts(userId: string, supportTaskId: string | null): Promise<UnreadCounts> {
+  // 1. Read receipts
   const { data: receiptsData, error: receiptsError } = await supabase
     .from('read_receipts')
     .select('context_type, last_read_at')
@@ -117,12 +106,12 @@ async function markContextAsRead(userId: string, contextType: string): Promise<v
   }
 }
 
-export function useUnreadCounts(userId: string | undefined) {
+export function useUnreadCounts(userId: string | undefined, supportTaskId: string | null = null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['unread-counts', userId],
-    queryFn: () => fetchUnreadCounts(userId!),
+    queryKey: ['unread-counts', userId, supportTaskId],
+    queryFn: () => fetchUnreadCounts(userId!, supportTaskId),
     enabled: !!userId,
     staleTime: 1000 * 15, // 15 seconds — polling-based, no Realtime
   });
@@ -151,12 +140,14 @@ export function useUnreadCounts(userId: string | undefined) {
     return () => document.removeEventListener('visibilitychange', handleVisible);
   }, [userId, queryClient]);
 
+  const queryKey = ['unread-counts', userId, supportTaskId];
+
   const markReadMutation = useMutation({
     mutationFn: (contextType: string) => markContextAsRead(userId!, contextType),
     onMutate: async (contextType) => {
-      await queryClient.cancelQueries({ queryKey: ['unread-counts', userId] });
-      const previousData = queryClient.getQueryData<UnreadCounts>(['unread-counts', userId]);
-      queryClient.setQueryData(['unread-counts', userId], (old: UnreadCounts | undefined) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousData = queryClient.getQueryData<UnreadCounts>(queryKey);
+      queryClient.setQueryData(queryKey, (old: UnreadCounts | undefined) => {
         if (!old) return { support: 0, tasks: {}, needsReply: {} };
         if (contextType === 'support') return { ...old, support: 0 };
         if (contextType.startsWith('task:')) {
@@ -170,7 +161,7 @@ export function useUnreadCounts(userId: string | undefined) {
       return { previousData };
     },
     onError: (_err, _ctx, context) => {
-      if (context?.previousData) queryClient.setQueryData(['unread-counts', userId], context.previousData);
+      if (context?.previousData) queryClient.setQueryData(queryKey, context.previousData);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] });
@@ -186,6 +177,6 @@ export function useUnreadCounts(userId: string | undefined) {
     needsReply: counts.needsReply,
     isLoading: query.isLoading,
     markAsRead: useCallback((ctx: string) => markReadMutation.mutate(ctx), [markReadMutation]),
-    refresh: useCallback(() => queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] }), [queryClient, userId]),
+    refresh: useCallback(() => queryClient.invalidateQueries({ queryKey: ['unread-counts', userId] }), [queryClient, userId, supportTaskId]),
   };
 }
