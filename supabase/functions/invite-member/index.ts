@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
       email: normalizedEmail,
       options: { redirectTo: `${Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at"}/passwort-setzen` },
     });
-  if (linkError || !linkData?.properties?.action_link) {
+  if (linkError || !linkData?.properties?.hashed_token) {
     log.error("auth.admin.generateLink failed", { error: linkError?.message });
     if (!userWasPreexisting) {
       await supabaseAdmin.auth.admin.deleteUser(newUser.id); // rollback only if we created them
@@ -185,7 +185,12 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-  const recoveryUrl = (linkData.properties as { action_link: string }).action_link;
+  // Build recovery URL manually — GoTrue's action_link always uses SUPABASE_URL (portal.db.kamanin.at),
+  // but we need portal.kamanin.at which proxies /auth/v1/* to GoTrue via vercel.json.
+  const siteUrl = Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at";
+  const redirectTo = encodeURIComponent(`${siteUrl}/passwort-setzen`);
+  const hashedToken = (linkData.properties as { hashed_token: string }).hashed_token;
+  const recoveryUrl = `${siteUrl}/auth/v1/verify?token=${hashedToken}&type=recovery&redirect_to=${redirectTo}`;
 
   // Send invite email via Mailjet — uses same HTML template as send-reminders
   const copy = getEmailCopy("invite", "de");
