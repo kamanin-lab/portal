@@ -5,6 +5,7 @@ import { useTaskActions } from '../hooks/useTaskActions';
 import { isTerminal } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
 import type { TaskAction } from '../types/tasks';
+import { useOrg } from '@/shared/hooks/useOrg'
 
 interface TaskActionsProps {
   taskId: string;
@@ -13,9 +14,11 @@ interface TaskActionsProps {
 
 export function TaskActions({ taskId, status }: TaskActionsProps) {
   const { approveTask, requestChanges, putOnHold, resumeTask, cancelTask, isLoading } = useTaskActions();
+  const { isViewer } = useOrg()
   const [confirm, setConfirm] = useState<TaskAction | null>(null);
 
   if (isTerminal(status as import('../types/tasks').TaskStatus)) return null;
+  if (isViewer) return null
 
   const needsAttention = status === 'needs_attention';
   const isOnHold = status === 'on_hold';

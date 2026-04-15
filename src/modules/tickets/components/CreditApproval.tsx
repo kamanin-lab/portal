@@ -7,6 +7,7 @@ import { useTaskActions } from '../hooks/useTaskActions';
 import { usePostComment } from '../hooks/useTaskComments';
 import { toast } from 'sonner';
 import { dict } from '../lib/dictionary';
+import { useOrg } from '@/shared/hooks/useOrg'
 
 interface Props {
   taskId: string;
@@ -15,10 +16,13 @@ interface Props {
 }
 
 export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) {
+  const { isViewer } = useOrg()
   const [mode, setMode] = useState<'buttons' | 'declining'>('buttons');
   const [reason, setReason] = useState('');
   const { approveCredits, isLoading: isApproving } = useTaskActions();
   const postComment = usePostComment();
+
+  if (isViewer) return null
 
   const displayCredits = credits % 1 === 0 ? String(credits) : credits.toFixed(1);
 

@@ -14,6 +14,7 @@ import { NewTicketDialog } from '../components/NewTicketDialog'
 import { useClickUpTasks } from '../hooks/useClickUpTasks'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { useCredits } from '../hooks/useCredits'
 import { cn } from '@/shared/lib/utils'
 
@@ -28,6 +29,7 @@ export function TicketsPage() {
 
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
+  const { isViewer } = useOrg()
   const { taskUnread, supportUnread } = useUnreadCounts(user?.id)
   const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
 
@@ -51,7 +53,7 @@ export function TicketsPage() {
     <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
       {/* Row 1: New task button + credits + search + Support */}
       <div className="flex items-center gap-3 mb-4">
-        <NewTaskButton onClick={() => setDialogOpen(true)} />
+        {!isViewer && <NewTaskButton onClick={() => setDialogOpen(true)} />}
 
         <div className="flex items-center gap-2 ml-auto">
           {/* Credit balance — desktop only (mobile shows in MobileHeader) */}
