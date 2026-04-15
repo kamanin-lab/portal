@@ -58,7 +58,7 @@ export function TeamSection() {
                 <span className="text-sm text-text-primary truncate">
                   {isPending ? <em className="text-text-tertiary">Einladung ausstehend</em> : profile?.full_name}
                 </span>
-                <span className="text-sm text-text-secondary truncate">{profile?.email ?? '—'}</span>
+                <span className="text-sm text-text-secondary truncate">{profile?.email ?? m.invited_email ?? '—'}</span>
                 <span className="text-sm text-text-primary">{ROLE_LABELS[m.role]}</span>
                 <span className="text-sm text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
                 <MemberRowActions member={m} members={members} />

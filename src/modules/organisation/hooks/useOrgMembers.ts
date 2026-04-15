@@ -8,6 +8,7 @@ export interface OrgMember {
   profile_id: string
   role: 'admin' | 'member' | 'viewer'
   created_at: string
+  invited_email: string | null
   profile: {
     id: string
     email: string
@@ -24,7 +25,7 @@ export function useOrgMembers() {
       if (!organization?.id) return []
       const { data, error } = await supabase
         .from('org_members')
-        .select('id, organization_id, profile_id, role, created_at, profile:profiles(id, email, full_name)')
+        .select('id, organization_id, profile_id, role, created_at, invited_email, profile:profiles(id, email, full_name)')
         .eq('organization_id', organization.id)
         .order('created_at', { ascending: true })
       if (error) return []

@@ -286,6 +286,7 @@ Deno.serve(async (req) => {
       organization_id: organizationId,
       profile_id: newUser.id,
       role,
+      invited_email: normalizedEmail,
     });
   if (memberInsertError) {
     log.error("org_members insert failed", { error: memberInsertError.message });
