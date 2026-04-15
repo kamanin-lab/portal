@@ -1,30 +1,36 @@
 /**
  * Client Onboarding Script
  *
- * Creates all Supabase rows needed for a new portal client:
- * 1. Auth user (email/password, pre-confirmed)
- * 2. Profile row
- * 3. Workspace access rows
- * 4. Credit package + initial top-up (optional)
- * 5. Project access rows (optional)
- * 6. Triggers initial task sync
+ * Erstellt alle Supabase-Zeilen für einen neuen Portal-Client.
  *
- * Usage:
+ * Reihenfolge (org-first):
+ * 1. organizations row (slug-Ableitung, Eindeutigkeitsprüfung)
+ * 2. Auth-Benutzer (Admin)
+ * 3. profiles row (ohne Legacy-Org-Felder)
+ * 4. org_members row (role: admin)
+ * 5. client_workspaces rows (organization_id, kein profile_id)
+ * 6. credit_packages row + credit_transactions (organization_id)
+ * 7. project_access rows (profile_id, project_config_id)
+ * 8. Weitere Mitglieder aus members[] (je auth user + profile + org_members)
+ * 9. Initialen Task-Sync auslösen
+ *
+ * Verwendung:
  *   npx tsx scripts/onboard-client.ts --config client.json
  *   npx tsx scripts/onboard-client.ts --interactive
  *
- * Config JSON format:
+ * Config-JSON-Beispiel:
  * {
+ *   "orgName": "Muster GmbH",
  *   "email": "max@muster.at",
- *   "password": "optional-or-auto-generated",
  *   "fullName": "Max Mustermann",
- *   "company": "Muster GmbH",
  *   "clickupListIds": ["901305442177"],
  *   "supportTaskId": "86c8abc123",
+ *   "clickupChatChannelId": "5-901512910505-8",
  *   "nextcloudRoot": "/clients/muster-gmbh/",
  *   "modules": ["tickets"],
  *   "creditPackage": { "name": "Standard 10h", "creditsPerMonth": 10, "initialTopup": 10 },
- *   "projectIds": []
+ *   "projectIds": [],
+ *   "members": []
  * }
  */
 
@@ -47,22 +53,38 @@ interface CreditConfig {
   initialTopup?: number;
 }
 
-interface ClientConfig {
+interface MemberConfig {
   email: string;
   password?: string;
   fullName: string;
-  company: string;
+  role?: "member" | "viewer";
+}
+
+interface ClientConfig {
+  // Org-Ebene (wird in organizations geschrieben)
+  orgName: string;
+  orgSlug?: string;
   clickupListIds: string[];
   supportTaskId?: string;
   clickupChatChannelId?: string;
   nextcloudRoot?: string;
+
+  // Admin-Benutzer (erstes Org-Mitglied)
+  email: string;
+  password?: string;
+  fullName: string;
+
+  // Optionale weitere Mitglieder
+  members?: MemberConfig[];
+
+  // Modul- / Ressourcen-Setup
   modules: string[];
   creditPackage?: CreditConfig;
   projectIds?: string[];
 }
 
-// Note: "support" is NOT a workspace — it's a system utility always present in the sidebar.
-// Do not include "support" in modules; use supportTaskId to link the ClickUp support task.
+// Hinweis: "support" ist KEIN Workspace — es ist ein System-Utility, das immer
+// in der Sidebar vorhanden ist. supportTaskId in der Org speichern, nicht in modules.
 const MODULE_DEFAULTS: Record<string, { display: string; icon: string }> = {
   tickets: { display: "Aufgaben", icon: "check-square" },
   projects: { display: "Projekte", icon: "folder-kanban" },
@@ -78,7 +100,7 @@ function loadEnv(): { url: string; serviceKey: string } {
   try {
     content = readFileSync(envPath, "utf-8");
   } catch {
-    console.error("ERROR: .env.local not found at", envPath);
+    console.error("FEHLER: .env.local nicht gefunden unter", envPath);
     process.exit(1);
   }
 
@@ -96,7 +118,7 @@ function loadEnv(): { url: string; serviceKey: string } {
 
   if (!url || !serviceKey) {
     console.error(
-      "ERROR: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required in .env.local"
+      "FEHLER: VITE_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden in .env.local benötigt"
     );
     process.exit(1);
   }
@@ -112,6 +134,38 @@ function generatePassword(): string {
   return randomBytes(12).toString("base64url").slice(0, 16);
 }
 
+/**
+ * Leitet den Org-Slug aus der Admin-E-Mail-Domain ab.
+ * SQL-Logik: lower(regexp_replace(split_part(email, '@', 2), '\.[^.]+$', ''))
+ */
+function deriveOrgSlug(email: string): string {
+  const domain = email.split("@")[1] ?? email;
+  return domain.replace(/\.[^.]+$/, "").toLowerCase().slice(0, 30);
+}
+
+/**
+ * Leitet einen eindeutigen Slug ab; prüft Kollisionen und hängt -2/-3 bis max. 5 an.
+ */
+async function deriveUniqueSlug(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+  override?: string
+): Promise<string> {
+  const base = override ?? deriveOrgSlug(email);
+  for (let i = 1; i <= 5; i++) {
+    const candidate = i === 1 ? base : `${base}-${i}`;
+    const { data } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+    if (!data) return candidate;
+  }
+  throw new Error(
+    `Kann keinen eindeutigen Slug für "${base}" ableiten — 5 Varianten bereits vergeben`
+  );
+}
+
 function parseArgs(): ClientConfig {
   const args = process.argv.slice(2);
   const configIdx = args.indexOf("--config");
@@ -121,38 +175,39 @@ function parseArgs(): ClientConfig {
     try {
       const raw = readFileSync(configPath, "utf-8");
       return JSON.parse(raw) as ClientConfig;
-    } catch (e) {
-      console.error("ERROR: Failed to read config file:", configPath);
+    } catch {
+      console.error("FEHLER: Config-Datei konnte nicht gelesen werden:", configPath);
       process.exit(1);
     }
   }
 
-  // No config file — check for --interactive or show usage
+  // Kein Config-File — auf --interactive prüfen oder Hilfe ausgeben
   if (!args.includes("--interactive")) {
     console.log(`
-Usage:
+Verwendung:
   npx tsx scripts/onboard-client.ts --config client.json
   npx tsx scripts/onboard-client.ts --interactive
 
-Config JSON example:
+Config-JSON-Beispiel:
 {
+  "orgName": "Muster GmbH",
   "email": "max@muster.at",
   "fullName": "Max Mustermann",
-  "company": "Muster GmbH",
   "clickupListIds": ["901305442177"],
   "supportTaskId": "86c8abc123",
   "clickupChatChannelId": "5-901512910505-8",
   "nextcloudRoot": "/clients/muster-gmbh/",
   "modules": ["tickets"],
   "creditPackage": { "name": "Standard 10h", "creditsPerMonth": 10, "initialTopup": 10 },
-  "projectIds": []
+  "projectIds": [],
+  "members": []
 }
 `);
     process.exit(0);
   }
 
-  // Interactive mode — read from stdin prompts
-  console.error("Interactive mode not yet implemented. Use --config.");
+  // Interaktiver Modus — noch nicht implementiert
+  console.error("Interaktiver Modus noch nicht implementiert. Bitte --config verwenden.");
   process.exit(1);
 }
 
@@ -170,54 +225,91 @@ async function main() {
   });
 
   console.log("\n--- KAMANIN Portal: Client Onboarding ---\n");
-  console.log(`Client: ${config.fullName} (${config.company})`);
-  console.log(`Email:  ${config.email}`);
-  console.log(`Modules: ${config.modules.join(", ")}`);
+  console.log(`Organisation: ${config.orgName}`);
+  console.log(`Admin: ${config.fullName} (${config.email})`);
+  console.log(`Module: ${config.modules.join(", ")}`);
   console.log();
 
-  // Step 1: Create auth user
-  console.log("1. Creating auth user...");
-  const { data: authData, error: authError } =
-    await supabase.auth.admin.createUser({
-      email: config.email,
-      password,
-      email_confirm: true,
-    });
+  // Step 1: Organisation erstellen
+  console.log("1. Erstelle Organisation...");
+  const slug = await deriveUniqueSlug(supabase, config.email, config.orgSlug);
+  const { data: orgData, error: orgError } = await supabase
+    .from("organizations")
+    .insert({
+      name: config.orgName,
+      slug,
+      clickup_list_ids: config.clickupListIds,
+      support_task_id: config.supportTaskId || null,
+      clickup_chat_channel_id: config.clickupChatChannelId || null,
+      nextcloud_client_root: config.nextcloudRoot || null,
+    })
+    .select("id")
+    .single();
 
-  if (authError) {
-    console.error("   FAILED:", authError.message);
+  if (orgError || !orgData) {
+    console.error("   FEHLER:", orgError?.message ?? "Kein Datensatz zurückgegeben");
     process.exit(1);
   }
+  const orgId = orgData.id as string;
+  console.log(`   OK: Org ${orgId} (slug: ${slug})`);
 
+  // Step 2: Auth-Benutzer erstellen
+  console.log("2. Erstelle Auth-Benutzer...");
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: config.email,
+    password,
+    email_confirm: true,
+  });
+
+  if (authError) {
+    console.error("   FEHLER:", authError.message);
+    console.log("   Rollback: lösche Organisation...");
+    await supabase.from("organizations").delete().eq("id", orgId);
+    process.exit(1);
+  }
   const userId = authData.user.id;
-  console.log(`   OK: user ${userId}`);
+  console.log(`   OK: Benutzer ${userId}`);
 
-  // Step 2: Create profile
-  console.log("2. Creating profile...");
+  // Step 3: Profil erstellen (keine Legacy-Org-Felder)
+  console.log("3. Erstelle Profil...");
   const { error: profileError } = await supabase.from("profiles").upsert({
     id: userId,
     email: config.email,
     full_name: config.fullName,
-    company_name: config.company,
-    clickup_list_ids: config.clickupListIds,
-    support_task_id: config.supportTaskId || null,
-    clickup_chat_channel_id: config.clickupChatChannelId || null,
-    nextcloud_client_root: config.nextcloudRoot || null,
+    company_name: config.orgName,
     email_notifications: true,
   });
 
   if (profileError) {
-    console.error("   FAILED:", profileError.message);
-    console.log("   Rolling back: deleting auth user...");
+    console.error("   FEHLER:", profileError.message);
+    console.log("   Rollback: lösche Auth-Benutzer und Organisation...");
     await supabase.auth.admin.deleteUser(userId);
+    await supabase.from("organizations").delete().eq("id", orgId);
     process.exit(1);
   }
   console.log("   OK");
 
-  // Step 3: Create workspace access
-  console.log("3. Creating workspace access...");
-  const workspaceRows = config.modules.map((mod, i) => ({
+  // Step 4: org_members-Zeile erstellen (Admin)
+  console.log("4. Erstelle org_members (Admin)...");
+  const { error: omError } = await supabase.from("org_members").insert({
+    organization_id: orgId,
     profile_id: userId,
+    role: "admin",
+  });
+
+  if (omError) {
+    console.error("   FEHLER:", omError.message);
+    console.log("   Rollback: lösche Auth-Benutzer und Organisation...");
+    await supabase.auth.admin.deleteUser(userId);
+    await supabase.from("organizations").delete().eq("id", orgId);
+    process.exit(1);
+  }
+  console.log("   OK");
+
+  // Step 5: Workspace-Zugriff erstellen (organization_id, kein profile_id)
+  console.log("5. Erstelle Workspace-Zugriff...");
+  const workspaceRows = config.modules.map((mod, i) => ({
+    organization_id: orgId,
     module_key: mod,
     display_name: MODULE_DEFAULTS[mod]?.display || mod,
     icon: MODULE_DEFAULTS[mod]?.icon || "box",
@@ -225,30 +317,25 @@ async function main() {
     is_active: true,
   }));
 
-  const { error: wsError } = await supabase
-    .from("client_workspaces")
-    .insert(workspaceRows);
-
+  const { error: wsError } = await supabase.from("client_workspaces").insert(workspaceRows);
   if (wsError) {
-    console.error("   FAILED:", wsError.message);
+    console.error("   FEHLER:", wsError.message);
     process.exit(1);
   }
-  console.log(`   OK: ${workspaceRows.length} module(s)`);
+  console.log(`   OK: ${workspaceRows.length} Modul(e)`);
 
-  // Step 4: Credit package (optional)
+  // Step 6: Credit-Paket (optional)
   if (config.creditPackage) {
-    console.log("4. Creating credit package...");
-    const { error: cpError } = await supabase
-      .from("credit_packages")
-      .insert({
-        profile_id: userId,
-        package_name: config.creditPackage.name,
-        credits_per_month: config.creditPackage.creditsPerMonth,
-        is_active: true,
-      });
+    console.log("6. Erstelle Credit-Paket...");
+    const { error: cpError } = await supabase.from("credit_packages").insert({
+      organization_id: orgId,
+      package_name: config.creditPackage.name,
+      credits_per_month: config.creditPackage.creditsPerMonth,
+      is_active: true,
+    });
 
     if (cpError) {
-      console.error("   FAILED:", cpError.message);
+      console.error("   FEHLER:", cpError.message);
       process.exit(1);
     }
 
@@ -256,62 +343,111 @@ async function main() {
       const now = new Date();
       const monthLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-      const { error: txError } = await supabase
-        .from("credit_transactions")
-        .insert({
-          profile_id: userId,
-          amount: config.creditPackage.initialTopup,
-          type: "monthly_topup",
-          description: `${monthLabel} Gutschrift`,
-        });
+      const { error: txError } = await supabase.from("credit_transactions").insert({
+        profile_id: userId,
+        organization_id: orgId,
+        amount: config.creditPackage.initialTopup,
+        type: "monthly_topup",
+        description: `${monthLabel} Gutschrift`,
+      });
 
       if (txError) {
-        console.error("   Top-up FAILED:", txError.message);
+        console.error("   Gutschrift FEHLER:", txError.message);
       } else {
         console.log(
-          `   OK: ${config.creditPackage.name} (${config.creditPackage.initialTopup} initial credits)`
+          `   OK: ${config.creditPackage.name} (${config.creditPackage.initialTopup} Credits)`
         );
       }
     } else {
       console.log(`   OK: ${config.creditPackage.name}`);
     }
   } else {
-    console.log("4. Credit package: skipped (none configured)");
+    console.log("6. Credit-Paket: übersprungen (nicht konfiguriert)");
   }
 
-  // Step 5: Project access (optional)
+  // Step 7: Projektzugriff (optional)
   if (config.projectIds && config.projectIds.length > 0) {
-    console.log("5. Creating project access...");
+    console.log("7. Erstelle Projektzugriff...");
     const paRows = config.projectIds.map((pid) => ({
       profile_id: userId,
       project_config_id: pid,
     }));
 
-    const { error: paError } = await supabase
-      .from("project_access")
-      .insert(paRows);
-
+    const { error: paError } = await supabase.from("project_access").insert(paRows);
     if (paError) {
-      console.error("   FAILED:", paError.message);
+      console.error("   FEHLER:", paError.message);
     } else {
-      console.log(`   OK: ${paRows.length} project(s)`);
+      console.log(`   OK: ${paRows.length} Projekt(e)`);
     }
   } else {
-    console.log("5. Project access: skipped (none configured)");
+    console.log("7. Projektzugriff: übersprungen (nicht konfiguriert)");
   }
 
-  // Step 6: Trigger initial task sync
-  console.log("6. Triggering initial task sync...");
+  // Step 8: Weitere Mitglieder (optional)
+  if (config.members && config.members.length > 0) {
+    console.log(`8. Erstelle ${config.members.length} weitere(s) Mitglied(er)...`);
+    for (const member of config.members) {
+      const memberPassword = member.password || generatePassword();
+      try {
+        // Auth-Benutzer erstellen
+        const { data: mAuth, error: mAuthError } = await supabase.auth.admin.createUser({
+          email: member.email,
+          password: memberPassword,
+          email_confirm: true,
+        });
+        if (mAuthError || !mAuth) {
+          console.warn(
+            `   WARNUNG: ${member.email} — Auth fehlgeschlagen: ${mAuthError?.message}`
+          );
+          continue;
+        }
+        const mUserId = mAuth.user.id;
+
+        // Profil erstellen
+        await supabase.from("profiles").upsert({
+          id: mUserId,
+          email: member.email,
+          full_name: member.fullName,
+          company_name: config.orgName,
+          email_notifications: true,
+        });
+
+        // org_members-Zeile erstellen
+        const { error: mOmError } = await supabase.from("org_members").insert({
+          organization_id: orgId,
+          profile_id: mUserId,
+          role: member.role ?? "member",
+        });
+
+        if (mOmError) {
+          console.warn(
+            `   WARNUNG: ${member.email} — org_members fehlgeschlagen: ${mOmError.message}`
+          );
+        } else {
+          console.log(`   OK: ${member.email} (${member.role ?? "member"})`);
+          if (!member.password) {
+            console.log(`   Temporäres Passwort: ${memberPassword}`);
+          }
+        }
+      } catch (err) {
+        console.warn(`   WARNUNG: ${member.email} — unerwartet fehlgeschlagen:`, err);
+      }
+    }
+  } else {
+    console.log("8. Weitere Mitglieder: keine konfiguriert");
+  }
+
+  // Step 9: Initialen Task-Sync auslösen
+  console.log("9. Löse initialen Task-Sync aus...");
   try {
-    // Sign in as the new user to get a JWT for the sync call
-    const { data: signIn, error: signInError } =
-      await supabase.auth.signInWithPassword({
-        email: config.email,
-        password,
-      });
+    // Als neuer Benutzer einloggen, um JWT für den Sync-Aufruf zu erhalten
+    const { data: signIn, error: signInError } = await supabase.auth.signInWithPassword({
+      email: config.email,
+      password,
+    });
 
     if (signInError || !signIn.session) {
-      console.log("   Skipped: could not sign in as user for sync");
+      console.log("   Übersprungen: Einloggen als Benutzer für Sync nicht möglich");
     } else {
       const res = await fetch(`${url}/functions/v1/main/fetch-clickup-tasks`, {
         method: "POST",
@@ -321,38 +457,42 @@ async function main() {
         },
       });
       if (res.ok) {
-        console.log("   OK: task sync triggered");
+        console.log("   OK: Task-Sync ausgelöst");
       } else {
-        console.log(`   Warning: sync returned ${res.status} — run manually later`);
+        console.log(`   Warnung: Sync hat ${res.status} zurückgegeben — später manuell ausführen`);
       }
     }
   } catch {
-    console.log("   Skipped: sync call failed — run manually later");
+    console.log("   Übersprungen: Sync-Aufruf fehlgeschlagen — später manuell ausführen");
   }
 
-  // Summary
+  // Zusammenfassung
   console.log("\n========================================");
-  console.log("  ONBOARDING COMPLETE");
-  console.log("========================================\n");
-  console.log(`  User ID:    ${userId}`);
-  console.log(`  Email:      ${config.email}`);
-  console.log(`  Password:   ${password}`);
-  console.log(`  Company:    ${config.company}`);
-  console.log(`  Modules:    ${config.modules.join(", ")}`);
+  console.log("  ONBOARDING ABGESCHLOSSEN");
+  console.log("========================================");
+  console.log(`  Organisation: ${config.orgName} (${slug})`);
+  console.log(`  Admin:        ${config.email}`);
+  if (!config.password) {
+    console.log(`  Passwort:     ${password}  \u2190 jetzt kopieren!`);
+  }
+  console.log(`  Module:       ${config.modules.join(", ")}`);
   if (config.creditPackage) {
-    console.log(`  Credits:    ${config.creditPackage.name} (${config.creditPackage.creditsPerMonth}/mo)`);
+    console.log(
+      `  Credits:      ${config.creditPackage.name} (${config.creditPackage.creditsPerMonth}/Monat)`
+    );
   }
   if (config.projectIds?.length) {
-    console.log(`  Projects:   ${config.projectIds.length}`);
+    console.log(`  Projekte:     ${config.projectIds.length}`);
   }
-  console.log(`  Portal URL: https://portal.kamanin.at`);
-  console.log(
-    `\n  Send login credentials to client manually.`
-  );
-  console.log();
+  if (config.members?.length) {
+    console.log(`  Mitglieder:   ${config.members.length} weitere`);
+  }
+  console.log(`  Portal-URL:   https://portal.kamanin.at`);
+  console.log("\n  Login-Daten manuell an den Client senden.");
+  console.log("========================================\n");
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  console.error("Schwerwiegender Fehler:", err);
   process.exit(1);
 });
