@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const mailjetApiKey = Deno.env.get("MAILJET_API_KEY");
-  const mailjetSecretKey = Deno.env.get("MAILJET_SECRET_KEY");
+  const mailjetSecretKey = Deno.env.get("MAILJET_API_SECRET");
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !mailjetApiKey || !mailjetSecretKey) {
     log.error("Missing required env vars");
