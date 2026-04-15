@@ -148,7 +148,7 @@ Plans:
 - [ ] **Phase 10: org-edge-functions** — Update 5 existing Edge Functions to read from organizations; add invite-member function; role enforcement on mutating ops
 - [x] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role (completed 2026-04-15)
 - [x] **Phase 12: org-admin-page** — /organisation admin page, InviteMemberDialog, role management, member removal, /passwort-setzen route, sidebar link (completed 2026-04-15)
-- [ ] **Phase 13: org-onboarding-cleanup** — Rewrite onboard-client.ts, drop legacy RLS policies and FK columns, remove dual-read fallbacks
+- [x] **Phase 13: org-onboarding-cleanup** — Rewrite onboard-client.ts, drop legacy RLS policies and FK columns, remove dual-read fallbacks (completed 2026-04-15)
 
 ---
 
@@ -253,4 +253,4 @@ Plans:
 | 10. org-edge-functions | 3/6 | In Progress|  |
 | 11. org-frontend-auth | 4/4 | Complete   | 2026-04-15 |
 | 12. org-admin-page | 5/5 | Complete   | 2026-04-15 |
-| 13. org-onboarding-cleanup | 2/4 | In Progress|  |
+| 13. org-onboarding-cleanup | 4/4 | Complete   | 2026-04-15 |
