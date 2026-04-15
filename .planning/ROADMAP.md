@@ -245,5 +245,5 @@ Plans:
 | 9. org-db-foundation | 0/? | Not started | — |
 | 10. org-edge-functions | 3/6 | In Progress|  |
 | 11. org-frontend-auth | 4/4 | Complete   | 2026-04-15 |
-| 12. org-admin-page | 2/5 | In Progress|  |
+| 12. org-admin-page | 3/5 | In Progress|  |
 | 13. org-onboarding-cleanup | 0/? | Not started | — |

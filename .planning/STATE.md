@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-15T10:34:30.568Z"
+status: completed
+last_updated: "2026-04-15T10:44:14.626Z"
 last_activity: 2026-04-15
 progress:
   total_phases: 13
   completed_phases: 10
   total_plans: 34
-  completed_plans: 32
-  percent: 94
+  completed_plans: 33
+  percent: 97
 ---
 
 # Project State
@@ -21,8 +21,8 @@ progress:
 ## Current Position
 
 Phase: 12 (org-admin-page) — EXECUTING
-Plan: 2 of 5
-Status: Plan 12-02 complete — Plan 12-03 next
+Plan: 3 of 5
+Status: Plan 12-03 complete — Plan 12-04 next
 Last activity: 2026-04-15
 
 ## Previous Milestone
@@ -84,6 +84,9 @@ Phase 1: Portal Frontend — Complete
 - Supabase Management API (api.supabase.com/v1/projects/{ref}/database/query) used for direct migration apply when CLI tracking table is empty (Phase 09-01)
 - Building05Icon confirmed present in @hugeicons/core-free-icons — no fallback needed for organisation sidebar link (Phase 12-02)
 - PASSWORD_RECOVERY onAuthStateChange redirect fixed to /passwort-setzen; resetPassword() voluntary flow at line 179 retains /konto redirectTo (Phase 12-02)
+- Dialog.Title from Radix renders with role=heading — getByRole('heading') needed in TeamSection test to avoid ambiguity with button text (Phase 12-03)
+- useCredits() returns { balance, packageName, creditsPerMonth, isLoading, pkg } — mock aligned to full shape (Phase 12-03)
+- TeamSection manages inviteOpen state internally — InviteMemberDialog is a child, not a sibling in OrganisationPage (Phase 12-03)
 
 ### Blockers/Concerns
 
