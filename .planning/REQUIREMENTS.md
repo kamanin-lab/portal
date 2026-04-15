@@ -46,14 +46,14 @@
 
 ### Frontend — Organisation Admin Page (ORG-FE-UI)
 
-- [ ] **ORG-FE-UI-01**: `/organisation` route added; non-admin users are redirected to `/tickets` on access
-- [ ] **ORG-FE-UI-02**: `OrganisationPage` renders `OrgInfoSection` (org name, slug, credit package info — read-only) and `TeamSection` (member table)
+- [x] **ORG-FE-UI-01**: `/organisation` route added; non-admin users are redirected to `/tickets` on access
+- [x] **ORG-FE-UI-02**: `OrganisationPage` renders `OrgInfoSection` (org name, slug, credit package info — read-only) and `TeamSection` (member table)
 - [ ] **ORG-FE-UI-03**: `TeamSection` shows a table with columns: Name, Email, Rolle, Hinzugefügt am; pending invites show "Einladung ausstehend" in the Rolle column
 - [ ] **ORG-FE-UI-04**: `InviteMemberDialog` (admin-only) accepts email + role (Mitglied / Betrachter); submits to `invite-member` Edge Function; shows success/error toast
 - [ ] **ORG-FE-UI-05**: Admin can change a member's role (Mitglied ↔ Betrachter) from the team table; cannot demote themselves; cannot demote last admin
 - [ ] **ORG-FE-UI-06**: Admin can remove a member from the org; cannot remove themselves if last admin; confirmation dialog required
 - [ ] **ORG-FE-UI-07**: `/passwort-setzen` route created — reads GoTrue session from URL hash on mount, shows password-set form, calls `supabase.auth.updateUser({ password })`, redirects to `/tickets` on success
-- [ ] **ORG-FE-UI-08**: Sidebar "Ihre Organisation" link added to Utilities zone (visible to admin only); Hugeicons building/office icon
+- [x] **ORG-FE-UI-08**: Sidebar "Ihre Organisation" link added to Utilities zone (visible to admin only); Hugeicons building/office icon
 
 ### Onboarding + Cleanup (ORG-CLEANUP)
 
@@ -131,14 +131,14 @@
 | ORG-FE-AUTH-04 | Phase 11 | Complete |
 | ORG-FE-AUTH-05 | Phase 11 | Complete |
 | ORG-FE-AUTH-06 | Phase 11 | Complete |
-| ORG-FE-UI-01 | Phase 12 | Pending |
-| ORG-FE-UI-02 | Phase 12 | Pending |
+| ORG-FE-UI-01 | Phase 12 | Complete |
+| ORG-FE-UI-02 | Phase 12 | Complete |
 | ORG-FE-UI-03 | Phase 12 | Pending |
 | ORG-FE-UI-04 | Phase 12 | Pending |
 | ORG-FE-UI-05 | Phase 12 | Pending |
 | ORG-FE-UI-06 | Phase 12 | Pending |
 | ORG-FE-UI-07 | Phase 12 | Pending |
-| ORG-FE-UI-08 | Phase 12 | Pending |
+| ORG-FE-UI-08 | Phase 12 | Complete |
 | ORG-CLEANUP-01 | Phase 13 | Pending |
 | ORG-CLEANUP-02 | Phase 13 | Pending |
 | ORG-CLEANUP-03 | Phase 13 | Pending |

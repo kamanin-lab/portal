@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-04-15T10:00:00.000Z"
+status: executing
+last_updated: "2026-04-15T10:34:30.568Z"
 last_activity: 2026-04-15
 progress:
   total_phases: 13
-  completed_phases: 11
-  total_plans: 33
-  completed_plans: 34
-  percent: 85
+  completed_phases: 10
+  total_plans: 34
+  completed_plans: 32
+  percent: 94
 ---
 
 # Project State
@@ -20,9 +20,9 @@ progress:
 
 ## Current Position
 
-Phase: 11 (org-frontend-auth) — COMPLETE
-Plan: 4 of 4 — DONE
-Status: Phase complete — human verified on staging 2026-04-15
+Phase: 12 (org-admin-page) — EXECUTING
+Plan: 2 of 5
+Status: Plan 12-02 complete — Plan 12-03 next
 Last activity: 2026-04-15
 
 ## Previous Milestone
@@ -82,6 +82,8 @@ Phase 1: Portal Frontend — Complete
 - DATA-01 (ProjectContextSection) and DATA-05 (AdminPanel refactor) deferred to admin dashboard scope (Phase 05-02)
 - organizations.clickup_list_ids is jsonb; profiles.clickup_list_ids is text[] on staging — use to_jsonb() cast in data migration (Phase 09-01)
 - Supabase Management API (api.supabase.com/v1/projects/{ref}/database/query) used for direct migration apply when CLI tracking table is empty (Phase 09-01)
+- Building05Icon confirmed present in @hugeicons/core-free-icons — no fallback needed for organisation sidebar link (Phase 12-02)
+- PASSWORD_RECOVERY onAuthStateChange redirect fixed to /passwort-setzen; resetPassword() voluntary flow at line 179 retains /konto redirectTo (Phase 12-02)
 
 ### Blockers/Concerns
 
