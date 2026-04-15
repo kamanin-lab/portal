@@ -59,24 +59,24 @@ export const EMAIL_COPY: EmailCopyDict = {
   task_review: {
     de: {
       subject: (taskName: string) => `Aufgabe bereit zur Überprüfung: ${taskName}`,
-      title: “Aufgabe bereit zur Überprüfung”,
+      title: "Aufgabe bereit zur Überprüfung",
       greeting: greetDe,
       body: (taskName: string) =>
-        `„<strong>${taskName}</strong>” ist bereit für Ihre Überprüfung.`,
-      cta: “Im Portal ansehen”,
+        `„<strong>${taskName}</strong>" ist bereit für Ihre Überprüfung.`,
+      cta: "Im Portal ansehen",
       notes: [
-        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
       ],
     },
     en: {
       subject: (taskName: string) => `Task ready for review: ${taskName}`,
-      title: “Task ready for review”,
+      title: "Task ready for review",
       greeting: greetEn,
       body: (taskName: string) =>
-        `”<strong>${taskName}</strong>” is ready for your review.`,
-      cta: “View in portal”,
+        `"<strong>${taskName}</strong>" is ready for your review.`,
+      cta: "View in portal",
       notes: [
-        “You can adjust your email notification preferences in your account settings.”,
+        "You can adjust your email notification preferences in your account settings.",
       ],
     },
   },
@@ -276,7 +276,7 @@ export const EMAIL_COPY: EmailCopyDict = {
       title: "Aufgabe abgeschlossen 🎉",
       greeting: greetDe,
       body: (taskName: string) => [
-        `Wir haben Ihre Aufgabe „<strong>${taskName}</strong>“ abgeschlossen.`,
+        `Wir haben Ihre Aufgabe „<strong>${taskName}</strong>" abgeschlossen.`,
         `Die Arbeit ist finalisiert und vollständig erledigt.<br/>Falls Sie Folgeanfragen haben oder mit einer neuen Aufgabe fortfahren möchten, sind Sie herzlich eingeladen.`,
       ],
       cta: "Im Portal ansehen",
@@ -328,50 +328,50 @@ export const EMAIL_COPY: EmailCopyDict = {
 
   team_question: {
     de: {
-      subject: (taskName: string) => `Nachricht zu „${taskName}”`,
-      title: “Ihr Tech-Team hat eine Nachricht”,
+      subject: (taskName: string) => `Nachricht zu „${taskName}"`,
+      title: "Ihr Tech-Team hat eine Nachricht",
       greeting: greetDe,
       body: (teamMemberName: string, taskName: string) =>
-        `${teamMemberName} hat eine Nachricht zu „<strong>${taskName}</strong>”:`,
-      cta: “Im Portal antworten”,
+        `${teamMemberName} hat eine Nachricht zu „<strong>${taskName}</strong>":`,
+      cta: "Im Portal antworten",
       notes: [
-        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
       ],
     },
     en: {
-      subject: (taskName: string) => `Question about “${taskName}”`,
-      title: “Your tech team has a question”,
+      subject: (taskName: string) => `Question about "${taskName}"`,
+      title: "Your tech team has a question",
       greeting: greetEn,
       body: (teamMemberName: string, taskName: string) =>
-        `${teamMemberName} has a question about “<strong>${taskName}</strong>”:`,
-      cta: “Reply in portal”,
+        `${teamMemberName} has a question about "<strong>${taskName}</strong>":`,
+      cta: "Reply in portal",
       notes: [
-        “You can adjust your email notification preferences in your account settings.”,
+        "You can adjust your email notification preferences in your account settings.",
       ],
     },
   },
 
   support_response: {
     de: {
-      subject: “Neue Nachricht von Ihrem Tech-Team”,
-      title: “Neue Support-Nachricht”,
+      subject: "Neue Nachricht von Ihrem Tech-Team",
+      title: "Neue Support-Nachricht",
       greeting: greetDe,
       body: (teamMemberName: string) =>
         `${teamMemberName} hat Ihnen eine Nachricht gesendet:`,
-      cta: “Im Portal ansehen”,
+      cta: "Im Portal ansehen",
       notes: [
-        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
       ],
     },
     en: {
-      subject: “New message from your tech team”,
-      title: “New support message”,
+      subject: "New message from your tech team",
+      title: "New support message",
       greeting: greetEn,
       body: (teamMemberName: string) =>
         `${teamMemberName} sent you a message:`,
-      cta: “View in portal”,
+      cta: "View in portal",
       notes: [
-        “You can adjust your email notification preferences in your account settings.”,
+        "You can adjust your email notification preferences in your account settings.",
       ],
     },
   },
