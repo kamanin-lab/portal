@@ -159,7 +159,7 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: "Sie haben ungelesene Nachrichten, die auf Ihre Antwort warten:",
       cta: "Im Portal ansehen",
       notes: [
-        "Sie erhalten diese Erinnerung einmal täglich, solange ungelesene Nachrichten vorliegen.",
+        "Sie erhalten diese Erinnerung alle zwei Tage, solange ungelesene Nachrichten vorliegen.",
         "Sie können Erinnerungen in Ihren Kontoeinstellungen deaktivieren.",
       ],
     },
@@ -173,7 +173,7 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: "You have unread messages waiting for your reply:",
       cta: "View in portal",
       notes: [
-        "You receive this reminder once daily while unread messages remain.",
+        "You receive this reminder every two days while unread messages remain.",
         "You can disable reminders in your account settings.",
       ],
     },

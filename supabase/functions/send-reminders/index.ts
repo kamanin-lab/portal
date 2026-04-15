@@ -274,7 +274,7 @@ async function sendUnreadMessageReminders(
       if (!isSupport && !teamCommentEnabled) continue;
       unreadItems.push({
         taskId,
-        taskName: isSupport ? "Support-Chat" : (taskNameMap.get(taskId) ?? taskId),
+        taskName: isSupport ? "Support-Chat" : (taskNameMap.get(taskId) ?? "Aufgabe"),
         unreadCount: count,
         isSupport,
       });
