@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/shared/lib/supabase'
-import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 
 export interface ClientWorkspace {
   id: string
-  profile_id: string
+  organization_id: string
   module_key: string
   display_name: string
   icon: string
@@ -14,22 +14,22 @@ export interface ClientWorkspace {
 }
 
 export function useWorkspaces() {
-  const { user } = useAuth()
+  const { organization } = useOrg()
 
   return useQuery<ClientWorkspace[]>({
-    queryKey: ['workspaces', user?.id],
+    queryKey: ['workspaces', organization?.id],
     queryFn: async () => {
-      if (!user?.id) return []
+      if (!organization?.id) return []
       const { data, error } = await supabase
         .from('client_workspaces')
         .select('*')
-        .eq('profile_id', user.id)
+        .eq('organization_id', organization.id)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       if (error) return []
       return data ?? []
     },
-    enabled: !!user?.id,
+    enabled: !!organization?.id,
     staleTime: 5 * 60 * 1000,
   })
 }

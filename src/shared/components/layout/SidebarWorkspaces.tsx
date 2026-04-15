@@ -13,9 +13,9 @@ import { WORKSPACE_ROUTES, WORKSPACE_CHILDREN } from '@/shared/lib/workspace-rou
 import type { IconSvgElement } from '@hugeicons/react'
 
 const DEFAULT_WORKSPACES: ClientWorkspace[] = [
-  { id: 'default-projects', profile_id: '', module_key: 'projects', display_name: 'Projekte', icon: 'folder-kanban', sort_order: 1, is_active: true, created_at: '' },
-  { id: 'default-tickets', profile_id: '', module_key: 'tickets', display_name: 'Aufgaben', icon: 'clipboard-list', sort_order: 2, is_active: true, created_at: '' },
-  { id: 'default-files', profile_id: '', module_key: 'files', display_name: 'Dateien', icon: 'folder', sort_order: 3, is_active: true, created_at: '' },
+  { id: 'default-projects', organization_id: '', module_key: 'projects', display_name: 'Projekte', icon: 'folder-kanban', sort_order: 1, is_active: true, created_at: '' },
+  { id: 'default-tickets', organization_id: '', module_key: 'tickets', display_name: 'Aufgaben', icon: 'clipboard-list', sort_order: 2, is_active: true, created_at: '' },
+  { id: 'default-files', organization_id: '', module_key: 'files', display_name: 'Dateien', icon: 'folder', sort_order: 3, is_active: true, created_at: '' },
 ]
 
 const ICON_MAP: Record<string, IconSvgElement> = {
