@@ -16,7 +16,7 @@ import {
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
 import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
-import { findOrgByListId, findOrgBySupportTaskId } from "../_shared/org.ts";
+import { findOrgByListId, findOrgBySupportTaskId, getNonViewerProfileIds } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -864,10 +864,17 @@ Deno.serve(async (req) => {
                 await supabase.from("notifications").insert(notifications);
                 log.info("Project step_ready notifications created", { count: notifications.length });
 
+                const nonViewerProfileIds = await getNonViewerProfileIds(supabase, profileIds);
+                if (nonViewerProfileIds.length < profileIds.length) {
+                  log.info("step_ready email filtered to non-viewers", {
+                    total: profileIds.length,
+                    sending: nonViewerProfileIds.length,
+                  });
+                }
                 const { data: profiles } = await supabase
                   .from("profiles")
                   .select("id, email, full_name, email_notifications, notification_preferences")
-                  .in("id", profileIds);
+                  .in("id", nonViewerProfileIds);
                 for (const p of profiles || []) {
                   if (shouldSendEmail(p, "step_ready")) {
                     await sendMailjetEmail("step_ready", { email: p.email, name: p.full_name }, {
@@ -1266,12 +1273,6 @@ Deno.serve(async (req) => {
         const { profileIds, source } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
         if (profileIds.length > 0) {
-          // Get profiles for notifications
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, email, full_name, email_notifications, notification_preferences")
-            .in("id", profileIds);
-
           // Create in-app notifications
           const notifications = profileIds.map(profileId => ({
             profile_id: profileId,
@@ -1289,9 +1290,20 @@ Deno.serve(async (req) => {
           const eventTimestamp = parseClickUpTimestamp(historyItem.date);
           await updateTaskActivity(supabase, taskId, eventTimestamp, log);
 
-          // Send emails
-          if (profiles) {
-            for (const profile of profiles) {
+          // Send emails (viewer-role members excluded — they cannot act on review emails)
+          const nonViewerProfileIds = await getNonViewerProfileIds(supabase, profileIds);
+          if (nonViewerProfileIds.length < profileIds.length) {
+            log.info("task_review email filtered to non-viewers", {
+              total: profileIds.length,
+              sending: nonViewerProfileIds.length,
+            });
+          }
+          const { data: emailProfiles } = await supabase
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .in("id", nonViewerProfileIds);
+          if (emailProfiles) {
+            for (const profile of emailProfiles) {
               if (shouldSendEmail(profile, "task_review")) {
                 await sendMailjetEmail("task_review", {
                   email: profile.email,
