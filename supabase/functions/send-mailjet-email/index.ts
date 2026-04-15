@@ -105,6 +105,7 @@ function generateEmailHtml(
       const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -113,6 +114,7 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
             <a href="${taskUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -123,6 +125,7 @@ function generateEmailHtml(
       const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName, credits) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName, credits) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -131,6 +134,7 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
             <a href="${taskUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -142,6 +146,7 @@ function generateEmailHtml(
         : data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(stepName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -150,6 +155,7 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
             <a href="${stepUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -164,6 +170,7 @@ function generateEmailHtml(
       const bodyHtml = Array.isArray(bodyParts)
         ? bodyParts.map((p: string) => `<p class="text">${p}</p>`).join("")
         : `<p class="text">${bodyParts}</p>`;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -172,6 +179,7 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             ${bodyHtml}
             <a href="${stepUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -185,6 +193,7 @@ function generateEmailHtml(
       const messagePreview = data.messagePreview || "";
       const subject = typeof copy.subject === "function" ? copy.subject(stepName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(teamMemberName, stepName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -196,6 +205,7 @@ function generateEmailHtml(
               <p class="text" style="font-style: italic; margin: 0;">"${messagePreview}${messagePreview.length >= 300 ? "..." : ""}"</p>
             </div>
             <a href="${stepUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -208,6 +218,7 @@ function generateEmailHtml(
       const bodyHtml = Array.isArray(bodyParts)
         ? bodyParts.map((p: string) => `<p class="text">${p}</p>`).join("")
         : `<p class="text">${bodyParts}</p>`;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject: typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject as string,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -217,6 +228,7 @@ function generateEmailHtml(
             ${bodyHtml}
             <a href="${taskUrl}" class="button">${copy.cta}</a>
             ${copy.secondaryCta ? `<p style="margin: 16px 0 0 0;"><a href="${createTaskUrl}" style="color: #2563eb; font-size: 14px; text-decoration: underline;">${copy.secondaryCta}</a></p>` : ""}
+            ${notesHtml}
           </div>
           <div class="footer"><p class="footer-text">${copy.signOff || "KAMANIN Client Portal"}</p></div>
           </div></body></html>`,
@@ -234,6 +246,7 @@ function generateEmailHtml(
           </div>`
         )
         .join("");
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject: copy.subject as string,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -243,6 +256,7 @@ function generateEmailHtml(
             <p class="text">${copy.body as string}</p>
             <div class="task-list">${taskListHtml}</div>
             <a href="${portalUrl}/dashboard" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -254,6 +268,7 @@ function generateEmailHtml(
       const messagePreview = data.messagePreview || "";
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(teamMemberName, taskName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -265,6 +280,7 @@ function generateEmailHtml(
               <p class="text" style="font-style: italic; margin: 0;">"${messagePreview}${messagePreview.length >= 300 ? "..." : ""}"</p>
             </div>
             <a href="${taskUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -273,6 +289,7 @@ function generateEmailHtml(
       const teamMemberName = data.teamMemberName || (locale === "de" ? "Ihr Tech-Team" : "Your tech team");
       const messagePreview = data.messagePreview || "";
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(teamMemberName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject: copy.subject as string,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -284,6 +301,7 @@ function generateEmailHtml(
               <p class="text" style="font-style: italic; margin: 0;">"${messagePreview}${messagePreview.length >= 300 ? "..." : ""}"</p>
             </div>
             <a href="${portalUrl}/dashboard" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }
@@ -373,6 +391,7 @@ function generateEmailHtml(
       const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
       const subject = typeof copy.subject === "function" ? copy.subject(taskName) : copy.subject;
       const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName) : copy.body;
+      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
@@ -381,6 +400,7 @@ function generateEmailHtml(
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
             <a href="${taskUrl}" class="button">${copy.cta}</a>
+            ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };
     }

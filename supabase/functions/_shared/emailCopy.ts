@@ -59,19 +59,25 @@ export const EMAIL_COPY: EmailCopyDict = {
   task_review: {
     de: {
       subject: (taskName: string) => `Aufgabe bereit zur Überprüfung: ${taskName}`,
-      title: "Aufgabe bereit zur Überprüfung",
+      title: “Aufgabe bereit zur Überprüfung”,
       greeting: greetDe,
       body: (taskName: string) =>
-        `„<strong>${taskName}</strong>“ ist bereit für Ihre Überprüfung.`,
-      cta: "Im Portal ansehen",
+        `„<strong>${taskName}</strong>” ist bereit für Ihre Überprüfung.`,
+      cta: “Im Portal ansehen”,
+      notes: [
+        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+      ],
     },
     en: {
       subject: (taskName: string) => `Task ready for review: ${taskName}`,
-      title: "Task ready for review",
+      title: “Task ready for review”,
       greeting: greetEn,
       body: (taskName: string) =>
-        `"<strong>${taskName}</strong>" is ready for your review.`,
-      cta: "View in portal",
+        `”<strong>${taskName}</strong>” is ready for your review.`,
+      cta: “View in portal”,
+      notes: [
+        “You can adjust your email notification preferences in your account settings.”,
+      ],
     },
   },
 
@@ -83,6 +89,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string, credits: string) =>
         `Die Aufgabe „<strong>${taskName}</strong>" wurde mit <strong>${credits} Credits</strong> bewertet und wartet auf Ihre Freigabe.`,
       cta: "Im Portal ansehen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: (taskName: string, credits: string) => `Credit approval for ${taskName} — ${credits} credits`,
@@ -91,6 +100,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string, credits: string) =>
         `The task "<strong>${taskName}</strong>" has been estimated at <strong>${credits} credits</strong> and is awaiting your approval.`,
       cta: "View in portal",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
@@ -187,6 +199,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (stepName: string) =>
         `Der Projektschritt „<strong>${stepName}</strong>" ist bereit für Ihre Prüfung. Bitte sehen Sie sich die Ergebnisse an und geben Sie Ihr Feedback.`,
       cta: "Schritt öffnen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: (stepName: string) => `${stepName} — Your review is required`,
@@ -195,6 +210,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (stepName: string) =>
         `The project step "<strong>${stepName}</strong>" is ready for your review. Please review the deliverables and share your feedback.`,
       cta: "Open step",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
@@ -208,6 +226,9 @@ export const EMAIL_COPY: EmailCopyDict = {
         `Alle Aufgaben in diesem Schritt sind fertig. Wir arbeiten jetzt am nächsten Schritt Ihres Projekts.`,
       ],
       cta: "Projekt ansehen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: (chapterName: string) => `Project step completed: ${chapterName}`,
@@ -218,6 +239,9 @@ export const EMAIL_COPY: EmailCopyDict = {
         `All tasks in this step are done. We are now working on the next step of your project.`,
       ],
       cta: "View project",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
@@ -229,6 +253,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (teamMemberName: string, stepName: string) =>
         `${teamMemberName} hat eine Nachricht zu „<strong>${stepName}</strong>" hinterlassen:`,
       cta: "Nachricht ansehen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: (stepName: string) => `New message about ${stepName}`,
@@ -237,6 +264,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (teamMemberName: string, stepName: string) =>
         `${teamMemberName} left a message about "<strong>${stepName}</strong>":`,
       cta: "View message",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
@@ -252,6 +282,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "Im Portal ansehen",
       secondaryCta: "Neue Aufgabe erstellen",
       signOff: "Mit freundlichen Grüßen,<br/>Ihr Tech-Team",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: "Your task is completed ✅",
@@ -264,6 +297,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "View in portal",
       secondaryCta: "Create a new task",
       signOff: "Best regards,<br/>Your tech team",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
@@ -274,6 +310,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       greeting: greetDe,
       body: "Während Ihrer Abwesenheit gab es neue Antworten zu Ihren Aufgaben:",
       cta: "Alle im Portal ansehen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: "You have new messages",
@@ -281,44 +320,59 @@ export const EMAIL_COPY: EmailCopyDict = {
       greeting: greetEn,
       body: "While you were away, there were new replies on your tasks:",
       cta: "View all in portal",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 
   team_question: {
     de: {
       subject: (taskName: string) => `Nachricht zu „${taskName}”`,
-      title: "Ihr Tech-Team hat eine Nachricht",
+      title: “Ihr Tech-Team hat eine Nachricht”,
       greeting: greetDe,
       body: (teamMemberName: string, taskName: string) =>
         `${teamMemberName} hat eine Nachricht zu „<strong>${taskName}</strong>”:`,
-      cta: "Im Portal antworten",
+      cta: “Im Portal antworten”,
+      notes: [
+        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+      ],
     },
     en: {
-      subject: (taskName: string) => `Question about "${taskName}"`,
-      title: "Your tech team has a question",
+      subject: (taskName: string) => `Question about “${taskName}”`,
+      title: “Your tech team has a question”,
       greeting: greetEn,
       body: (teamMemberName: string, taskName: string) =>
-        `${teamMemberName} has a question about "<strong>${taskName}</strong>":`,
-      cta: "Reply in portal",
+        `${teamMemberName} has a question about “<strong>${taskName}</strong>”:`,
+      cta: “Reply in portal”,
+      notes: [
+        “You can adjust your email notification preferences in your account settings.”,
+      ],
     },
   },
 
   support_response: {
     de: {
-      subject: "Neue Nachricht von Ihrem Tech-Team",
-      title: "Neue Support-Nachricht",
+      subject: “Neue Nachricht von Ihrem Tech-Team”,
+      title: “Neue Support-Nachricht”,
       greeting: greetDe,
       body: (teamMemberName: string) =>
         `${teamMemberName} hat Ihnen eine Nachricht gesendet:`,
-      cta: "Im Portal ansehen",
+      cta: “Im Portal ansehen”,
+      notes: [
+        “Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.”,
+      ],
     },
     en: {
-      subject: "New message from your tech team",
-      title: "New support message",
+      subject: “New message from your tech team”,
+      title: “New support message”,
       greeting: greetEn,
       body: (teamMemberName: string) =>
         `${teamMemberName} sent you a message:`,
-      cta: "View in portal",
+      cta: “View in portal”,
+      notes: [
+        “You can adjust your email notification preferences in your account settings.”,
+      ],
     },
   },
 
@@ -511,6 +565,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string) =>
         "Unser Team hat eine neue Empfehlung für Sie erstellt: \"<strong>" + taskName + "</strong>\". Bitte sehen Sie sich den Vorschlag an und entscheiden Sie, ob Sie ihn annehmen möchten.",
       cta: "Empfehlung ansehen",
+      notes: [
+        "Sie können E-Mail-Benachrichtigungen in Ihren Kontoeinstellungen anpassen.",
+      ],
     },
     en: {
       subject: (taskName: string) => "New recommendation: " + taskName,
@@ -519,6 +576,9 @@ export const EMAIL_COPY: EmailCopyDict = {
       body: (taskName: string) =>
         "Your team has created a new recommendation for you: \"<strong>" + taskName + "</strong>\". Please review the suggestion and decide if you'd like to accept it.",
       cta: "View recommendation",
+      notes: [
+        "You can adjust your email notification preferences in your account settings.",
+      ],
     },
   },
 };
