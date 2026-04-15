@@ -233,7 +233,7 @@ Plans:
 - [ ] 13-01-PLAN.md — Frontend cleanup: remove profile.support_task_id reads, update useUnreadCounts signature
 - [x] 13-02-PLAN.md — Edge Function cleanup: remove dual-read fallbacks from 4 functions
 - [ ] 13-03-PLAN.md — DB migration: drop legacy RLS policies, profile_id columns, profiles org-config columns
-- [ ] 13-04-PLAN.md — Onboarding script rewrite: org-first flow with optional members[]
+- [x] 13-04-PLAN.md — Onboarding script rewrite: org-first flow with optional members[]
 
 ---
 
@@ -252,4 +252,4 @@ Plans:
 | 10. org-edge-functions | 3/6 | In Progress|  |
 | 11. org-frontend-auth | 4/4 | Complete   | 2026-04-15 |
 | 12. org-admin-page | 5/5 | Complete   | 2026-04-15 |
-| 13. org-onboarding-cleanup | 1/4 | In Progress|  |
+| 13. org-onboarding-cleanup | 2/4 | In Progress|  |
