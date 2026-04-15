@@ -136,3 +136,36 @@ export async function findOrgBySupportTaskId(
   const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId);
   return { organizationId, profileIds };
 }
+
+/**
+ * Returns the subset of profileIds whose org_members.role is 'admin' or 'member'.
+ * Profiles with no org_members row (legacy users) are treated as non-viewer and included.
+ * On query failure: returns original profileIds (permissive fallback).
+ */
+export async function getNonViewerProfileIds(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  profileIds: string[],
+): Promise<string[]> {
+  if (profileIds.length === 0) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("org_members")
+    .select("profile_id, role")
+    .in("profile_id", profileIds);
+
+  if (error || !data) {
+    console.warn("[getNonViewerProfileIds] role lookup failed, sending to all", { error });
+    return profileIds;
+  }
+
+  // Build a map: profileId → role. Profiles not in org_members get no entry.
+  const roleMap = new Map<string, string>(
+    (data as { profile_id: string; role: string }[]).map(row => [row.profile_id, row.role]),
+  );
+
+  // Include: explicit admin/member, OR legacy (no org_members row → not in map)
+  return profileIds.filter(id => {
+    const role = roleMap.get(id);
+    return role === undefined || role === "admin" || role === "member";
+  });
+}
