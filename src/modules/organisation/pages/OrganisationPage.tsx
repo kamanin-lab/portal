@@ -1,11 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { useOrg } from '@/shared/hooks/useOrg'
-import { useOrgMembers } from '../hooks/useOrgMembers'
+import { OrgInfoSection } from '../components/OrgInfoSection'
+import { TeamSection } from '../components/TeamSection'
 
 export function OrganisationPage() {
   const { isAdmin, isLoading } = useOrg()
-  const { data: members = [], isLoading: membersLoading } = useOrgMembers()
 
   if (isLoading) return null
   if (!isAdmin && !isLoading) return <Navigate to="/tickets" replace />
@@ -20,11 +20,8 @@ export function OrganisationPage() {
           </p>
         </div>
 
-        <section className="bg-surface rounded-[14px] border border-border p-5">
-          <p className="text-sm text-text-secondary">
-            {membersLoading ? 'Lädt...' : `${members.length} Mitglied${members.length === 1 ? '' : 'er'}`}
-          </p>
-        </section>
+        <OrgInfoSection />
+        <TeamSection />
       </div>
     </ContentContainer>
   )
