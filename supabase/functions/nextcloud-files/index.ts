@@ -7,7 +7,7 @@
  *   upload   — accepts multipart/form-data, PUTs file to Nextcloud
  *   mkdir    — recursive MKCOL, creates folder hierarchy
  *
- * Client-root actions (use profiles.nextcloud_client_root):
+ * Client-root actions (use organizations.nextcloud_client_root via org_members):
  *   browse-client        — PROPFIND on client portal root + optional sub_path
  *   download-client-file — streams file from client root (no project_config_id needed)
  *   upload-client-file   — accepts multipart/form-data, PUTs file to client root + optional sub_path
@@ -339,16 +339,10 @@ Deno.serve(async (req) => {
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
     // ORG-BE-03: Hoisted nextcloud_client_root lookup (replaces 7 inline reads).
-    // Dual-read: org → profile → null. Individual actions check for null and return
+    // Org is the single source of truth. Individual actions check for null and return
     // NEXTCLOUD_NOT_CONFIGURED / FORBIDDEN as they did before.
     const org = await getOrgForUser(supabaseService, user.id);
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("nextcloud_client_root")
-      .eq("id", user.id)
-      .maybeSingle();
-    const clientRoot: string | null =
-      org?.nextcloud_client_root ?? (profileRow as { nextcloud_client_root: string | null } | null)?.nextcloud_client_root ?? null;
+    const clientRoot: string | null = org?.nextcloud_client_root ?? null;
 
     // --- Parse request body / form-data ---------------------------------
     const contentType = req.headers.get("content-type") || "";

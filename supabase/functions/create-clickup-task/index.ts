@@ -297,29 +297,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ORG-BE-02: Resolve org config for dual-read (supabaseAdmin already constructed above)
+    // ORG-BE-02: Resolve org config (supabaseAdmin already constructed above)
     const org = await getOrgForUser(supabaseAdmin, user.id);
-
-    // Get user's ClickUp list IDs and chat channel from profile (fallback)
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("clickup_list_ids, full_name, clickup_chat_channel_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError) {
-      log.error("Failed to fetch profile");
+    if (!org) {
+      log.error("No org_members row for user");
       return new Response(
-        JSON.stringify({ error: "Failed to fetch user profile" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Organisation nicht konfiguriert. Bitte Administrator kontaktieren." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const listIds: string[] = org.clickup_list_ids;
+    const chatChannelId: string | null = org.clickup_chat_channel_id ?? null;
 
-    // Dual-read fallback: org first, then profile
-    const listIds: string[] = org?.clickup_list_ids ?? profile?.clickup_list_ids ?? [];
-    const chatChannelId: string | null = org?.clickup_chat_channel_id ?? profile?.clickup_chat_channel_id ?? null;
-    // full_name stays in profiles — no org fallback needed
-    const fullNameFromProfile: string | null = profile?.full_name ?? null;
+    // full_name is a person attribute — stays on profiles, not in organizations
+    const { data: profileForName } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    const fullNameFromProfile: string | null =
+      (profileForName as { full_name: string | null } | null)?.full_name ?? null;
 
     // Use explicit listId from request (project mode) or fall back to org/profile list
     let listId: string;
@@ -533,7 +530,7 @@ Deno.serve(async (req) => {
     }
 
     // Send notification to ClickUp Chat channel if configured
-    // chatChannelId already resolved via dual-read (org ?? profile) above
+    // chatChannelId resolved from org above
     const workspaceId = Deno.env.get("CLICKUP_WORKSPACE_ID");
 
     if (chatChannelId && workspaceId) {
