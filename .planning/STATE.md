@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-last_updated: "2026-04-15T10:44:14.626Z"
+status: executing
+last_updated: "2026-04-15T10:54:06.584Z"
 last_activity: 2026-04-15
 progress:
   total_phases: 13
   completed_phases: 10
   total_plans: 34
-  completed_plans: 33
-  percent: 97
+  completed_plans: 34
+  percent: 100
 ---
 
 # Project State
@@ -21,8 +21,8 @@ progress:
 ## Current Position
 
 Phase: 12 (org-admin-page) — EXECUTING
-Plan: 3 of 5
-Status: Plan 12-03 complete — Plan 12-04 next
+Plan: 4 of 5
+Status: Plan 12-04 complete — Plan 12-05 next
 Last activity: 2026-04-15
 
 ## Previous Milestone
@@ -87,6 +87,9 @@ Phase 1: Portal Frontend — Complete
 - Dialog.Title from Radix renders with role=heading — getByRole('heading') needed in TeamSection test to avoid ambiguity with button text (Phase 12-03)
 - useCredits() returns { balance, packageName, creditsPerMonth, isLoading, pkg } — mock aligned to full shape (Phase 12-03)
 - TeamSection manages inviteOpen state internally — InviteMemberDialog is a child, not a sibling in OrganisationPage (Phase 12-03)
+- MoreHorizontalIcon from @hugeicons/core-free-icons used for ··· trigger in MemberRowActions (Phase 12-04)
+- Radix DropdownMenu in jsdom requires pointerDown+click sequence to open — openDropdown() helper added in MemberRowActions test (Phase 12-04)
+- MemberRowActions returns null for self-row and admin rows — UI-level guard; hook enforces server-level last-admin guards (Phase 12-04)
 
 ### Blockers/Concerns
 
