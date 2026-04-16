@@ -13,6 +13,7 @@ interface Props {
   active: MeineAufgabenTab
   onChange: (tab: MeineAufgabenTab) => void
   counts: TabCounts
+  isAdmin?: boolean
 }
 
 const TAB_LABELS: Record<MeineAufgabenTab, string> = {
@@ -24,10 +25,11 @@ const TAB_LABELS: Record<MeineAufgabenTab, string> = {
 
 export const TAB_ORDER: MeineAufgabenTab[] = ['unread', 'kostenfreigabe', 'freigabe', 'empfehlungen']
 
-export function MeineAufgabenFilters({ active, onChange, counts }: Props) {
+export function MeineAufgabenFilters({ active, onChange, counts, isAdmin = false }: Props) {
+  const visibleTabs = TAB_ORDER.filter(tab => tab !== 'empfehlungen' || isAdmin)
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-      {TAB_ORDER.map(tab => {
+      {visibleTabs.map(tab => {
         const isActive = active === tab
         const count = counts[tab]
         return (

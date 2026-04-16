@@ -12,6 +12,7 @@ import { MeineAufgabenFilters } from '@/modules/tickets/components/MeineAufgaben
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
 import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { useMeineAufgaben } from '@/shared/hooks/useMeineAufgaben'
 import { cardVariants } from '@/modules/tickets/lib/task-list-utils'
 
@@ -19,6 +20,7 @@ export function MeineAufgabenPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
+  const { isAdmin } = useOrg()
   const { taskUnread, needsReply } = useUnreadCounts(user?.id)
   const {
     counts,
@@ -28,7 +30,7 @@ export function MeineAufgabenPage() {
     totalCount,
     recommendations,
     snoozeRecommendation,
-  } = useMeineAufgaben(tasks, taskUnread, isLoading, needsReply)
+  } = useMeineAufgaben(tasks, taskUnread, isLoading, needsReply, isAdmin)
 
   const activeTaskId = searchParams.get('taskId')
 
@@ -68,7 +70,7 @@ export function MeineAufgabenPage() {
       )}
 
       {!isLoading && totalCount > 0 && activeTab !== null && (
-        <MeineAufgabenFilters active={activeTab} onChange={setActiveTab} counts={counts} />
+        <MeineAufgabenFilters active={activeTab} onChange={setActiveTab} counts={counts} isAdmin={isAdmin} />
       )}
 
       {!isLoading && activeTab !== null && activeTab !== 'empfehlungen' && (

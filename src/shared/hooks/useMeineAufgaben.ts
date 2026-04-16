@@ -9,12 +9,13 @@ export function useMeineAufgaben(
   taskUnread: Record<string, number>,
   isLoading: boolean,
   needsReply: Record<string, boolean> = {},
+  isAdmin = false,
 ) {
   const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set())
   const { recommendations: allRecommendations } = useRecommendations(tasks)
   const recommendations = useMemo(
-    () => allRecommendations.filter(r => !snoozedIds.has(r.clickup_id)),
-    [allRecommendations, snoozedIds],
+    () => isAdmin ? allRecommendations.filter(r => !snoozedIds.has(r.clickup_id)) : [],
+    [allRecommendations, snoozedIds, isAdmin],
   )
   const snoozeRecommendation = (id: string) => {
     setSnoozedIds(prev => { const next = new Set(prev); next.add(id); return next })

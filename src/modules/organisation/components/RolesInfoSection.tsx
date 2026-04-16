@@ -8,7 +8,7 @@ const ROLES = [
   },
   {
     label: 'Mitglied',
-    description: 'Tickets und Projektschritte freigeben oder Änderungen anfordern, Angebote (Credits) annehmen oder ablehnen, Empfehlungen bestätigen, neue Tickets erstellen und Kommentare verfassen.',
+    description: 'Tickets und Projektschritte freigeben oder Änderungen anfordern, Angebote (Credits) annehmen oder ablehnen, neue Tickets erstellen und Kommentare verfassen.',
   },
   {
     label: 'Betrachter',
