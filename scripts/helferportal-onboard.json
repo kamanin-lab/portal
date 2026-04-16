@@ -1,0 +1,10 @@
+{
+  "email": "thomas.oeben@helferportal.de",
+  "fullName": "Thomas Oeben",
+  "company": "Helferportal GmbH & Co. KG",
+  "clickupListIds": ["901522502870"],
+  "supportTaskId": "86c95nupf",
+  "nextcloudRoot": "/01_OPUS/clients/helferportal/_portal",
+  "modules": ["tickets", "projects"],
+  "projectIds": ["901522480420"]
+}

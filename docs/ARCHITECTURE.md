@@ -38,10 +38,11 @@ Viewer-role users (`org_members.role = 'viewer'`) are restricted from mutating a
 - Bell (in-app) notifications remain unfiltered — all org members including viewers see notification badges
 
 ## Module Structure
-- `src/shared/` — auth, layout, hooks, lib, types; also contains `pages/HilfePage` (FAQ) and `components/help/` (FaqItem, FaqSection)
+- `src/shared/` — auth, layout, hooks, lib, types; also contains `pages/HilfePage` (FAQ), `components/help/` (FaqItem, FaqSection), and `hooks/useOrg.ts` (OrgProvider context)
 - `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
 - `src/modules/tickets/` — Tasks/Support + Credit display (live Supabase: task_cache, comment_cache, credit_transactions)
-- `src/modules/files/` — Client file browser (Nextcloud WebDAV via nextcloud-files Edge Function, root from profiles.nextcloud_client_root)
+- `src/modules/files/` — Client file browser (Nextcloud WebDAV via nextcloud-files Edge Function, root from organizations.nextcloud_client_root)
+- `src/modules/organisation/` — Admin-only org management page at `/organisation` (TeamSection, InviteMemberDialog, MemberRowActions, OrgInfoSection, RolesInfoSection). Visible only to admin-role users.
 - `src/app/` — routing, providers
 
 ## Hilfe / FAQ
@@ -86,7 +87,7 @@ Profile auto-created via `on_auth_user_created` trigger on `auth.users`
 ### Supabase (primary)
 - URL: https://portal.db.kamanin.at
 - Project: self-hosted (PostgreSQL 15.8) on Coolify
-- Tables: profiles, task_cache, comment_cache, notifications, read_receipts, project_config, chapter_config, project_task_cache, step_enrichment, project_access, client_workspaces, credit_packages, credit_transactions
+- Tables: profiles, organizations, org_members, task_cache, comment_cache, notifications, read_receipts, project_config, chapter_config, project_task_cache, step_enrichment, project_access, client_workspaces, credit_packages, credit_transactions
 
 ### Nextcloud (file storage)
 - Source of truth for all project and client files

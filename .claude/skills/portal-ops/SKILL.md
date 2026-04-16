@@ -134,6 +134,40 @@ ON CONFLICT DO NOTHING
 
 ---
 
+## D. Очистить task_cache от проектного листа
+
+Если проектный ClickUp-лист (например `MBM – Blog`) был случайно добавлен в список задач пользователя при онбординге — его задачи попадают в Tickets и Meine Aufgaben. Проектные задачи должны быть **только** в `project_task_cache`, не в `task_cache`.
+
+### Диагностика — что попало
+
+```sql
+SELECT list_id, list_name, count(*) as cnt
+FROM task_cache
+WHERE profile_id = '<profile_id>'
+GROUP BY list_id, list_name ORDER BY cnt DESC
+```
+
+Если видишь несколько листов — поддержка (`MBM – Tasks`) и проект (`MBM – Blog`) — проектный нужно удалить.
+
+### Удаление для одного или нескольких пользователей
+
+```sql
+DELETE FROM task_cache
+WHERE list_id = '<project_list_id>'
+  AND profile_id IN ('<profile_id_1>', '<profile_id_2>')
+RETURNING profile_id, clickup_id, name
+```
+
+### Профилактика при онбординге
+
+⚠️ **Никогда не добавлять проектный ClickUp-лист в `organizations.clickup_list_ids`** — он используется для синхронизации `task_cache`. Проектные листы обслуживаются через `project_config.clickup_list_id` и попадают в `project_task_cache` через `fetch-project-tasks`.
+
+Правило:
+- `organizations.clickup_list_ids` → **только support-лист** (напр. `MBM – Tasks`)
+- `project_config.clickup_list_id` → **проектный лист** (напр. `MBM – Blog`)
+
+---
+
 ## Checklist перед завершением
 
 - [ ] company_name профиля совпадает с organizations.name (не null)

@@ -303,3 +303,50 @@
 **Decision:** Magic Link is enabled and working. The `auth-email` Edge Function is the delivery mechanism — GoTrue triggers it via the send email hook, the function maps the Supabase email type to the portal `emailCopy.ts` template, and sends via Mailjet. Login page exposes the magic link option to users.
 
 **Consequences:** Users can authenticate without a password using a time-limited link sent to their email. All documentation references to magic link being disabled or pending SMTP configuration are outdated and have been corrected (ARCHITECTURE.md, TECH_CONTEXT.md). The `auth-email` Edge Function must remain deployed and Mailjet credentials must remain valid for magic link to function.
+
+## ADR-029: Organizations milestone — multi-user client support (Phases 9-14)
+**Date:** 2026-04-14 to 2026-04-16
+**Status:** Accepted — fully implemented in production
+
+**Context:** The portal was profile-centric: every credit package, workspace, and ClickUp list was attached to a single `profile_id`. Clients with multiple employees each needed a separate package, which was commercially and operationally incorrect. The core problem: a company is one billing entity, but could have multiple portal users.
+
+**Decision:** Introduce an `organizations` + `org_members` two-table model. Each company has one `organizations` row. Each portal user has one `org_members` row linking them to their company with a role (`admin`, `member`, `viewer`). Org-level resources (credits, workspaces, ClickUp lists, Nextcloud root, support task) move from `profiles` to `organizations`. The migration is additive first (Phase 9), then cleanup removes the old columns (Phase 13).
+
+**Key sub-decisions:**
+- One user = one org (no multi-org membership; simplifies RLS and UI)
+- Roles: `admin` (full control, billing, invite), `member` (create tasks, approve credits), `viewer` (read-only + comment)
+- `task_cache`, `comment_cache`, `notifications`, `read_receipts` remain per-user — these are personal interaction records
+- `credit_transactions.profile_id` retained even after org migration — needed for audit trail
+- Legacy fallback in `useOrg()`: if no `org_members` row found, treat as `member` (backward compat for any edge-case user)
+- Admin-only `/organisation` page for team management; non-admins redirected to `/tickets`
+- Viewer guards enforced at both frontend (`useOrg().isViewer`) and backend (`getNonViewerProfileIds` helper in Edge Functions)
+- Bell notifications remain unfiltered — all roles see badge; only action-required emails (task_review, step_ready) are filtered for viewers
+
+**Phases implemented:**
+- Phase 9 (org-db-foundation): schema, migration, dual-mode RLS, SQL helpers
+- Phase 10 (org-backend): Edge Functions updated to read from organizations
+- Phase 11 (org-frontend-auth): OrgProvider context, client-side RLS for reads, role guards in tickets module
+- Phase 12 (org-admin-page): admin write RLS, `/organisation` page with TeamSection, InviteMemberDialog, MemberRowActions
+- Phase 13 (org-onboarding-cleanup): legacy profile_id policies and columns dropped
+- Phase 14 (role-based-guards): viewer guard on StepActionBar (projects module), Empfehlungen tab admin-only, sidebar badge exclusion for non-admins
+
+**Consequences:**
+- `credit_packages` and `client_workspaces` are now org-scoped — `profile_id` columns dropped
+- `profiles` no longer stores `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id` — all moved to `organizations`
+- All Edge Functions that previously read from `profiles` for ClickUp/Nextcloud config now join through `org_members → organizations`
+- `onboard-client.ts` script must be updated to create org + admin member, not just a profile
+- `notifications_type_check` constraint extended: `member_invited`, `member_removed` types added
+
+## ADR-030: Viewer role — defense-in-depth enforcement
+**Date:** 2026-04-15
+**Status:** Accepted
+
+**Context:** The `viewer` role must not be able to perform write actions (create tasks, approve credits, release project steps). Frontend guards alone are insufficient — a determined user could call Edge Functions directly.
+
+**Decision:** Enforce viewer restrictions at two layers:
+1. **Frontend:** `useOrg().isViewer` flag gates action buttons (NewTaskButton, CreditApproval, TaskActions, StepActionBar). Components return null or hide buttons when `isViewer === true`.
+2. **Backend:** `getNonViewerProfileIds(supabase, profileIds)` helper in `_shared/org.ts` filters out viewer-role profiles before sending action-required emails. Applied in `clickup-webhook` for `task_review` and `step_ready` email blocks.
+
+**Bell notifications are intentionally NOT filtered** — viewers should see activity in their organization even if they cannot act on it.
+
+**Consequences:** Two-layer guard prevents both accidental UI exposure and direct API exploitation. The permissive fallback in `getNonViewerProfileIds` (returns full list on DB error) ensures email delivery is not silently dropped due to a transient DB error.

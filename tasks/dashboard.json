@@ -1,10 +1,19 @@
 {
-  "lastUpdated": "2026-03-31T00:00:00Z",
+  "lastUpdated": "2026-04-16T00:00:00Z",
   "status": "active",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
+    {
+      "id": "ORG-MILESTONE",
+      "title": "Organizations Milestone (Phases 9-14)",
+      "date": "2026-04-16",
+      "commits": ["183d164", "b903ae1", "3f7efcc"],
+      "summary": "Full multi-user org system: organizations + org_members tables, data migration, dual-mode RLS, OrgProvider context, /organisation admin page (TeamSection, InviteMemberDialog, MemberRowActions), viewer role guards on frontend + backend, Empfehlungen tab admin-only, sidebar badge exclusion for non-admins. Legacy profile_id columns dropped from credit_packages and client_workspaces.",
+      "filesChanged": 40,
+      "reviewCycles": 6
+    },
     {
       "id": "TASK-017",
       "title": "Hilfe FAQ Page",
@@ -174,26 +183,26 @@
       "summary": "UI для управления клиентами, пакетами, проектами, кредитами — замена ручной работы в Supabase"
     },
     {
-      "title": "Organizations (Multi-User Clients)",
-      "file": "organizations.md",
-      "status": "idea",
-      "priority": "high",
-      "target": "Phase 5",
-      "summary": "Shared credits, tasks, files per company. Roles: admin/member/viewer."
-    },
-    {
       "title": "Proactive Recommendations",
       "file": "recommendations.md",
       "status": "idea",
       "priority": "high",
       "target": "Phase 4+",
       "summary": "Проактивные рекомендации на основе данных проекта"
+    },
+    {
+      "title": "Triage Agent (KAMANDA)",
+      "file": "triage-agent.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Phase 5+",
+      "summary": "AI triage agent for new support tickets — classifies, enriches with WP site audit, auto-estimates credits, posts structured reply via ClickUp"
     }
   ],
   "stats": {
-    "totalCommits": 22,
-    "totalFilesChanged": 185,
-    "testsPassing": "77/77",
+    "totalCommits": 35,
+    "totalFilesChanged": 230,
+    "testsPassing": "382/382",
     "buildStatus": "clean"
   }
 }

@@ -1,5 +1,124 @@
 # Changelog
 
+## fix(org): Empfehlungen tab admin-only + sidebar badge exclusion — 2026-04-16
+
+### Sidebar badge
+- `new_recommendation` notification type excluded from badge count for non-admin users
+
+### Empfehlungen tab
+- Tab restricted to admin-only; non-admin org members (member/viewer role) no longer see the Empfehlungen tab in the navigation
+
+---
+
+## Phase 13-cleanup: org_member profile visibility + invited_email — 2026-04-16
+
+### `supabase/migrations/20260416140000_org_member_profile_visibility.sql`
+- New RLS policy on `profiles`: org members can read basic profile info (id, email, full_name) of fellow org members in the same organization
+- Uses `user_org_ids()` SECURITY DEFINER function — Postgres initPlan caching for efficiency
+- Fixes null email/full_name for invited (pending) members visible in TeamSection
+
+### `supabase/migrations/20260416150000_org_members_invited_email.sql`
+- Added `invited_email text` column to `org_members`
+- Stores the email address used at invite time — displayed in Team list for pending members whose profile may not yet be visible via RLS
+
+---
+
+## Phase 13: org-onboarding-cleanup — Remove legacy profile_id RLS — 2026-04-16
+
+### `supabase/migrations/20260416130000_remove_legacy_profile_rls.sql`
+- Dropped legacy `profile_id = auth.uid()` RLS policies from `credit_packages` and `client_workspaces` (replaced by org-scoped policies from Phase 9)
+- Dropped `profile_id` FK columns from `credit_packages` and `client_workspaces` — `organization_id NOT NULL` is the new access axis
+- Dropped org-config columns migrated to `organizations` in Phase 9: `clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id` from `profiles`
+- Dropped `on_profile_list_change` trigger (superseded by org-level routing)
+- Migration is idempotent — all DROPs use IF EXISTS
+- Safety gate: aborts if org policies are missing, aborts if any profile_id-based policies remain
+
+---
+
+## Phase 12: org-admin-page — Admin RLS write policies — 2026-04-16
+
+### `supabase/migrations/20260416120000_org_admin_write_rls.sql`
+- New RLS policies on `org_members` for admin users:
+  - SELECT: admins can read all rows in their organization (not just own row)
+  - UPDATE: admins can update role on any row in their organization
+  - DELETE: admins can delete any row in their organization
+- Uses `public.user_org_role(organization_id) = 'admin'` check — relies on Phase 9 helper function
+
+### `src/modules/organisation/` (new module)
+- `pages/OrganisationPage.tsx` — admin-only page at `/organisation`; redirects non-admins to `/tickets`
+- `components/OrgInfoSection.tsx` — displays org name, slug, credit package info (read-only)
+- `components/TeamSection.tsx` — table of org members with name, email, role, invite date
+- `components/MemberRowActions.tsx` — role change dropdown + remove member action (admin only)
+- `components/InviteMemberDialog.tsx` — invite new member by email (sends magic link)
+- `components/RolesInfoSection.tsx` — explains admin/member/viewer role differences
+- `hooks/useOrgMembers.ts` — React Query hook fetching all org_members with joined profile data
+- `hooks/useMemberActions.ts` — mutations for update role, remove member
+
+### `src/app/routes.tsx`
+- Added `/organisation` route (lazy-loaded `OrganisationPage`)
+
+### Tests added
+- `src/modules/organisation/__tests__/OrgInfoSection.test.tsx`
+- `src/modules/organisation/__tests__/TeamSection.test.tsx`
+- `src/modules/organisation/__tests__/MemberRowActions.test.tsx`
+- `src/modules/organisation/__tests__/InviteMemberDialog.test.tsx`
+- `src/modules/organisation/__tests__/useMemberActions.test.ts`
+
+---
+
+## Phase 11: org-frontend-auth — OrgProvider + RLS for client reads — 2026-04-15
+
+### `supabase/migrations/20260415120000_org_rls_and_credit_rpc.sql`
+- RLS policy on `org_members`: members can read their own membership row (`profile_id = auth.uid()`)
+- RLS policy on `organizations`: members can read the org they belong to
+- New RPC `get_org_credit_balance(p_org_id uuid)` — sums `credit_transactions.amount` for the org; SECURITY DEFINER, stable
+
+### `src/shared/hooks/useOrg.ts` (new file)
+- `OrgProvider` React context provider — fetches org + role on mount via `org_members → organizations` join
+- Exposes: `organization`, `orgRole` (`'admin' | 'member' | 'viewer'`), `isAdmin`, `isMember`, `isViewer`, `isLoading`
+- Legacy fallback: if no org_members row found, treats user as `member` (backward compatibility)
+
+### `src/shared/types/organization.ts` (new file)
+- `Organization` interface matching the `organizations` table shape
+
+### Frontend role guards (tickets module)
+- `TaskActions` — Freigeben / Änderungen anfordern buttons hidden for viewer-role users
+- `CreditApproval` — cost approval button hidden for viewers
+- `TicketsPage` NewTaskButton — hidden for viewers
+
+### `src/shared/__tests__/useOrg.test.tsx` (new file)
+- Tests for OrgProvider context value, legacy fallback, role flag derivation
+
+---
+
+## Phase 9-10: org-db-foundation + org-backend — Organizations schema — 2026-04-14
+
+### `supabase/migrations/20260414200000_org_foundation.sql`
+- New table `organizations` (id, name, slug unique, clickup_list_ids jsonb, nextcloud_client_root, support_task_id, clickup_chat_channel_id, created_at, updated_at)
+- New table `org_members` (id, organization_id FK, profile_id FK, role CHECK IN ('admin','member','viewer'), created_at; UNIQUE organization_id+profile_id)
+- `organizations_updated_at` trigger using existing `set_updated_at()` function
+- SQL helpers: `user_org_ids()` (SECURITY DEFINER, stable, returns org IDs for current user), `user_org_role(org_id uuid)` (returns role string or NULL)
+- FK columns added (nullable): `organization_id` on `credit_packages`, `client_workspaces`, `profiles`, `credit_transactions`
+- Data migration: each existing profile → one org (slug from email domain) + one org_members row (role='admin') + back-fill all FK columns
+- NOT NULL enforced on `credit_packages.organization_id` and `client_workspaces.organization_id` after back-fill
+- Dual-mode RLS added: org-scoped SELECT policies on `credit_packages` and `client_workspaces` (ORed alongside existing profile_id policies)
+- `notifications_type_check` constraint extended to include: `member_invited`, `member_removed`
+- Performance indexes: `org_members(profile_id)`, `org_members(organization_id)`
+- Migration gate: asserts org_members count == profiles count, no NULL clickup_list_ids
+
+### Edge Functions updated for org-aware routing
+- `fetch-clickup-tasks` — reads `clickup_list_ids` from `organizations` (via `org_members` join) instead of `profiles`
+- `clickup-webhook` — `findProfilesForTask()` resolves recipients via `org_members` (all members of the org); deduplicates by profile_id
+- `credit-topup` — groups by `organization_id` for monthly top-up
+- `nextcloud-files` — reads `nextcloud_client_root` from `organizations`
+- `create-clickup-task` — reads `list_id` from org-level `clickup_list_ids`
+- `send-reminders` — groups by org, sends per-member digests
+
+### `supabase/functions/_shared/org.ts` (new file)
+- `getNonViewerProfileIds(supabase, profileIds)` — batch helper; filters profile IDs to admin/member roles only; permissive fallback on DB error
+
+---
+
 ## Phase 14: role-based-guards — Viewer role gaps closed — 2026-04-15
 
 ### `src/modules/projects/components/steps/StepActionBar.tsx`

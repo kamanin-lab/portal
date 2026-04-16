@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-04-06_
+_Status: active_ · _Last updated: 2026-04-16_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
@@ -10,6 +10,7 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 
 ## Open Items
 - MBM modules: tickets + support active; projects not yet configured
+- `onboard-client.ts` script needs update to create org + admin member instead of standalone profile
 
 ## Completed Today (2026-03-25)
 | Item | Notes |
@@ -30,6 +31,15 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+
+### Organizations Milestone (Phases 9-14) ✅ (2026-04-14 → 2026-04-16)
+- Phase 9: `organizations` + `org_members` tables, data migration (each profile → one org + admin member), dual-mode RLS, `user_org_ids()` + `user_org_role()` SQL helpers
+- Phase 10: All Edge Functions updated to read ClickUp lists, Nextcloud root, support task from `organizations` instead of `profiles`
+- Phase 11: `OrgProvider` React context, RLS for client-side org reads, role guards (viewer) in tickets module
+- Phase 12: Admin write RLS on `org_members`, `/organisation` page (TeamSection, InviteMemberDialog, MemberRowActions, OrgInfoSection, RolesInfoSection)
+- Phase 13: Legacy `profile_id` columns dropped from `credit_packages` and `client_workspaces`; org-config columns (`clickup_list_ids`, `nextcloud_client_root`, `support_task_id`, `clickup_chat_channel_id`) dropped from `profiles`
+- Phase 14: Viewer guard on `StepActionBar` (projects module); Empfehlungen tab admin-only; sidebar badge excludes `new_recommendation` for non-admins; `getNonViewerProfileIds` backend helper filters viewer-role from action emails
+
 ### Staging Environment ✅ (2026-04-06)
 - `staging` branch created from `main`
 - Cloud Supabase free-tier project `ahlthosftngdcryltapu` provisioned (17 tables, RLS, 15 secrets, 17 Edge Functions)

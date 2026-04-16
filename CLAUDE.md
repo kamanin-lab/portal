@@ -50,7 +50,8 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | Project Experience | `src/modules/projects/` | Live Supabase (project_config, project_task_cache, step_enrichment) | Phase 3.6 complete |
 | Tasks/Support | `src/modules/tickets/` | Live Supabase (task_cache, comment_cache) | Phase 3.5 complete |
 | Files | `src/modules/files/` | Nextcloud WebDAV via `nextcloud-files` Edge Function | Live — root read-only, subfolder CRUD |
-| Shared Shell | `src/shared/` | Auth, layout, design tokens | Phase 3.5 complete |
+| Organisation | `src/modules/organisation/` | Live Supabase (organizations, org_members) | Phase 14 complete — admin-only |
+| Shared Shell | `src/shared/` | Auth, layout, design tokens, OrgProvider | Phase 3.5 complete |
 | Hilfe (FAQ) | `src/shared/pages/HilfePage.tsx` | Static FAQ data (`hilfe-faq-data.ts`) | Live |
 | Content Editor | `src/modules/content/` | — | Future |
 | Discovery Tool | `src/modules/discovery/` | — | Future |
@@ -64,7 +65,8 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/DECISIONS.md` | Architecture Decision Records |
 | `docs/CHANGELOG.md` | What changed, when, why |
 | `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
-| `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts |
+| `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts, org.ts |
+| `supabase/functions/_shared/org.ts` | Org helpers: `getNonViewerProfileIds(supabase, profileIds)` — filters profile list to admin/member roles only; permissive fallback on error. Used by clickup-webhook to exclude viewers from action emails. |
 | `supabase/functions/_shared/wp-audit.ts` | WordPress site audit via Maxi AI Core REST API — fetches plugins, WP version, product count, language, timezone, and active operator-notes; `bootstrap-session` is called first (v3.3.0+ requirement); graceful degradation on any failure |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
@@ -74,7 +76,12 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `src/modules/files/components/UploadProgressBar.tsx` | Animated per-file progress bar; exports `UploadItem` interface; auto-dismisses at completion |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
 | `src/modules/tickets/components/PriorityIcon.tsx` | Volume-bar priority icons (1/2/3 bars + AlertCircle for urgent) |
-| `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache |
+| `src/shared/hooks/useOrg.ts` | OrgProvider React context — fetches org + role on mount; exposes `organization`, `orgRole`, `isAdmin`, `isMember`, `isViewer`, `isLoading`. Legacy fallback: treats user as `member` if no org_members row found. |
+| `src/shared/types/organization.ts` | `Organization` TypeScript interface matching the `organizations` table shape |
+| `src/modules/organisation/pages/OrganisationPage.tsx` | Admin-only page at `/organisation` — redirects non-admins to `/tickets` |
+| `src/modules/organisation/hooks/useOrgMembers.ts` | React Query hook fetching all org_members with joined profile data (id, email, full_name, invited_email) |
+| `src/modules/organisation/hooks/useMemberActions.ts` | Mutations for update member role and remove member from org |
+| `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache. NOTE: needs update to create org + admin org_members row (currently creates standalone profile only) |
 | `scripts/sync-staging-secrets.ts` | SSH to prod Coolify → reads 15 Edge Function secrets → pushes to staging Cloud Supabase via Management API |
 | `scripts/sync-staging-schema.ts` | pg_dump prod public schema → apply to staging Cloud Supabase; flags: `--dump-only`, `--apply-only` |
 | `docs/staging-env-reference.txt` | Staging environment variables, project refs, service role keys, site URL |

@@ -8,26 +8,25 @@ Complete technical reference for the KAMANIN Client Portal backend infrastructur
 
 ### 1.1 profiles
 
-User configuration and ClickUp mapping. One row per authenticated user.
+User identity and notification preferences. One row per authenticated user. **Org-config columns (clickup_list_ids, nextcloud_client_root, support_task_id, clickup_chat_channel_id) were moved to `organizations` in Phase 9 (migration 20260414200000) and dropped in Phase 13 (migration 20260416130000).**
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | uuid | PK, FK → auth.users(id) | Supabase Auth user ID |
 | email | text | NOT NULL | User email address |
 | full_name | text | | Display name |
-| company_name | text | | Client company name |
-| clickup_list_ids | jsonb | DEFAULT '[]' | Array of ClickUp List IDs assigned to this client (e.g., `["901305442177"]`) |
+| company_name | text | | Client company name (kept for display; canonical name lives in `organizations.name`) |
+| organization_id | uuid | nullable, FK → organizations(id) | Back-reference to the user's organization. Set during Phase 9 data migration. Kept nullable for backward safety. |
 | email_notifications | boolean | DEFAULT true | Whether to send email notifications (legacy, kept for backward compat) |
 | notification_preferences | jsonb | DEFAULT '{"task_review": true, "task_completed": true, "team_comment": true, "support_response": true, "reminders": true}' | Granular per-type email notification preferences |
 | avatar_url | text | | Profile picture URL |
-| support_task_id | text | | ClickUp task ID used as dedicated support chat channel |
-| clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |
-| nextcloud_client_root | text | | WebDAV path to the client's root folder in Nextcloud (e.g., `/clients/muster-gmbh/`). Used by `nextcloud-files` Edge Function for the client-level file browser. NULL means files are not yet configured for this client. |
 | last_project_reminder_sent_at | timestamptz | | Timestamp of the last project-task reminder email sent to this user. Used by `send-reminders` Edge Function to enforce the 3-day cooldown between project reminder emails. Separate from ticket reminder tracking. Added 2026-04-04. |
 | last_unread_digest_sent_at | timestamptz | | Timestamp of the last unread message digest email sent to this user. Used by `send-reminders` to enforce the 24h cooldown for daily unread chat reminders. Added 2026-04-14. |
 | last_recommendation_reminder_sent_at | timestamptz | NULL | Cooldown timestamp for recommendation_reminder emails (5-day). Used by `send-reminders` to avoid spamming clients about open recommendations. Added 2026-04-14. |
 
-**RLS Policy:** Users can read/update only their own row (`auth.uid() = id`).
+**RLS Policies:**
+- Users can read/update only their own row (`auth.uid() = id`)
+- Org members can read basic profile info (`id`, `email`, `full_name`) of fellow org members — enables TeamSection to display member names. Added in Phase 14 (migration 20260416140000).
 
 ---
 
@@ -118,7 +117,7 @@ In-app bell notifications. Created by the webhook function on status changes and
 | is_read | boolean | DEFAULT false | Read state |
 | created_at | timestamptz | DEFAULT now() | Creation timestamp |
 
-**Type Check Constraint:** `notifications_type_check` — allowed values: `'team_reply'`, `'status_change'`, `'step_ready'`, `'project_reply'`, `'project_update'`, `'new_recommendation'`.
+**Type Check Constraint:** `notifications_type_check` — allowed values: `'team_reply'`, `'status_change'`, `'step_ready'`, `'project_reply'`, `'project_update'`, `'new_recommendation'`, `'member_invited'`, `'member_removed'`. (Extended in Phase 9 migration 20260414200000 to add the two org membership types.)
 
 **RLS Policy:** Users can read only rows where `profile_id = auth.uid()`. Users can update `is_read` on their own notifications.
 
@@ -224,30 +223,31 @@ Maps users to projects they can access. One row per (user, project) pair.
 
 ### 1.10 credit_packages
 
-Monthly credit allocations per client. One active package per user defines how many credits are topped up each month.
+Monthly credit allocations per organization. One active package per org defines how many credits are topped up each month. **`profile_id` column was dropped in Phase 13 (migration 20260416130000); access is now org-scoped.**
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | uuid | PK, DEFAULT gen_random_uuid() | Package ID |
-| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| organization_id | uuid | NOT NULL, FK -> organizations(id) | Owning organization (replaces profile_id as of Phase 13) |
 | package_name | text | NOT NULL | Human-readable package label (e.g., "Standard 10h") |
 | credits_per_month | numeric | NOT NULL | Number of credits added each month via `credit-topup` |
 | is_active | boolean | NOT NULL, DEFAULT true | Only active packages receive monthly top-ups |
 | started_at | date | NOT NULL, DEFAULT CURRENT_DATE | When this package began |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
 
-**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+**RLS Policy:** Users can read rows where `organization_id IN (SELECT user_org_ids())` — org-scoped, all members of the org see the shared package.
 
 ---
 
 ### 1.11 credit_transactions
 
-Ledger of all credit movements. Positive amounts are top-ups, negative amounts are deductions. Balance is computed as `SUM(amount)`.
+Ledger of all credit movements. Positive amounts are top-ups, negative amounts are deductions. Balance is computed as `SUM(amount)` (or via `get_org_credit_balance(org_id)` RPC).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | uuid | PK, DEFAULT gen_random_uuid() | Transaction ID |
-| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | User who triggered the transaction. **Retained for audit trail even after org migration** — not dropped in Phase 13. |
+| organization_id | uuid | nullable, FK -> organizations(id) | Org this transaction belongs to. Added in Phase 9, nullable to preserve historical rows. |
 | amount | numeric | NOT NULL | Credit amount (positive = top-up, negative = deduction) |
 | type | text | NOT NULL | Transaction type: `monthly_topup`, `task_deduction`, `manual_adjustment` |
 | task_id | text | | Related ClickUp task ID (for `task_deduction` type) |
@@ -257,33 +257,84 @@ Ledger of all credit movements. Positive amounts are top-ups, negative amounts a
 
 **RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
 
+**RPC:** `get_org_credit_balance(p_org_id uuid)` — SECURITY DEFINER function that sums `amount` for all rows matching `organization_id = p_org_id`. Used by `useOrg` / credit balance display to show org-wide balance.
+
 **Realtime:** REPLICA IDENTITY FULL -- enables instant balance updates via Supabase Realtime subscriptions.
 
 ---
 
 ### 1.12 client_workspaces
 
-Active module registry per client. Controls which navigation items appear in the sidebar and which routes are accessible via WorkspaceGuard.
+Active module registry per organization. Controls which navigation items appear in the sidebar and which routes are accessible via WorkspaceGuard. **`profile_id` column was dropped in Phase 13 (migration 20260416130000); access is now org-scoped.**
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
-| profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | Owning user |
+| organization_id | uuid | NOT NULL, FK -> organizations(id) | Owning organization (replaces profile_id as of Phase 13) |
 | module_key | text | NOT NULL | Module identifier (e.g., `tickets`, `support`, `projects`) |
 | display_name | text | NOT NULL | German label shown in sidebar (e.g., "Aufgaben") |
 | icon | text | | Icon name from Hugeicons (`@hugeicons/core-free-icons`) |
 | sort_order | integer | NOT NULL, DEFAULT 0 | Display order within Workspaces zone |
 | is_active | boolean | NOT NULL, DEFAULT true | Only active rows appear in sidebar |
 
-**Unique Constraint:** `(profile_id, module_key)` — one row per module per user.
+**Unique Constraint:** `(organization_id, module_key)` — one row per module per org.
 
-**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+**RLS Policy:** Users can read rows where `organization_id IN (SELECT user_org_ids())` — org-scoped, all members see the same workspace set.
 
-**Usage:** `useWorkspaces()` hook fetches active rows. `WorkspaceGuard` redirects to `/inbox` if the required `module_key` is not active for the current user.
+**Usage:** `useWorkspaces()` hook fetches active rows. `WorkspaceGuard` redirects to `/inbox` if the required `module_key` is not active for the current user's org.
 
 ---
 
-### 1.13 project_file_activity
+### 1.13 organizations
+
+Company-level entity. Owns shared configuration (ClickUp lists, Nextcloud root, support task) and is the billing/access anchor for all org members. Created in Phase 9 (migration 20260414200000).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Organization ID |
+| name | text | NOT NULL | Company display name (e.g., "MBM GmbH") |
+| slug | text | NOT NULL, UNIQUE | URL-safe identifier derived from email domain (e.g., "mbm-moebel") |
+| clickup_list_ids | jsonb | NOT NULL, DEFAULT '[]' | Array of ClickUp List IDs for all tasks belonging to this org |
+| nextcloud_client_root | text | | WebDAV path to the org's root folder in Nextcloud (e.g., `/clients/mbm-moebel/`) |
+| support_task_id | text | | ClickUp task ID for the org's dedicated support chat channel |
+| clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
+| updated_at | timestamptz | NOT NULL, DEFAULT now() | Auto-updated via `organizations_updated_at` trigger |
+
+**RLS Policy:** Authenticated users can read the org they belong to (`id IN (SELECT organization_id FROM org_members WHERE profile_id = auth.uid())`). Added in Phase 11.
+
+**SQL Helpers:**
+- `user_org_ids()` — SECURITY DEFINER, stable; returns all `organization_id` values for the current user. Used in RLS policies on `credit_packages`, `client_workspaces`, `organizations`.
+- `user_org_role(org_id uuid)` — SECURITY DEFINER, stable; returns role string (`'admin'`/`'member'`/`'viewer'`) for current user in the given org, or NULL if not a member.
+
+---
+
+### 1.14 org_members
+
+Maps users to their organization with a role. One row per (org, user) pair. Created in Phase 9 (migration 20260414200000).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT gen_random_uuid() | Row ID |
+| organization_id | uuid | NOT NULL, FK → organizations(id) ON DELETE CASCADE | Parent organization |
+| profile_id | uuid | NOT NULL, FK → profiles(id) ON DELETE CASCADE | Member user |
+| role | text | NOT NULL, CHECK IN ('admin','member','viewer') | Access role |
+| invited_email | text | | Email address used at invite time. Displayed in TeamSection for pending members not yet visible via profiles RLS. Added Phase 14 (migration 20260416150000). |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
+
+**Unique Constraint:** `(organization_id, profile_id)` — one membership per user per org.
+
+**Indexes:** `org_members(profile_id)`, `org_members(organization_id)` — required for efficient RLS policy evaluation.
+
+**RLS Policies:**
+- Members can read their own row (`profile_id = auth.uid()`). Added Phase 11.
+- Admins can SELECT all rows in their org (`user_org_role(organization_id) = 'admin'`). Added Phase 12.
+- Admins can UPDATE role on any row in their org. Added Phase 12.
+- Admins can DELETE any row in their org. Added Phase 12.
+
+---
+
+### 1.15 project_file_activity
 
 File activity log for the Projects module. Records both portal-initiated actions (upload, folder create) and events pulled from the Nextcloud OCS Activity API.
 
@@ -308,7 +359,7 @@ File activity log for the Projects module. Records both portal-initiated actions
 
 ---
 
-### 1.14 client_file_activity
+### 1.16 client_file_activity
 
 File activity log for the Files module (client-level). Same structure as `project_file_activity` but scoped to a client's root Nextcloud folder rather than a specific project.
 

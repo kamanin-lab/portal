@@ -31,9 +31,15 @@ The webhook function resolves notification recipients through a two-step process
 
 1. **Primary: task_cache lookup** — Query `task_cache` for all `profile_id` values matching the `clickup_id` of the affected task. This is the fast path and works for all tasks that have been synced at least once.
 
-2. **Fallback: profile ACL lookup** — If `task_cache` returns no results (task never synced, new task), the function fetches the task's `list_id` from the ClickUp API and queries `profiles` for all users whose `clickup_list_ids` JSONB array contains that list ID. A warning is logged if more than 10 profiles match (potential misconfiguration).
+2. **Fallback: org_members lookup** — If `task_cache` returns no results (task never synced, new task), the function fetches the task's `list_id` from the ClickUp API and queries `organizations` (via `org_members`) for all users whose org has that list ID in `clickup_list_ids`. Updated in Phase 10 — previously queried `profiles.clickup_list_ids` directly.
 
 If both paths return zero profiles, the notification is silently dropped. No retry mechanism exists for dropped notifications.
+
+### Viewer filtering (Phase 14)
+
+After recipient resolution, **action-required email types** (`task_review`, `step_ready`) are filtered through `getNonViewerProfileIds(supabase, profileIds)` from `supabase/functions/_shared/org.ts`. This removes viewer-role members from the email recipient list — viewers cannot act on these requests, so sending them action emails is misleading.
+
+**Bell (in-app) notifications are NOT filtered** — all org members including viewers receive badge counts and see notification entries. Filtering applies only to email dispatch.
 
 ## Visibility Gate
 

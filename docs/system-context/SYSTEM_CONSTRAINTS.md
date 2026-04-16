@@ -20,7 +20,12 @@ The frontend reads exclusively from `task_cache` and `comment_cache`. These tabl
 
 ### RLS enforced
 
-Row Level Security is enabled on all core tables (`task_cache`, `comment_cache`, `notifications`, `read_receipts`, `profiles`). Users can only access their own records. Edge Functions use the service role key for cross-user operations (webhook processing, notification delivery).
+Row Level Security is enabled on all core tables. Users can only access their own records or records belonging to their organization. Edge Functions use the service role key for cross-user operations (webhook processing, notification delivery).
+
+- **Per-user tables** (`task_cache`, `comment_cache`, `notifications`, `read_receipts`): `profile_id = auth.uid()`
+- **Org-scoped tables** (`credit_packages`, `client_workspaces`, `organizations`): `organization_id IN (SELECT user_org_ids())`
+- **Org membership** (`org_members`): own row readable by member; all rows readable/writable by admin via `user_org_role()` check
+- **Profiles cross-read**: org members can read basic profile fields (`id`, `email`, `full_name`) of fellow org members to support team listing
 
 ### Email triggers controlled internally
 
