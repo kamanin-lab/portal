@@ -1,0 +1,163 @@
+/**
+ * Maxi AI License Admin Styles
+ */
+
+.maxi-ai-license-wrap {
+    max-width: 900px;
+}
+
+.maxi-ai-license-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.maxi-ai-license-card h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+/* Status badges */
+.maxi-ai-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.maxi-badge-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.maxi-badge-grace {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.maxi-badge-expired,
+.maxi-badge-invalid {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.maxi-badge-inactive {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* License details table */
+.maxi-ai-license-details th {
+    width: 150px;
+    font-weight: 600;
+}
+
+.maxi-ai-license-error {
+    color: #d63638;
+}
+
+/* Actions */
+.maxi-ai-license-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f1;
+}
+
+/* Activate form */
+.maxi-ai-license-activate {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.maxi-ai-license-activate label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.maxi-ai-license-activate input[type="text"] {
+    width: 100%;
+    max-width: 400px;
+}
+
+.maxi-ai-license-activate .spinner {
+    float: none;
+    visibility: hidden;
+    vertical-align: middle;
+}
+
+.maxi-ai-license-activate .spinner.is-active {
+    visibility: visible;
+}
+
+/* Message area */
+.maxi-ai-license-message {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    display: none;
+}
+
+.maxi-ai-license-message.success {
+    display: block;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.maxi-ai-license-message.error {
+    display: block;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Tier columns */
+.maxi-ai-license-tiers {
+    display: flex;
+    gap: 30px;
+}
+
+.maxi-ai-tier-column {
+    flex: 1;
+}
+
+.maxi-ai-tier-column h3 {
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.maxi-ai-tier-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.maxi-ai-tier-column ul li {
+    padding: 3px 0;
+    font-size: 13px;
+}
+
+.maxi-ai-tier-column ul li code {
+    font-size: 12px;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .maxi-ai-license-tiers {
+        flex-direction: column;
+    }
+}

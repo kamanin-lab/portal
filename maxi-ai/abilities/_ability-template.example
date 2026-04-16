@@ -1,0 +1,85 @@
+<?php
+/**
+ * Ability Template — Copy this file when creating a new ability.
+ *
+ * Checklist before shipping a new ability:
+ *
+ *  1. Place the file in /abilities/{category}/ — it will be auto-loaded.
+ *  2. Choose a unique ability ID: 'maxi/{verb-noun}' (e.g. 'maxi/create-order').
+ *  3. REQUIRED: Define 'input_schema' (JSON Schema draft-7 format).
+ *     Without it the MCP adapter cannot validate input and the ability
+ *     will fail when called by an external agent.
+ *  4. REQUIRED: Set a proper 'permission_callback' with capability checks.
+ *     Never use '__return_true' in production. Match the capability to the
+ *     action: 'edit_posts', 'publish_pages', 'upload_files', etc.
+ *  5. Use maxi_ai_response() for ALL return values — it standardizes the
+ *     response format and logs errors automatically.
+ *  6. Sanitize every input value before use.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+add_action( 'wp_abilities_api_init', function () {
+
+    if ( ! function_exists( 'wp_register_ability' ) ) {
+        return;
+    }
+
+    wp_register_ability(
+        'maxi/example-ability',
+        [
+            'label'       => 'Example Ability',
+            'description' => 'Describe what this ability does.',
+            'category'    => 'content', // system | content | media | woocommerce | development
+
+            'meta' => [
+                'show_in_rest' => true,
+                'mcp'          => [ 'public' => true ],
+            ],
+
+            // REQUIRED — without this the MCP adapter will reject calls.
+            'input_schema' => [
+                'type'       => 'object',
+                'properties' => [
+                    'example_param' => [
+                        'type'        => 'string',
+                        'description' => 'Describe the parameter.',
+                    ],
+                ],
+                'required' => [ 'example_param' ],
+            ],
+
+            'execute_callback' => function ( $input ) {
+
+                $value = sanitize_text_field( $input['example_param'] ?? '' );
+
+                if ( empty( $value ) ) {
+                    return maxi_ai_response(
+                        false,
+                        [],
+                        'Missing example_param.'
+                    );
+                }
+
+                // ... do work here ...
+
+                return maxi_ai_response(
+                    true,
+                    [
+                        'result' => $value,
+                    ]
+                );
+
+            },
+
+            // REQUIRED — use a proper capability check.
+            'permission_callback' => function () {
+                return current_user_can( 'edit_posts' );
+            },
+
+        ]
+    );
+
+} );
