@@ -3,6 +3,7 @@ import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { useOrg } from '@/shared/hooks/useOrg'
 import { OrgInfoSection } from '../components/OrgInfoSection'
 import { TeamSection } from '../components/TeamSection'
+import { RolesInfoSection } from '../components/RolesInfoSection'
 
 export function OrganisationPage() {
   const { isAdmin, isLoading } = useOrg()
@@ -22,6 +23,7 @@ export function OrganisationPage() {
 
         <OrgInfoSection />
         <TeamSection />
+        <RolesInfoSection />
       </div>
     </ContentContainer>
   )

@@ -50,7 +50,7 @@ export function InviteMemberDialog({ open, onClose }: Props) {
     <Dialog.Root open={open} onOpenChange={v => { if (!v) handleClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[420px] bg-surface rounded-[14px] border border-border p-6 shadow-2xl z-50 focus:outline-none">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-[420px] bg-surface rounded-[14px] border border-border p-6 shadow-2xl z-50 focus:outline-none">
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-md font-semibold text-text-primary">Mitglied einladen</Dialog.Title>
             <Dialog.Close className="p-1.5 rounded hover:bg-surface-hover">
