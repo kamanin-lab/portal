@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useClickUpTasks } from '@/modules/tickets/hooks/useClickUpTasks'
 import { useUnreadCounts } from '@/modules/tickets/hooks/useUnreadCounts'
 import { useRecommendations } from '@/modules/tickets/hooks/useRecommendations'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { mapStatus, isTerminal } from '@/modules/tickets/lib/status-mapping'
 
 /**
@@ -13,6 +14,7 @@ export function useNeedsAttentionCount(userId: string | undefined) {
   const { data: tasks = [] } = useClickUpTasks()
   const { taskUnread, needsReply } = useUnreadCounts(userId)
   const { recommendations } = useRecommendations(tasks)
+  const { isAdmin } = useOrg()
 
   const data = useMemo(() => {
     if (!userId) return 0
@@ -22,10 +24,10 @@ export function useNeedsAttentionCount(userId: string | undefined) {
         const s = mapStatus(t.status)
         return s === 'needs_attention' || s === 'awaiting_approval'
       }).map(t => t.clickup_id),
-      ...recommendations.map(t => t.clickup_id),
+      ...(isAdmin ? recommendations.map(t => t.clickup_id) : []),
     ])
     return ids.size
-  }, [userId, tasks, taskUnread, needsReply, recommendations])
+  }, [userId, tasks, taskUnread, needsReply, recommendations, isAdmin])
 
   return { data }
 }
