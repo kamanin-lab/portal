@@ -23,16 +23,23 @@ description: >
 ### Выполнение (через Node.js + Supabase Admin API)
 
 ```js
-// 1. Найти org ID
-SELECT id FROM organizations WHERE name ILIKE '%mbm%'
+// 1. Найти org ID и company_name главного пользователя
+SELECT id, name FROM organizations WHERE name ILIKE '%mbm%'
+// company_name для нового профиля = organizations.name
 
 // 2. Создать auth user (email_confirm: true — без письма)
 POST /auth/v1/admin/users
 { email, password: <generated>, email_confirm: true }
 
-// 3. Создать profile
+// 3. Создать/обновить profile
+// ⚠️ ВАЖНО: Supabase-триггер создаёт пустой профиль при создании auth user.
+// ON CONFLICT нужно обновлять ВСЕ поля, включая company_name — иначе останется null.
 INSERT INTO profiles (id, email, full_name, company_name, email_notifications)
 VALUES (userId, email, fullName, orgName, true)
+ON CONFLICT (id) DO UPDATE SET
+  full_name = EXCLUDED.full_name,
+  company_name = EXCLUDED.company_name,
+  email_notifications = EXCLUDED.email_notifications
 
 // 4. Добавить в org_members
 INSERT INTO org_members (organization_id, profile_id, role)
@@ -129,6 +136,7 @@ ON CONFLICT DO NOTHING
 
 ## Checklist перед завершением
 
+- [ ] company_name профиля совпадает с organizations.name (не null)
 - [ ] Пароль нового пользователя передан Юрию (не отправлен клиенту)
 - [ ] project_config создан со всеми полями включая start_date / target_date
 - [ ] clickup_phase_field_id заполнен
