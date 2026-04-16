@@ -4,15 +4,15 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 const ROLES = [
   {
     label: 'Administrator',
-    description: 'Vollzugriff: Mitglieder einladen, Rollen ändern, Mitglieder entfernen und alle Organisationsdaten verwalten.',
+    description: 'Vollzugriff: Mitglieder einladen, Rollen ändern und entfernen. Zusätzlich alle Rechte des Mitglieds.',
   },
   {
     label: 'Mitglied',
-    description: 'Kann Projekte, Tickets und Dateien einsehen sowie Kommentare und Anfragen erstellen.',
+    description: 'Tickets und Projektschritte freigeben oder Änderungen anfordern, Angebote (Credits) annehmen oder ablehnen, Empfehlungen bestätigen, neue Tickets erstellen und Kommentare verfassen.',
   },
   {
     label: 'Betrachter',
-    description: 'Nur-Lese-Zugriff: Projekte und Tickets einsehen, keine Änderungen möglich.',
+    description: 'Nur-Lese-Zugriff: Projekte, Tickets und Dateien einsehen. Keine Freigaben, keine Kommentare, keine Aktionen.',
   },
 ]
 
