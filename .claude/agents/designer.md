@@ -2,7 +2,7 @@
 name: designer
 description: Frontend UI/UX designer for the Portal. Creates distinctive, production-grade interfaces with Motion animations. Use when building new UI components, pages, or redesigning existing surfaces.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: opus
+model: claude-opus-4-6
 ---
 
 # Designer Agent

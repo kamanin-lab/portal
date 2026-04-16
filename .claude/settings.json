@@ -19,6 +19,11 @@
           {
             "type": "command",
             "command": "node -e \"const fs=require('fs');const p=require('path').join(process.cwd(),'tasks','dashboard.json');try{const s=fs.statSync(p);const mins=Math.round((Date.now()-s.mtime.getTime())/60000);if(mins>15){console.error('⏰ dashboard.json is '+mins+' min stale. Update it now if phase changed.');}}catch(e){}\""
+          },
+          {
+            "type": "command",
+            "command": "node -e \"const path=require('path');const f=process.env.CLAUDE_TOOL_INPUT_FILE_PATH||'';if(f&&(f.endsWith('.ts')||f.endsWith('.tsx'))&&!f.includes('supabase/functions')&&!f.includes('.d.ts')){const {execSync}=require('child_process');try{execSync('npx tsc --noEmit 2>&1',{cwd:process.cwd(),stdio:'pipe'});console.log('✅ TypeScript OK');}catch(e){const lines=e.stdout&&e.stdout.toString().split('\\n').filter(Boolean).slice(0,10);if(lines&&lines.length){console.error('❌ TypeScript errors:\\n'+lines.join('\\n'));}}}\"",
+            "description": "Type-check TypeScript files after edit"
           }
         ]
       }

@@ -52,7 +52,7 @@ Keeps source-of-truth docs and durable context aligned with real work.
 - `tasks/TASK-XXX-*.md` — individual task files (create/update after each task)
 
 ### Memory (user/project/feedback context across conversations)
-- `C:\Users\upan\.claude\projects\g--01-OPUS-Projects-PORTAL\memory\` — persistent memory files
+- `C:\Users\upan\.claude\projects\G--01-OPUS-Projects-PORTAL\memory\` — persistent memory files
 - Update memory when user preferences, feedback, or project facts change
 
 ## Must not do

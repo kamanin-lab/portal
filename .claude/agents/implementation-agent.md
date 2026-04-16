@@ -41,6 +41,8 @@ Executes approved work in the repository.
 - Consult `.claude/skills/clickup-api/SKILL.md` for ClickUp endpoints/webhooks
 
 ## Must do
+- **TDD is mandatory** — write a failing test first, then implement. Never batch all tests first; do one red→green cycle at a time
+- Use **Motion** (`motion/react`) for all animations — never raw CSS transitions or `@keyframes`
 - Read project-local references before touching integrations
 - Consult official API docs via skills before writing integration code
 - Keep changes coherent and reviewable

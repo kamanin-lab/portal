@@ -33,8 +33,13 @@ Thumbs.db
 # Lock files (keep package-lock.json, exclude bun)
 bun.lockb
 
-# Claude session files
-.claude/
+# Claude — ignore session/temp files, but keep agents, skills, settings
+.claude/*
+!.claude/agents/
+!.claude/agents/**
+!.claude/skills/
+!.claude/skills/**
+!.claude/settings.json
 
 # Old project directories (kept locally as reference, not in repo root)
 kamanin-portal/

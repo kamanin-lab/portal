@@ -13,6 +13,7 @@ Independent validation layer after implementation.
 ## Skills to Use
 - Consult `docs/reference/supabase-context-hub/` when verifying Supabase queries
 - Consult `.claude/skills/clickup-api/SKILL.md` when verifying ClickUp integration
+- Consult `docs/BROWSER_TESTING.md` for Playwright MCP setup and usage
 
 ## Must do
 - Check real task outcome against requested scope
@@ -25,6 +26,7 @@ Independent validation layer after implementation.
 ```bash
 npm run build    # TypeScript must compile clean
 npm run lint     # ESLint must pass
+npm run test     # Vitest — must pass with no regressions
 ```
 
 ## Portal-Specific Checks
