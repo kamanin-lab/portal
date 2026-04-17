@@ -1407,31 +1407,39 @@ Deno.serve(async (req) => {
 
               const creditsStr = credits > 0 ? ` (${credits} Credits)` : "";
 
-              // Create bell notifications
+              // Re-approval flag: if priorApproved was set (read at top of handler,
+              // before the ClickUp API fetch) the client has approved this task before —
+              // mark as re-approval and include the previous amount. Compare as numbers
+              // to avoid string-vs-number mismatch on the numeric column.
+              let previousCredits: string | undefined;
+              const isReApproval = priorApproved != null && Number(priorApproved) !== Number(credits);
+              if (isReApproval) {
+                previousCredits = String(priorApproved);
+                log.info("Re-approval detected", { taskId, previousCredits, currentCredits: credits });
+              }
+
+              // Create bell notifications — use "Aktualisierte Kostenfreigabe" wording
+              // on re-approval to match the email, otherwise standard "Kostenfreigabe".
+              const notifTitle = isReApproval
+                ? `Aktualisierte Kostenfreigabe: ${taskName}`
+                : `Kostenfreigabe: ${taskName}`;
+              const notifMessage = isReApproval
+                ? `Die Sch\u00e4tzung f\u00fcr "${taskName}" wurde von ${previousCredits} auf ${credits} Credits angepasst und wartet erneut auf Ihre Freigabe.`
+                : `Aufgabe "${taskName}" erfordert Ihre Kostenfreigabe${creditsStr}.`;
               const notifications = profileIds.map(profileId => ({
                 profile_id: profileId,
                 type: "status_change",
-                title: `Kostenfreigabe: ${taskName}`,
-                message: `Aufgabe "${taskName}" erfordert Ihre Kostenfreigabe${creditsStr}.`,
+                title: notifTitle,
+                message: notifMessage,
                 task_id: taskId,
                 is_read: false,
               }));
               await supabase.from("notifications").insert(notifications);
-              log.info("Created awaiting approval notifications", { count: notifications.length });
+              log.info("Created awaiting approval notifications", { count: notifications.length, isReApproval });
 
               // Update task activity
               const eventTimestamp = parseClickUpTimestamp(historyItem.date);
               await updateTaskActivity(supabase, taskId, eventTimestamp, log);
-
-              // Re-approval email flag: if priorApproved was set (read at top of
-              // handler, before the ClickUp API fetch) the client has approved this
-              // task before — mark as re-approval and include the previous amount.
-              // Compare as numbers to avoid string-vs-number mismatch on numeric column.
-              let previousCredits: string | undefined;
-              if (priorApproved != null && Number(priorApproved) !== Number(credits)) {
-                previousCredits = String(priorApproved);
-                log.info("Re-approval detected for email", { taskId, previousCredits, currentCredits: credits });
-              }
 
               // Send emails
               const { data: profiles } = await supabase
