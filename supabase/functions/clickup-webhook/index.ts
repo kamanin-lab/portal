@@ -1331,18 +1331,36 @@ Deno.serve(async (req) => {
             const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
             if (profileIds.length > 0) {
-              // Read credits from task_cache
-              let { data: cachedTaskCredits } = await supabase
+              // Read approved_credits FIRST to detect re-approval. If set, the client has
+              // approved this task before — we must fetch current credits directly from
+              // ClickUp to avoid a race where the status-change webhook event arrives
+              // before the custom-field-change event that would have refreshed cache.
+              const { data: approvedRow } = await supabase
                 .from("task_cache")
-                .select("credits")
+                .select("approved_credits")
                 .eq("clickup_id", taskId)
                 .limit(1)
                 .maybeSingle();
+              const priorApproved = approvedRow?.approved_credits ?? null;
+              const isLikelyReApproval = priorApproved != null;
 
-              let credits = cachedTaskCredits?.credits ?? 0;
+              let credits = 0;
 
-              // BLOCKING 4 fix: If credits are missing from cache, fetch from ClickUp API
-              if (!credits || credits <= 0) {
+              if (!isLikelyReApproval) {
+                // First-time approval: read from cache (fast path)
+                const { data: cachedTaskCredits } = await supabase
+                  .from("task_cache")
+                  .select("credits")
+                  .eq("clickup_id", taskId)
+                  .limit(1)
+                  .maybeSingle();
+                credits = cachedTaskCredits?.credits ?? 0;
+              }
+
+              // Force-fetch from ClickUp API when:
+              //  - re-approval: cache may be stale due to webhook event race
+              //  - first approval: cache missing/zero (existing BLOCKING 4 path)
+              if (isLikelyReApproval || !credits || credits <= 0) {
                 log.warn("Credits not in cache for AWAITING APPROVAL notification, fetching from ClickUp", { taskId });
                 const creditsFieldId = Deno.env.get("CLICKUP_CREDITS_FIELD_ID") || "";
                 if (creditsFieldId) {
@@ -1405,23 +1423,14 @@ Deno.serve(async (req) => {
               const eventTimestamp = parseClickUpTimestamp(historyItem.date);
               await updateTaskActivity(supabase, taskId, eventTimestamp, log);
 
-              // Look up previously approved credits from task_cache (Rule #1: UI/email
-              // reads from cache, not credit_transactions). If set and different from
-              // current credits, this is a re-approval scenario.
+              // Re-approval email flag: if priorApproved was set (read at top of
+              // handler, before the ClickUp API fetch) the client has approved this
+              // task before — mark as re-approval and include the previous amount.
+              // Compare as numbers to avoid string-vs-number mismatch on numeric column.
               let previousCredits: string | undefined;
-              {
-                const { data: approvedRow } = await supabase
-                  .from("task_cache")
-                  .select("approved_credits")
-                  .eq("clickup_id", taskId)
-                  .limit(1)
-                  .maybeSingle();
-
-                const prev = approvedRow?.approved_credits;
-                if (prev != null && prev !== credits) {
-                  previousCredits = String(prev);
-                  log.info("Re-approval detected for email", { taskId, previousCredits, currentCredits: credits });
-                }
+              if (priorApproved != null && Number(priorApproved) !== Number(credits)) {
+                previousCredits = String(priorApproved);
+                log.info("Re-approval detected for email", { taskId, previousCredits, currentCredits: credits });
               }
 
               // Send emails
