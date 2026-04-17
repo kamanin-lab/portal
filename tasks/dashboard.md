@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-04-16_
+_Status: active_ · _Last updated: 2026-04-17_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
@@ -31,6 +31,15 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+
+### Credit Re-approval Flow ✅ (2026-04-17)
+- `task_cache.approved_credits` column + backfill migration
+- `upsert_task_deduction` RPC (SECURITY DEFINER, partial-index UPSERT)
+- `CreditApproval` UI: three render states (first approval / re-approval / decline)
+- Email + bell notification re-approval wording ("Aktualisierte Kostenfreigabe")
+- Webhook race fix: force-fetch credits from ClickUp on re-approval
+- Removed webhook auto-delta anti-pattern
+- 5 commits: f1a9c8d → 5e97b83
 
 ### Organizations Milestone (Phases 9-14) ✅ (2026-04-14 → 2026-04-16)
 - Phase 9: `organizations` + `org_members` tables, data migration (each profile → one org + admin member), dual-mode RLS, `user_org_ids()` + `user_org_role()` SQL helpers

@@ -350,3 +350,48 @@
 **Bell notifications are intentionally NOT filtered** — viewers should see activity in their organization even if they cannot act on it.
 
 **Consequences:** Two-layer guard prevents both accidental UI exposure and direct API exploitation. The permissive fallback in `getNonViewerProfileIds` (returns full list on DB error) ensures email delivery is not silently dropped due to a transient DB error.
+
+## ADR-031: Credit re-approval — single-row UPSERT, not audit-trail rows
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** When a task is re-priced in ClickUp and sent back to AWAITING APPROVAL after the client had already approved it, the credit commitment must be updated. Three options were considered:
+1. Insert a new `task_deduction` row for the new amount (leaving the old row in place) — audit trail preserved but balance double-counts both amounts
+2. Insert a compensating positive row + new deduction row (delta approach) — correct balance but clutters ledger
+3. UPSERT the existing `task_deduction` row in place (overwrite amount) — simple, single row per task
+
+**Decision:** Option 3 — overwrite the existing `task_deduction` row atomically via RPC. The audit trail need is already satisfied by (a) ClickUp comments on every approval action ("Kostenfreigabe erteilt (N Credits)" / "Kostenfreigabe aktualisiert (X → Y Credits)"), (b) the email history in Mailjet, and (c) the portal bell notification log. A delta-row ledger approach would require UI-level summing across multiple rows per task, adding complexity for no user-visible benefit. The single-row model keeps balance computation (`SUM(amount)`) correct with no special cases.
+
+**Consequences:** One `task_deduction` row per task. Re-approval overwrites `amount` and `description` in place. ClickUp comment + email + bell serve as the human-readable audit trail. `credit_transactions.created_at` reflects the first approval date — this is a known tradeoff of the UPSERT approach.
+
+## ADR-032: RPC for partial-index UPSERT (`upsert_task_deduction`)
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** `credit_transactions` has a partial unique index `credit_transactions_task_deduction_unique ON (task_id, type) WHERE (type = 'task_deduction')`. To atomically upsert using this index as the conflict target, the SQL must be `INSERT ... ON CONFLICT (task_id, type) WHERE (type = 'task_deduction') DO UPDATE`. The Supabase JS SDK `.upsert()` method sends its conflict target as a column list only — it cannot append the `WHERE` predicate needed for partial index targeting. Using `.upsert({ onConflict: 'task_id,type' })` would either hit the wrong constraint or fail with a Postgres error if no total index on `(task_id, type)` exists.
+
+**Decision:** Wrap the UPSERT in a `SECURITY DEFINER` PostgreSQL function `upsert_task_deduction(p_profile_id, p_organization_id, p_amount, p_task_id, p_task_name, p_description)` called via `supabase.rpc('upsert_task_deduction', {...})` with the service-role client. The function is restricted to `service_role` only (`REVOKE ALL FROM PUBLIC; GRANT EXECUTE TO service_role`). `SET search_path = public` prevents search-path hijacking.
+
+**Consequences:** Partial-index conflict resolution works correctly. The RPC is the only path to create or update a `task_deduction` row. Direct INSERT from client-side code is impossible (RLS does not allow inserts; the RPC is server-only). Future callers must use this RPC for any task credit deduction.
+
+## ADR-033: `task_cache.approved_credits` as UI data source for re-approval state
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** The UI must show "Aktualisierte Kostenfreigabe" when a previously-approved task returns to AWAITING APPROVAL with a different credit amount. Two approaches were considered:
+1. Read from `credit_transactions` directly — query the existing `task_deduction` row, compare its `amount` with `task_cache.credits`
+2. Add `task_cache.approved_credits numeric` column — mirror the last approved amount into the cache table at approval time
+
+**Decision:** Option 2 — add `approved_credits` to `task_cache`. CLAUDE.md Rule #1 states: UI reads ONLY from cache tables, never from ClickUp or other source tables directly. Querying `credit_transactions` from the browser would violate this rule (it is not a cache table; it is a ledger with direct RLS). The cache column approach also gives Realtime subscriptions a single table to watch for re-approval state changes.
+
+**Consequences:** `task_cache.approved_credits` is written by the `update-task-status` Edge Function immediately after each successful `approve_credits` action. It is also written by the backfill in migration `20260417100000_credit_reapproval.sql` for historical rows. NULL means never approved. A non-NULL value that differs from `task_cache.credits` signals re-approval state in the UI.
+
+## ADR-034: Force-fetch credits from ClickUp on re-approval to avoid webhook race
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** When KAMANIN updates the Credits custom field in ClickUp and then moves the task to AWAITING APPROVAL, ClickUp fires two webhook events near-simultaneously: a `taskUpdated` custom-field-change event and a `taskUpdated` status-change event. The portal's `clickup-webhook` processes these independently. If the status-change event is processed first, `task_cache.credits` may still hold the previous value — the cache has not yet been updated by the custom-field event. The AWAITING APPROVAL handler would then read the stale amount, produce a notification with the wrong credit count, and send an email showing the old number.
+
+**Decision:** On the AWAITING APPROVAL handler, when `task_cache.approved_credits` is already set (indicating re-approval), always force-fetch the current credits directly from the ClickUp API (`GET /v2/task/{id}`, reading the credits custom field) instead of trusting the cache. This path also existed for the first-approval case where the cache was empty or zero (existing BLOCKING 4 fix), so the two cases now share the same fetch path. The fresh value is written back to `task_cache.credits` before composing the notification, keeping the cache consistent.
+
+**Consequences:** One additional ClickUp API call per AWAITING APPROVAL webhook event when a re-approval is detected. This is a deliberate tradeoff — correctness over one extra API call. The force-fetch path is gated on `isLikelyReApproval || !credits || credits <= 0`, so first-approval tasks with credits in cache take the fast path.

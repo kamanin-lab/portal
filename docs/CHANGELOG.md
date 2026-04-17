@@ -1,5 +1,58 @@
 # Changelog
 
+## feat(credits): Credit re-approval flow — 2026-04-17
+
+### New Behaviour
+
+When a task is returned to `AWAITING APPROVAL` after having previously been approved with a different credit amount, the portal now handles the re-approval case atomically and without creating duplicate ledger entries.
+
+**UI (`src/modules/tickets/components/CreditApproval.tsx`)**
+- Three render states: standard first-approval, re-approval, and decline flow
+- Re-approval detected when `task_cache.approved_credits` is set and differs from `task_cache.credits`
+- Re-approval renders: "Aktualisierte Kostenfreigabe" heading + "Aktualisiert" badge + "Die Schätzung wurde von X auf Y Credits angepasst." body
+- Standard approval renders the existing "Kostenfreigabe erforderlich" text
+- `approved_credits` field threaded through `CachedTask` → `ClickUpTask` → `TaskDetail` → `CreditApproval` props
+
+**Backend (`supabase/functions/update-task-status/index.ts`)**
+- `approve_credits` action uses new RPC `upsert_task_deduction(p_profile_id, p_organization_id, p_amount, p_task_id, p_task_name, p_description)` instead of a plain INSERT
+- RPC performs `INSERT ... ON CONFLICT (task_id, type) WHERE (type = 'task_deduction') DO UPDATE` — atomically overwrites the existing deduction row without adding a duplicate
+- After upsert, mirrors approved amount onto `task_cache.approved_credits` so the UI can show re-approval state on next load
+- Auto-comment text branches: "Kostenfreigabe erteilt (N Credits)" vs. "Kostenfreigabe aktualisiert (X → Y Credits)"
+
+**Email (`supabase/functions/send-mailjet-email/index.ts`)**
+- `credit_approval` template detects re-approval when `previousCredits` is provided and differs from `credits`
+- Re-approval email subject: "Aktualisierte Kostenfreigabe für {task} — {credits} Credits"
+- Re-approval email body: "Die Schätzung für „{task}" wurde von {prev} auf {credits} Credits angepasst und wartet erneut auf Ihre Freigabe."
+- Standard approval path unchanged
+
+**Bell notification (`supabase/functions/clickup-webhook/index.ts`)**
+- On `AWAITING APPROVAL` status change, webhook reads `task_cache.approved_credits` first to detect re-approval before fetching credits
+- Re-approval notification title: "Aktualisierte Kostenfreigabe: {task}"
+- Re-approval notification message: "Die Schätzung für "{task}" wurde von X auf Y Credits angepasst und wartet erneut auf Ihre Freigabe."
+
+**Database (`supabase/migrations/20260417100000_credit_reapproval.sql`)**
+- `ALTER TABLE task_cache ADD COLUMN IF NOT EXISTS approved_credits numeric` — tracks last client-approved amount; NULL = never approved
+- Backfill: existing `credit_transactions` deductions backfilled into `approved_credits` to prevent false re-approval on historical tasks after deploy
+- `CREATE OR REPLACE FUNCTION upsert_task_deduction(...)` — SECURITY DEFINER, `SET search_path = public`, service_role-only; wraps partial-index UPSERT targeting `credit_transactions_task_deduction_unique ON (task_id, type) WHERE type = 'task_deduction'`
+- `REVOKE ALL ON FUNCTION upsert_task_deduction FROM PUBLIC; GRANT EXECUTE ... TO service_role`
+
+### Bugs Prevented
+
+1. **Webhook auto-delta anti-pattern removed** — The webhook previously inserted a compensating delta transaction when the Credits custom field changed in ClickUp. This could silently deduct credits before the client consented. That logic is removed. The webhook now only syncs `task_cache.credits`. The sole source of truth for committed credit deductions is the client's `approve_credits` action.
+
+2. **Partial-index UPSERT via RPC** — Supabase JS SDK `.upsert()` cannot pass a `WHERE` clause to target a partial unique index as the `ON CONFLICT` arbiter. Naive `INSERT ... ON CONFLICT (task_id)` would have matched the wrong constraint. The `upsert_task_deduction` RPC wraps the full `ON CONFLICT (task_id, type) WHERE (type = 'task_deduction')` SQL.
+
+3. **Webhook event ordering race fix** — On `AWAITING APPROVAL`, ClickUp may fire the status-change event and the custom-field-change event near-simultaneously. If the status-change webhook is processed first, `task_cache.credits` may still hold the old value. The webhook now force-fetches current credits from the ClickUp API (not cache) whenever `approved_credits` is already set (i.e., re-approval is likely), ensuring the notification and email carry the correct new amount.
+
+### Commits
+- `f1a9c8d feat(credits): implement credit re-approval with atomic UPSERT`
+- `532db21 fix(credits): use RPC for partial-index UPSERT`
+- `7ef9f2e fix(credits): harden upsert_task_deduction with SET search_path`
+- `698ffe1 fix(credits): force-fetch from ClickUp on re-approval to avoid webhook race`
+- `5e97b83 feat(credits): show 'Aktualisierte Kostenfreigabe' in bell notification on re-approval`
+
+---
+
 ## fix(org): Empfehlungen tab admin-only + sidebar badge exclusion — 2026-04-16
 
 ### Sidebar badge

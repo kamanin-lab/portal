@@ -40,11 +40,24 @@ Notes:
 | From (ClickUp)     | To (ClickUp)         | Trigger                  | Client Action Required | Notification Type |
 |---------------------|----------------------|--------------------------|------------------------|-------------------|
 | TO DO               | AWAITING APPROVAL    | Team sets credits        | No                     | Email + Bell      |
+| IN PROGRESS         | AWAITING APPROVAL    | Team re-prices task      | No                     | Email + Bell (re-approval wording) |
 | AWAITING APPROVAL   | TO DO                | Client accepts credits   | Yes                    | None              |
 | AWAITING APPROVAL   | AWAITING APPROVAL    | Client declines (comment)| Yes                    | None              |
 | COMPLETE            | —                    | Auto-deduction           | No                     | None              |
 
 When a task reaches COMPLETE, credits are auto-deducted from the client's balance (idempotent: one deduction per task).
+
+#### Re-approval (IN PROGRESS → AWAITING APPROVAL after prior approval)
+
+When a task that was previously approved (`task_cache.approved_credits` is set) is moved back to AWAITING APPROVAL with a changed credit amount, the re-approval flow applies:
+
+- **UI:** `CreditApproval` component shows "Aktualisierte Kostenfreigabe" heading, "Aktualisiert" badge, and "Die Schätzung wurde von X auf Y Credits angepasst." body text instead of the standard approval wording.
+- **Credit ledger:** `upsert_task_deduction` RPC atomically overwrites the existing `task_deduction` row (one row per task; no duplicate). Balance is always `SUM(amount)` — no special re-approval accounting.
+- **Email:** Subject "Aktualisierte Kostenfreigabe für {task} — {credits} Credits"; body shows the change from previous to new amount.
+- **Bell notification:** Title "Aktualisierte Kostenfreigabe: {task}"; message describes the amount change.
+- **ClickUp auto-comment:** "Kostenfreigabe aktualisiert (X → Y Credits)" on client approval.
+
+**Balance semantics:** The client's credit balance reflects approved commitments only. Changes to the Credits custom field in ClickUp do not affect the balance until the client performs a (re-)approval action. The webhook syncs `task_cache.credits` (the estimate) but does not touch `credit_transactions` on field changes.
 
 ### Hold and Cancel
 

@@ -11,6 +11,7 @@
 | CLIENT REVIEW     | Needs Your Attention | Yes        | Yes                 | clickup-webhook        | Primary alert: email + bell, "Aufgabe bereit zur Uberprufung"        |
 | APPROVED          | Approved             | No         | No                  | Portal action only     | Set by client via portal, no inbound notification needed              |
 | COMPLETE          | Done                 | Yes        | Yes                 | clickup-webhook        | Email + bell, deduplicated, "Aufgabe abgeschlossen"                  |
+| AWAITING APPROVAL | Kostenfreigabe       | Yes        | Yes                 | clickup-webhook        | Email + bell. Wording changes to "Aktualisierte Kostenfreigabe" on re-approval (detected via `task_cache.approved_credits`). Credits force-fetched from ClickUp API on re-approval to avoid stale-cache race. |
 | ON HOLD           | On Hold              | No         | No                  | Portal action or team  | No automated notification currently                                  |
 | CANCELED          | Cancelled            | No         | No                  | Portal action or team  | No automated notification currently                                  |
 
@@ -58,7 +59,20 @@ All notifications are gated by the ClickUp custom field "Visible in client porta
   - `step_ready` — Project step moved to Client Review
   - `project_reply` — Team reply on a project step
   - `project_reminder` — Project step/task idle in Client Review for 3+ days (CTA: `/projekte`)
+  - `credit_approval` — Task moved to AWAITING APPROVAL; wording changes on re-approval (see below)
 - All emails include `firstName`, `taskName`, and `taskId` for deep linking
+
+### credit_approval email — re-approval variant
+
+When the webhook detects that a task returning to AWAITING APPROVAL was previously approved (i.e., `task_cache.approved_credits` is set), it passes `previousCredits` alongside `credits` to the email function.
+
+| Field | First approval | Re-approval |
+|---|---|---|
+| Subject | "Kostenfreigabe für {task} — {credits} Credits" | "Aktualisierte Kostenfreigabe für {task} — {credits} Credits" |
+| Title | "Kostenfreigabe erforderlich" | "Aktualisierte Kostenfreigabe" |
+| Body | "Diese Aufgabe wurde mit {credits} Credits bewertet." | "Die Schätzung für „{task}" wurde von {prev} auf {credits} Credits angepasst und wartet erneut auf Ihre Freigabe." |
+
+Re-approval is detected in the webhook by reading `task_cache.approved_credits` before sending. If the column is non-NULL and its numeric value differs from the freshly-fetched credits, `previousCredits` is set and the re-approval template path is used.
 
 ### Granular Notification Preferences
 

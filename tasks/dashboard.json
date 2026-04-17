@@ -1,10 +1,19 @@
 {
-  "lastUpdated": "2026-04-16T00:00:00Z",
+  "lastUpdated": "2026-04-17T00:00:00Z",
   "status": "active",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
+    {
+      "id": "CREDIT-REAPPROVAL",
+      "title": "Credit Re-approval Flow",
+      "date": "2026-04-17",
+      "commits": ["f1a9c8d", "532db21", "7ef9f2e", "698ffe1", "5e97b83"],
+      "summary": "Atomic credit re-approval: task_cache.approved_credits column + backfill, upsert_task_deduction RPC (SECURITY DEFINER, partial-index UPSERT), CreditApproval UI three render states, email + bell re-approval wording ('Aktualisierte Kostenfreigabe'), webhook race fix (force-fetch credits from ClickUp on re-approval), removed webhook auto-delta anti-pattern.",
+      "filesChanged": 9,
+      "reviewCycles": 5
+    },
     {
       "id": "ORG-MILESTONE",
       "title": "Organizations Milestone (Phases 9-14)",
@@ -200,8 +209,8 @@
     }
   ],
   "stats": {
-    "totalCommits": 35,
-    "totalFilesChanged": 230,
+    "totalCommits": 40,
+    "totalFilesChanged": 239,
     "testsPassing": "382/382",
     "buildStatus": "clean"
   }

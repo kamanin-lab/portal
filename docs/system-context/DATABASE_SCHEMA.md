@@ -56,6 +56,7 @@ Local mirror of ClickUp tasks. One row per (task, user) pair. Provides instant l
 | last_activity_at | timestamptz | | Timestamp of most recent activity (comment, status change) |
 | created_by_name | text | | First name of portal user who created the task (null for ClickUp-created tasks) |
 | credits | numeric | | Credit value assigned to this task in ClickUp (synced via webhook custom field handler). NULL means no credits assigned. |
+| approved_credits | numeric | | Last credit amount the client approved via `approve_credits` action. NULL = never approved. Differs from `credits` (current ClickUp estimate). Written by `update-task-status` Edge Function on every successful approval. Backfilled from `credit_transactions` on migration `20260417100000_credit_reapproval`. Used by the UI to detect re-approval state (approved_credits set and differs from credits). Added 2026-04-17. |
 | created_by_user_id | uuid | | Supabase user ID of creator (null for ClickUp-created tasks) |
 | created_at | timestamptz | DEFAULT now() | Row creation timestamp |
 
@@ -257,7 +258,11 @@ Ledger of all credit movements. Positive amounts are top-ups, negative amounts a
 
 **RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
 
-**RPC:** `get_org_credit_balance(p_org_id uuid)` — SECURITY DEFINER function that sums `amount` for all rows matching `organization_id = p_org_id`. Used by `useOrg` / credit balance display to show org-wide balance.
+**Partial Unique Index:** `credit_transactions_task_deduction_unique ON (task_id, type) WHERE (type = 'task_deduction')` — enforces one deduction row per task. Used as the `ON CONFLICT` arbiter in `upsert_task_deduction`.
+
+**RPCs:**
+- `get_org_credit_balance(p_org_id uuid)` — SECURITY DEFINER; sums `amount` for all rows where `organization_id = p_org_id`. Used by `useOrg` / credit balance display.
+- `upsert_task_deduction(p_profile_id uuid, p_organization_id uuid, p_amount numeric, p_task_id text, p_task_name text, p_description text) RETURNS credit_transactions` — SECURITY DEFINER, `SET search_path = public`, service_role-only. Performs `INSERT ... ON CONFLICT (task_id, type) WHERE (type = 'task_deduction') DO UPDATE SET amount, description, task_name, organization_id`. Called by `update-task-status` Edge Function on every `approve_credits` action (first approval and re-approval). The Supabase JS SDK `.upsert()` cannot target a partial unique index, so this RPC is required. Added 2026-04-17 (migration `20260417100000_credit_reapproval`).
 
 **Realtime:** REPLICA IDENTITY FULL -- enables instant balance updates via Supabase Realtime subscriptions.
 
