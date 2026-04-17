@@ -34,7 +34,11 @@ CREATE OR REPLACE FUNCTION upsert_task_deduction(
   p_task_id text,
   p_task_name text,
   p_description text
-) RETURNS credit_transactions AS $$
+) RETURNS credit_transactions
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
   INSERT INTO credit_transactions (profile_id, organization_id, amount, type, task_id, task_name, description)
   VALUES (p_profile_id, p_organization_id, p_amount, 'task_deduction', p_task_id, p_task_name, p_description)
   ON CONFLICT (task_id, type) WHERE (type = 'task_deduction')
@@ -44,7 +48,7 @@ CREATE OR REPLACE FUNCTION upsert_task_deduction(
     task_name = EXCLUDED.task_name,
     organization_id = EXCLUDED.organization_id
   RETURNING *;
-$$ LANGUAGE SQL SECURITY DEFINER;
+$$;
 
 REVOKE ALL ON FUNCTION upsert_task_deduction FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION upsert_task_deduction TO service_role;
