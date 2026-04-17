@@ -45,6 +45,7 @@ interface EmailRequest {
     teamMemberName?: string;
     messagePreview?: string;
     credits?: string;
+    previousCredits?: string;
   };
 }
 
@@ -122,18 +123,43 @@ function generateEmailHtml(
     case "credit_approval": {
       const taskName = data.taskName || (locale === "de" ? "Ihre Aufgabe" : "your task");
       const credits = data.credits || "0";
+      const prevCredits = data.previousCredits;
+      const isReApproval = prevCredits != null && prevCredits !== credits;
       const taskUrl = data.taskId ? `${portalUrl}/tickets?taskId=${data.taskId}` : `${portalUrl}/tickets`;
-      const subject = typeof copy.subject === "function" ? copy.subject(taskName, credits) : copy.subject;
-      const bodyText = typeof copy.body === "function" ? (copy.body as Function)(taskName, credits) : copy.body;
-      const notesHtml = copy.notes?.map((n) => `<p class="muted">${n}</p>`).join("") || "";
+
+      // Use re-approval copy when previousCredits differs from current
+      const useCopy = isReApproval
+        ? getEmailCopy("credit_approval", locale)
+        : copy;
+
+      let subject: string;
+      let bodyText: string;
+      let title: string;
+
+      if (isReApproval) {
+        // Re-approval: override subject/body/title with updated wording
+        subject = locale === "en"
+          ? `Updated credit approval for ${taskName} \u2014 ${credits} credits`
+          : `Aktualisierte Kostenfreigabe f\u00fcr ${taskName} \u2014 ${credits} Credits`;
+        bodyText = locale === "en"
+          ? `The estimate for "<strong>${taskName}</strong>" has been adjusted from <strong>${prevCredits}</strong> to <strong>${credits} credits</strong> and is awaiting your approval again.`
+          : `Die Sch\u00e4tzung f\u00fcr \u201e<strong>${taskName}</strong>\u201c wurde von <strong>${prevCredits}</strong> auf <strong>${credits} Credits</strong> angepasst und wartet erneut auf Ihre Freigabe.`;
+        title = locale === "en" ? "Updated credit approval" : "Aktualisierte Kostenfreigabe";
+      } else {
+        subject = typeof useCopy.subject === "function" ? useCopy.subject(taskName, credits) : useCopy.subject;
+        bodyText = typeof useCopy.body === "function" ? (useCopy.body as Function)(taskName, credits) : useCopy.body;
+        title = useCopy.title;
+      }
+
+      const notesHtml = useCopy.notes?.map((n: string) => `<p class="muted">${n}</p>`).join("") || "";
       return {
         subject,
         html: `<!DOCTYPE html><html><head>${styles}</head><body>
           <div class="wrapper">${header}<div class="card">
-            <h1 class="title">${copy.title}</h1>
+            <h1 class="title">${title}</h1>
             <p class="text">${cleanGreeting}</p>
             <p class="text">${bodyText}</p>
-            <a href="${taskUrl}" class="button">${copy.cta}</a>
+            <a href="${taskUrl}" class="button">${useCopy.cta}</a>
             ${notesHtml}
           </div>${defaultFooter}</div></body></html>`,
       };

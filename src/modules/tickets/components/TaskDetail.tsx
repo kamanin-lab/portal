@@ -88,7 +88,7 @@ export function TaskDetail({ task, onClose, onRead }: Props) {
 
         {/* Credit Approval */}
         {portalStatus === 'awaiting_approval' && task.credits != null && task.credits > 0 && (
-          <CreditApproval taskId={task.clickup_id} credits={task.credits} taskName={task.name} />
+          <CreditApproval taskId={task.clickup_id} credits={task.credits} taskName={task.name} approvedCredits={task.approved_credits ?? null} />
         )}
 
         {/* Recommendation Approval — shown only while pending (has tag + not yet accepted/in progress/done) */}

@@ -1405,6 +1405,25 @@ Deno.serve(async (req) => {
               const eventTimestamp = parseClickUpTimestamp(historyItem.date);
               await updateTaskActivity(supabase, taskId, eventTimestamp, log);
 
+              // Look up previously approved credits from task_cache (Rule #1: UI/email
+              // reads from cache, not credit_transactions). If set and different from
+              // current credits, this is a re-approval scenario.
+              let previousCredits: string | undefined;
+              {
+                const { data: approvedRow } = await supabase
+                  .from("task_cache")
+                  .select("approved_credits")
+                  .eq("clickup_id", taskId)
+                  .limit(1)
+                  .maybeSingle();
+
+                const prev = approvedRow?.approved_credits;
+                if (prev != null && prev !== credits) {
+                  previousCredits = String(prev);
+                  log.info("Re-approval detected for email", { taskId, previousCredits, currentCredits: credits });
+                }
+              }
+
               // Send emails
               const { data: profiles } = await supabase
                 .from("profiles")
@@ -1422,6 +1441,7 @@ Deno.serve(async (req) => {
                       taskName,
                       taskId,
                       credits: String(credits),
+                      previousCredits,
                     }, log);
                   }
                 }
@@ -1702,57 +1722,10 @@ Deno.serve(async (req) => {
             );
           }
 
-          // Insert credit_transaction if value actually changed
-          const delta = newValue - (oldValue ?? 0);
-          if (delta !== 0) {
-            const amount = -delta; // negative = deduction, positive = refund
-
-            // Resolve profile_id from task_cache
-            const { data: taskCacheRows } = await supabase
-              .from("task_cache")
-              .select("profile_id, name")
-              .eq("clickup_id", taskId);
-
-            if (taskCacheRows && taskCacheRows.length > 0) {
-              const taskName = taskCacheRows[0].name || "Task";
-
-              for (const row of taskCacheRows) {
-                // Idempotency: check for duplicate transaction within last 60 seconds
-                const { data: existing } = await supabase
-                  .from("credit_transactions")
-                  .select("id")
-                  .eq("profile_id", row.profile_id)
-                  .eq("task_id", taskId)
-                  .eq("amount", amount)
-                  .gte("created_at", new Date(Date.now() - 60000).toISOString())
-                  .limit(1);
-
-                if (existing && existing.length > 0) {
-                  log.info("Duplicate credit transaction detected, skipping", { taskId, profileId: "[REDACTED]" });
-                  continue;
-                }
-
-                const { error: txError } = await supabase
-                  .from("credit_transactions")
-                  .insert({
-                    profile_id: row.profile_id,
-                    amount,
-                    type: "task_deduction",
-                    task_id: taskId,
-                    task_name: taskName,
-                    description: `Credits: ${oldValue} → ${newValue}`,
-                  });
-
-                if (txError) {
-                  log.error("Failed to insert credit_transaction", { taskId, error: txError.message });
-                } else {
-                  log.info("Credit transaction inserted", { taskId, amount });
-                }
-              }
-            } else {
-              log.warn("No task_cache entries found for credits transaction", { taskId });
-            }
-          }
+          // Credit field changed in ClickUp: task_cache.credits is synced above.
+          // No auto-deduction here — credit transactions are only created when the
+          // client explicitly approves via approve_credits action in the portal.
+          log.info("Credit field changed; task_cache.credits synced; no auto-deduction (handled at re-approval)", { taskId, oldValue, newValue });
 
           return new Response(
             JSON.stringify({ success: true, type: "credits_updated" }),

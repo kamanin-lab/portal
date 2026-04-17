@@ -13,9 +13,10 @@ interface Props {
   taskId: string;
   credits: number;
   taskName: string;
+  approvedCredits?: number | null;
 }
 
-export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) {
+export function CreditApproval({ taskId, credits, taskName: _taskName, approvedCredits = null }: Props) {
   const { isViewer } = useOrg()
   const [mode, setMode] = useState<'buttons' | 'declining'>('buttons');
   const [reason, setReason] = useState('');
@@ -24,7 +25,11 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
 
   if (isViewer) return null
 
+  const isReApproval = approvedCredits !== null && approvedCredits !== undefined && approvedCredits !== credits;
   const displayCredits = credits % 1 === 0 ? String(credits) : credits.toFixed(1);
+  const displayPrevCredits = approvedCredits != null
+    ? (approvedCredits % 1 === 0 ? String(approvedCredits) : approvedCredits.toFixed(1))
+    : null;
 
   async function handleApprove() {
     await approveCredits(taskId);
@@ -55,12 +60,20 @@ export function CreditApproval({ taskId, credits, taskName: _taskName }: Props) 
       <div className="flex items-center gap-2 mb-2">
         <HugeiconsIcon icon={FlashIcon} size={18} className="text-amber-600" />
         <span className="text-md font-bold text-text-primary">
-          Kostenfreigabe erforderlich
+          {isReApproval ? 'Aktualisierte Kostenfreigabe' : 'Kostenfreigabe erforderlich'}
         </span>
+        {isReApproval && (
+          <span className="inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-xxs font-semibold text-amber-800">
+            Aktualisiert
+          </span>
+        )}
       </div>
 
       <p className="text-body text-text-secondary mb-3.5">
-        Diese Aufgabe wurde mit <strong>{displayCredits} Credits</strong> bewertet.
+        {isReApproval
+          ? <>Die Schätzung wurde von <strong>{displayPrevCredits}</strong> auf <strong>{displayCredits} Credits</strong> angepasst.</>
+          : <>Diese Aufgabe wurde mit <strong>{displayCredits} Credits</strong> bewertet.</>
+        }
       </p>
 
       <AnimatePresence mode="wait">

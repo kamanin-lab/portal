@@ -22,6 +22,7 @@ export function transformCachedTask(cached: CachedTask): ClickUpTask {
       list_name: cached.list_name ?? cached.raw_data.list_name,
       last_activity_at: cached.last_activity_at ?? cached.raw_data.last_activity_at ?? undefined,
       credits: cached.credits ?? cached.raw_data.credits ?? null,
+      approved_credits: cached.approved_credits ?? cached.raw_data.approved_credits ?? null,
       created_by_name: cached.created_by_name ?? null,
       created_by_user_id: cached.created_by_user_id ?? null,
     };
@@ -43,6 +44,7 @@ export function transformCachedTask(cached: CachedTask): ClickUpTask {
     updated_at: cached.last_synced,
     last_activity_at: cached.last_activity_at ?? undefined,
     credits: cached.credits ?? null,
+    approved_credits: cached.approved_credits ?? null,
     assignees: [],
     tags: [],
     url: cached.clickup_url ?? '',

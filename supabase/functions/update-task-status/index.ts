@@ -471,7 +471,11 @@ Deno.serve(async (req) => {
         log.error("Failed to post auto-comment for recommendation acceptance", { status: autoCommentRespRec.status });
       }
 
-      // Deduct credits on recommendation acceptance (mirrors approve_credits pattern)
+      // Deduct credits on recommendation acceptance (mirrors approve_credits pattern).
+      // NOTE: Recommendations don't revise prior approvals — they use a plain INSERT.
+      // If the unique constraint fires, it's legitimate idempotency and the prior
+      // commitment stands. This is deliberate: accept_recommendation creates a new
+      // task_deduction, not an update to an existing one.
       const { data: recTaskCache } = await supabaseAdminRec
         .from("task_cache")
         .select("credits, name")
@@ -573,30 +577,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Auto-comment for approve_credits action
+    // Auto-comment + atomic credit UPSERT for approve_credits action
     if (action === "approve_credits") {
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!);
 
-      // Read credits from task_cache
+      // Read credits + approved_credits from task_cache
       const { data: taskCacheRow } = await supabaseAdmin
         .from("task_cache")
-        .select("credits, name")
+        .select("credits, approved_credits, name")
         .eq("clickup_id", taskId)
         .eq("profile_id", userId)
         .limit(1)
         .maybeSingle();
 
       const credits = taskCacheRow?.credits ?? 0;
-      const autoCommentText = `Kostenfreigabe erteilt (${credits} Credits)`;
+      const previousApproved: number | null = taskCacheRow?.approved_credits ?? null;
 
-      const { data: profile } = await supabase
+      // Resolve user profile (name + organization_id for credit transaction)
+      const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("full_name")
+        .select("full_name, organization_id")
         .eq("id", userId)
         .maybeSingle();
 
       const fullName = profile?.full_name || userEmail?.split("@")[0] || "Client";
       const firstName = fullName.split(" ")[0];
+      const orgId: string | null = profile?.organization_id ?? null;
+
+      // Branch auto-comment text based on whether this is a re-approval
+      const isReApproval = previousApproved !== null && previousApproved !== credits;
+      const autoCommentText = isReApproval
+        ? `Kostenfreigabe aktualisiert (${previousApproved} \u2192 ${credits} Credits)`
+        : `Kostenfreigabe erteilt (${credits} Credits)`;
       const clickupAutoComment = `${fullName} (via Client Portal):\n\n${autoCommentText}`;
 
       const threadResolution = await resolveActivePublicThread(taskId, clickupApiToken, log);
@@ -618,7 +630,7 @@ Deno.serve(async (req) => {
 
       if (autoCommentResp.ok) {
         const autoCommentData = await autoCommentResp.json();
-        log.info("Auto-comment posted for credit approval");
+        log.info("Auto-comment posted for credit approval", { isReApproval });
 
         await supabaseAdmin
           .from("comment_cache")
@@ -643,27 +655,44 @@ Deno.serve(async (req) => {
         log.error("Failed to post auto-comment for credit approval", { status: autoCommentResp.status });
       }
 
-      // Deduct credits immediately on approval (not on COMPLETE)
-      if (credits > 0) {
-        const { error: deductError } = await supabaseAdmin
+      // Atomic credit UPSERT: credits can be 0 (re-approval at zero = full refund);
+      // block only null/negative. Uses the partial unique index
+      // credit_transactions_task_deduction_unique ON (task_id, type) WHERE type = 'task_deduction'
+      // to ensure exactly one deduction row per task.
+      if (credits != null && credits >= 0) {
+        const upsertRow = {
+          profile_id: userId,
+          organization_id: orgId,
+          amount: -credits,
+          type: "task_deduction" as const,
+          task_id: taskId,
+          task_name: taskCacheRow?.name || null,
+          description: isReApproval
+            ? `${credits} Credits \u2014 korrigiert von ${previousApproved} Credits`
+            : `${credits} Credits \u2014 Kostenfreigabe erteilt`,
+        };
+
+        const { error: upsertError } = await supabaseAdmin
           .from("credit_transactions")
-          .insert({
-            profile_id: userId,
-            amount: -credits,
-            type: "task_deduction",
-            task_id: taskId,
-            task_name: taskCacheRow?.name || null,
-            description: `${credits} Credits — Kostenfreigabe erteilt`,
+          .upsert(upsertRow, {
+            onConflict: "task_id,type",
+            ignoreDuplicates: false,
           });
 
-        if (deductError) {
-          if (deductError.message?.includes("duplicate") || deductError.message?.includes("unique")) {
-            log.info("Credit deduction already exists (idempotent)", { taskId });
-          } else {
-            log.error("Failed to deduct credits on approval", { error: deductError.message });
-          }
+        if (upsertError) {
+          log.error("Credit upsert failed", { taskId, error: upsertError.message });
         } else {
-          log.info("Credits deducted on approval", { taskId, amount: -credits });
+          log.info("Credit upsert succeeded", { taskId, amount: -credits, isReApproval });
+        }
+
+        // Mirror approved amount onto task_cache so UI can show re-approval state
+        const { error: cacheUpdateError } = await supabaseAdmin
+          .from("task_cache")
+          .update({ approved_credits: credits })
+          .eq("clickup_id", taskId);
+
+        if (cacheUpdateError) {
+          log.error("Failed to update task_cache.approved_credits", { taskId, error: cacheUpdateError.message });
         }
       }
     }

@@ -74,3 +74,69 @@ describe('CreditApproval viewer guard', () => {
     expect(container).not.toBeEmptyDOMElement()
   })
 })
+
+describe('CreditApproval re-approval states', () => {
+  const memberOrg = {
+    organization: null,
+    orgRole: 'member',
+    isAdmin: false,
+    isMember: true,
+    isViewer: false,
+    isLoading: false,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    orgMock.useOrg.mockReturnValue(memberOrg)
+  })
+
+  test('first approval (approvedCredits=null): shows standard text without badge', () => {
+    const { getByText, queryByText } = render(
+      createElement(CreditApproval, {
+        taskId: 'task-1',
+        credits: 5,
+        taskName: 'Test task',
+        approvedCredits: null,
+      }),
+      { wrapper }
+    )
+    expect(getByText('Kostenfreigabe erforderlich')).toBeTruthy()
+    expect(getByText(/5 Credits/)).toBeTruthy()
+    expect(queryByText('Aktualisiert')).toBeNull()
+    expect(queryByText(/angepasst/)).toBeNull()
+  })
+
+  test('re-approval with different credits: shows updated badge and adjustment text', () => {
+    const { getByText } = render(
+      createElement(CreditApproval, {
+        taskId: 'task-1',
+        credits: 10,
+        taskName: 'Test task',
+        approvedCredits: 5,
+      }),
+      { wrapper }
+    )
+    expect(getByText('Aktualisiert')).toBeTruthy()
+    expect(getByText('Aktualisierte Kostenfreigabe')).toBeTruthy()
+    // Text is split across <strong> elements, so use a function matcher
+    expect(getByText((_content, element) => {
+      return element?.tagName === 'P' && /von\s+5\s+auf\s+10 Credits\s+angepasst/.test(element.textContent || '')
+    })).toBeTruthy()
+  })
+
+  test('re-approval with same credits: shows standard text without badge', () => {
+    const { getByText, queryByText } = render(
+      createElement(CreditApproval, {
+        taskId: 'task-1',
+        credits: 5,
+        taskName: 'Test task',
+        approvedCredits: 5,
+      }),
+      { wrapper }
+    )
+    expect(getByText('Kostenfreigabe erforderlich')).toBeTruthy()
+    expect(getByText(/5 Credits/)).toBeTruthy()
+    expect(queryByText('Aktualisiert')).toBeNull()
+    expect(queryByText(/angepasst/)).toBeNull()
+  })
+})
