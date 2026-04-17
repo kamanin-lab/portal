@@ -18,7 +18,7 @@ User identity and notification preferences. One row per authenticated user. **Or
 | company_name | text | | Client company name (kept for display; canonical name lives in `organizations.name`) |
 | organization_id | uuid | nullable, FK → organizations(id) | Back-reference to the user's organization. Set during Phase 9 data migration. Kept nullable for backward safety. |
 | email_notifications | boolean | DEFAULT true | Whether to send email notifications (legacy, kept for backward compat) |
-| notification_preferences | jsonb | DEFAULT '{"task_review": true, "task_completed": true, "team_comment": true, "support_response": true, "reminders": true}' | Granular per-type email notification preferences |
+| notification_preferences | jsonb | DEFAULT '{"task_review": true, "task_completed": true, "team_comment": true, "support_response": true, "reminders": true, "peer_messages": true}' | Granular per-type email notification preferences. `peer_messages` (added 2026-04-17, no migration needed — JSONB column accepts new keys freely) gates peer-to-peer org member comment emails. |
 | avatar_url | text | | Profile picture URL |
 | last_project_reminder_sent_at | timestamptz | | Timestamp of the last project-task reminder email sent to this user. Used by `send-reminders` Edge Function to enforce the 3-day cooldown between project reminder emails. Separate from ticket reminder tracking. Added 2026-04-04. |
 | last_unread_digest_sent_at | timestamptz | | Timestamp of the last unread message digest email sent to this user. Used by `send-reminders` to enforce the 24h cooldown for daily unread chat reminders. Added 2026-04-14. |
@@ -528,6 +528,10 @@ Post a comment from the portal to ClickUp, with optional file attachments.
 4. If thread exists → post as reply (`/comment/{id}/reply`); otherwise → new top-level comment
 5. Fetch real attachment data from task detail (URLs, types, sizes)
 6. Cache comment to `comment_cache` with attachments for instant Realtime delivery
+7. **Peer fan-out** (wrapped in try/catch — never fails the main POST):
+   - Call `getOrgContextForUserAndTask` to resolve org and validate task ownership
+   - If `taskBelongsToOrg === false`, skip fan-out entirely
+   - For each org member excluding author and viewers: upsert `comment_cache`, insert `team_reply` bell notification, send email if `peer_messages` preference is true and recipient has an email address
 
 **ClickUp API Calls:**
 - `POST /api/v2/task/{taskId}/attachment` (per file, multipart)

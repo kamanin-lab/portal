@@ -32,6 +32,14 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 
 ## Completed Tasks
 
+### TASK-018: Peer-to-peer org notifications ✅ (2026-04-17)
+- Fan-out in `post-task-comment`: all org members (excl. author + viewers) receive bell + email when a peer posts a comment in a ticket or project chat
+- New `getOrgContextForUserAndTask` helper in `_shared/org.ts` — resolves org from caller, validates task belongs to that org (cross-org guard)
+- New `peer_messages` boolean preference key in `NotificationPreferences` (default true); "Organisation" toggle in `/konto` notification settings
+- New e2e test infra: `tests/_shared/staging-client.ts`, `tests/e2e/peer-notifications.ts`, staging-only safety guard + self-cleanup
+- Fixes: skip fan-out for cross-org tasks, skip email when recipient has no email address
+- 5 commits: 18116fe → c3d8412
+
 ### Credit Re-approval Flow ✅ (2026-04-17)
 - `task_cache.approved_credits` column + backfill migration
 - `upsert_task_deduction` RPC (SECURITY DEFINER, partial-index UPSERT)

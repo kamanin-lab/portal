@@ -5,6 +5,7 @@ import type { NotificationPreferences } from '@/shared/types/common'
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/shared/types/common'
 import { useUpdateProfile } from '@/shared/hooks/useUpdateProfile'
 import { useWorkspaces } from '@/shared/hooks/useWorkspaces'
+import { useOrg } from '@/shared/hooks/useOrg'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/components/ui/tabs'
 
 interface Props {
@@ -65,11 +66,17 @@ const PROJECT_OPTIONS: OptionDef[] = [
   { key: 'project_messages',       label: 'Neue Nachricht vom Team',        description: 'Benachrichtigung bei neuen Nachrichten zu Ihren Projektaufgaben.' },
 ]
 
+const ORG_OPTIONS: OptionDef[] = [
+  { key: 'peer_messages', label: 'Nachrichten von Teammitgliedern', description: 'Benachrichtigung, wenn andere Mitglieder Ihrer Organisation im Chat schreiben.' },
+]
+
 export function NotificationSection({ preferences }: Props) {
   const currentPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...preferences }
   const updateProfile = useUpdateProfile()
   const { data: workspaces = [], isLoading: workspacesLoading } = useWorkspaces()
   const hasProjects = workspaces.some(w => w.module_key === 'projects')
+  const { organization } = useOrg()
+  const hasOrg = organization !== null
 
   const handleToggle = (key: keyof NotificationPreferences, checked: boolean) => {
     updateProfile.mutate({ notification_preferences: { ...currentPrefs, [key]: checked } })
@@ -113,6 +120,17 @@ export function NotificationSection({ preferences }: Props) {
         </Tabs>
       ) : (
         renderOptions(TASK_OPTIONS)
+      )}
+
+      {hasOrg && (
+        <>
+          <div className="border-t border-border my-4" />
+          <div className="flex items-center gap-2 mb-2">
+            <HugeiconsIcon icon={Notification03Icon} size={18} className="text-text-secondary" />
+            <h2 className="text-sm font-semibold text-text-primary">Organisation</h2>
+          </div>
+          {renderOptions(ORG_OPTIONS)}
+        </>
       )}
     </section>
   )

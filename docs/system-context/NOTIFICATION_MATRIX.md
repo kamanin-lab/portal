@@ -17,6 +17,8 @@
 
 ## Comment Notifications
 
+### Agency → Client (ClickUp-originated)
+
 | Comment Type                        | Email Sent | In-App Notification | Trigger Source  | Notes                                                         |
 |-------------------------------------|------------|---------------------|-----------------|---------------------------------------------------------------|
 | Team comment with `@client:` prefix | Yes        | Yes (`team_reply`)  | clickup-webhook | Prefix stripped in display, email type: `team_question`       |
@@ -25,6 +27,22 @@
 | Portal-originated comment           | No         | No                  | —               | Skipped by webhook (detected via regex)                       |
 | Support chat from team              | Yes        | Yes (`team_reply`)  | clickup-webhook | Routed via `support_task_id`, email type: `support_response`  |
 | Support chat from client            | No         | No                  | —               | Client sees their own message; no self-notification           |
+
+### Peer → Peer (Portal-originated, same org)
+
+When a portal user posts a comment in a ticket or project chat, all other members of the same organization are notified — mirrors the `clickup-webhook` fan-out but runs in `post-task-comment`.
+
+| Comment Surface         | Email Sent                                | In-App Notification        | Trigger Source    | Preference Key  | Viewer Excluded |
+|-------------------------|-------------------------------------------|----------------------------|-------------------|-----------------|-----------------|
+| Ticket comment          | Yes (`team_question` email type)          | Yes (`team_reply`)         | post-task-comment | `peer_messages` | Yes (bell + email) |
+| Project chat comment    | Yes (`project_reply` email type)          | Yes (`team_reply`)         | post-task-comment | `peer_messages` | Yes (bell + email) |
+
+**Fan-out rules:**
+- Author is always excluded (no self-notification)
+- Viewer-role members are excluded from both bell and email (not just email)
+- Email is skipped for recipients who have no email address on their profile
+- If `getOrgContextForUserAndTask` returns `taskBelongsToOrg === false`, the entire fan-out is skipped (cross-org guard)
+- Fan-out block is wrapped in try/catch — a fan-out failure never fails the underlying comment POST
 
 ## Recipient Resolution Logic
 
@@ -87,6 +105,8 @@ Users can control which email types they receive via the Account page (`/konto`)
 | `project_reply` | `team_comment` | (same preference as team_comment) | ON |
 | `support_response` | `support_response` | Support-Antwort | ON |
 | `project_reminder` | `reminders` | Erinnerungen | ON |
+| `team_question` (peer) | `peer_messages` | Nachrichten von Teammitgliedern | ON |
+| `project_reply` (peer) | `peer_messages` | (same preference as peer team_question) | ON |
 
 The webhook function uses `shouldSendEmail(profile, emailType)` to check the appropriate preference key. If the JSONB column is null (pre-migration users), it falls back to the legacy `email_notifications` boolean.
 

@@ -337,6 +337,26 @@
 - `onboard-client.ts` script must be updated to create org + admin member, not just a profile
 - `notifications_type_check` constraint extended: `member_invited`, `member_removed` types added
 
+## ADR-031: Peer comments resolve org via caller, not task cache
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** When a portal user posts a comment, other org members need to be notified (bell + email). The naive approach would look up the org via `task_cache.profile_id` — but this fails when the task has never been synced for a given org member, and it doesn't provide any cross-org authz guarantee.
+
+**Decision:** Resolve `orgId` from the caller's own `org_members` row first (always available if the user is in an org). Then validate that the target task belongs to that org:
+- Tickets: check `organizations.clickup_list_ids` contains the task's ClickUp list ID
+- Project tasks: check `project_configs.organization_id = caller's orgId`
+
+Fan-out is skipped entirely when `taskBelongsToOrg === false`. This logic lives in `getOrgContextForUserAndTask` in `supabase/functions/_shared/org.ts`.
+
+**Consequences:**
+- Robust against cache misses — org resolution never depends on task_cache being populated
+- Prevents cross-org notification leaks even if a task ID is guessed by an attacker
+- Trivial additional DB reads per comment (one `org_members` query + one ownership check)
+- Viewers are excluded from both bell and email fan-out (stricter than the `clickup-webhook` path which excludes viewers from email only)
+
+---
+
 ## ADR-030: Viewer role — defense-in-depth enforcement
 **Date:** 2026-04-15
 **Status:** Accepted

@@ -37,6 +37,31 @@ Viewer-role users (`org_members.role = 'viewer'`) are restricted from mutating a
 - Applied in `clickup-webhook/index.ts`: `task_review` and `step_ready` email sends are filtered — viewers do not receive action-required emails
 - Bell (in-app) notifications remain unfiltered — all org members including viewers see notification badges
 
+## Notification Fan-out
+
+Two symmetric paths deliver notifications to org members:
+
+| Path | Trigger | Actor | Recipients |
+|------|---------|-------|-----------|
+| `clickup-webhook` | Agency posts comment in ClickUp (`@client:` or threaded reply) | Agency team | All org members with task access |
+| `post-task-comment` | Portal user posts comment (ticket or project chat) | Portal user (org member) | All other org members except author and viewers |
+
+Both paths resolve recipients through the org membership layer and both respect per-user notification preferences before sending email.
+
+### `getOrgContextForUserAndTask` (authorization primitive)
+
+Located in `supabase/functions/_shared/org.ts`. Used by `post-task-comment` to validate the fan-out is safe before executing it.
+
+**Returns:** `{ orgId, surface, memberProfileIds, taskBelongsToOrg, projectConfigId }`
+
+**Resolution logic:**
+1. Resolve `orgId` from the caller's own `org_members` row (never from `task_cache` — robust to cache misses)
+2. Determine task surface: check `task_cache` for tickets, `project_task_cache` for project tasks
+3. Validate ownership: tickets → `organizations.clickup_list_ids` contains task's list ID; project tasks → `project_configs.organization_id` matches caller's org
+4. If `taskBelongsToOrg === false`, fan-out is skipped entirely (cross-org guard)
+
+This helper makes peer notification fan-out safe: it cannot leak notifications across org boundaries even if a task ID is guessed.
+
 ## Module Structure
 - `src/shared/` — auth, layout, hooks, lib, types; also contains `pages/HilfePage` (FAQ), `components/help/` (FaqItem, FaqSection), and `hooks/useOrg.ts` (OrgProvider context)
 - `src/modules/projects/` — Project Experience (live Supabase: project_config, project_task_cache, step_enrichment)
