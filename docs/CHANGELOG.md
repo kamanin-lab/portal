@@ -1,5 +1,27 @@
 # Changelog
 
+## feat(notifications): peer-to-peer org notifications — 2026-04-17
+
+### Problem
+When a portal user posted a comment in a ticket or project chat, only the agency (via ClickUp) was notified. Other members of the same organization (including admins) stayed in the dark — messages from a teammate appeared only on next portal load.
+
+### Changes
+- **`src/shared/types/common.ts`** — new `peer_messages: boolean` key in `NotificationPreferences` (default `true`)
+- **`src/shared/components/konto/NotificationSection.tsx`** — new "Organisation" section with `peer_messages` toggle, visible only when user belongs to an org
+- **`src/shared/hooks/useAuth.ts`** — staging-bypass profile updated with new pref key for type compliance
+- **`supabase/functions/_shared/org.ts`** — new `getOrgContextForUserAndTask()` helper: resolves org from caller's `org_members` row (robust to cache misses), validates task ownership via `organizations.clickup_list_ids` (tickets) or `project_configs.organization_id` (project tasks)
+- **`supabase/functions/post-task-comment/index.ts`** — fan-out block after cache upsert: excludes author + viewers, upserts `comment_cache` for each recipient, inserts bell notifications (`team_reply`), sends email via `peer_messages` preference gate (reuses `team_question` / `project_reply` email templates). Cross-org check skips fan-out when task doesn't belong to caller's org. Whole block wrapped in try/catch — never fails the main ClickUp POST.
+
+### Commits
+- `18116fe` feat(notifications): fan-out peer comments to org members
+- `0334dbd` fix(notifications): verify task belongs to caller's org before peer fan-out
+- `5aeefd2` fix(notifications): skip peer email send when recipient has no email
+
+### Follow-ups
+Deferred items recorded in `docs/ideas/peer-notifications-followups.md`: audit `send-support-message` for same bug, per-task mute toggle, `member_invited`/`member_removed` triggers, dedicated peer email copy.
+
+---
+
 ## fix(org): Empfehlungen tab admin-only + sidebar badge exclusion — 2026-04-16
 
 ### Sidebar badge

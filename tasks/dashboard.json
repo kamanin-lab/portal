@@ -197,6 +197,14 @@
       "priority": "high",
       "target": "Phase 5+",
       "summary": "AI triage agent for new support tickets — classifies, enriches with WP site audit, auto-estimates credits, posts structured reply via ClickUp"
+    },
+    {
+      "title": "Peer Notifications — Follow-ups",
+      "file": "peer-notifications-followups.md",
+      "status": "idea",
+      "priority": "medium",
+      "target": "after parent peer-notifications feature ships",
+      "summary": "Follow-ups deferred from peer notifications: audit send-support-message, per-task mute, member_invited/removed triggers, dedicated peer email copy, realtime de-dup check"
     }
   ],
   "stats": {
