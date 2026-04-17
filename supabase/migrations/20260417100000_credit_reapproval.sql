@@ -21,3 +21,33 @@ FROM (
   WHERE type = 'task_deduction'
 ) ct
 WHERE tc.clickup_id = ct.task_id;
+
+-- RPC for atomic UPSERT targeting the partial unique index
+-- credit_transactions_task_deduction_unique ON (task_id, type) WHERE type = 'task_deduction'.
+-- The Supabase JS SDK .upsert() cannot pass the WHERE clause required to
+-- target a partial unique index as ON CONFLICT arbiter, so we use a
+-- SECURITY DEFINER function callable only by service_role.
+CREATE OR REPLACE FUNCTION upsert_task_deduction(
+  p_profile_id uuid,
+  p_organization_id uuid,
+  p_amount numeric,
+  p_task_id text,
+  p_task_name text,
+  p_description text
+) RETURNS credit_transactions AS $$
+  INSERT INTO credit_transactions (profile_id, organization_id, amount, type, task_id, task_name, description)
+  VALUES (p_profile_id, p_organization_id, p_amount, 'task_deduction', p_task_id, p_task_name, p_description)
+  ON CONFLICT (task_id, type) WHERE (type = 'task_deduction')
+  DO UPDATE SET
+    amount = EXCLUDED.amount,
+    description = EXCLUDED.description,
+    task_name = EXCLUDED.task_name,
+    organization_id = EXCLUDED.organization_id
+  RETURNING *;
+$$ LANGUAGE SQL SECURITY DEFINER;
+
+REVOKE ALL ON FUNCTION upsert_task_deduction FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION upsert_task_deduction TO service_role;
+
+COMMENT ON FUNCTION upsert_task_deduction IS
+  'Atomic UPSERT for task credit deductions. Uses partial unique index credit_transactions_task_deduction_unique as ON CONFLICT arbiter. Called by update-task-status edge function on approve_credits / re-approval. service_role only.';

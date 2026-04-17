@@ -655,29 +655,23 @@ Deno.serve(async (req) => {
         log.error("Failed to post auto-comment for credit approval", { status: autoCommentResp.status });
       }
 
-      // Atomic credit UPSERT: credits can be 0 (re-approval at zero = full refund);
-      // block only null/negative. Uses the partial unique index
-      // credit_transactions_task_deduction_unique ON (task_id, type) WHERE type = 'task_deduction'
-      // to ensure exactly one deduction row per task.
+      // Atomic credit UPSERT via RPC: credits can be 0 (re-approval at zero = full refund);
+      // block only null/negative. Uses upsert_task_deduction() which targets the partial
+      // unique index credit_transactions_task_deduction_unique
+      // ON (task_id, type) WHERE type = 'task_deduction'.
+      // The Supabase JS SDK .upsert() cannot pass the WHERE clause for partial indexes,
+      // so we use a SECURITY DEFINER RPC (service_role only).
       if (credits != null && credits >= 0) {
-        const upsertRow = {
-          profile_id: userId,
-          organization_id: orgId,
-          amount: -credits,
-          type: "task_deduction" as const,
-          task_id: taskId,
-          task_name: taskCacheRow?.name || null,
-          description: isReApproval
+        const { error: upsertError } = await supabaseAdmin.rpc('upsert_task_deduction', {
+          p_profile_id: userId,
+          p_organization_id: orgId,
+          p_amount: -credits,
+          p_task_id: taskId,
+          p_task_name: taskCacheRow?.name ?? null,
+          p_description: isReApproval
             ? `${credits} Credits \u2014 korrigiert von ${previousApproved} Credits`
             : `${credits} Credits \u2014 Kostenfreigabe erteilt`,
-        };
-
-        const { error: upsertError } = await supabaseAdmin
-          .from("credit_transactions")
-          .upsert(upsertRow, {
-            onConflict: "task_id,type",
-            ignoreDuplicates: false,
-          });
+        });
 
         if (upsertError) {
           log.error("Credit upsert failed", { taskId, error: upsertError.message });
