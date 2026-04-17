@@ -1,10 +1,19 @@
 {
-  "lastUpdated": "2026-04-16T00:00:00Z",
+  "lastUpdated": "2026-04-17T16:40:00Z",
   "status": "active",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
+    {
+      "id": "TASK-018",
+      "title": "Peer-to-Peer Notifications for Organizations",
+      "date": "2026-04-17",
+      "commits": ["18116fe", "0334dbd", "5aeefd2", "1de2941", "c3d8412"],
+      "summary": "Portal user comments in ticket/project chat now fan out to other org members (bell + email). New peer_messages toggle in Konto settings. New _shared/org.ts helper getOrgContextForUserAndTask resolves org from caller first, validates task belongs to that org (cross-org authz). Includes reusable e2e test infra in tests/ — 9/9 assertions verified on staging.",
+      "filesChanged": 10,
+      "reviewCycles": 2
+    },
     {
       "id": "ORG-MILESTONE",
       "title": "Organizations Milestone (Phases 9-14)",

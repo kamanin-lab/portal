@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-04-16_
+_Status: active_ · _Last updated: 2026-04-17_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
@@ -31,6 +31,13 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+
+### TASK-018: Peer-to-peer org notifications ✅ (2026-04-17)
+- Fan-out in `post-task-comment`: all org members (excl. author + viewers) receive bell + email when a peer posts a comment in a ticket or project chat
+- New `getOrgContextForUserAndTask` helper in `_shared/org.ts` — resolves org from caller, validates task belongs to that org (cross-org guard)
+- New `peer_messages` boolean preference key in `NotificationPreferences` (default true); "Organisation" toggle in `/konto` notification settings
+- New e2e test infra: `tests/_shared/staging-client.ts`, `tests/e2e/peer-notifications.ts`, staging-only safety guard + self-cleanup
+- Fixes: skip fan-out for cross-org tasks, skip email when recipient has no email address
 
 ### Organizations Milestone (Phases 9-14) ✅ (2026-04-14 → 2026-04-16)
 - Phase 9: `organizations` + `org_members` tables, data migration (each profile → one org + admin member), dual-mode RLS, `user_org_ids()` + `user_org_role()` SQL helpers

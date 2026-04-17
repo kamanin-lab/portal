@@ -66,7 +66,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `docs/CHANGELOG.md` | What changed, when, why |
 | `supabase/functions/main/index.ts` | Edge-runtime router — dispatches to worker functions via `EdgeRuntime.userWorkers.create()` |
 | `supabase/functions/_shared/` | Shared utils: cors.ts, logger.ts, utils.ts, emailCopy.ts, clickup-contract.ts, org.ts |
-| `supabase/functions/_shared/org.ts` | Org helpers: `getNonViewerProfileIds(supabase, profileIds)` — filters profile list to admin/member roles only; permissive fallback on error. Used by clickup-webhook to exclude viewers from action emails. |
+| `supabase/functions/_shared/org.ts` | Org helpers: `getNonViewerProfileIds(supabase, profileIds)` — filters profile list to admin/member roles only; permissive fallback on error. Used by clickup-webhook to exclude viewers from action emails. `getOrgContextForUserAndTask(supabase, userId, taskId)` — resolves org from caller's org_members row, validates task belongs to that org (cross-org guard), returns `{orgId, surface, memberProfileIds, taskBelongsToOrg, projectConfigId}`. Used by post-task-comment for peer fan-out authz. |
 | `supabase/functions/_shared/wp-audit.ts` | WordPress site audit via Maxi AI Core REST API — fetches plugins, WP version, product count, language, timezone, and active operator-notes; `bootstrap-session` is called first (v3.3.0+ requirement); graceful degradation on any failure |
 | `supabase/functions/create-clickup-task/` | Dual-mode task creation: ticket (profile list) or project (explicit listId + chapter custom field) |
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
