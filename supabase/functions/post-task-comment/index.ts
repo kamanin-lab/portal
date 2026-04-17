@@ -6,7 +6,7 @@ import { normalizeAttachmentType } from "../_shared/utils.ts";
 import {
   resolvePublicThreadRootId,
 } from "../_shared/clickup-contract.ts";
-import { getUserOrgRole } from "../_shared/org.ts";
+import { getUserOrgRole, getOrgContextForTask, getNonViewerProfileIds } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -250,6 +250,67 @@ async function fetchAttachmentData(
       url: '',
       type: '',
     }));
+  }
+}
+
+// ---- Peer notification helpers (mirrored from clickup-webhook) ----
+
+const EMAIL_TYPE_TO_PREF_KEY: Record<string, string> = {
+  team_question: "peer_messages",
+  project_reply: "peer_messages",
+};
+
+function shouldSendPeerEmail(
+  profile: { email_notifications?: boolean; notification_preferences?: Record<string, boolean> | null },
+  emailType: string,
+): boolean {
+  const prefKey = EMAIL_TYPE_TO_PREF_KEY[emailType];
+  const prefs = profile.notification_preferences;
+
+  // If granular preferences exist, use them
+  if (prefs && typeof prefs === "object" && prefKey && prefKey in prefs) {
+    return !!prefs[prefKey];
+  }
+
+  // Backward compat: fall back to boolean email_notifications
+  return profile.email_notifications !== false;
+}
+
+async function sendMailjetEmail(
+  type: string,
+  to: { email: string; name?: string | null },
+  data: Record<string, unknown>,
+  log: ReturnType<typeof createLogger>,
+): Promise<boolean> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    log.error("Missing Supabase config for email");
+    return false;
+  }
+
+  try {
+    const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/send-mailjet-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({ type, to, data }),
+    });
+
+    if (response.ok) {
+      log.info("Peer email sent", { type });
+      return true;
+    } else {
+      const error = await response.text();
+      log.error("Peer email send failed", { type, error });
+      return false;
+    }
+  } catch (error) {
+    log.error("Peer email send error", { error: String(error) });
+    return false;
   }
 }
 
@@ -503,13 +564,141 @@ Deno.serve(async (req) => {
       log.debug("Cached new comment with attachments");
     }
 
+    // ---- Peer notification fan-out (org members) ----
+    try {
+      const orgCtx = await getOrgContextForTask(supabaseAdmin, taskId, log);
+
+      if (orgCtx.orgId && orgCtx.memberProfileIds.length > 0) {
+        // Exclude the comment author
+        let recipientIds = orgCtx.memberProfileIds.filter(id => id !== userId);
+        // Exclude viewers
+        recipientIds = await getNonViewerProfileIds(supabaseAdmin, recipientIds);
+
+        if (recipientIds.length > 0) {
+          log.info("Fan-out peer notifications", { count: recipientIds.length, surface: orgCtx.surface });
+
+          // Determine notification type and email type based on surface
+          const notificationType = orgCtx.surface === "project_task" ? "team_reply" : "team_reply";
+          const emailType = orgCtx.surface === "project_task" ? "project_reply" : "team_question";
+
+          // Get task/step name for notification text
+          let taskName = "einer Aufgabe";
+          if (orgCtx.surface === "ticket") {
+            const { data: taskRow } = await supabaseAdmin
+              .from("task_cache")
+              .select("name")
+              .eq("clickup_id", taskId)
+              .limit(1)
+              .maybeSingle();
+            if (taskRow?.name) taskName = taskRow.name;
+          } else if (orgCtx.surface === "project_task") {
+            const { data: ptRow } = await supabaseAdmin
+              .from("project_task_cache")
+              .select("name")
+              .eq("clickup_id", taskId)
+              .limit(1)
+              .maybeSingle();
+            if (ptRow?.name) taskName = ptRow.name;
+          }
+
+          // 1. Upsert comment_cache for each recipient
+          for (const recipientId of recipientIds) {
+            const { error: peerCacheErr } = await supabaseAdmin
+              .from("comment_cache")
+              .upsert({
+                clickup_comment_id: commentId,
+                task_id: taskId,
+                profile_id: recipientId,
+                comment_text: clickupText,
+                display_text: displayText,
+                author_id: 0,
+                author_name: firstName,
+                author_email: userEmail,
+                author_avatar: null,
+                clickup_created_at: new Date().toISOString(),
+                last_synced: new Date().toISOString(),
+                is_from_portal: true,
+                attachments: attachmentData.length > 0 ? attachmentData : null,
+              }, {
+                onConflict: "clickup_comment_id,profile_id",
+              });
+
+            if (peerCacheErr) {
+              log.error("Failed to cache peer comment", { recipientId, error: peerCacheErr.message });
+            }
+          }
+
+          // 2. Insert notifications for all recipients
+          const notificationTitle = orgCtx.surface === "project_task"
+            ? `Neue Nachricht zu ${taskName}`
+            : `Neue Nachricht zu \u201E${taskName}\u201C`;
+          const notificationMessage = `${firstName}: ${displayText.substring(0, 200)}${displayText.length > 200 ? "..." : ""}`;
+
+          const notifications = recipientIds.map(pid => ({
+            profile_id: pid,
+            type: notificationType,
+            title: notificationTitle,
+            message: notificationMessage,
+            task_id: taskId,
+            comment_id: commentId,
+            ...(orgCtx.projectConfigId ? { project_config_id: orgCtx.projectConfigId } : {}),
+            is_read: false,
+          }));
+
+          const { error: notifyErr } = await supabaseAdmin.from("notifications").insert(notifications);
+          if (notifyErr) {
+            log.error("Failed to insert peer notifications", { error: notifyErr.message });
+          } else {
+            log.info("Peer notifications created", { count: notifications.length });
+          }
+
+          // 3. Send emails to recipients who have peer_messages enabled
+          const { data: recipientProfiles } = await supabaseAdmin
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .in("id", recipientIds);
+
+          if (recipientProfiles) {
+            for (const rp of recipientProfiles) {
+              if (!shouldSendPeerEmail(rp, emailType)) {
+                log.debug("Skipping peer email — preference disabled");
+                continue;
+              }
+
+              if (emailType === "project_reply") {
+                await sendMailjetEmail("project_reply", { email: rp.email, name: rp.full_name }, {
+                  firstName: rp.full_name?.split(" ")[0],
+                  stepName: taskName,
+                  taskId,
+                  projectConfigId: orgCtx.projectConfigId ?? undefined,
+                  teamMemberName: firstName,
+                  messagePreview: displayText.substring(0, 300),
+                }, log);
+              } else {
+                await sendMailjetEmail("team_question", { email: rp.email, name: rp.full_name }, {
+                  firstName: rp.full_name?.split(" ")[0],
+                  taskName,
+                  taskId,
+                  teamMemberName: firstName,
+                  messagePreview: displayText.substring(0, 300),
+                }, log);
+              }
+            }
+          }
+        }
+      }
+    } catch (fanoutError) {
+      // Fan-out must never fail the main request — comment is already posted
+      log.error("Peer fan-out error (non-fatal)", { error: String(fanoutError) });
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         commentId: commentId,
         attachmentCount: uploadedAttachments.length,
         attachmentNames: uploadedAttachments.map(a => a.name),
-        message: "Comment posted successfully" 
+        message: "Comment posted successfully"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

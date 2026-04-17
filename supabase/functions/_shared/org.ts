@@ -4,6 +4,7 @@
 // client will silently return empty rows.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
+import { createLogger } from "./logger.ts";
 
 export interface OrgConfig {
   organization_id: string;
@@ -168,4 +169,97 @@ export async function getNonViewerProfileIds(
     const role = roleMap.get(id);
     return role === undefined || role === "admin" || role === "member";
   });
+}
+
+export interface OrgTaskContext {
+  orgId: string | null;
+  surface: "ticket" | "project_task" | null;
+  memberProfileIds: string[];
+  projectConfigId: string | null;
+}
+
+/**
+ * Resolves org context for a given ClickUp task ID.
+ * Checks task_cache first (ticket surface), then project_task_cache (project surface).
+ * Returns empty/null values on any failure (graceful degradation).
+ */
+export async function getOrgContextForTask(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  taskId: string,
+  log: ReturnType<typeof createLogger>,
+): Promise<OrgTaskContext> {
+  const empty: OrgTaskContext = { orgId: null, surface: null, memberProfileIds: [], projectConfigId: null };
+
+  try {
+    // 1. Check task_cache (ticket surface)
+    const { data: taskCacheRow } = await supabaseAdmin
+      .from("task_cache")
+      .select("list_id")
+      .eq("clickup_id", taskId)
+      .limit(1)
+      .maybeSingle();
+
+    if (taskCacheRow?.list_id) {
+      const orgResult = await findOrgByListId(supabaseAdmin, taskCacheRow.list_id);
+      if (orgResult && orgResult.profileIds.length > 0) {
+        log.info("Org context resolved via task_cache", { taskId, orgId: orgResult.organizationId });
+        return {
+          orgId: orgResult.organizationId,
+          surface: "ticket",
+          memberProfileIds: orgResult.profileIds,
+          projectConfigId: null,
+        };
+      }
+    }
+
+    // 2. Check project_task_cache (project surface)
+    const { data: projectTaskRow } = await supabaseAdmin
+      .from("project_task_cache")
+      .select("project_config_id")
+      .eq("clickup_id", taskId)
+      .limit(1)
+      .maybeSingle();
+
+    if (projectTaskRow?.project_config_id) {
+      // Get org from project_config → organization_id
+      const { data: projectConfig } = await supabaseAdmin
+        .from("project_config")
+        .select("organization_id, clickup_list_id")
+        .eq("id", projectTaskRow.project_config_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (projectConfig) {
+        let orgId: string | null = projectConfig.organization_id ?? null;
+        let memberIds: string[] = [];
+
+        if (orgId) {
+          memberIds = await getOrgMemberIds(supabaseAdmin, orgId);
+        } else if (projectConfig.clickup_list_id) {
+          // Fallback: resolve org via list_id on project_config
+          const orgResult = await findOrgByListId(supabaseAdmin, projectConfig.clickup_list_id);
+          if (orgResult) {
+            orgId = orgResult.organizationId;
+            memberIds = orgResult.profileIds;
+          }
+        }
+
+        if (orgId && memberIds.length > 0) {
+          log.info("Org context resolved via project_task_cache", { taskId, orgId });
+          return {
+            orgId,
+            surface: "project_task",
+            memberProfileIds: memberIds,
+            projectConfigId: projectTaskRow.project_config_id,
+          };
+        }
+      }
+    }
+
+    log.debug("No org context found for task", { taskId });
+    return empty;
+  } catch (error) {
+    log.error("Error resolving org context for task", { error: String(error) });
+    return empty;
+  }
 }

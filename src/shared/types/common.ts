@@ -9,6 +9,7 @@ export interface NotificationPreferences {
   project_task_ready: boolean
   project_step_completed: boolean
   project_messages: boolean
+  peer_messages: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -22,6 +23,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   project_task_ready: true,
   project_step_completed: true,
   project_messages: true,
+  peer_messages: true,
 }
 
 export interface Profile {
