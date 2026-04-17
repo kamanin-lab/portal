@@ -6,7 +6,7 @@ import { normalizeAttachmentType } from "../_shared/utils.ts";
 import {
   resolvePublicThreadRootId,
 } from "../_shared/clickup-contract.ts";
-import { getUserOrgRole, getOrgContextForTask, getNonViewerProfileIds } from "../_shared/org.ts";
+import { getUserOrgRole, getOrgContextForUserAndTask, getNonViewerProfileIds } from "../_shared/org.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -566,9 +566,13 @@ Deno.serve(async (req) => {
 
     // ---- Peer notification fan-out (org members) ----
     try {
-      const orgCtx = await getOrgContextForTask(supabaseAdmin, taskId, log);
+      const orgCtx = await getOrgContextForUserAndTask(supabaseAdmin, userId, taskId, log);
 
       if (orgCtx.orgId && orgCtx.memberProfileIds.length > 0) {
+        // Gate: skip fan-out if task does not belong to caller's org (prevents cross-org spam)
+        if (!orgCtx.taskBelongsToOrg) {
+          log.warn("Skipping fan-out — task does not belong to caller's org", { taskId, orgId: orgCtx.orgId });
+        } else {
         // Exclude the comment author
         let recipientIds = orgCtx.memberProfileIds.filter(id => id !== userId);
         // Exclude viewers
@@ -577,8 +581,8 @@ Deno.serve(async (req) => {
         if (recipientIds.length > 0) {
           log.info("Fan-out peer notifications", { count: recipientIds.length, surface: orgCtx.surface });
 
-          // Determine notification type and email type based on surface
-          const notificationType = orgCtx.surface === "project_task" ? "team_reply" : "team_reply";
+          // Both ticket and project surfaces use team_reply (matches webhook convention)
+          const notificationType = "team_reply";
           const emailType = orgCtx.surface === "project_task" ? "project_reply" : "team_question";
 
           // Get task/step name for notification text
@@ -686,6 +690,7 @@ Deno.serve(async (req) => {
             }
           }
         }
+        } // end else (taskBelongsToOrg)
       }
     } catch (fanoutError) {
       // Fan-out must never fail the main request — comment is already posted

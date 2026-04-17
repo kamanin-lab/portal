@@ -263,3 +263,154 @@ export async function getOrgContextForTask(
     return empty;
   }
 }
+
+export interface OrgUserTaskContext {
+  orgId: string | null;
+  surface: "ticket" | "project_task" | null;
+  memberProfileIds: string[];
+  projectConfigId: string | null;
+  taskBelongsToOrg: boolean;
+}
+
+/**
+ * Resolves org context from the *caller* (userId → org_members) and validates
+ * that the target task actually belongs to that org. This is the primary
+ * fan-out resolver for post-task-comment: it works even when the task is not
+ * yet in cache (brand-new tasks), and prevents cross-org fan-out when a task
+ * belongs to a different organization.
+ *
+ * Resolution order:
+ * 1. Resolve org from userId via org_members. No row → legacy user, return all-null.
+ * 2. Get all member profile IDs for that org.
+ * 3. Determine surface: task_cache (ticket) or project_task_cache (project_task).
+ *    If neither → surface=null, taskBelongsToOrg=false.
+ * 4. Validate task actually belongs to the caller's org:
+ *    - Ticket: task's list_id must be in organizations.clickup_list_ids.
+ *    - Project task: project_config.organization_id must match.
+ * 5. Return all fields.
+ */
+export async function getOrgContextForUserAndTask(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  taskId: string,
+  log: ReturnType<typeof createLogger>,
+): Promise<OrgUserTaskContext> {
+  const empty: OrgUserTaskContext = {
+    orgId: null,
+    surface: null,
+    memberProfileIds: [],
+    projectConfigId: null,
+    taskBelongsToOrg: false,
+  };
+
+  try {
+    // 1. Resolve org from the caller (always reliable — authenticated user has an org_members row)
+    const { data: memberRow } = await supabaseAdmin
+      .from("org_members")
+      .select("organization_id")
+      .eq("profile_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!memberRow?.organization_id) {
+      // Legacy user without org_members row — skip fan-out silently
+      log.debug("No org_members row for user, skipping fan-out", { userId });
+      return empty;
+    }
+
+    const orgId = memberRow.organization_id as string;
+
+    // 2. Get all member profile IDs for this org
+    const memberProfileIds = await getOrgMemberIds(supabaseAdmin, orgId);
+
+    // 3. Determine surface by looking up the task in caches
+    // Check task_cache first (ticket surface)
+    const { data: taskCacheRow } = await supabaseAdmin
+      .from("task_cache")
+      .select("list_id")
+      .eq("clickup_id", taskId)
+      .limit(1)
+      .maybeSingle();
+
+    if (taskCacheRow) {
+      // Task found in task_cache → ticket surface
+      // 4a. Validate: task's list_id must be in org's clickup_list_ids
+      let taskBelongsToOrg = false;
+      if (taskCacheRow.list_id) {
+        const { data: orgRow } = await supabaseAdmin
+          .from("organizations")
+          .select("clickup_list_ids")
+          .eq("id", orgId)
+          .limit(1)
+          .maybeSingle();
+
+        if (orgRow) {
+          const listIds: string[] = Array.isArray(orgRow.clickup_list_ids)
+            ? (orgRow.clickup_list_ids as string[])
+            : [];
+          taskBelongsToOrg = listIds.includes(taskCacheRow.list_id);
+        }
+      }
+
+      if (!taskBelongsToOrg) {
+        log.warn("Task does not belong to caller's org (ticket)", { taskId, orgId });
+      }
+
+      return {
+        orgId,
+        surface: "ticket",
+        memberProfileIds,
+        projectConfigId: null,
+        taskBelongsToOrg,
+      };
+    }
+
+    // Check project_task_cache (project surface)
+    const { data: projectTaskRow } = await supabaseAdmin
+      .from("project_task_cache")
+      .select("project_config_id")
+      .eq("clickup_id", taskId)
+      .limit(1)
+      .maybeSingle();
+
+    if (projectTaskRow?.project_config_id) {
+      // 4b. Validate: project_config.organization_id must match caller's org
+      let taskBelongsToOrg = false;
+      const { data: projectConfig } = await supabaseAdmin
+        .from("project_config")
+        .select("organization_id")
+        .eq("id", projectTaskRow.project_config_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (projectConfig) {
+        taskBelongsToOrg = projectConfig.organization_id === orgId;
+      }
+
+      if (!taskBelongsToOrg) {
+        log.warn("Task does not belong to caller's org (project)", { taskId, orgId });
+      }
+
+      return {
+        orgId,
+        surface: "project_task",
+        memberProfileIds,
+        projectConfigId: projectTaskRow.project_config_id,
+        taskBelongsToOrg,
+      };
+    }
+
+    // Task not found in either cache — could be brand-new or misconfigured
+    log.warn("Task not found in any cache, cannot validate org ownership", { taskId, orgId });
+    return {
+      orgId,
+      surface: null,
+      memberProfileIds,
+      projectConfigId: null,
+      taskBelongsToOrg: false,
+    };
+  } catch (error) {
+    log.error("Error resolving org context for user+task", { error: String(error) });
+    return empty;
+  }
+}
