@@ -664,6 +664,10 @@ Deno.serve(async (req) => {
 
           if (recipientProfiles) {
             for (const rp of recipientProfiles) {
+              if (!rp.email) {
+                log.debug("Skipping peer email — recipient has no email");
+                continue;
+              }
               if (!shouldSendPeerEmail(rp, emailType)) {
                 log.debug("Skipping peer email — preference disabled");
                 continue;
