@@ -31,6 +31,7 @@ const STAGING_BYPASS_PROFILE: Profile = {
     project_step_completed: true,
     project_messages: true,
     peer_messages: true,
+    weekly_summary: true,
   },
   avatar_url: null,
 }
