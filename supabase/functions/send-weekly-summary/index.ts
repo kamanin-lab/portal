@@ -205,6 +205,7 @@ async function collectSummaryForAdmin(
   supabase: ReturnType<typeof createClient>,
   profileId: string,
   listIds: string[],
+  supportTaskId: string | null,
 ): Promise<WeeklySummaryData> {
   const sevenDaysAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const sixtyDaysAgoIso = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
@@ -225,13 +226,14 @@ async function collectSummaryForAdmin(
     { clickup_id: string; name: string; last_activity_at: string | null }
   >).map((r) => ({ taskId: r.clickup_id, taskName: r.name }));
 
-  // 2. Waiting for client (status = client review)
+  // 2. Waiting for client — both "client review" (status approvals) and
+  // "awaiting approval" (credit approvals). Matches send-reminders scope.
   const { data: waitingRows } = await supabase
     .from("task_cache")
     .select("clickup_id, name, last_activity_at")
     .eq("profile_id", profileId)
     .in("list_id", listIds)
-    .eq("status", "client review")
+    .in("status", ["client review", "awaiting approval"])
     .eq("is_visible", true)
     .order("last_activity_at", { ascending: true })
     .limit(20);
@@ -244,10 +246,11 @@ async function collectSummaryForAdmin(
     daysPending: daysSince(r.last_activity_at),
   }));
 
-  // 3. Open recommendations (status = to do, tagged "recommendation")
+  // 3. Open recommendations (status = to do, tagged "recommendation").
+  // tags live under raw_data.tags (jsonb), not a top-level column.
   const { data: recRows } = await supabase
     .from("task_cache")
-    .select("clickup_id, name, last_activity_at, tags")
+    .select("clickup_id, name, last_activity_at, raw_data")
     .eq("profile_id", profileId)
     .in("list_id", listIds)
     .eq("status", "to do")
@@ -256,12 +259,13 @@ async function collectSummaryForAdmin(
     .limit(20);
 
   const openRecommendations: SummaryTaskItem[] = ((recRows ?? []) as Array<
-    { clickup_id: string; name: string; last_activity_at: string | null; tags: unknown }
+    { clickup_id: string; name: string; last_activity_at: string | null; raw_data: unknown }
   >)
-    .filter((r) =>
-      Array.isArray(r.tags) &&
-      (r.tags as { name: string }[]).some((tag) => tag.name === "recommendation")
-    )
+    .filter((r) => {
+      const rd = r.raw_data as { tags?: unknown } | null;
+      const tags = rd?.tags;
+      return Array.isArray(tags) && (tags as { name: string }[]).some((t) => t.name === "recommendation");
+    })
     .map((r) => ({
       taskId: r.clickup_id,
       taskName: r.name,
@@ -288,16 +292,8 @@ async function collectSummaryForAdmin(
       receiptMap.set(r.context_type, r.last_read_at);
     }
 
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("support_task_id")
-      .eq("id", profileId)
-      .single();
-
-    const supportTaskId = (profileRow as { support_task_id: string | null } | null)?.support_task_id ?? null;
-
     for (const c of comments as { task_id: string; clickup_created_at: string }[]) {
-      const isSupport = c.task_id === supportTaskId;
+      const isSupport = supportTaskId !== null && c.task_id === supportTaskId;
       const contextType = isSupport ? "support" : `task:${c.task_id}`;
       const lastRead = receiptMap.get(contextType);
       if (!lastRead || new Date(c.clickup_created_at) > new Date(lastRead)) {
@@ -325,7 +321,8 @@ async function sendWeeklySummaries(
       organizations!inner (
         id,
         name,
-        clickup_list_ids
+        clickup_list_ids,
+        support_task_id
       ),
       profiles!inner (
         id,
@@ -348,7 +345,12 @@ async function sendWeeklySummaries(
 
   for (const row of adminRows ?? []) {
     const org = (row as unknown as {
-      organizations: { id: string; name: string; clickup_list_ids: unknown };
+      organizations: {
+        id: string;
+        name: string;
+        clickup_list_ids: unknown;
+        support_task_id: string | null;
+      };
     }).organizations;
     const profile = (row as unknown as {
       profiles: {
@@ -378,7 +380,7 @@ async function sendWeeklySummaries(
     if (listIds.length === 0) { skipped++; continue; }
 
     try {
-      const summary = await collectSummaryForAdmin(supabase, profile.id, listIds);
+      const summary = await collectSummaryForAdmin(supabase, profile.id, listIds, org.support_task_id);
 
       const isEmpty = summary.completed.length === 0
         && summary.waitingForClient.length === 0
