@@ -418,7 +418,7 @@ CSS custom properties for colors, spacing, typography. Priority tokens (`--prior
 | `update-task-status` | All client actions: approve, request_changes, put_on_hold, resume, cancel, approve_credits, accept/decline_recommendation. Uses `upsert_task_deduction` RPC for credit UPSERT. |
 | `clickup-webhook` | Inbound webhook from ClickUp. Updates `task_cache`, fires notifications. Excludes viewers. |
 | `send-reminders` | Scheduled (dual-purpose): (1) ticket reminders for `client_review` idle 5+ days, (2) project reminders every 3 days in `client review`, (3) unread-message digest (48h cooldown), (4) recommendation reminders (5-day cooldown). |
-| `send-weekly-summary` | Scheduled Monday 09:00 CET. Sends consolidated weekly digest (completed tasks, waiting-for-client, open recommendations, unread count) to org admins. 6-day cooldown via `profiles.last_weekly_summary_sent_at`. Skips empty sends. |
+| `send-weekly-summary` | Scheduled Monday 09:00 CET. Sends per-admin weekly digest with tiered delivery (SKIP / LIGHT / FULL). FULL includes agency-work section ("Was wir gemacht haben" — AI narrative via OpenRouter + Claude Haiku 4.5, completed, in-progress, team comments, peer activity), per-project block (always shown if admin has an active project), and client-pending blocks (waiting / recs / unread). LIGHT is pending-only with gentler subject "Offene Punkte — KW X". SKIP fires when admin has zero activity and zero pending. 6-day cooldown via `profiles.last_weekly_summary_sent_at`. |
 
 ### Integration functions
 

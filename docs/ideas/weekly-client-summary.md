@@ -1,6 +1,8 @@
 # Weekly Client Summary — wöchentliche Zusammenfassung
 
-> Status: **Phase 1 MVP in implementation** (2026-04-18) | Priority: medium
+> Status: **Phase 1 MVP + Phase 1.5 SHIPPED** (2026-04-18) | Priority: medium
+> First scheduled run: Monday 2026-04-20 09:00 CET.
+> Phases 2 / 3 / 4 still open below.
 
 ## Problem
 
