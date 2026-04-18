@@ -129,18 +129,25 @@ For project tasks in `client review` status that have been idle for 3+ days, a `
 - **Concurrency safety:** atomic claim pattern to prevent duplicate sends in parallel invocations
 - **Preference gate:** `profiles.notification_preferences.reminders` key
 
-### Weekly Summary (cross-module)
-Every Monday at 09:00 CET, org admins receive a consolidated weekly summary email (`weekly_summary`) covering tasks completed in the last 7 days, tasks waiting for client feedback, open recommendations, and unread-message count. Skipped if all four sections are empty. CTA links to `/`.
+### Weekly Summary (cross-module) — v1.5
 
+Every Monday at 09:00 CET, org admins receive a weekly digest. **Tiered delivery**:
+
+- **FULL** — admin had activity on our side OR a project exists. Renders: AI narrative (via OpenRouter → `anthropic/claude-haiku-4.5`), completed-this-week, currently-in-progress, team-comments-by-task, peer activity, per-project block, waiting-for-client, recommendations, unread count. Subject: `Wochenbericht — KW X · N Aktivitäten`.
+- **LIGHT** — only pending items, no fresh agency work. Renders waiting + recs + unread only, gentler copy ("Diese Woche war bei uns ruhig — hier eine Erinnerung …"). Subject: `Offene Punkte — KW X`.
+- **SKIP** — zero activity and zero pending. No email sent.
+
+Details:
 - **Trigger:** `send-weekly-summary` Edge Function — invoked by `.github/workflows/send-weekly-summary.yml` cron `0 7 * * MON`
-- **Source tables:** `task_cache` (completed, waiting, recommendations — scoped by `organizations.clickup_list_ids`) + `comment_cache` ⟕ `read_receipts` (unread count)
+- **Source tables:** `task_cache` (completed / in-progress / waiting / recommendations — scoped by `organizations.clickup_list_ids`), `comment_cache` (team-side + peer counts + ⟕ `read_receipts` for unread count), `project_config` + `project_task_cache` (via `project_access`)
 - **Recipient resolution:** `org_members.role = 'admin'` only
 - **Email type:** `weekly_summary`
 - **Cooldown tracking:** `profiles.last_weekly_summary_sent_at` (timestamptz) — 6-day window (not 7, to survive slightly-late runs)
 - **Concurrency safety:** atomic claim pattern on cooldown column
 - **Preference gate:** `profiles.notification_preferences.weekly_summary` key (default `true`)
-- **Empty-state rule:** send is skipped when all content blocks are empty — no vacuous emails
-- **Overlap with `unread_digest`:** weekly summary shows unread **count** only; the 48h `unread_digest` remains the primary vehicle for per-message detail
+- **AI gating:** narrative is only generated when `teamComments.length ≥ 5`; 10s timeout; output is sentence-filtered (strips "Bitte…"/"Können Sie…" sentences) and capped at 2 sentences. Failure → email sends without the AI line.
+- **Peer detection:** identifies peer comments via `is_from_portal=true AND profile_id=admin AND author_email != admin.email` (workaround for the `post-task-comment` fan-out bug that leaves `author_email` empty — root cause tracked in `docs/ideas/peer-fan-out-author-email.md`).
+- **Overlap with `unread_digest`:** weekly summary shows unread **count** only; the 48h `unread_digest` remains the primary vehicle for per-message detail.
 
 ## Deduplication
 

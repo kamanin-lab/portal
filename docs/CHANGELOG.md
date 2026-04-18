@@ -1,5 +1,33 @@
 # Changelog
 
+## feat(weekly-summary): v1.5 — agency work first, AI narrative, projects, tiers — 2026-04-18
+
+### Problem
+MVP email (shipped earlier today) only surfaced client-owed actions (freigabe, recs, unread) — felt passive, hid the agency's real work. Also sent on any non-zero state, even when nothing changed on the agency side, risking nag fatigue. And ignored project-level activity entirely.
+
+### Changes
+- **`supabase/functions/send-weekly-summary/index.ts`** — full rewrite (+671 / -149):
+  - **New top block "Was wir für Sie gemacht haben"** with AI narrative (via OpenRouter → `anthropic/claude-haiku-4.5`, gated on ≥5 team comments, 10s timeout, warm conversational tone), completed-this-week, currently in progress (`status IN ('in progress','internal review','rework')`), agency-side comment counts grouped by task, peer activity detection handling empty `author_email` (workaround for post-task-comment fan-out bug).
+  - **New project block** — per active project (joined via `project_access` + `project_config`), task statuses, `NEU` badge when created within the week. Always shown if admin has any active project, even without weekly change.
+  - **Three-tier delivery logic** — `determineTier()` returns `SKIP` / `LIGHT` / `FULL`:
+    - `SKIP`: no activity and no pending — email not sent.
+    - `LIGHT`: only pending client items, no fresh agency work — gentler "Offene Punkte — KW X" subject, no AI, no project block.
+    - `FULL`: normal rich rendering.
+  - **Subject carries activity count**: "Wochenbericht — KW 16 · 13 Aktivitäten".
+  - **AI safety**: strips sentences starting with "Bitte"/"Können Sie" (no client-asks in the agency summary), caps at 2 sentences, fails safely (email sends without the AI line).
+
+### Tested end-to-end
+Staging: invoked live EF with real MBM admin + test-client data, `Sent: 2, FULL: 2, LIGHT: 0, SKIP: 0`. Production: EF deployed via Coolify volume + container restart, healthy.
+
+### Not addressed here (logged as follow-up idea)
+- `docs/ideas/peer-fan-out-author-email.md` — root-cause fix for the `author_email` being stripped when peer comments fan out via `post-task-comment`. Currently detected by proxy (`is_from_portal=true AND profile_id=admin AND author_email != admin`). Affects peer labeling in other surfaces too.
+
+### Commits
+- `7e6dd27` feat(weekly-summary): v1.5 — agency-work first, AI narrative, projects, tiers
+- `582e70d` merge(weekly-summary-v1.5): ship to production
+
+---
+
 ## feat(notifications): weekly summary email (MVP) — 2026-04-18
 
 ### Problem
