@@ -1,5 +1,23 @@
 # Changelog
 
+## docs(orientation): MODULE_MAP + reject knowledge-graph tools — 2026-04-18
+
+### Problem
+Every new task, Claude Code agents re-read large parts of `src/` to orient themselves. Wasted exploration across runs, no durable module-level map.
+
+### Changes
+- **`docs/system-context/MODULE_MAP.md`** (new) — hand-maintained per-module file inventory with entry points, architecture rules, cross-module edges, and related Edge Functions. Covers `app/`, `modules/tickets/`, `modules/projects/`, `modules/files/`, `modules/organisation/`, `shared/`, and `supabase/functions/`.
+- **`CLAUDE.md`** — added MODULE_MAP.md to Key Project Documents + new "Module orientation protocol" subsection: check MODULE_MAP.md first, then read source.
+- **`.claude/agents/docs-memory-agent.md`** — added MODULE_MAP.md to agent's target-files list so it stays current on structural changes.
+- **`docs/ideas/knowledge-graph-tools.md`** (new) — full memo from the rejected evaluation of `code-review-graph` and `graphify`. Preserves benchmark numbers and reconsider conditions for ~6-month revisit.
+- **`docs/DECISIONS.md`** — ADR-032 prepended.
+- **`.gitignore`** — added `.experiments/` pattern for future local experiments.
+
+### Rationale
+Benchmark showed neither graph tool cleared 40%-files-read reduction on both test tasks. Both tools also auto-mutate CLAUDE.md / `.mcp.json` / PreToolUse hooks by default, which is hostile to our disciplined pipeline. Hand-maintained map is cheaper (~1h write, ~15min/month maintain), better integrated, and strictly scoped to what's true right now.
+
+---
+
 ## feat(notifications): peer-to-peer org notifications — 2026-04-17
 
 ### Problem

@@ -82,3 +82,6 @@ staging-schema*.sql
 
 # Local backups
 portal_backup_*.dump
+
+# Local experiment artifacts (not for repo)
+.experiments/

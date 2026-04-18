@@ -1,5 +1,23 @@
 # Architecture Decision Records
 
+## ADR-032: Reject pre-built codebase knowledge graphs (2026-04)
+**Date:** 2026-04-18
+**Status:** Accepted (reject)
+
+**Context:** Every new task, Claude Code agents re-read large parts of `src/` to orient themselves. Two third-party tools promised to reduce this: `code-review-graph` (MCP-based, 30 tools) and `graphify` (AST-based markdown report). Both build local graphs without LLM API calls.
+
+**Decision:** Reject both. Evaluated on a controlled benchmark (2 real tasks × 3 modes, 6 fresh subagents). Neither tool cleared the 40%-files-read reduction threshold on both tasks. code-review-graph did reduce tool calls by ~40% and improved plan accuracy (4→5), but not enough to justify adoption costs.
+
+**Consequences:**
+- Both tools' default install mutates `CLAUDE.md` + writes `.mcp.json` at repo root + installs PreToolUse hooks. Controlled pipeline would need manual flag management or manual MCP config; the tools are not polite citizens in a disciplined workflow.
+- `graphify` writes output into the scanned directory (no `--output` flag), which during evaluation leaked `graphify-out/` into `src/modules/tickets/` and required manual cleanup.
+- Tree-sitter extraction in both tools misses TypeScript interfaces/types — a material gap on a heavily-typed React codebase.
+- Cheaper alternative proposed: hand-maintained `docs/system-context/MODULE_MAP.md` with per-module file lists and key cross-module edges. ~1h to write, ~15min/month to maintain.
+- Full memo + reconsider conditions at `docs/ideas/knowledge-graph-tools.md`.
+- Reconsider when: (a) either tool ships a readonly install mode, (b) TypeScript types are surfaced as graph nodes, or (c) codebase grows past ~500-700 files.
+
+---
+
 ## ADR-001: New codebase instead of extending Lovable
 **Date:** 2026-03-10
 **Status:** Accepted

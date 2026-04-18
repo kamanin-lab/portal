@@ -24,7 +24,8 @@ Keeps source-of-truth docs and durable context aligned with real work.
 ### Primary source-of-truth (update after every structural change)
 - `docs/CHANGELOG.md` — what changed, when, why
 - `docs/DECISIONS.md` — architecture decision records
-- `docs/ARCHITECTURE.md` — system architecture, data flow, module map
+- `docs/ARCHITECTURE.md` — system architecture, data flow
+- `docs/system-context/MODULE_MAP.md` — per-module file inventory + architecture rules + cross-module edges
 - `docs/SPEC.md` — design tokens, component specs, status mapping
 - `docs/system-context/DATABASE_SCHEMA.md` — database tables, columns, RLS
 - `docs/system-context/TECH_CONTEXT.md` — full stack documentation
