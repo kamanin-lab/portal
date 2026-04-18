@@ -23,6 +23,7 @@ User identity and notification preferences. One row per authenticated user. **Or
 | last_project_reminder_sent_at | timestamptz | | Timestamp of the last project-task reminder email sent to this user. Used by `send-reminders` Edge Function to enforce the 3-day cooldown between project reminder emails. Separate from ticket reminder tracking. Added 2026-04-04. |
 | last_unread_digest_sent_at | timestamptz | | Timestamp of the last unread message digest email sent to this user. Used by `send-reminders` to enforce the 24h cooldown for daily unread chat reminders. Added 2026-04-14. |
 | last_recommendation_reminder_sent_at | timestamptz | NULL | Cooldown timestamp for recommendation_reminder emails (5-day). Used by `send-reminders` to avoid spamming clients about open recommendations. Added 2026-04-14. |
+| last_weekly_summary_sent_at | timestamptz | NULL | Cooldown timestamp for weekly summary emails (6-day window). Used by `send-weekly-summary` Edge Function (Monday 09:00 CET cron) to avoid duplicate sends when a run lands slightly late. Added 2026-04-18. |
 
 **RLS Policies:**
 - Users can read/update only their own row (`auth.uid() = id`)

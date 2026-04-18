@@ -19,6 +19,7 @@ export type EmailType =
   | "unread_digest"
   | "new_recommendation"
   | "recommendation_reminder"
+  | "weekly_summary"
   | "magic_link"
   | "password_reset"
   | "email_confirmation"
@@ -578,6 +579,31 @@ export const EMAIL_COPY: EmailCopyDict = {
       cta: "View recommendation",
       notes: [
         "You can adjust your email notification preferences in your account settings.",
+      ],
+    },
+  },
+
+  weekly_summary: {
+    de: {
+      subject: (isoWeek: number) => `Wochenbericht — KW ${isoWeek}`,
+      title: "Ihr Wochenbericht",
+      greeting: greetDe,
+      body: "Hier ist der Überblick über die vergangene Woche in Ihrem Portal:",
+      cta: "Im Portal ansehen",
+      notes: [
+        "Sie erhalten diese Zusammenfassung jeden Montag, wenn es etwas zu berichten gibt.",
+        "Sie können die wöchentliche Zusammenfassung in Ihren Kontoeinstellungen deaktivieren.",
+      ],
+    },
+    en: {
+      subject: (isoWeek: number) => `Weekly summary — Week ${isoWeek}`,
+      title: "Your weekly summary",
+      greeting: greetEn,
+      body: "Here is an overview of the past week in your portal:",
+      cta: "View in portal",
+      notes: [
+        "You receive this summary every Monday when there is something to report.",
+        "You can disable the weekly summary in your account settings.",
       ],
     },
   },

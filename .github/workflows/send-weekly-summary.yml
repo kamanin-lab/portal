@@ -1,0 +1,28 @@
+name: Send weekly summary
+on:
+  schedule:
+    # 07:00 UTC Monday = 09:00 CET Monday (6-day cooldown enforced server-side)
+    - cron: '0 7 * * MON'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  send-weekly-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly summary job
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_FUNCTIONS_URL }}/send-weekly-summary" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Response: $body"
+          echo "Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Weekly summary job failed with status $http_code"
+            exit 1
+          fi

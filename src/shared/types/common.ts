@@ -10,6 +10,7 @@ export interface NotificationPreferences {
   project_step_completed: boolean
   project_messages: boolean
   peer_messages: boolean
+  weekly_summary: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -24,6 +25,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   project_step_completed: true,
   project_messages: true,
   peer_messages: true,
+  weekly_summary: true,
 }
 
 export interface Profile {

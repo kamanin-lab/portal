@@ -67,7 +67,8 @@ const PROJECT_OPTIONS: OptionDef[] = [
 ]
 
 const ORG_OPTIONS: OptionDef[] = [
-  { key: 'peer_messages', label: 'Nachrichten von Teammitgliedern', description: 'Benachrichtigung, wenn andere Mitglieder Ihrer Organisation im Chat schreiben.' },
+  { key: 'peer_messages',  label: 'Nachrichten von Teammitgliedern',  description: 'Benachrichtigung, wenn andere Mitglieder Ihrer Organisation im Chat schreiben.' },
+  { key: 'weekly_summary', label: 'Wöchentliche Zusammenfassung',     description: 'Montag-Morgens-Überblick über erledigte Aufgaben, offene Freigaben und Empfehlungen (nur Administratoren).' },
 ]
 
 export function NotificationSection({ preferences }: Props) {

@@ -562,6 +562,7 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 | docs-memory-agent | Sonnet | Updates docs, records decisions, preserves context |
 
 ## Key Project Documents
+- `docs/system-context/MODULE_MAP.md` — **start here for any task touching src/** — per-module file lists, architecture rules, cross-module edges
 - `docs/system-context/SYSTEM_CONSTRAINTS.md` — non-negotiable architectural rules
 - `docs/system-context/TECH_CONTEXT.md` — full stack documentation
 - `docs/system-context/STATUS_TRANSITION_MATRIX.md` — allowed status changes + notifications
@@ -570,3 +571,12 @@ Keep messages concise. Yuri manages from phone — no walls of text.
 - `docs/system-context/DATABASE_SCHEMA.md` — database schema reference
 - `docs/domain/` — domain model, delivery rules, product gaps
 - `tasks/dashboard.md` — current team status (keep updated!)
+
+### Module orientation protocol
+Before exploring `src/` for a task that touches UI code:
+1. Open `docs/system-context/MODULE_MAP.md` and find the relevant module section.
+2. Read the "Architecture rules" and "Entry points" for that module.
+3. Locate specific files via the per-directory tables.
+4. Only then start reading source files — usually 2-4 Reads are enough.
+
+Update MODULE_MAP.md when adding/removing files or introducing new cross-module dependencies. Do NOT update for trivial renames.
