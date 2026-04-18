@@ -47,7 +47,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 - `pages/TicketsPage.tsx` — main task list. Sheet-based detail (URL state `?taskId=xxx`).
 - `pages/SupportPage.tsx` — 1:1 support chat with the agency.
 
-**Primary data source:** `task_cache` + `comment_cache` (Supabase). Filtered by `profile_id` via RLS. Never reads from ClickUp directly.
+**Primary data source:** `task_cache` + `comment_cache` + `read_receipts` (Supabase). Filtered by `profile_id` via RLS. Never reads from ClickUp directly. `read_receipts` keys per-user "last viewed" timestamps by `context_type` (`task:<id>` or `support`); used to compute unread counts and drive the unread-message digest.
 
 ### Architecture rules (this module)
 
@@ -96,7 +96,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 | `useTaskComments.ts` | Comment thread query + post mutation. | `comment_cache` + `post-task-comment` EF |
 | `useCreateTask.ts` | New task creation (ticket or project mode). | `create-clickup-task` EF |
 | `useNotifications.ts` | Bell dropdown — reads `notifications` table with RLS. | `notifications` |
-| `useUnreadCounts.ts` | Aggregate unread-comment counts per task. | `comment_cache` + `notifications` |
+| `useUnreadCounts.ts` | Aggregate unread-comment counts per task. | `comment_cache` + `read_receipts` + `notifications` |
 | `useCredits.ts` | Current balance + deduction history. | `credit_packages` + `credit_transactions` |
 | `useCreditHistory.ts` | Paginated list of past credit events. | `credit_transactions` |
 | `useRecommendations.ts` | Recommendation cards + snooze/decline. | `recommendations` table |
@@ -417,7 +417,8 @@ CSS custom properties for colors, spacing, typography. Priority tokens (`--prior
 | `post-task-comment` | Post comment to ClickUp + peer-notification fan-out + `comment_cache` update. |
 | `update-task-status` | All client actions: approve, request_changes, put_on_hold, resume, cancel, approve_credits, accept/decline_recommendation. Uses `upsert_task_deduction` RPC for credit UPSERT. |
 | `clickup-webhook` | Inbound webhook from ClickUp. Updates `task_cache`, fires notifications. Excludes viewers. |
-| `send-reminders` | Scheduled (dual-purpose): (1) ticket reminders for `client_review` idle 5+ days, (2) project reminders every 3 days in `client review`. |
+| `send-reminders` | Scheduled (dual-purpose): (1) ticket reminders for `client_review` idle 5+ days, (2) project reminders every 3 days in `client review`, (3) unread-message digest (48h cooldown), (4) recommendation reminders (5-day cooldown). |
+| `send-weekly-summary` | Scheduled Monday 09:00 CET. Sends consolidated weekly digest (completed tasks, waiting-for-client, open recommendations, unread count) to org admins. 6-day cooldown via `profiles.last_weekly_summary_sent_at`. Skips empty sends. |
 
 ### Integration functions
 

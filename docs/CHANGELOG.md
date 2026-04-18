@@ -1,5 +1,30 @@
 # Changelog
 
+## feat(notifications): weekly summary email (MVP) — 2026-04-18
+
+### Problem
+Clients only learn about portal activity through per-event emails (task review, team reply, etc.) and a 48-hour unread-digest. Nothing gives them a **weekly picture** — what was completed, what's still waiting, open recommendations — without logging in. Busy clients miss context between weeks.
+
+### Changes
+- **`supabase/migrations/20260418100000_add_weekly_summary_cooldown.sql`** (new) — adds `profiles.last_weekly_summary_sent_at timestamptz` column for 6-day cooldown.
+- **`supabase/functions/send-weekly-summary/index.ts`** (new) — scheduled Edge Function. For each org admin, builds a 4-section digest (completed-this-week, waiting-for-feedback, open recommendations, unread count), skips if all empty, sends via Mailjet with atomic-claim cooldown. Pattern mirrors `send-reminders`.
+- **`supabase/functions/_shared/emailCopy.ts`** — added `weekly_summary` email type (de + en); subject keyed off ISO week number (`Wochenbericht — KW 16`).
+- **`.github/workflows/send-weekly-summary.yml`** (new) — cron `0 7 * * MON` (Monday 09:00 CET) + `workflow_dispatch` for manual smoke tests.
+- **`src/shared/types/common.ts`** — `weekly_summary: boolean` added to `NotificationPreferences` and `DEFAULT_NOTIFICATION_PREFERENCES`.
+- **`src/shared/components/konto/NotificationSection.tsx`** — new toggle under the "Organisation" section: "Wöchentliche Zusammenfassung" (visible only to org members).
+- **Docs**: `NOTIFICATION_MATRIX.md` (new Weekly Summary subsection + preference key row), `DATABASE_SCHEMA.md` (new column row), `MODULE_MAP.md` (new EF entry + `read_receipts` table surfaced in tickets module data source description), `docs/ideas/weekly-client-summary.md` (full design memo including Phase 2-4 future work — project-progress section, per-member summaries + i18n, configurable cadence).
+
+### Scope — MVP (Phase 1 only)
+Admin-only recipient, German-only copy, 4 content blocks, skip-if-empty, 6-day cooldown. Phases 2-4 documented as future work in the ideas memo, not implemented.
+
+### Overlap with existing `unread_digest`
+Weekly summary surfaces **count** of unread messages only, not per-message detail. The 48h `unread_digest` remains the primary vehicle for actionable unread content. No `unread_digest` suppression during weekly-summary window — defer until we see real duplication complaints.
+
+### Commits
+(to be added after push)
+
+---
+
 ## docs(orientation): MODULE_MAP + reject knowledge-graph tools — 2026-04-18
 
 ### Problem

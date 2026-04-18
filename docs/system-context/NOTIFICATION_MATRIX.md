@@ -93,6 +93,7 @@ Users can control which email types they receive via the Account page (`/konto`)
 | `project_reminder` | `reminders` | Erinnerungen | ON |
 | `team_question` (peer) | `peer_messages` | Nachrichten von Teammitgliedern | ON |
 | `project_reply` (peer) | `peer_messages` | (same preference as peer team_question) | ON |
+| `weekly_summary` | `weekly_summary` | Wöchentliche Zusammenfassung | ON |
 
 The webhook function uses `shouldSendEmail(profile, emailType)` to check the appropriate preference key. If the JSONB column is null (pre-migration users), it falls back to the legacy `email_notifications` boolean.
 
@@ -113,6 +114,19 @@ For project tasks in `client review` status that have been idle for 3+ days, a `
 - **Cooldown tracking:** `profiles.last_project_reminder_sent_at` (timestamptz) — prevents re-send within 3-day window
 - **Concurrency safety:** atomic claim pattern to prevent duplicate sends in parallel invocations
 - **Preference gate:** `profiles.notification_preferences.reminders` key
+
+### Weekly Summary (cross-module)
+Every Monday at 09:00 CET, org admins receive a consolidated weekly summary email (`weekly_summary`) covering tasks completed in the last 7 days, tasks waiting for client feedback, open recommendations, and unread-message count. Skipped if all four sections are empty. CTA links to `/`.
+
+- **Trigger:** `send-weekly-summary` Edge Function — invoked by `.github/workflows/send-weekly-summary.yml` cron `0 7 * * MON`
+- **Source tables:** `task_cache` (completed, waiting, recommendations — scoped by `organizations.clickup_list_ids`) + `comment_cache` ⟕ `read_receipts` (unread count)
+- **Recipient resolution:** `org_members.role = 'admin'` only
+- **Email type:** `weekly_summary`
+- **Cooldown tracking:** `profiles.last_weekly_summary_sent_at` (timestamptz) — 6-day window (not 7, to survive slightly-late runs)
+- **Concurrency safety:** atomic claim pattern on cooldown column
+- **Preference gate:** `profiles.notification_preferences.weekly_summary` key (default `true`)
+- **Empty-state rule:** send is skipped when all content blocks are empty — no vacuous emails
+- **Overlap with `unread_digest`:** weekly summary shows unread **count** only; the 48h `unread_digest` remains the primary vehicle for per-message detail
 
 ## Deduplication
 
