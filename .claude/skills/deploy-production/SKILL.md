@@ -63,8 +63,18 @@ If GitHub Actions fails and you need emergency manual deploy:
 scp -i ~/.ssh/id_ed25519 -P 22 supabase/functions/<fn>/index.ts \
   root@91.99.172.34:/data/coolify/services/ngkk4c4gsc0kw8wccw0cc04s/volumes/functions/<fn>/index.ts
 # Edge Functions read files on each request — no container restart needed
-# (unless env vars changed — then: docker compose up -d --force-recreate supabase-edge-functions)
+# for code changes. If env vars (secrets) changed, the container needs to
+# be RECREATED, not just restarted — docker restart keeps the old baked-in
+# env. See the rotate-secret skill for the full procedure.
 ```
+
+### Secret changes require `--force-recreate`, not `docker restart`
+
+If this deploy also touches an Edge Function secret (CRON_SECRET, any *_API_KEY,
+MAILJET_*, etc.), use the **`rotate-secret`** skill — it covers the mandatory
+3-point sync across Coolify + staging Supabase + GitHub, and why
+`docker compose up -d --no-deps --force-recreate supabase-edge-functions`
+is the only command that makes the new value take effect.
 
 ## Step 5 — Smoke Test Production
 

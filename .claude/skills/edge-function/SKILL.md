@@ -72,9 +72,16 @@ if (url.pathname === "/my-function") {
 # Staging (Cloud Supabase):
 supabase secrets set MY_SECRET=value --project-ref ahlthosftngdcryltapu
 
-# Production (add to Coolify env vars):
-# SSH to server → Coolify UI → Edge Function service → Environment
+# Production — SSH edit of /data/coolify/services/<id>/.env + recreate container.
+# See the rotate-secret skill for the full scriptable procedure.
 ```
+
+> For rotating or updating an existing secret (especially shared three-point
+> secrets like `CRON_SECRET`): use the **`rotate-secret`** skill
+> (`.claude/skills/rotate-secret/SKILL.md`). Its #1 gotcha: `docker restart`
+> does NOT re-read env file changes — you must
+> `docker compose up -d --no-deps --force-recreate supabase-edge-functions`
+> or the container keeps the old value.
 
 ## Step 4 — Test Locally (optional)
 
