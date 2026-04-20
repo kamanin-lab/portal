@@ -6,8 +6,12 @@ Automated end-to-end tests for complex cross-service flows (org permissions, not
 
 1. **Staging only.** All tests target:
    - Staging Cloud Supabase project ref `ahlthosftngdcryltapu`
-   - ClickUp test list `901520762121` (bounded sandbox per `reference_clickup_test.md` memory)
+   - ClickUp test lists (bounded sandbox in folder `901513727289`):
+     - `901520762121` — "Test - Project" → `CLICKUP_TEST_LIST_PROJECT` (project-module tests)
+     - `901520327531` — "Test - Tasks"   → `CLICKUP_TEST_LIST_TASKS` (ticket-module tests)
    - The `_shared/staging-client.ts` safety guard aborts if `STAGING_SUPABASE_URL` points anywhere else.
+
+   **Rule:** whenever writing a new e2e test, always use one of the two test lists above — never a real client list.
 2. **Never run against production.** If you need to verify prod behavior, do it manually or with read-only queries.
 3. **Clean up.** Every test **must** delete what it created: ClickUp tasks/comments, Supabase rows (`notifications`, `comment_cache`, `task_cache`, `org_members`, `organizations`), auth users. Failed tests should still attempt cleanup (use `try/finally`).
 4. **Dedicated test users per run.** Never reuse real Yuri or client accounts. Create fresh `e2e-*-{timestamp}@test.local` users via `supabaseAdmin.auth.admin.createUser`.
