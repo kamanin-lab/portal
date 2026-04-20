@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { createLogger } from "../_shared/logger.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getEmailCopy, type EmailLocale } from "../_shared/emailCopy.ts";
-import { getOrgMemberIds } from "../_shared/org.ts";
+import { getOrgMemberIds, canUserSeeTask, type MemberVisibility, type TaskVisibility } from "../_shared/org.ts";
 
 interface ReminderTaskItem {
   taskId: string;
@@ -199,7 +199,44 @@ async function sendUnreadMessageReminders(
     receiptMap.set(`${r.profile_id}:${r.context_type}`, r.last_read_at);
   }
 
-  // 4. Compute unread counts per (profile_id, task_id)
+  // 3a. Fetch org_member visibility for eligible profiles (role + departments).
+  // Used to filter per-task comments by department visibility — prevents the
+  // unread digest from mentioning tickets the user cannot see in the UI.
+  const profileIds = profiles.map((p: Record<string, unknown>) => p.id);
+  const { data: memberRows } = await supabase
+    .from("org_members")
+    .select("profile_id, role, departments")
+    .in("profile_id", profileIds);
+
+  const memberMap = new Map<string, MemberVisibility>();
+  for (const row of (memberRows ?? []) as Array<Record<string, unknown>>) {
+    memberMap.set(row.profile_id as string, {
+      profile_id: row.profile_id as string,
+      role: (row.role as string) ?? "member",
+      departments: Array.isArray(row.departments) ? (row.departments as string[]) : [],
+    });
+  }
+
+  // 3b. Fetch task visibility (departments + creator) for all task_ids referenced
+  // in teamComments. Keyed by clickup_id — taken from the admin's cache row to avoid
+  // per-profile duplicates.
+  const commentTaskIds = [...new Set((teamComments as Array<{ task_id: string }>).map((c) => c.task_id))];
+  const { data: taskVisRows } = await supabase
+    .from("task_cache")
+    .select("clickup_id, departments, created_by_user_id")
+    .in("clickup_id", commentTaskIds);
+
+  const taskVisMap = new Map<string, TaskVisibility>();
+  for (const row of (taskVisRows ?? []) as Array<Record<string, unknown>>) {
+    const id = row.clickup_id as string;
+    if (taskVisMap.has(id)) continue; // first row wins (same values per task across profiles)
+    taskVisMap.set(id, {
+      departments: Array.isArray(row.departments) ? (row.departments as string[]) : [],
+      created_by_user_id: (row.created_by_user_id as string | null) ?? null,
+    });
+  }
+
+  // 4. Compute unread counts per (profile_id, task_id) — department-aware
   const profileUnread = new Map<string, Map<string, number>>();
   for (const comment of teamComments as Record<string, string>[]) {
     const profile = (profiles as Record<string, unknown>[]).find((p) => p.id === comment.profile_id);
@@ -210,13 +247,20 @@ async function sendUnreadMessageReminders(
     const lastRead = receiptMap.get(`${comment.profile_id}:${contextType}`);
     const isUnread = !lastRead || new Date(comment.clickup_created_at) > new Date(lastRead);
 
-    if (isUnread) {
-      if (!profileUnread.has(comment.profile_id)) {
-        profileUnread.set(comment.profile_id, new Map());
-      }
-      const taskMap = profileUnread.get(comment.profile_id)!;
-      taskMap.set(comment.task_id, (taskMap.get(comment.task_id) ?? 0) + 1);
+    if (!isUnread) continue;
+
+    // Department visibility check (support-chat always visible — org-wide by design)
+    if (!isSupport) {
+      const member = memberMap.get(comment.profile_id);
+      const task = taskVisMap.get(comment.task_id);
+      if (member && task && !canUserSeeTask(member, task)) continue;
     }
+
+    if (!profileUnread.has(comment.profile_id)) {
+      profileUnread.set(comment.profile_id, new Map());
+    }
+    const taskMap = profileUnread.get(comment.profile_id)!;
+    taskMap.set(comment.task_id, (taskMap.get(comment.task_id) ?? 0) + 1);
   }
 
   if (!profileUnread.size) {
@@ -326,20 +370,44 @@ async function sendRecommendationReminders(
     return { sent, skipped, errors };
   }
 
-  // 2. Fetch candidate tasks: status=to do, is_visible=true, last_activity_at older than 3 days
+  // 2. Fetch candidate tasks: status=to do, is_visible=true, last_activity_at older than 3 days.
+  // Pull departments + created_by_user_id too so we can filter by department visibility below.
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const { data: candidateTasks } = await supabase
     .from("task_cache")
-    .select("clickup_id, name, profile_id, last_activity_at, status, tags")
+    .select("clickup_id, name, profile_id, last_activity_at, status, tags, departments, created_by_user_id")
     .eq("status", "to do")
     .eq("is_visible", true)
     .lt("last_activity_at", threeDaysAgo)
     .in("profile_id", profiles.map((p: Record<string, unknown>) => p.id));
 
-  // 3. JS-side tag filter: keep only tasks tagged "recommendation"
-  const recommendations = (candidateTasks ?? []).filter((t: Record<string, unknown>) =>
-    Array.isArray(t.tags) && (t.tags as { name: string }[]).some((tag) => tag.name === "recommendation")
-  );
+  // 2a. Fetch org_member visibility for eligible profiles to apply department filter.
+  const { data: memberRows } = await supabase
+    .from("org_members")
+    .select("profile_id, role, departments")
+    .in("profile_id", profiles.map((p: Record<string, unknown>) => p.id));
+
+  const memberMap = new Map<string, MemberVisibility>();
+  for (const row of (memberRows ?? []) as Array<Record<string, unknown>>) {
+    memberMap.set(row.profile_id as string, {
+      profile_id: row.profile_id as string,
+      role: (row.role as string) ?? "member",
+      departments: Array.isArray(row.departments) ? (row.departments as string[]) : [],
+    });
+  }
+
+  // 3. JS-side tag filter: keep only tasks tagged "recommendation" AND department-visible
+  const recommendations = (candidateTasks ?? []).filter((t: Record<string, unknown>) => {
+    const hasTag = Array.isArray(t.tags) && (t.tags as { name: string }[]).some((tag) => tag.name === "recommendation");
+    if (!hasTag) return false;
+    const member = memberMap.get(t.profile_id as string);
+    if (!member) return true; // fallback — shouldn't happen since profiles list is same
+    const task: TaskVisibility = {
+      departments: Array.isArray(t.departments) ? (t.departments as string[]) : [],
+      created_by_user_id: (t.created_by_user_id as string | null) ?? null,
+    };
+    return canUserSeeTask(member, task);
+  });
 
   if (!recommendations.length) {
     log.info("Recommendation reminder: no pending recommendations older than 3 days");

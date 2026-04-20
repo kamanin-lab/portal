@@ -241,6 +241,30 @@ export async function getVisibleMemberProfileIds(
   }
 }
 
+/**
+ * Department-based visibility predicate — JS mirror of can_user_see_task() SQL function.
+ * Used by batch jobs (send-reminders) where calling the RPC per row is expensive.
+ * Keep this logic in sync with can_user_see_task in migration 20260421100000_ticket_departments.sql.
+ */
+export interface MemberVisibility {
+  profile_id: string;
+  role: string;
+  departments: string[];
+}
+
+export interface TaskVisibility {
+  departments: string[];
+  created_by_user_id: string | null;
+}
+
+export function canUserSeeTask(member: MemberVisibility, task: TaskVisibility): boolean {
+  if (member.role === "admin") return true;
+  if ((member.departments?.length ?? 0) === 0) return true; // legacy fallback
+  if ((task.departments?.length ?? 0) === 0) return true;   // untagged = public
+  if (task.created_by_user_id && task.created_by_user_id === member.profile_id) return true;
+  return task.departments.some((d) => member.departments.includes(d));
+}
+
 export interface OrgTaskContext {
   orgId: string | null;
   surface: "ticket" | "project_task" | null;
