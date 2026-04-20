@@ -917,7 +917,7 @@ async function sendWeeklySummaries(
         .from("profiles")
         .update({ last_weekly_summary_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_weekly_summary_sent_at.is.null,last_weekly_summary_sent_at.lt.${cooldownBoundary}`)
+        .or(`last_weekly_summary_sent_at.is.null,last_weekly_summary_sent_at.lt."${cooldownBoundary}"`)
         .select("id");
 
       if (claimErr) {

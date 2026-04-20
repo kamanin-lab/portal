@@ -299,7 +299,7 @@ async function sendUnreadMessageReminders(
         .from("profiles")
         .update({ last_unread_digest_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${twoDaysAgo}`);
+        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt."${twoDaysAgo}"`);
       sent++;
     } else {
       errors++;
@@ -382,7 +382,7 @@ async function sendRecommendationReminders(
       .from("profiles")
       .update({ last_recommendation_reminder_sent_at: new Date().toISOString() })
       .eq("id", profile.id)
-      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt.${cooldownBoundary}`)
+      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt."${cooldownBoundary}"`)
       .select("id");
 
     if (claimError) {
@@ -666,7 +666,7 @@ async function sendProjectReminders(
         .from("profiles")
         .update({ last_project_reminder_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
+        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt."${threeDaysAgo}"`)
         .select("id");
 
       if (!claimed || claimed.length === 0) {
