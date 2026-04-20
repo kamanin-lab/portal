@@ -96,18 +96,18 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
   },
   {
     id: 'kredite',
-    title: 'Kredite',
+    title: 'Credits',
     iconName: 'CreditCardIcon',
     items: [
       {
-        question: 'Was sind Kredite und wie funktionieren sie?',
+        question: 'Was sind Credits und wie funktionieren sie?',
         answer:
-          'Kredite sind Ihr Guthaben für Leistungen von KAMANIN. Jede Anfrage oder Aufgabe verbraucht je nach Aufwand eine bestimmte Anzahl an Krediten.',
+          'Credits sind Ihr Guthaben für Leistungen von KAMANIN. Jede Anfrage oder Aufgabe verbraucht je nach Aufwand eine bestimmte Anzahl an Credits.',
       },
       {
         question: 'Wo sehe ich mein aktuelles Guthaben?',
         answer:
-          'Ihr aktuelles Kreditguthaben wird in der Seitenleiste angezeigt. Detaillierte Informationen finden Sie unter Konto → Kredite.',
+          'Ihre aktuellen Credits werden in der Seitenleiste angezeigt. Detaillierte Informationen finden Sie unter Konto → Guthaben.',
       },
       {
         question: 'Was passiert, wenn mein Guthaben aufgebraucht ist?',
@@ -117,7 +117,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Ist das Guthaben mit meinem Team geteilt?',
         answer:
-          'Ja. Jede Organisation verfügt über ein gemeinsames Kreditbudget. Alle Mitglieder teilen sich dieses Guthaben, und der Verbrauch wird zentral erfasst.',
+          'Ja. Jede Organisation verfügt über ein gemeinsames Credit-Budget. Alle Mitglieder teilen sich dieses Guthaben, und der Verbrauch wird zentral erfasst.',
       },
       {
         question: 'Wer darf Kosten freigeben?',
@@ -188,12 +188,12 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Was ist eine Organisation?',
         answer:
-          'Eine Organisation bündelt Ihr gesamtes Unternehmen in einem Konto: gemeinsames Kreditbudget, gemeinsame Projekte und gemeinsame Dateien. Alle Teammitglieder arbeiten innerhalb derselben Organisation.',
+          'Eine Organisation bündelt Ihr gesamtes Unternehmen in einem Konto: gemeinsames Credit-Budget, gemeinsame Projekte und gemeinsame Dateien. Alle Teammitglieder arbeiten innerhalb derselben Organisation.',
       },
       {
         question: 'Welche Rollen gibt es?',
         answer:
-          'Es gibt drei Rollen: Admin, Member und Viewer. Admins verwalten das Team und die Kredite. Members erstellen Aufgaben und erteilen Freigaben. Viewer können alles einsehen, aber keine Aktionen ausführen.',
+          'Es gibt drei Rollen: Admin, Member und Viewer. Admins verwalten das Team und die Credits. Members erstellen Aufgaben und erteilen Freigaben. Viewer können alles einsehen, aber keine Aktionen ausführen.',
       },
       {
         question: 'Wie lade ich ein Teammitglied ein?',
@@ -208,7 +208,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Warum kann ich bestimmte Aktionen nicht ausführen?',
         answer:
-          'Als Viewer können Sie Projekte, Dateien und Nachrichten einsehen und Kommentare verfassen. Aktionen wie „Freigeben", „Änderungen anfordern", „Neue Aufgabe" oder die Kreditfreigabe stehen nur Admins und Members zur Verfügung.',
+          'Als Viewer können Sie Projekte, Dateien und Nachrichten einsehen und Kommentare verfassen. Aktionen wie „Freigeben", „Änderungen anfordern", „Neue Aufgabe" oder die Credit-Freigabe stehen nur Admins und Members zur Verfügung.',
       },
       {
         question: 'Sind Dateien und Nachrichten team-weit sichtbar?',
