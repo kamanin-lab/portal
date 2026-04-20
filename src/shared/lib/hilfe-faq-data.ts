@@ -14,83 +14,34 @@ export interface FaqSectionData {
 
 export const FAQ_SECTIONS: FaqSectionData[] = [
   {
-    id: 'projekte',
-    title: 'Projekte',
-    iconName: 'FolderOpenIcon',
+    id: 'benachrichtigungen',
+    title: 'Benachrichtigungen',
+    iconName: 'Notification01Icon',
     items: [
       {
-        question: 'Was bedeuten die Projektphasen?',
+        question: 'Wann erhalte ich eine Benachrichtigung?',
         answer:
-          'Jedes Projekt durchläuft vier Phasen: Konzept, Struktur, Design und Entwicklung. Diese helfen Ihnen, den Fortschritt auf einen Blick zu verfolgen. Jede Phase enthält Aufgaben, die schrittweise abgeschlossen werden.',
+          'Sie erhalten Benachrichtigungen bei Statusänderungen Ihrer Tickets, neuen Kommentaren, Freigabeanfragen und wichtigen Projektaktualisierungen.',
       },
       {
-        question: 'Wie verfolge ich den Fortschritt meines Projekts?',
+        question: 'Wie markiere ich Benachrichtigungen als gelesen?',
         answer:
-          'Im Projektbereich sehen Sie alle Phasen und deren Aufgaben mit aktuellem Status. Abgeschlossene Schritte werden farblich markiert.',
+          'Öffnen Sie den Benachrichtigungsbereich (Glocke-Symbol) und klicken Sie auf eine Benachrichtigung, um sie zu lesen. Sie können auch alle auf einmal als gelesen markieren.',
       },
       {
-        question: 'Was bedeutet „Ihre Rückmeldung"?',
+        question: 'Was ist die wöchentliche Zusammenfassung?',
         answer:
-          'Dieser Status zeigt an, dass eine Aufgabe Ihre Freigabe oder Ihr Feedback benötigt, bevor wir weitermachen können. Bitte reagieren Sie zeitnah, damit sich Ihr Projekt nicht verzögert.',
+          'Jeden Montag erhalten Admins eine E-Mail mit einer Zusammenfassung der vergangenen Woche: erledigte Aufgaben, offene Punkte und ungelesene Nachrichten. Sie können diese unter Konto → Benachrichtigungen deaktivieren.',
       },
       {
-        question: 'Wie erteile ich eine Freigabe oder fordere Änderungen an?',
+        question: 'Warum erhalte ich Nachrichten von meinem Team?',
         answer:
-          'Öffnen Sie die entsprechende Aufgabe und klicken Sie auf „Freigeben". Wenn Sie Änderungen wünschen, wählen Sie „Änderungen anfordern" und beschreiben Sie Ihre Anmerkungen. Nur Admins und Members können freigeben; Viewer sehen die Aktion nicht.',
-      },
-    ],
-  },
-  {
-    id: 'tickets',
-    title: 'Tickets & Anfragen',
-    iconName: 'CustomerService01Icon',
-    items: [
-      {
-        question: 'Wie erstelle ich ein neues Support-Ticket?',
-        answer:
-          'Klicken Sie auf „Neue Aufgabe" im Bereich Tickets. Füllen Sie den Titel, die Beschreibung und die Priorität aus und bestätigen Sie mit „Senden". Viewer sehen den Button „Neue Aufgabe" nicht.',
+          'Kommentare von Teammitgliedern zu gemeinsamen Aufgaben werden an alle Mitglieder Ihrer Organisation verteilt. Die Glocke zeigt neue Nachrichten immer an; die E-Mail-Benachrichtigung lässt sich unter Konto → „Nachrichten von Teammitgliedern" deaktivieren.',
       },
       {
-        question: 'Welche Prioritätsstufen gibt es?',
+        question: 'Wie deaktiviere ich einzelne Benachrichtigungen?',
         answer:
-          'Es gibt vier Stufen: Niedrig, Normal, Hoch und Dringend. Dringend ist für kritische Probleme, die sofortige Aufmerksamkeit erfordern. Bitte nutzen Sie diese Stufe nur wenn wirklich nötig.',
-      },
-      {
-        question: 'Wie verfolge ich den Status meiner Anfragen?',
-        answer:
-          'Im Bereich Tickets sehen Sie alle Ihre Anfragen mit aktuellem Status (Offen, In Bearbeitung, Ihre Rückmeldung, Abgeschlossen). Sie erhalten eine Benachrichtigung bei jeder Statusänderung.',
-      },
-      {
-        question: 'Kann ich einem Ticket eine Nachricht anhängen?',
-        answer:
-          'Ja. Öffnen Sie das Ticket und verwenden Sie das Kommentarfeld, um Nachrichten oder zusätzliche Informationen hinzuzufügen.',
-      },
-    ],
-  },
-  {
-    id: 'dateien',
-    title: 'Dateien',
-    iconName: 'FolderCloudIcon',
-    items: [
-      {
-        question: 'Wo finde ich meine Projektdateien?',
-        answer:
-          'Im Projektbereich unter dem Tab „Dateien". Alle Dokumente, Designs und Lieferobjekte werden dort organisiert.',
-      },
-      {
-        question: 'Wie lade ich eine Datei hoch?',
-        answer:
-          'Navigieren Sie zum Dateien-Tab und klicken Sie auf „Datei hochladen". Sie können einzelne Dateien oder mehrere gleichzeitig hochladen. Viewer können Dateien nur ansehen, nicht hochladen oder löschen.',
-      },
-      {
-        question: 'Kann ich Ordner erstellen?',
-        answer:
-          'Ja. Klicken Sie auf „Neuer Ordner", geben Sie einen Namen ein und bestätigen Sie. Ordner helfen Ihnen, Dateien thematisch zu strukturieren.',
-      },
-      {
-        question: 'Welche Dateiformate werden unterstützt?',
-        answer:
-          'Das Portal unterstützt gängige Formate wie PDF, DOCX, XLSX, PNG, JPG, ZIP und viele weitere. Bei speziellen Formaten wenden Sie sich bitte an uns.',
+          'Gehen Sie zu Konto → „E-Mail-Benachrichtigungen". Dort können Sie jede Kategorie einzeln ein- oder ausschalten (Aufgaben, Projekte, Organisation).',
       },
     ],
   },
@@ -127,34 +78,29 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
     ],
   },
   {
-    id: 'benachrichtigungen',
-    title: 'Benachrichtigungen',
-    iconName: 'Notification01Icon',
+    id: 'dateien',
+    title: 'Dateien',
+    iconName: 'FolderCloudIcon',
     items: [
       {
-        question: 'Wann erhalte ich eine Benachrichtigung?',
+        question: 'Wo finde ich meine Projektdateien?',
         answer:
-          'Sie erhalten Benachrichtigungen bei Statusänderungen Ihrer Tickets, neuen Kommentaren, Freigabeanfragen und wichtigen Projektaktualisierungen.',
+          'Im Projektbereich unter dem Tab „Dateien". Alle Dokumente, Designs und Lieferobjekte werden dort organisiert.',
       },
       {
-        question: 'Wie markiere ich Benachrichtigungen als gelesen?',
+        question: 'Wie lade ich eine Datei hoch?',
         answer:
-          'Öffnen Sie den Benachrichtigungsbereich (Glocke-Symbol) und klicken Sie auf eine Benachrichtigung, um sie zu lesen. Sie können auch alle auf einmal als gelesen markieren.',
+          'Navigieren Sie zum Dateien-Tab und klicken Sie auf „Datei hochladen". Sie können einzelne Dateien oder mehrere gleichzeitig hochladen. Viewer können Dateien nur ansehen, nicht hochladen oder löschen.',
       },
       {
-        question: 'Was ist die wöchentliche Zusammenfassung?',
+        question: 'Kann ich Ordner erstellen?',
         answer:
-          'Jeden Montag erhalten Admins eine E-Mail mit einer Zusammenfassung der vergangenen Woche: erledigte Aufgaben, offene Punkte und ungelesene Nachrichten. Sie können diese unter Konto → Benachrichtigungen deaktivieren.',
+          'Ja. Klicken Sie auf „Neuer Ordner", geben Sie einen Namen ein und bestätigen Sie. Ordner helfen Ihnen, Dateien thematisch zu strukturieren.',
       },
       {
-        question: 'Warum erhalte ich Nachrichten von meinem Team?',
+        question: 'Welche Dateiformate werden unterstützt?',
         answer:
-          'Kommentare von Teammitgliedern zu gemeinsamen Aufgaben werden an alle Mitglieder Ihrer Organisation verteilt. Die Glocke zeigt neue Nachrichten immer an; die E-Mail-Benachrichtigung lässt sich unter Konto → „Nachrichten von Teammitgliedern" deaktivieren.',
-      },
-      {
-        question: 'Wie deaktiviere ich einzelne Benachrichtigungen?',
-        answer:
-          'Gehen Sie zu Konto → „E-Mail-Benachrichtigungen". Dort können Sie jede Kategorie einzeln ein- oder ausschalten (Aufgaben, Projekte, Organisation).',
+          'Das Portal unterstützt gängige Formate wie PDF, DOCX, XLSX, PNG, JPG, ZIP und viele weitere. Bei speziellen Formaten wenden Sie sich bitte an uns.',
       },
     ],
   },
@@ -219,6 +165,60 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
         question: 'Wo verwalte ich mein Team?',
         answer:
           'Die Seite „Organisation" ist im Seitenmenü sichtbar, wenn Sie die Rolle Admin besitzen. Dort sehen Sie alle Mitglieder, deren Rollen und können Einladungen versenden.',
+      },
+    ],
+  },
+  {
+    id: 'projekte',
+    title: 'Projekte',
+    iconName: 'FolderOpenIcon',
+    items: [
+      {
+        question: 'Was bedeuten die Projektphasen?',
+        answer:
+          'Jedes Projekt durchläuft vier Phasen: Konzept, Struktur, Design und Entwicklung. Diese helfen Ihnen, den Fortschritt auf einen Blick zu verfolgen. Jede Phase enthält Aufgaben, die schrittweise abgeschlossen werden.',
+      },
+      {
+        question: 'Wie verfolge ich den Fortschritt meines Projekts?',
+        answer:
+          'Im Projektbereich sehen Sie alle Phasen und deren Aufgaben mit aktuellem Status. Abgeschlossene Schritte werden farblich markiert.',
+      },
+      {
+        question: 'Was bedeutet „Ihre Rückmeldung"?',
+        answer:
+          'Dieser Status zeigt an, dass eine Aufgabe Ihre Freigabe oder Ihr Feedback benötigt, bevor wir weitermachen können. Bitte reagieren Sie zeitnah, damit sich Ihr Projekt nicht verzögert.',
+      },
+      {
+        question: 'Wie erteile ich eine Freigabe oder fordere Änderungen an?',
+        answer:
+          'Öffnen Sie die entsprechende Aufgabe und klicken Sie auf „Freigeben". Wenn Sie Änderungen wünschen, wählen Sie „Änderungen anfordern" und beschreiben Sie Ihre Anmerkungen. Nur Admins und Members können freigeben; Viewer sehen die Aktion nicht.',
+      },
+    ],
+  },
+  {
+    id: 'tickets',
+    title: 'Tickets & Anfragen',
+    iconName: 'CustomerService01Icon',
+    items: [
+      {
+        question: 'Wie erstelle ich ein neues Support-Ticket?',
+        answer:
+          'Klicken Sie auf „Neue Aufgabe" im Bereich Tickets. Füllen Sie den Titel, die Beschreibung und die Priorität aus und bestätigen Sie mit „Senden". Viewer sehen den Button „Neue Aufgabe" nicht.',
+      },
+      {
+        question: 'Welche Prioritätsstufen gibt es?',
+        answer:
+          'Es gibt vier Stufen: Niedrig, Normal, Hoch und Dringend. Dringend ist für kritische Probleme, die sofortige Aufmerksamkeit erfordern. Bitte nutzen Sie diese Stufe nur wenn wirklich nötig.',
+      },
+      {
+        question: 'Wie verfolge ich den Status meiner Anfragen?',
+        answer:
+          'Im Bereich Tickets sehen Sie alle Ihre Anfragen mit aktuellem Status (Offen, In Bearbeitung, Ihre Rückmeldung, Abgeschlossen). Sie erhalten eine Benachrichtigung bei jeder Statusänderung.',
+      },
+      {
+        question: 'Kann ich einem Ticket eine Nachricht anhängen?',
+        answer:
+          'Ja. Öffnen Sie das Ticket und verwenden Sie das Kommentarfeld, um Nachrichten oder zusätzliche Informationen hinzuzufügen.',
       },
     ],
   },
