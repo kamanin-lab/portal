@@ -106,7 +106,7 @@ describe('interpretProjectOverview', () => {
     expect(overview.primaryAttention?.stepId).toBe('task-1');
     expect(overview.primaryAttention?.whyItMatters).toBe('Aligns expectations.');
     expect(overview.currentStateTitle).toContain('Concept');
-    expect(overview.quickActions[0].destinationKind).toBe('primary_cta');
+    expect(overview.quickActions).toEqual([]);
   });
 
   test('sorts attention items by milestone order ascending', () => {
