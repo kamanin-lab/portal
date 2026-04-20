@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:edge": "cd supabase/functions && deno test --allow-env --allow-net --no-check"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.0.0",

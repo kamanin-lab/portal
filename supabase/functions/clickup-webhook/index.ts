@@ -343,7 +343,7 @@ async function fetchTaskForVisibilityCheck(
   }
 }
 
-type ProfileResolutionSource = "org_members" | "task_cache" | "list_fallback" | "none" | "ambiguous_fallback";
+type ProfileResolutionSource = "org_members" | "task_cache" | "none";
 
 interface ProfileResolutionResult {
   profileIds: string[];
@@ -352,9 +352,8 @@ interface ProfileResolutionResult {
 
 /**
  * Find profile IDs that should receive notifications for a given task.
- * 1. Try org_members first (primary — org-first resolution via findOrgByListId).
- * 2. Try task_cache fallback (fast, exact match).
- * 3. Fallback to list ownership only when it resolves to a single recipient.
+ * 1. org_members via listId (primary — org-first resolution).
+ * 2. task_cache fallback (exact match on clickup_id).
  */
 async function findProfilesForTask(
   supabase: ReturnType<typeof createClient>,
@@ -362,9 +361,8 @@ async function findProfilesForTask(
   listId: string | null,
   log: ReturnType<typeof createLogger>
 ): Promise<ProfileResolutionResult> {
-  // Step 1 (NEW): org_members primary lookup
   if (listId) {
-    const orgResult = await findOrgByListId(supabase, listId);
+    const orgResult = await findOrgByListId(supabase, listId, log);
     if (orgResult && orgResult.profileIds.length > 0) {
       log.info("Profiles resolved via org_members", {
         taskId,
@@ -374,42 +372,20 @@ async function findProfilesForTask(
     }
   }
 
-  // Step 2 (existing): task_cache fallback
-  const { data: cacheEntries } = await supabase
+  const { data: cacheEntries, error: cacheErr } = await supabase
     .from("task_cache")
     .select("profile_id")
     .eq("clickup_id", taskId);
+
+  if (cacheErr) {
+    log.warn("findProfilesForTask: task_cache lookup failed", { taskId, error: cacheErr.message });
+    return { profileIds: [], source: "none" };
+  }
 
   if (cacheEntries && cacheEntries.length > 0) {
     const ids = Array.from(new Set(cacheEntries.map((e: { profile_id: string }) => e.profile_id)));
     log.info("Profiles resolved via task_cache", { taskId, count: ids.length });
     return { profileIds: ids, source: "task_cache" };
-  }
-
-  if (!listId) {
-    log.warn("No task_cache entries and no listId for fallback", { taskId });
-    return { profileIds: [], source: "none" };
-  }
-
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id")
-    .contains("clickup_list_ids", [listId]);
-
-  const ids = Array.from(new Set((profiles || []).map((p: { id: string }) => p.id)));
-
-  if (ids.length === 1) {
-    log.info("Profile resolved via single-recipient list fallback", { taskId, listId });
-    return { profileIds: ids, source: "list_fallback" };
-  }
-
-  if (ids.length > 1) {
-    log.warn("Ambiguous list fallback - dropping notification recipient resolution", {
-      taskId,
-      listId,
-      count: ids.length,
-    });
-    return { profileIds: [], source: "ambiguous_fallback" };
   }
 
   log.warn("No profiles found for task", { taskId, listId });
@@ -1834,7 +1810,7 @@ Deno.serve(async (req) => {
       const normalizedTaskId = taskId.replace(/^#/, '');
 
       // ORG-BE-06: Org-first support chat fan-out
-      const supportOrgResult = await findOrgBySupportTaskId(supabase, normalizedTaskId);
+      const supportOrgResult = await findOrgBySupportTaskId(supabase, normalizedTaskId, log);
       let supportProfileIds: string[];
       if (supportOrgResult && supportOrgResult.profileIds.length > 0) {
         supportProfileIds = supportOrgResult.profileIds;
