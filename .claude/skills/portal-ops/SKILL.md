@@ -48,6 +48,7 @@ VALUES (orgId, userId, 'member')
 
 ### После создания
 - Сообщить пароль Юрию (НЕ слать пользователю, если не попросили)
+- **Дописать в `scripts/client-credentials.md`** — строку с email, паролем, именем, org, ролью. Файл в `.gitignore`, локальный. Юрий использует его для debug-login'а под аккаунтами клиентов. Формат — таблица Markdown, см. существующие записи.
 - Если нужен доступ к проектам — см. раздел C
 
 ---
@@ -169,6 +170,7 @@ RETURNING profile_id, clickup_id, name
 
 - [ ] company_name профиля совпадает с organizations.name (не null)
 - [ ] Пароль нового пользователя передан Юрию (не отправлен клиенту)
+- [ ] Запись добавлена в `scripts/client-credentials.md` (локальный, gitignored)
 - [ ] project_config создан со всеми полями включая start_date / target_date
 - [ ] clickup_phase_field_id заполнен
 - [ ] chapter_config создан с правильными clickup_cf_option_id

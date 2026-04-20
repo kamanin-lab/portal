@@ -1,0 +1,59 @@
+{
+  "_comment": "KMCG International GmbH — onboarding config. Создан в БД 2026-04-20.",
+
+  "organization": {
+    "name": "KMCG International GmbH",
+    "slug": "kmcg-international",
+    "supportTaskId": "86c9e61kk",
+    "clickupChatChannelId": "5-901514798002-8",
+    "nextcloudClientRoot": "/01_OPUS/clients/kmcg/_portal"
+  },
+
+  "admin": {
+    "email": "norbert.gabriel@kmcg-international.com",
+    "fullName": "Norbert Gabriel",
+    "password": "9cO0GDFmSk",
+    "sendWelcomeEmail": false
+  },
+
+  "additionalMembers": [
+    {
+      "email": "elena.iakubenko@kmcg-international.com",
+      "fullName": "Elena Iakubenko",
+      "role": "member",
+      "password": "iWx2v6qTnL",
+      "sendWelcomeEmail": false
+    }
+  ],
+
+  "modules": ["tickets", "support", "files", "projects"],
+
+  "creditPackage": {
+    "name": "Demo",
+    "creditsPerMonth": 0,
+    "initialTopup": 10
+  },
+
+  "tickets": {
+    "clickupListId": "901521694940"
+  },
+
+  "projects": [
+    {
+      "name": "IT-Migration",
+      "type": "Infrastruktur",
+      "clickupListId": "901522786729",
+      "nextcloudRootPath": "/01_OPUS/clients/kmcg/_portal/Projekte/Infrastruktur",
+      "startDate": "20. April 2026",
+      "targetDate": "30. September 2026",
+      "phases": "custom",
+      "customChapters": [
+        { "title": "Konzept", "sortOrder": 1, "clickupOptionId": "cf29353e-fdca-4251-a58a-946402647805" },
+        { "title": "Entwicklung", "sortOrder": 2, "clickupOptionId": "805391ea-c843-4c7e-910b-9d0c0545dde2" },
+        { "title": "Launch", "sortOrder": 3, "clickupOptionId": "3099518a-fff0-4fdf-b907-7bdae7a239db" }
+      ],
+      "quickLinks": [],
+      "grantAccessTo": ["admin", "all-members"]
+    }
+  ]
+}

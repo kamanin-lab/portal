@@ -41,6 +41,9 @@ bun.lockb
 !.claude/skills/**
 !.claude/settings.json
 
+# Client login credentials — local only, never commit
+scripts/client-credentials.md
+
 # Old project directories (kept locally as reference, not in repo root)
 kamanin-portal/
 /tickets/
