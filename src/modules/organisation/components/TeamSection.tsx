@@ -56,7 +56,7 @@ export function TeamSection() {
         <>
           {/* Desktop table (md+) */}
           <div className="hidden md:flex flex-col">
-            <div className="grid grid-cols-[1fr_1fr_120px_auto_100px_40px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
+            <div className="grid grid-cols-[1.2fr_1.5fr_120px_180px_100px_40px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
               <span>Name</span>
               <span>E-Mail</span>
               <span>Rolle</span>
@@ -69,7 +69,7 @@ export function TeamSection() {
               const isPending = !m.accepted_at
               const name = displayName(profile, m.invited_email)
               return (
-                <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_auto_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
+                <div key={m.id} className="grid grid-cols-[1.2fr_1.5fr_120px_180px_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm text-text-primary truncate min-w-0">{name}</span>
                     {isPending && <Badge variant="attention" className="shrink-0">Einladung ausstehend</Badge>}

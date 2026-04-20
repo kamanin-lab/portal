@@ -28,8 +28,8 @@ export function DepartmentsSection() {
           <h2 className="text-sm font-semibold text-text-primary">Fachbereiche</h2>
         </div>
         <p className="text-sm text-text-tertiary">
-          Kein Fachbereich-Feld in ClickUp konfiguriert. Erstellen Sie ein Labels-Feld
-          namens &quot;Fachbereich&quot; in der ClickUp-Liste und synchronisieren Sie erneut.
+          Fachbereiche sind noch nicht eingerichtet. Werden von KAMANIN verwaltet —
+          bei Bedarf bitte melden.
         </p>
         <Button
           size="sm"
@@ -52,7 +52,7 @@ export function DepartmentsSection() {
         body: {},
       })
       if (error) throw error
-      toast.success('Fachbereiche synchronisiert. Bitte Seite neu laden.')
+      toast.success('Fachbereiche aktualisiert. Bitte Seite neu laden.')
     } catch {
       toast.error('Synchronisation fehlgeschlagen.')
     } finally {
@@ -80,7 +80,7 @@ export function DepartmentsSection() {
 
       {departments.length === 0 ? (
         <p className="text-sm text-text-tertiary">
-          Keine Optionen gefunden. Fügen Sie Optionen zum Fachbereich-Feld in ClickUp hinzu.
+          Noch keine Fachbereiche festgelegt. Werden von KAMANIN verwaltet.
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -93,7 +93,7 @@ export function DepartmentsSection() {
       )}
 
       <p className="mt-3 text-xs text-text-tertiary">
-        Fachbereiche werden in ClickUp verwaltet. Hier nur zur Ansicht.
+        Fachbereiche werden von KAMANIN verwaltet. Hier nur zur Ansicht.
       </p>
     </section>
   )
