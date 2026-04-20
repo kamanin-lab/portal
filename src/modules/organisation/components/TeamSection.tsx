@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserMultipleIcon, PlusSignIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/shared/components/ui/button'
+import { Badge } from '@/shared/components/ui/badge'
 import { useOrgMembers, type OrgMember } from '../hooks/useOrgMembers'
 import { InviteMemberDialog } from './InviteMemberDialog'
 import { MemberRowActions } from './MemberRowActions'
@@ -18,6 +19,15 @@ function formatDate(iso: string): string {
   } catch {
     return '—'
   }
+}
+
+function displayName(
+  profile: OrgMember['profile'],
+  invitedEmail: string | null,
+): string {
+  if (profile?.full_name) return profile.full_name
+  if (invitedEmail) return invitedEmail.split('@')[0]
+  return '—'
 }
 
 export function TeamSection() {
@@ -54,12 +64,14 @@ export function TeamSection() {
             </div>
             {members.map(m => {
               const profile = Array.isArray(m.profile) ? m.profile[0] : m.profile
-              const isPending = !profile?.full_name
+              const isPending = !m.accepted_at
+              const name = displayName(profile, m.invited_email)
               return (
                 <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
-                  <span className="text-sm text-text-primary truncate">
-                    {isPending ? <em className="text-text-tertiary">Einladung ausstehend</em> : profile?.full_name}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm text-text-primary truncate min-w-0">{name}</span>
+                    {isPending && <Badge variant="attention" className="shrink-0">Einladung ausstehend</Badge>}
+                  </div>
                   <span className="text-sm text-text-secondary truncate">{profile?.email ?? m.invited_email ?? '—'}</span>
                   <span className="text-sm text-text-primary">{ROLE_LABELS[m.role]}</span>
                   <span className="text-sm text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
@@ -73,13 +85,15 @@ export function TeamSection() {
           <div className="flex md:hidden flex-col divide-y divide-border/50">
             {members.map(m => {
               const profile = Array.isArray(m.profile) ? m.profile[0] : m.profile
-              const isPending = !profile?.full_name
+              const isPending = !m.accepted_at
+              const name = displayName(profile, m.invited_email)
               return (
                 <div key={m.id} className="flex items-start justify-between gap-2 py-3 px-1">
                   <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-sm font-medium text-text-primary truncate">
-                      {isPending ? <em className="text-text-tertiary font-normal">Einladung ausstehend</em> : profile?.full_name}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-text-primary truncate min-w-0">{name}</span>
+                      {isPending && <Badge variant="attention" className="shrink-0">Einladung ausstehend</Badge>}
+                    </div>
                     <span className="text-xs text-text-secondary truncate">{profile?.email ?? m.invited_email ?? '—'}</span>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-text-tertiary">{ROLE_LABELS[m.role]}</span>

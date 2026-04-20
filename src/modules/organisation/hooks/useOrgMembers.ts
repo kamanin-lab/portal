@@ -9,6 +9,7 @@ export interface OrgMember {
   role: 'admin' | 'member' | 'viewer'
   created_at: string
   invited_email: string | null
+  accepted_at: string | null
   profile: {
     id: string
     email: string
@@ -23,13 +24,26 @@ export function useOrgMembers() {
     queryKey: ['org-members', organization?.id],
     queryFn: async () => {
       if (!organization?.id) return []
-      const { data, error } = await supabase
-        .from('org_members')
-        .select('id, organization_id, profile_id, role, created_at, invited_email, profile:profiles(id, email, full_name)')
-        .eq('organization_id', organization.id)
-        .order('created_at', { ascending: true })
+      const { data, error } = await supabase.rpc('get_org_members_enriched', {
+        p_org_id: organization.id,
+      })
       if (error) return []
-      return (data ?? []) as unknown as OrgMember[]
+      return (data ?? []).map((row: Record<string, unknown>) => ({
+        id: row.id as string,
+        organization_id: row.organization_id as string,
+        profile_id: row.profile_id as string,
+        role: row.role as OrgMember['role'],
+        created_at: row.created_at as string,
+        invited_email: (row.invited_email as string) ?? null,
+        accepted_at: (row.accepted_at as string) ?? null,
+        profile: row.profile_id
+          ? {
+              id: row.profile_id as string,
+              email: row.profile_email as string,
+              full_name: (row.profile_full_name as string) ?? null,
+            }
+          : null,
+      })) as OrgMember[]
     },
     enabled: !!organization?.id,
     staleTime: 2 * 60 * 1000,
