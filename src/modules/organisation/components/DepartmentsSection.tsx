@@ -28,8 +28,8 @@ export function DepartmentsSection() {
           <h2 className="text-sm font-semibold text-text-primary">Fachbereiche</h2>
         </div>
         <p className="text-sm text-text-tertiary">
-          Fachbereiche sind noch nicht eingerichtet. Werden von KAMANIN verwaltet —
-          bei Bedarf bitte melden.
+          Fachbereiche sind noch nicht eingerichtet. Werden von der Agentur verwaltet —
+          wenn Sie welche benötigen, wenden Sie sich bitte an den Support.
         </p>
         <Button
           size="sm"
@@ -80,7 +80,8 @@ export function DepartmentsSection() {
 
       {departments.length === 0 ? (
         <p className="text-sm text-text-tertiary">
-          Noch keine Fachbereiche festgelegt. Werden von KAMANIN verwaltet.
+          Noch keine Fachbereiche festgelegt. Werden von der Agentur verwaltet —
+          bei Bedarf an den Support wenden.
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -93,7 +94,8 @@ export function DepartmentsSection() {
       )}
 
       <p className="mt-3 text-xs text-text-tertiary">
-        Fachbereiche werden von KAMANIN verwaltet. Hier nur zur Ansicht.
+        Fachbereiche werden von der Agentur verwaltet. Neue Fachbereiche auf Anfrage
+        über den Support.
       </p>
     </section>
   )
