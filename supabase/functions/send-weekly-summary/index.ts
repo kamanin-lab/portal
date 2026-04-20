@@ -1,8 +1,9 @@
 // ============ DEPLOYMENT VERSION ============
-// Version: 2026-04-18-v1.5-weekly-summary-rich
-// Feature: Weekly summary email — Monday 09:00 CET, 6-day cooldown, org-admin only
-// v1.5 — "Was wir gemacht haben" first, AI narrative, project block, peer activity.
-// Three delivery tiers: SKIP (nothing), LIGHT (only pending), FULL (normal).
+// Version: 2026-04-20-v1.6-strict-activity-gate
+// Feature: Weekly summary email — Monday 09:00 CET, 6-day cooldown, org-admin only.
+// Two delivery tiers: SKIP (sleeping week) or FULL (real agency activity).
+// Pending-only (Freigabe / Empfehlungen / unread) weeks are intentionally skipped
+// here — those are surfaced by send-reminders, not by the weekly digest.
 // =============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
@@ -57,7 +58,7 @@ interface WeeklySummaryData {
   activityCount: number;
 }
 
-type Tier = "SKIP" | "LIGHT" | "FULL";
+type Tier = "SKIP" | "FULL";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -575,21 +576,17 @@ async function collectSummaryForAdmin(
 // Tier decision
 // ---------------------------------------------------------------------------
 
-function determineTier(d: WeeklySummaryData): Tier {
+// Team-comment threshold: 1-2 comments are "touched in passing" and common
+// for sleeping clients; 3+ indicates real back-and-forth. Tune over time.
+export const TEAM_COMMENTS_ACTIVITY_THRESHOLD = 3;
+
+export function determineTier(d: WeeklySummaryData): Tier {
   const agencyWork = d.completed.length > 0
-    || d.inProgress.length > 0
-    || d.teamCommentsTotal > 0
+    || d.teamCommentsTotal >= TEAM_COMMENTS_ACTIVITY_THRESHOLD
     || d.peerActivity.length > 0
-    || d.activeProjects.some((p) => p.createdWithinWeek)
-    || d.activityCount > 0;
+    || d.activeProjects.some((p) => p.createdWithinWeek);
 
-  const anyPendingForClient = d.waitingForClient.length > 0
-    || d.openRecommendations.length > 0
-    || d.unreadCount > 0;
-
-  if (!agencyWork && !anyPendingForClient) return "SKIP";
-  if (!agencyWork && anyPendingForClient) return "LIGHT";
-  return "FULL";
+  return agencyWork ? "FULL" : "SKIP";
 }
 
 // ---------------------------------------------------------------------------
@@ -716,60 +713,6 @@ function buildFullHtml(
   return { subject, html };
 }
 
-function buildLightHtml(
-  d: WeeklySummaryData,
-  firstName: string | null,
-): { subject: string; html: string } {
-  const isoWeek = getISOWeek();
-  const greeting = firstName ? `Hallo ${firstName},` : "Hallo,";
-  const subject = `Offene Punkte — KW ${isoWeek}`;
-
-  const clientParts: string[] = [];
-  if (d.waitingForClient.length > 0) {
-    clientParts.push(`<div class="section">
-      <h2 class="section-title">\u23f3 Was auf Sie wartet (${d.waitingForClient.length})</h2>
-      <div class="task-list">${renderTaskList(d.waitingForClient, true)}</div>
-    </div>`);
-  }
-  if (d.openRecommendations.length > 0) {
-    clientParts.push(`<div class="section">
-      <h2 class="section-title">\ud83d\udca1 Offene Empfehlungen (${d.openRecommendations.length})</h2>
-      <div class="task-list">${renderTaskList(d.openRecommendations, true)}</div>
-    </div>`);
-  }
-  if (d.unreadCount > 0) {
-    const label = d.unreadCount === 1
-      ? "Sie haben <strong>1 ungelesene Nachricht</strong>."
-      : `Sie haben <strong>${d.unreadCount} ungelesene Nachrichten</strong>.`;
-    clientParts.push(`<div class="section">
-      <h2 class="section-title">\u2709\ufe0f Ungelesene Nachrichten</h2>
-      <p class="text" style="margin: 0;">${label}</p>
-    </div>`);
-  }
-
-  const html = `<!DOCTYPE html><html><head>${styles}</head><body>
-    <div class="wrapper">
-      <div class="logo-section">
-        <img src="${logoUrl}" alt="KAMANIN" width="50" height="50" style="height: 50px; width: 50px; max-height: 50px; max-width: 50px; display: block;" />
-      </div>
-      <div class="card">
-        <h1 class="title">Offene Punkte</h1>
-        <p class="text">${greeting}</p>
-        <p class="text">Diese Woche war bei uns ruhig — hier eine kurze Erinnerung an die Punkte, die auf Ihre R\u00fcckmeldung warten:</p>
-        ${clientParts.join("")}
-        <div class="cta-wrapper">
-          <a href="${portalUrl}" class="button">Im Portal ansehen</a>
-        </div>
-        <p class="muted">Sie erhalten diese E-Mail nur, wenn offene Punkte bestehen. Sie k\u00f6nnen die w\u00f6chentliche Zusammenfassung in Ihren Kontoeinstellungen deaktivieren.</p>
-      </div>
-      <div class="footer">
-        <p class="footer-text">KAMANIN Client Portal</p>
-      </div>
-    </div></body></html>`;
-
-  return { subject, html };
-}
-
 // ---------------------------------------------------------------------------
 // Mailjet send
 // ---------------------------------------------------------------------------
@@ -832,7 +775,7 @@ async function sendWeeklySummaries(
   let sent = 0;
   let skipped = 0;
   let errors = 0;
-  const tierBreakdown: Record<Tier, number> = { SKIP: 0, LIGHT: 0, FULL: 0 };
+  const tierBreakdown: Record<Tier, number> = { SKIP: 0, FULL: 0 };
 
   const { data: adminRows, error: adminErr } = await supabase
     .from("org_members")
@@ -935,9 +878,7 @@ async function sendWeeklySummaries(
         aiSummary = await generateAiSummary(teamCommentsForAI, summary.activeProjects, log);
       }
 
-      const { subject, html } = tier === "FULL"
-        ? buildFullHtml(summary, aiSummary, firstName, "de")
-        : buildLightHtml(summary, firstName);
+      const { subject, html } = buildFullHtml(summary, aiSummary, firstName, "de");
 
       const success = await sendMailjet(
         { email: profile.email, name: profile.full_name || undefined },
@@ -1001,7 +942,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         code: "WEEKLY_SUMMARIES_SENT",
-        message: `Sent: ${stats.sent}, Skipped: ${stats.skipped}, Errors: ${stats.errors} (FULL: ${stats.tierBreakdown.FULL}, LIGHT: ${stats.tierBreakdown.LIGHT}, SKIP: ${stats.tierBreakdown.SKIP})`,
+        message: `Sent: ${stats.sent}, Skipped: ${stats.skipped}, Errors: ${stats.errors} (FULL: ${stats.tierBreakdown.FULL}, SKIP: ${stats.tierBreakdown.SKIP})`,
         correlationId: requestId,
         ...stats,
       }),
