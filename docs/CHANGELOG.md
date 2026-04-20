@@ -1,5 +1,45 @@
 # Changelog
 
+## fix(auth): invite flow — scanner-prefetch mitigation + admin resend — 2026-04-20
+
+### Problem — Part A (scanner-prefetch)
+Email security scanners (Outlook Defender, Proofpoint, etc.) pre-fetch HTTPS links in invite emails, consuming the one-time Supabase recovery token before the recipient ever clicks. Result: invite link appears "expired" immediately. First observed in production with the "medea.ahlborn" account on 2026-04-20.
+
+### Problem — Part B (no resend path)
+Once a token was consumed by a scanner, there was no admin-facing action to send a fresh invite. Admins had to manually generate a recovery link via Supabase Studio.
+
+### Fix — Part A
+- **`src/shared/pages/PasswortSetzenPage.tsx`** — removed `verifyOtp()` call from `useEffect([], ...)`. Token verification + `updateUser` now run only on form submit. Scanners that fetch the URL get a blank form page; the token is never consumed until the user submits.
+- **`src/shared/pages/EinladungAnnehmenPage.tsx`** (new) — public landing page at `/einladung-annehmen`. Renders a JS-click CTA button that redirects to `/passwort-setzen?token=...`. Scanners without JS stop here; modern scanners that follow JS still can't consume the token because verify is submit-gated. Defense-in-depth layer.
+- **`src/app/routes.tsx`** — `/einladung-annehmen` registered as a public (unauthenticated) route.
+- **`supabase/functions/invite-member/index.ts`** — `recoveryUrl` path changed from `/passwort-setzen` to `/einladung-annehmen`.
+
+### Fix — Part B
+- **`supabase/functions/resend-invite/index.ts`** (new) — admin-authed Edge Function. Guards: caller must be `admin` role, target member must be pending (`auth.users.last_sign_in_at IS NULL`), 60-second cooldown enforced via atomic `UPDATE … WHERE last_invite_sent_at IS NULL OR last_invite_sent_at < now() - interval '60s'` on `org_members.last_invite_sent_at` (TOCTOU-safe). Generates a fresh Supabase recovery link and sends via Mailjet using the same invite template.
+- **`supabase/migrations/20260420160000_add_last_invite_sent_at.sql`** (new) — adds `org_members.last_invite_sent_at TIMESTAMPTZ NULL` column. Applied to both staging and production.
+- **`src/modules/organisation/hooks/useMemberActions.ts`** — `resendInvite` React Query mutation added.
+- **`src/modules/organisation/components/MemberRowActions.tsx`** — "Einladung erneut senden" conditional dropdown item for pending members only.
+
+### Pipeline
+- Pre-code review (REVISE): landing page alone insufficient — verifyOtp must move out of mount. Incorporated before implementation.
+- Post-code review (OpenRouter): flagged TOCTOU race in cooldown (fixed with atomic UPDATE) + `setTimeout` leak (fixed with `useRef` + `useEffect` cleanup).
+- QA: PASS. Prod endpoint returns 401 (auth required — correct).
+
+### Commits
+- `18b582a` feat(auth): invite flow fix — scanner-prefetch mitigation + admin resend
+
+---
+
+## feat(organisation): "Einladung ausstehend" badge for pending members — 2026-04-20
+
+### Changes
+- **`src/modules/organisation/components/TeamSection.tsx`** (or equivalent) — pending org members (invited but not yet signed in) now display an "Einladung ausstehend" badge in the member list, making it visible to admins which accounts have not yet accepted.
+
+### Commits
+- `c42665f` feat(organisation): Einladung ausstehend badge for pending members
+
+---
+
 ## fix(credits): orphaned transactions after org migration — 2026-04-20
 
 ### Problem

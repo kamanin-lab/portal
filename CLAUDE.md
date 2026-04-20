@@ -80,7 +80,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `src/shared/types/organization.ts` | `Organization` TypeScript interface matching the `organizations` table shape |
 | `src/modules/organisation/pages/OrganisationPage.tsx` | Admin-only page at `/organisation` — redirects non-admins to `/tickets` |
 | `src/modules/organisation/hooks/useOrgMembers.ts` | React Query hook fetching all org_members with joined profile data (id, email, full_name, invited_email) |
-| `src/modules/organisation/hooks/useMemberActions.ts` | Mutations for update member role and remove member from org |
+| `src/modules/organisation/hooks/useMemberActions.ts` | Mutations: update role, remove member, `resendInvite` (sends fresh invite to pending member via `resend-invite` EF) |
 | `scripts/onboard-client.ts` | Client onboarding script — creates auth user, profile, workspaces, credit package, project access, primes task cache. NOTE: needs update to create org + admin org_members row (currently creates standalone profile only) |
 | `scripts/sync-staging-secrets.ts` | SSH to prod Coolify → reads 15 Edge Function secrets → pushes to staging Cloud Supabase via Management API |
 | `scripts/sync-staging-schema.ts` | pg_dump prod public schema → apply to staging Cloud Supabase; flags: `--dump-only`, `--apply-only` |
