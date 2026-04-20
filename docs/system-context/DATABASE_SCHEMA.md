@@ -326,6 +326,7 @@ Maps users to their organization with a role. One row per (org, user) pair. Crea
 | profile_id | uuid | NOT NULL, FK → profiles(id) ON DELETE CASCADE | Member user |
 | role | text | NOT NULL, CHECK IN ('admin','member','viewer') | Access role |
 | invited_email | text | | Email address used at invite time. Displayed in TeamSection for pending members not yet visible via profiles RLS. Added Phase 14 (migration 20260416150000). |
+| last_invite_sent_at | timestamptz | NULL | Timestamp of the last invite email sent to this member. Used by `resend-invite` EF to enforce a 60-second cooldown between resends. Updated atomically via `UPDATE … WHERE` to prevent TOCTOU races. Added 2026-04-20 (migration 20260420160000). |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
 
 **Unique Constraint:** `(organization_id, profile_id)` — one membership per user per org.

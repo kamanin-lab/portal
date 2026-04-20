@@ -296,7 +296,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 | `OrgInfoSection.tsx` | Displays org name, logo, ClickUp list IDs (read-only for now). |
 | `TeamSection.tsx` | Member list + invite button. |
 | `InviteMemberDialog.tsx` | Email + role picker, calls `invite-member` EF. |
-| `MemberRowActions.tsx` | Per-row dropdown: change role, remove member. |
+| `MemberRowActions.tsx` | Per-row dropdown: change role, remove member, resend invite (pending members only). |
 | `RolesInfoSection.tsx` | Static explainer of role capabilities (admin / member / viewer). |
 
 ### hooks/
@@ -304,7 +304,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 | File | Role |
 |---|---|
 | `useOrgMembers.ts` | Fetch all `org_members` + joined `profiles` + pending-invite rows. |
-| `useMemberActions.ts` | Mutations: update role, remove member. |
+| `useMemberActions.ts` | Mutations: update role, remove member, resendInvite. |
 
 ### Cross-module edges
 
@@ -339,7 +339,8 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 | File | Route | Purpose |
 |---|---|---|
 | `pages/LoginPage.tsx` | `/login` | Email + password, magic link. |
-| `pages/PasswortSetzenPage.tsx` | `/passwort-setzen` | First-login password flow. |
+| `pages/EinladungAnnehmenPage.tsx` | `/einladung-annehmen` | Public invite landing page. JS-click CTA redirects to `/passwort-setzen?token=...`. Prevents email scanner prefetch from consuming the one-time token. |
+| `pages/PasswortSetzenPage.tsx` | `/passwort-setzen` | First-login password flow. `verifyOtp` + `updateUser` run on form submit only — never on mount (scanner-prefetch fix, 2026-04-20). |
 | `pages/MeineAufgabenPage.tsx` | `/meine-aufgaben` | Cross-module "my tasks" aggregator. |
 | `pages/InboxPage.tsx` | `/inbox` | Notification center. |
 | `pages/KontoPage.tsx` | `/konto` | Account settings, credit history. |
@@ -433,7 +434,8 @@ CSS custom properties for colors, spacing, typography. Priority tokens (`--prior
 
 | Function | Purpose |
 |---|---|
-| `invite-member` | Creates auth user + profile + `org_members` row + invite email. |
+| `invite-member` | Creates auth user + profile + `org_members` row + invite email (links to `/einladung-annehmen`). |
+| `resend-invite` | Admin-only resend of invite email to a pending member. 60s cooldown via atomic `last_invite_sent_at` update. |
 | `credit-topup` | Admin-only credit package top-up. |
 
 ### Other
