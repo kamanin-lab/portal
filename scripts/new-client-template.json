@@ -1,0 +1,57 @@
+{
+  "_comment": "Заполни все поля ниже, потом скажи Claude: 'создай клиента по этому файлу'. Значения 'FILL_ME' обязательны. См. new-client-template.md для инструкции по каждому полю.",
+
+  "organization": {
+    "name": "FILL_ME",
+    "slug": null,
+    "supportTaskId": "FILL_ME",
+    "clickupChatChannelId": null,
+    "nextcloudClientRoot": "FILL_ME"
+  },
+
+  "admin": {
+    "email": "FILL_ME",
+    "fullName": "FILL_ME",
+    "password": null,
+    "sendWelcomeEmail": false
+  },
+
+  "additionalMembers": [
+    {
+      "email": "FILL_ME",
+      "fullName": "FILL_ME",
+      "role": "member",
+      "password": null,
+      "sendWelcomeEmail": false
+    }
+  ],
+
+  "modules": ["tickets", "support", "files", "projects"],
+
+  "creditPackage": {
+    "name": "Small",
+    "creditsPerMonth": 10,
+    "initialTopup": 10
+  },
+
+  "tickets": {
+    "clickupListId": "FILL_ME"
+  },
+
+  "projects": [
+    {
+      "name": "FILL_ME",
+      "type": "Website",
+      "clickupListId": "FILL_ME",
+      "nextcloudRootPath": "FILL_ME",
+      "startDate": "FILL_ME",
+      "targetDate": "FILL_ME",
+      "phases": "standard",
+      "customChapters": null,
+      "quickLinks": [
+        { "label": "FILL_ME", "url": "FILL_ME", "icon": "file-text" }
+      ],
+      "grantAccessTo": ["admin", "all-members"]
+    }
+  ]
+}
