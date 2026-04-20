@@ -1,5 +1,39 @@
 # Changelog
 
+## feat(departments): ticket visibility by department (Fachbereich) — 2026-04-21
+
+Role-based ticket visibility for organizations with specialized departments. Members see only tickets tagged with their assigned departments (or untagged tickets, or tickets they created). Admins and legacy members (no departments assigned) continue to see everything.
+
+### Database
+- **`supabase/migrations/20260421100000_ticket_departments.sql`** — new columns: `organizations.clickup_department_field_id`, `organizations.departments_cache JSONB`, `org_members.departments TEXT[]`, `task_cache.departments TEXT[]` + GIN index. SQL functions `can_user_see_task()` and `get_visible_member_profile_ids()`. New RLS policy `task_cache_select_visible` (replaces `task_cache_select_own`). View `visible_task_cache` with `security_invoker=true`.
+- **`supabase/migrations/20260421100001_update_org_members_enriched_rpc.sql`** — adds `departments` column to `get_org_members_enriched` RPC return type.
+
+### Edge Functions
+- **`fetch-clickup-tasks`** — autodetects "Fachbereich" labels-type field per org, caches options in `departments_cache`, writes `task_cache.departments` on every sync.
+- **`clickup-webhook`** — handles `taskUpdated` custom_field events for the department field: always GETs full task from ClickUp, updates `task_cache.departments` for all member rows. Status notification fan-out uses `getVisibleMemberProfileIds` for department-aware filtering.
+- **`post-task-comment`** — peer fan-out uses `getVisibleMemberProfileIds` for ticket-surface comments.
+- **`update-task-departments`** (new) — admin-only EF to set department labels on a ClickUp task + sync to task_cache.
+- **`_shared/org.ts`** — new `getVisibleMemberProfileIds()` helper calling SQL RPC with permissive fallback.
+
+### Frontend
+- **`useClickUpTasks`** — reads from `visible_task_cache` view instead of `task_cache` directly.
+- **`types/tasks.ts`** — `departments: string[]` added to `ClickUpTask` and `CachedTask`.
+- **`transforms.ts`** — propagates `departments` field.
+- **`useOrg.ts`** — exposes `memberDepartments` and org's `departments_cache`/`clickup_department_field_id`.
+- **`DepartmentChips.tsx`** (new) — admin-editable / member-readonly department chips on ticket detail.
+- **`DepartmentsSection.tsx`** (new) — read-only department list + sync button on /organisation page.
+- **`MemberDepartmentPicker.tsx`** (new) — multi-select department picker on member rows in TeamSection.
+- **`useUpdateTaskDepartments.ts`** (new) — mutation hook for admin department assignment on tickets.
+- **`useUpdateMemberDepartments.ts`** (new) — mutation hook for admin department assignment on members.
+
+### Tests
+- **`visibility-filter.test.ts`** — 21 tests covering admin/member/viewer x empty/matching/non-matching departments + creator override + helper functions.
+
+### Docs
+- `DATABASE_SCHEMA.md` — updated with new columns, functions, view, RLS policy.
+- `NOTIFICATION_MATRIX.md` — updated with department-aware fan-out rule.
+- `DECISIONS.md` — ADR-033: why Labels type (not Dropdown, Tags, or per-person assignments).
+
 ## feat(notifications): unified email + bell gating + auto-archive — 2026-04-20
 
 Bell (in-app) notifications are now gated by the same `notification_preferences` JSONB keys as email. Previously bells were always created regardless of preferences.

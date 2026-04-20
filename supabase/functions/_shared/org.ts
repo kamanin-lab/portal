@@ -63,6 +63,7 @@ export async function getOrgForUser(
 
 export interface OrgLookupLogger {
   warn: (msg: string, data?: unknown) => void;
+  error: (msg: string, data?: unknown) => void;
 }
 
 /**
@@ -192,6 +193,52 @@ export async function getNonViewerProfileIds(
     const role = roleMap.get(id);
     return role === undefined || role === "admin" || role === "member";
   });
+}
+
+/**
+ * Returns profile_ids of non-viewer org members who can see a task
+ * with the given departments, using the SQL function `get_visible_member_profile_ids`.
+ *
+ * FAIL CLOSED: On any error (RPC failure, network, etc.) returns [] — no recipients.
+ * This prevents a transient DB error from broadcasting notifications to users who
+ * shouldn't see the task. Callers must treat an empty list as "skip fan-out", not
+ * as "send to all".
+ */
+export async function getVisibleMemberProfileIds(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  orgId: string,
+  taskDepartments: string[],
+  taskCreatorId: string | null,
+  log?: OrgLookupLogger,
+): Promise<string[]> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_visible_member_profile_ids", {
+      p_org_id: orgId,
+      p_task_departments: taskDepartments,
+      p_task_creator_id: taskCreatorId,
+    });
+
+    if (error) {
+      // Fail closed: return empty list so callers skip fan-out entirely.
+      // A transient DB error must NOT result in notifying users outside their
+      // department boundary — that would leak ticket visibility.
+      log?.error("getVisibleMemberProfileIds: RPC failed — failing closed (no recipients)", {
+        orgId,
+        error: (error as { message?: string }).message,
+      });
+      return [];
+    }
+
+    const rows = (data ?? []) as Array<{ profile_id: string }>;
+    return rows.map((row) => row.profile_id);
+  } catch (err) {
+    // Fail closed on unexpected exceptions too.
+    log?.error("getVisibleMemberProfileIds: unexpected error — failing closed (no recipients)", {
+      orgId,
+      error: String(err),
+    });
+    return [];
+  }
 }
 
 export interface OrgTaskContext {

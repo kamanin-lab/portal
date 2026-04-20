@@ -7,6 +7,7 @@ export interface OrgMember {
   organization_id: string
   profile_id: string
   role: 'admin' | 'member' | 'viewer'
+  departments: string[]
   created_at: string
   invited_email: string | null
   accepted_at: string | null
@@ -33,6 +34,7 @@ export function useOrgMembers() {
         organization_id: row.organization_id as string,
         profile_id: row.profile_id as string,
         role: row.role as OrgMember['role'],
+        departments: Array.isArray(row.departments) ? row.departments as string[] : [],
         created_at: row.created_at as string,
         invited_email: (row.invited_email as string) ?? null,
         accepted_at: (row.accepted_at as string) ?? null,

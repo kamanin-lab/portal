@@ -30,11 +30,17 @@ async function fetchCachedTasks(): Promise<ClickUpTask[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
+  // Read from visible_task_cache view — RLS + department visibility applied server-side.
+  // The view wraps task_cache with security_invoker=true (PG 15+), so profile_id
+  // and is_visible filters are enforced by the underlying RLS policy.
+  //
+  // Defense-in-depth: add explicit .eq('profile_id', user.id) even though RLS
+  // enforces the same boundary. This catches RLS misconfiguration early and
+  // makes the data access intent clear in client code.
   const { data, error } = await supabase
-    .from('task_cache')
+    .from('visible_task_cache')
     .select('*')
     .eq('profile_id', user.id)
-    .eq('is_visible', true)
     .order('last_activity_at', { ascending: false });
 
   if (error) {

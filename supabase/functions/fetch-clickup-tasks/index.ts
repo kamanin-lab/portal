@@ -71,7 +71,7 @@ interface ClickUpCustomField {
   id: string;
   name: string;
   type: string;
-  value?: boolean | string | number | null;
+  value?: boolean | string | number | string[] | null;
 }
 
 interface ClickUpTask {
@@ -140,6 +140,7 @@ interface TransformedTask {
   list_id: string;
   list_name: string;
   credits: number | null;
+  departments: string[];
 }
 
 interface DiagnosticsData {
@@ -245,8 +246,23 @@ function extractCredits(customFields: ClickUpCustomField[] | undefined): number 
   return isNaN(num) ? null : num;
 }
 
+// Extract department option IDs from ClickUp custom fields (labels type)
+function extractDepartments(
+  customFields: ClickUpCustomField[] | undefined,
+  deptFieldId: string | null,
+): string[] {
+  if (!deptFieldId || !customFields || !Array.isArray(customFields)) return [];
+  const field = customFields.find((f) => f.id === deptFieldId);
+  if (!field || field.value === undefined || field.value === null) return [];
+  // Labels-type fields store value as an array of option UUIDs
+  if (Array.isArray(field.value)) {
+    return (field.value as unknown[]).filter((v): v is string => typeof v === "string");
+  }
+  return [];
+}
+
 // Transform ClickUp task to our format
-function transformTask(task: ClickUpTask): TransformedTask {
+function transformTask(task: ClickUpTask, deptFieldId: string | null = null): TransformedTask {
   return {
     id: task.id,
     clickup_id: task.id,
@@ -276,6 +292,7 @@ function transformTask(task: ClickUpTask): TransformedTask {
     list_id: task.list.id,
     list_name: task.list.name,
     credits: extractCredits(task.custom_fields),
+    departments: extractDepartments(task.custom_fields, deptFieldId),
   };
 }
 
@@ -375,13 +392,101 @@ Deno.serve(async (req) => {
       );
     }
     const listIds: string[] = org.clickup_list_ids;
-    
+
     if (listIds.length === 0) {
       log.info("No ClickUp list IDs configured for user");
       return new Response(
         JSON.stringify({ tasks: [], message: "No ClickUp lists configured" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ---- Fachbereich (department) field autodetect + cache refresh ----
+    // Reads org row to get clickup_department_field_id. If not set, scans list fields
+    // for a "Fachbereich" labels-type custom field. On every sync, refreshes the
+    // departments_cache with current option names/colors from ClickUp.
+    let departmentFieldId: string | null = null;
+    try {
+      const { data: orgRow } = await supabaseAdmin
+        .from("organizations")
+        .select("id, clickup_department_field_id, departments_cache")
+        .eq("id", org.organization_id)
+        .limit(1)
+        .maybeSingle();
+
+      departmentFieldId = orgRow?.clickup_department_field_id ?? null;
+
+      if (!departmentFieldId) {
+        // One-time autodetect: scan each list for a "Fachbereich" labels field
+        for (const listId of listIds) {
+          try {
+            const fieldsResp = await fetchWithRetry(
+              `https://api.clickup.com/api/v2/list/${listId}/field`,
+              { headers: { Authorization: clickupApiToken, "Content-Type": "application/json" } },
+              2, log,
+            );
+            if (fieldsResp.ok) {
+              const fieldsData = await fieldsResp.json();
+              const fields: Array<{ id: string; name: string; type: string; type_config?: { options?: Array<{ id: string; label?: string; name?: string; color?: string }> } }> = fieldsData.fields ?? [];
+              const fachbereichField = fields.find(
+                (f) => f.name === "Fachbereich" && f.type === "labels",
+              );
+              if (fachbereichField) {
+                departmentFieldId = fachbereichField.id;
+                const options = (fachbereichField.type_config?.options ?? []).map((o) => ({
+                  id: o.id,
+                  name: o.label ?? o.name ?? o.id,
+                  color: o.color ?? null,
+                }));
+                await supabaseAdmin
+                  .from("organizations")
+                  .update({
+                    clickup_department_field_id: departmentFieldId,
+                    departments_cache: options,
+                  })
+                  .eq("id", org.organization_id);
+                log.info("Fachbereich field autodetected", { fieldId: departmentFieldId, optionCount: options.length });
+                break;
+              }
+            }
+          } catch (err) {
+            log.warn("Fachbereich field scan failed for list", { error: String(err) });
+          }
+        }
+      } else {
+        // Refresh departments_cache on every sync (options may have been added/renamed)
+        for (const listId of listIds) {
+          try {
+            const fieldsResp = await fetchWithRetry(
+              `https://api.clickup.com/api/v2/list/${listId}/field`,
+              { headers: { Authorization: clickupApiToken, "Content-Type": "application/json" } },
+              2, log,
+            );
+            if (fieldsResp.ok) {
+              const fieldsData = await fieldsResp.json();
+              const fields: Array<{ id: string; type_config?: { options?: Array<{ id: string; label?: string; name?: string; color?: string }> } }> = fieldsData.fields ?? [];
+              const fachbereichField = fields.find((f) => f.id === departmentFieldId);
+              if (fachbereichField) {
+                const options = (fachbereichField.type_config?.options ?? []).map((o) => ({
+                  id: o.id,
+                  name: o.label ?? o.name ?? o.id,
+                  color: o.color ?? null,
+                }));
+                await supabaseAdmin
+                  .from("organizations")
+                  .update({ departments_cache: options })
+                  .eq("id", org.organization_id);
+                log.debug("Refreshed departments_cache", { optionCount: options.length });
+                break;
+              }
+            }
+          } catch (err) {
+            log.warn("Departments cache refresh failed", { error: String(err) });
+          }
+        }
+      }
+    } catch (err) {
+      log.warn("Fachbereich autodetect/refresh failed (non-fatal)", { error: String(err) });
     }
 
     log.info("Fetching tasks from ClickUp lists", { listCount: listIds.length });
@@ -422,7 +527,7 @@ Deno.serve(async (req) => {
     // If no visibility field configured, return all tasks
     if (!visibleFieldId) {
       log.info("No visibility field configured - returning all tasks");
-      const transformedTasks = allRawTasks.map(transformTask);
+      const transformedTasks = allRawTasks.map((t) => transformTask(t, departmentFieldId));
       diagnostics.visible_after_filtering = transformedTasks.length;
       
       const response: { tasks: TransformedTask[]; diagnostics?: DiagnosticsData } = { tasks: transformedTasks };
@@ -511,7 +616,7 @@ Deno.serve(async (req) => {
     // Filter to only visible tasks and transform
     const visibleTasks = tasksWithKnownVisibility
       .filter(({ visible }) => visible)
-      .map(({ task }) => transformTask(task));
+      .map(({ task }) => transformTask(task, departmentFieldId));
 
     diagnostics.visible_after_filtering = visibleTasks.length;
     log.info("Returning visible tasks", { count: visibleTasks.length });
@@ -544,6 +649,7 @@ Deno.serve(async (req) => {
             is_visible: true,
             last_activity_at: task.last_activity_at,
             credits: task.credits,
+            departments: task.departments,
           }));
           
           const { error: batchError, count } = await supabaseService

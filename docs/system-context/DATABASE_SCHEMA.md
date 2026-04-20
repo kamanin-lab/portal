@@ -58,12 +58,17 @@ Local mirror of ClickUp tasks. One row per (task, user) pair. Provides instant l
 | created_by_name | text | | First name of portal user who created the task (null for ClickUp-created tasks) |
 | credits | numeric | | Credit value assigned to this task in ClickUp (synced via webhook custom field handler). NULL means no credits assigned. |
 | approved_credits | numeric | | Last credit amount the client approved via `approve_credits` action. NULL = never approved. Differs from `credits` (current ClickUp estimate). Written by `update-task-status` Edge Function on every successful approval. Backfilled from `credit_transactions` on migration `20260417100000_credit_reapproval`. Used by the UI to detect re-approval state (approved_credits set and differs from credits). Added 2026-04-17. |
-| created_by_user_id | uuid | | Supabase user ID of creator (null for ClickUp-created tasks) |
+| departments | text[] | DEFAULT '{}' | Array of ClickUp department option UUIDs from Fachbereich labels field. Empty = visible to all (untagged). GIN-indexed for array overlap queries. Added 2026-04-21. |
+| created_by_user_id | text | | Supabase user ID of creator as text string (null for ClickUp-created tasks). Stored as TEXT (not UUID) for legacy reasons — `can_user_see_task` compares with `auth.uid()::TEXT`. |
 | created_at | timestamptz | DEFAULT now() | Row creation timestamp |
 
 **Unique Constraint:** `(clickup_id, profile_id)` — one cache entry per task per user.
 
-**RLS Policy:** Users can read only rows where `profile_id = auth.uid()`.
+**Indexes:** `idx_task_cache_departments` — GIN index on `departments` for efficient array overlap in the `can_user_see_task` function.
+
+**RLS Policy:** `task_cache_select_visible` — users can read rows where `profile_id = auth.uid() AND is_visible = true AND can_user_see_task(auth.uid(), departments, created_by_user_id)`. Replaces the old `task_cache_select_own` policy. Added 2026-04-21.
+
+**View:** `visible_task_cache` — convenience view (`SELECT * FROM task_cache`) with `security_invoker=true` (PG 15+). RLS on the base table enforces visibility. Frontend reads from this view instead of `task_cache` directly. Added 2026-04-21.
 
 **Realtime:** REPLICA IDENTITY FULL — enables Supabase Realtime subscriptions for instant UI updates on status changes.
 
@@ -309,6 +314,8 @@ Company-level entity. Owns shared configuration (ClickUp lists, Nextcloud root, 
 | nextcloud_client_root | text | | WebDAV path to the org's root folder in Nextcloud (e.g., `/clients/mbm-moebel/`) |
 | support_task_id | text | | ClickUp task ID for the org's dedicated support chat channel |
 | clickup_chat_channel_id | text | | ClickUp Chat v3 channel ID for new-task notifications |
+| clickup_department_field_id | text | | ClickUp custom field ID for "Fachbereich" labels-type field. Auto-detected by `fetch-clickup-tasks`. NULL = not configured (all members see all tasks). Added 2026-04-21. |
+| departments_cache | jsonb | DEFAULT '[]' | Cached array of department options from ClickUp: `[{id, name, color}]`. Refreshed on each sync. Used by admin UI and client-side name resolution. Added 2026-04-21. |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | Auto-updated via `organizations_updated_at` trigger |
 
@@ -317,6 +324,8 @@ Company-level entity. Owns shared configuration (ClickUp lists, Nextcloud root, 
 **SQL Helpers:**
 - `user_org_ids()` — SECURITY DEFINER, stable; returns all `organization_id` values for the current user. Used in RLS policies on `credit_packages`, `client_workspaces`, `organizations`.
 - `user_org_role(org_id uuid)` — SECURITY DEFINER, stable; returns role string (`'admin'`/`'member'`/`'viewer'`) for current user in the given org, or NULL if not a member.
+- `can_user_see_task(p_user_id UUID, p_task_departments TEXT[], p_task_creator_id UUID) RETURNS BOOLEAN` — SECURITY DEFINER, stable. Department-based visibility predicate: returns true if admin, or member with no departments (legacy), or untagged task, or array overlap, or creator override. Used by RLS policy on `task_cache` and by `get_visible_member_profile_ids`. Added 2026-04-21.
+- `get_visible_member_profile_ids(p_org_id UUID, p_task_departments TEXT[], p_task_creator_id UUID) RETURNS TABLE(profile_id UUID)` — SECURITY DEFINER, stable. Returns non-viewer org members who can see a task with given departments. Used for email/bell fan-out in webhook and post-task-comment. Added 2026-04-21.
 
 ---
 
@@ -330,6 +339,7 @@ Maps users to their organization with a role. One row per (org, user) pair. Crea
 | organization_id | uuid | NOT NULL, FK → organizations(id) ON DELETE CASCADE | Parent organization |
 | profile_id | uuid | NOT NULL, FK → profiles(id) ON DELETE CASCADE | Member user |
 | role | text | NOT NULL, CHECK IN ('admin','member','viewer') | Access role |
+| departments | text[] | DEFAULT '{}' | Array of ClickUp department option UUIDs. Empty = sees all tickets (legacy fallback). Admins always see all regardless. Added 2026-04-21. |
 | invited_email | text | | Email address used at invite time. Displayed in TeamSection for pending members not yet visible via profiles RLS. Added Phase 14 (migration 20260416150000). |
 | last_invite_sent_at | timestamptz | NULL | Timestamp of the last invite email sent to this member. Used by `resend-invite` EF to enforce a 60-second cooldown between resends. Updated atomically via `UPDATE … WHERE` to prevent TOCTOU races. Added 2026-04-20 (migration 20260420160000). |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | Row creation timestamp |

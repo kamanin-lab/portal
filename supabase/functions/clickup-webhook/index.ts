@@ -16,7 +16,7 @@ import {
   resolveTaskChapterConfigId,
 } from "../_shared/clickup-contract.ts";
 import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
-import { findOrgByListId, findOrgBySupportTaskId, getNonViewerProfileIds } from "../_shared/org.ts";
+import { findOrgByListId, findOrgBySupportTaskId, getNonViewerProfileIds, getVisibleMemberProfileIds } from "../_shared/org.ts";
 import { shouldCreateBell } from "../_shared/notifications.ts";
 
 // Fetch with timeout (10 seconds default)
@@ -1297,11 +1297,39 @@ Deno.serve(async (req) => {
         const { profileIds, source } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
         if (profileIds.length > 0) {
-          // Fetch all profiles for bell gating + email
-          const { data: allProfiles } = await supabase
-            .from("profiles")
-            .select("id, email, full_name, email_notifications, notification_preferences")
-            .in("id", profileIds);
+          // Compute department-aware visible recipients ONCE — used for both bell and email.
+          // This ensures bells and emails go to the same set of users, preventing
+          // users from seeing bells for tickets they can't access in the UI.
+          let visibleRecipientIds: string[];
+          const orgLookup = await findOrgByListId(supabase, taskInfo.listId, log);
+          if (orgLookup) {
+            const { data: taskDeptRow } = await supabase
+              .from("task_cache")
+              .select("departments, created_by_user_id")
+              .eq("clickup_id", taskId)
+              .limit(1)
+              .maybeSingle();
+            const taskDepartments: string[] = Array.isArray(taskDeptRow?.departments) ? taskDeptRow.departments : [];
+            const taskCreatorId: string | null = taskDeptRow?.created_by_user_id ?? null;
+            visibleRecipientIds = await getVisibleMemberProfileIds(supabase, orgLookup.organizationId, taskDepartments, taskCreatorId, log);
+          } else {
+            // Fallback: use viewer-exclusion only (no org context)
+            visibleRecipientIds = await getNonViewerProfileIds(supabase, profileIds);
+          }
+          if (visibleRecipientIds.length < profileIds.length) {
+            log.info("task_review recipients filtered by departments+role", {
+              total: profileIds.length,
+              visible: visibleRecipientIds.length,
+            });
+          }
+
+          // Fetch profiles for visible recipients only
+          const { data: allProfiles } = visibleRecipientIds.length > 0
+            ? await supabase
+                .from("profiles")
+                .select("id, email, full_name, email_notifications, notification_preferences")
+                .in("id", visibleRecipientIds)
+            : { data: [] };
 
           // Create in-app notifications (gated by preferences)
           const bellEligibleIds = (allProfiles || [])
@@ -1324,16 +1352,8 @@ Deno.serve(async (req) => {
           const eventTimestamp = parseClickUpTimestamp(historyItem.date);
           await updateTaskActivity(supabase, taskId, eventTimestamp, log);
 
-          // Send emails (viewer-role members excluded — they cannot act on review emails)
-          const nonViewerProfileIds = await getNonViewerProfileIds(supabase, profileIds);
-          if (nonViewerProfileIds.length < profileIds.length) {
-            log.info("task_review email filtered to non-viewers", {
-              total: profileIds.length,
-              sending: nonViewerProfileIds.length,
-            });
-          }
-          const emailProfiles = (allProfiles || []).filter(p => nonViewerProfileIds.includes(p.id));
-          for (const profile of emailProfiles) {
+          // Send emails (same visible set, gated by email preferences)
+          for (const profile of allProfiles || []) {
             if (shouldSendEmail(profile, "task_review")) {
               await sendMailjetEmail("task_review", {
                 email: profile.email,
@@ -1447,11 +1467,30 @@ Deno.serve(async (req) => {
                 log.info("Re-approval detected", { taskId, previousCredits, currentCredits: credits });
               }
 
-              // Fetch profiles for bell gating + email
-              const { data: profiles } = await supabase
-                .from("profiles")
-                .select("id, email, full_name, email_notifications, notification_preferences")
-                .in("id", profileIds);
+              // Department-aware filtering for bell + email (same visible set)
+              let visibleApprovalIds: string[];
+              const approvalOrgLookup = await findOrgByListId(supabase, taskInfo.listId, log);
+              if (approvalOrgLookup) {
+                const { data: approvalDeptRow } = await supabase
+                  .from("task_cache")
+                  .select("departments, created_by_user_id")
+                  .eq("clickup_id", taskId)
+                  .limit(1)
+                  .maybeSingle();
+                const approvalDepts: string[] = Array.isArray(approvalDeptRow?.departments) ? approvalDeptRow.departments : [];
+                const approvalCreator: string | null = approvalDeptRow?.created_by_user_id ?? null;
+                visibleApprovalIds = await getVisibleMemberProfileIds(supabase, approvalOrgLookup.organizationId, approvalDepts, approvalCreator, log);
+              } else {
+                visibleApprovalIds = await getNonViewerProfileIds(supabase, profileIds);
+              }
+
+              // Fetch profiles for visible recipients
+              const { data: profiles } = visibleApprovalIds.length > 0
+                ? await supabase
+                    .from("profiles")
+                    .select("id, email, full_name, email_notifications, notification_preferences")
+                    .in("id", visibleApprovalIds)
+                : { data: [] };
 
               // Create bell notifications — use "Aktualisierte Kostenfreigabe" wording
               // on re-approval to match the email, otherwise standard "Kostenfreigabe".
@@ -1540,10 +1579,29 @@ Deno.serve(async (req) => {
             const { profileIds } = await findProfilesForTask(supabase, taskId, taskListId, log);
 
             if (profileIds.length > 0) {
-              const { data: profiles } = await supabase
-                .from("profiles")
-                .select("id, email, full_name, email_notifications, notification_preferences")
-                .in("id", profileIds);
+              // Department-aware filtering for bell + email (same visible set)
+              let visibleCompletionIds: string[];
+              const completionOrgLookup = taskListId ? await findOrgByListId(supabase, taskListId, log) : null;
+              if (completionOrgLookup) {
+                const { data: completionDeptRow } = await supabase
+                  .from("task_cache")
+                  .select("departments, created_by_user_id")
+                  .eq("clickup_id", taskId)
+                  .limit(1)
+                  .maybeSingle();
+                const completionDepts: string[] = Array.isArray(completionDeptRow?.departments) ? completionDeptRow.departments : [];
+                const completionCreator: string | null = completionDeptRow?.created_by_user_id ?? null;
+                visibleCompletionIds = await getVisibleMemberProfileIds(supabase, completionOrgLookup.organizationId, completionDepts, completionCreator, log);
+              } else {
+                visibleCompletionIds = await getNonViewerProfileIds(supabase, profileIds);
+              }
+
+              const { data: profiles } = visibleCompletionIds.length > 0
+                ? await supabase
+                    .from("profiles")
+                    .select("id, email, full_name, email_notifications, notification_preferences")
+                    .in("id", visibleCompletionIds)
+                : { data: [] };
 
               // Create in-app notifications (gated by preferences)
               const bellEligibleIds = (profiles || [])
@@ -1627,10 +1685,29 @@ Deno.serve(async (req) => {
               const { profileIds } = await findProfilesForTask(supabase, taskId, taskListId, log);
 
               if (profileIds.length > 0) {
-                const { data: profilesForStarted } = await supabase
-                  .from("profiles")
-                  .select("id, notification_preferences, email_notifications")
-                  .in("id", profileIds);
+                // Department-aware filtering for bell (same as other status handlers)
+                let visibleStartedIds: string[];
+                const startedOrgLookup = taskListId ? await findOrgByListId(supabase, taskListId, log) : null;
+                if (startedOrgLookup) {
+                  const { data: startedDeptRow } = await supabase
+                    .from("task_cache")
+                    .select("departments, created_by_user_id")
+                    .eq("clickup_id", taskId)
+                    .limit(1)
+                    .maybeSingle();
+                  const startedDepts: string[] = Array.isArray(startedDeptRow?.departments) ? startedDeptRow.departments : [];
+                  const startedCreator: string | null = startedDeptRow?.created_by_user_id ?? null;
+                  visibleStartedIds = await getVisibleMemberProfileIds(supabase, startedOrgLookup.organizationId, startedDepts, startedCreator, log);
+                } else {
+                  visibleStartedIds = await getNonViewerProfileIds(supabase, profileIds);
+                }
+
+                const { data: profilesForStarted } = visibleStartedIds.length > 0
+                  ? await supabase
+                      .from("profiles")
+                      .select("id, notification_preferences, email_notifications")
+                      .in("id", visibleStartedIds)
+                  : { data: [] };
                 const bellEligibleIds = (profilesForStarted || [])
                   .filter(p => shouldCreateBell(p, "task_in_progress"))
                   .map(p => p.id);
@@ -1805,8 +1882,137 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Non-tag, non-credits taskUpdated events for tickets are ignored
-      log.debug("taskUpdated event ignored (not tag or credits field)", { taskId });
+      // ---- DEPARTMENT (Fachbereich) custom field handler ----
+      // On any custom_field taskUpdated event, check if the field is the org's
+      // department field. Always GET /task/{id} for reliable custom_fields data
+      // (webhook payload structure for labels type is not guaranteed).
+      //
+      // Defense-in-depth:
+      // 1. Task must exist in task_cache (skip if not cached yet)
+      // 2. list_id is resolved from cache and validated via findOrgByListId (cross-org guard)
+      // 3. deptField.value parse is defensive: on parse failure, log and skip — never write stale []
+      if (historyItem.field === "custom_field" && taskId && isValidTaskId(taskId)) {
+        try {
+          // 1. Verify task exists in cache — if not, we have no context to operate on
+          const { data: taskCacheForDept, error: taskCacheLookupErr } = await supabase
+            .from("task_cache")
+            .select("list_id, organization_id")
+            .eq("clickup_id", taskId)
+            .limit(1)
+            .maybeSingle();
+
+          if (taskCacheLookupErr || !taskCacheForDept) {
+            log.warn("Department handler: task not in cache — skipping", { taskId, error: taskCacheLookupErr?.message });
+            // Fall through to generic taskUpdated ignore below
+          } else if (!taskCacheForDept.list_id) {
+            log.warn("Department handler: task in cache but no list_id — skipping", { taskId });
+          } else {
+            // 2. Cross-org guard: resolve org from cached list_id
+            const deptOrgResult = await findOrgByListId(supabase, taskCacheForDept.list_id, log);
+            if (deptOrgResult) {
+              const { data: deptOrgRow } = await supabase
+                .from("organizations")
+                .select("clickup_department_field_id")
+                .eq("id", deptOrgResult.organizationId)
+                .limit(1)
+                .maybeSingle();
+
+              const deptFieldId = deptOrgRow?.clickup_department_field_id;
+              if (deptFieldId) {
+                // Fetch full task from ClickUp to get reliable custom_fields
+                const clickupApiTokenDept = Deno.env.get("CLICKUP_API_TOKEN");
+                if (clickupApiTokenDept) {
+                  const taskResp = await fetchWithTimeout(
+                    `https://api.clickup.com/api/v2/task/${taskId}`,
+                    { headers: { Authorization: clickupApiTokenDept, "Content-Type": "application/json" } },
+                  );
+                  if (taskResp.ok) {
+                    const taskDetail = await taskResp.json();
+                    const deptField = (taskDetail.custom_fields || []).find(
+                      (f: { id: string }) => f.id === deptFieldId,
+                    );
+
+                    // 3. Defensive parse: Labels-type value is array of option UUIDs
+                    // (or array of option objects). If parse yields nothing meaningful,
+                    // log and skip — do NOT write [] which would silently remove departments.
+                    let departments: string[] | null = null;
+                    try {
+                      if (deptField?.value) {
+                        if (Array.isArray(deptField.value)) {
+                          departments = deptField.value
+                            .map((v: unknown) => (typeof v === "string" ? v : (v as { id?: string })?.id))
+                            .filter((v: unknown): v is string => typeof v === "string");
+                        } else {
+                          log.warn("Department field value is not an array — skipping update", {
+                            taskId,
+                            valueType: typeof deptField.value,
+                          });
+                        }
+                      } else {
+                        // Explicitly cleared (null/undefined value) — write empty array
+                        departments = [];
+                      }
+                    } catch (parseErr) {
+                      log.warn("Department field value parse failed — skipping update to avoid stale data", {
+                        taskId,
+                        error: String(parseErr),
+                      });
+                    }
+
+                    // Only update if parse succeeded (departments !== null)
+                    if (departments !== null) {
+                      // Verify webhook list_id matches cached list_id (cross-org guard)
+                      // The task's list_id in ClickUp should match what we have in cache
+                      const clickupListId = taskDetail.list?.id;
+                      if (clickupListId && clickupListId !== taskCacheForDept.list_id) {
+                        log.warn("Department handler: ClickUp list_id mismatch with cache — skipping", {
+                          taskId,
+                          cachedListId: taskCacheForDept.list_id,
+                          clickupListId,
+                        });
+                      } else {
+                        const { error: deptUpdateError, count: deptUpdateCount } = await supabase
+                          .from("task_cache")
+                          .update({ departments, last_synced: new Date().toISOString() })
+                          .eq("clickup_id", taskId)
+                          .select("clickup_id", { count: "exact" });
+
+                        if (deptUpdateError) {
+                          log.error("Failed to update task_cache.departments", { taskId, error: deptUpdateError.message });
+                          return new Response(
+                            JSON.stringify({ success: false, type: "departments_update_failed", error: deptUpdateError.message }),
+                            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                          );
+                        }
+                        if ((deptUpdateCount ?? 0) === 0) {
+                          // Task was verified in cache at handler start but update hit zero rows —
+                          // race condition or RLS issue. Return 500 so ClickUp retries.
+                          log.warn("Department update affected 0 rows despite task being in cache", { taskId, departments });
+                          return new Response(
+                            JSON.stringify({ success: false, type: "departments_update_zero_rows" }),
+                            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                          );
+                        }
+                        log.info("Updated task_cache.departments", { taskId, departments, rowsAffected: deptUpdateCount });
+                      }
+                    }
+
+                    return new Response(
+                      JSON.stringify({ success: true, type: "departments_updated" }),
+                      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                    );
+                  }
+                }
+              }
+            }
+          }
+        } catch (deptErr) {
+          log.warn("Department field handler failed (non-fatal)", { taskId, error: String(deptErr) });
+        }
+      }
+
+      // Non-tag, non-credits, non-department taskUpdated events for tickets are ignored
+      log.debug("taskUpdated event ignored (not tag, credits, or department field)", { taskId });
       return new Response(
         JSON.stringify({ message: "taskUpdated event ignored" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -2046,11 +2252,32 @@ Deno.serve(async (req) => {
       const taskName = commentTaskName;
       log.info(`Found portal users for this task`, { count: profileIds.length, taskId });
 
-      // Get profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, email, full_name, email_notifications, notification_preferences")
-        .in("id", profileIds);
+      // Department-aware filtering for bell + email recipients.
+      // Comment cache still goes to ALL profileIds (so they can see the message if
+      // they later gain department access), but bells and emails are restricted.
+      let visibleCommentIds: string[];
+      const commentOrgLookup = commentTaskListId ? await findOrgByListId(supabase, commentTaskListId, log) : null;
+      if (commentOrgLookup) {
+        const { data: commentDeptRow } = await supabase
+          .from("task_cache")
+          .select("departments, created_by_user_id")
+          .eq("clickup_id", taskId)
+          .limit(1)
+          .maybeSingle();
+        const commentDepts: string[] = Array.isArray(commentDeptRow?.departments) ? commentDeptRow.departments : [];
+        const commentCreator: string | null = commentDeptRow?.created_by_user_id ?? null;
+        visibleCommentIds = await getVisibleMemberProfileIds(supabase, commentOrgLookup.organizationId, commentDepts, commentCreator, log);
+      } else {
+        visibleCommentIds = await getNonViewerProfileIds(supabase, profileIds);
+      }
+
+      // Get profiles for visible recipients (bell + email)
+      const { data: profiles } = visibleCommentIds.length > 0
+        ? await supabase
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .in("id", visibleCommentIds)
+        : { data: [] };
 
       // Create in-app notifications (gated by preferences)
       const commenterFirstName = commenterName.split(" ")[0];
@@ -2058,6 +2285,7 @@ Deno.serve(async (req) => {
         .filter(p => shouldCreateBell(p, "team_question"))
         .map(p => p.id);
 
+      let notificationsCreatedCount = 0;
       if (bellEligibleProfileIds.length > 0) {
         const notificationsToInsert = bellEligibleProfileIds.map(profileId => ({
           profile_id: profileId,
@@ -2076,6 +2304,7 @@ Deno.serve(async (req) => {
         if (notifyError) {
           log.error("Error creating notifications", { error: notifyError.message });
         } else {
+          notificationsCreatedCount = notificationsToInsert.length;
           log.info(`Created in-app notifications`, { count: notificationsToInsert.length });
         }
       }
@@ -2103,8 +2332,10 @@ Deno.serve(async (req) => {
       }
 
       // Update comment cache (no attachments from ClickUp - can't guarantee binding)
+      // Note: comment cache goes to ALL profileIds, not just visible ones.
+      // The visible_task_cache view + RLS handle read-time filtering.
       const firstName = commenterName.split(" ")[0];
-      
+
       for (const profileId of profileIds) {
         const { error: commentCacheError } = await supabase
           .from("comment_cache")
@@ -2135,12 +2366,12 @@ Deno.serve(async (req) => {
       const taskCommentTimestamp = parseClickUpTimestamp(historyItem.date);
       await updateTaskActivity(supabase, taskId, taskCommentTimestamp, log);
 
-      log.info(`Webhook processing completed`, { notificationsCreated: notificationsToInsert.length });
+      log.info(`Webhook processing completed`, { notificationsCreated: notificationsCreatedCount });
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          notificationsCreated: notificationsToInsert.length 
+        JSON.stringify({
+          success: true,
+          notificationsCreated: notificationsCreatedCount
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

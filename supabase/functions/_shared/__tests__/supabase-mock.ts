@@ -25,10 +25,15 @@ export interface MockCall {
   limit: number | null;
 }
 
+export type RpcMockResolver =
+  | { data: unknown; error: unknown }
+  | ((fnName: string, params: Record<string, unknown>) => { data: unknown; error: unknown });
+
 export function makeMockClient(
   tables: Record<string, MockResolver>,
   // Optional call-tracking array the test can inspect
   calls: MockCall[] = [],
+  rpcs?: Record<string, RpcMockResolver>,
 ) {
   function buildBuilder(table: string): unknown {
     const state: MockCall = {
@@ -93,6 +98,12 @@ export function makeMockClient(
 
   return {
     from(table: string) { return buildBuilder(table); },
+    rpc(fnName: string, params: Record<string, unknown> = {}) {
+      const resolver = rpcs?.[fnName];
+      if (!resolver) return Promise.resolve({ data: null, error: { message: `no rpc mock for ${fnName}` } });
+      const res = typeof resolver === "function" ? resolver(fnName, params) : resolver;
+      return Promise.resolve(res);
+    },
     __calls: calls,
   };
 }

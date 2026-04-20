@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { useOrg } from '@/shared/hooks/useOrg'
 import { OrgInfoSection } from '../components/OrgInfoSection'
+import { DepartmentsSection } from '../components/DepartmentsSection'
 import { TeamSection } from '../components/TeamSection'
 import { RolesInfoSection } from '../components/RolesInfoSection'
 
@@ -22,6 +23,7 @@ export function OrganisationPage() {
         </div>
 
         <OrgInfoSection />
+        <DepartmentsSection />
         <TeamSection />
         <RolesInfoSection />
       </div>

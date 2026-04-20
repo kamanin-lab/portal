@@ -6,7 +6,7 @@ import { normalizeAttachmentType } from "../_shared/utils.ts";
 import {
   resolvePublicThreadRootId,
 } from "../_shared/clickup-contract.ts";
-import { getUserOrgRole, getOrgContextForUserAndTask, getNonViewerProfileIds } from "../_shared/org.ts";
+import { getUserOrgRole, getOrgContextForUserAndTask, getNonViewerProfileIds, getVisibleMemberProfileIds } from "../_shared/org.ts";
 import { shouldCreateBell } from "../_shared/notifications.ts";
 
 // Fetch with timeout (10 seconds default)
@@ -570,14 +570,34 @@ Deno.serve(async (req) => {
       const orgCtx = await getOrgContextForUserAndTask(supabaseAdmin, userId, taskId, log);
 
       if (orgCtx.orgId && orgCtx.memberProfileIds.length > 0) {
-        // Gate: skip fan-out if task does not belong to caller's org (prevents cross-org spam)
+        // Gate: skip fan-out if task context is missing/stale (surface is null when
+        // task is not found in any cache) or task does not belong to caller's org.
+        // Both cases return taskBelongsToOrg=false from getOrgContextForUserAndTask.
         if (!orgCtx.taskBelongsToOrg) {
-          log.warn("Skipping fan-out — task does not belong to caller's org", { taskId, orgId: orgCtx.orgId });
+          log.warn("Skipping fan-out — task does not belong to caller's org or context missing", {
+            taskId, orgId: orgCtx.orgId, surface: orgCtx.surface,
+          });
         } else {
         // Exclude the comment author
         let recipientIds = orgCtx.memberProfileIds.filter(id => id !== userId);
-        // Exclude viewers
-        recipientIds = await getNonViewerProfileIds(supabaseAdmin, recipientIds);
+        // Department-aware fan-out for tickets; viewer-exclusion for projects
+        if (orgCtx.surface === "ticket" && orgCtx.orgId) {
+          const { data: taskDeptRow } = await supabaseAdmin
+            .from("task_cache")
+            .select("departments, created_by_user_id")
+            .eq("clickup_id", taskId)
+            .limit(1)
+            .maybeSingle();
+          const taskDepartments: string[] = Array.isArray(taskDeptRow?.departments) ? taskDeptRow.departments : [];
+          const taskCreatorId: string | null = taskDeptRow?.created_by_user_id ?? null;
+          const visibleIds = await getVisibleMemberProfileIds(supabaseAdmin, orgCtx.orgId, taskDepartments, taskCreatorId, log);
+          // Intersect with recipientIds (already excludes author)
+          const visibleSet = new Set(visibleIds);
+          recipientIds = recipientIds.filter(id => visibleSet.has(id));
+        } else {
+          // Fallback: exclude viewers only
+          recipientIds = await getNonViewerProfileIds(supabaseAdmin, recipientIds);
+        }
 
         if (recipientIds.length > 0) {
           log.info("Fan-out peer notifications", { count: recipientIds.length, surface: orgCtx.surface });

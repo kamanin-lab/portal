@@ -80,6 +80,10 @@ vi.mock('../components/RecommendationApproval', () => ({
   RecommendationApproval: () => <div data-testid="recommendation-approval" />,
 }))
 
+vi.mock('../components/DepartmentChips', () => ({
+  DepartmentChips: () => <div data-testid="department-chips" />,
+}))
+
 vi.mock('../lib/status-mapping', () => ({
   mapStatus: (s: string) => s,
 }))

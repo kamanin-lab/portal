@@ -6,6 +6,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { useOrgMembers, type OrgMember } from '../hooks/useOrgMembers'
 import { InviteMemberDialog } from './InviteMemberDialog'
 import { MemberRowActions } from './MemberRowActions'
+import { MemberDepartmentPicker } from './MemberDepartmentPicker'
 
 const ROLE_LABELS: Record<OrgMember['role'], string> = {
   admin: 'Administrator',
@@ -55,10 +56,11 @@ export function TeamSection() {
         <>
           {/* Desktop table (md+) */}
           <div className="hidden md:flex flex-col">
-            <div className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
+            <div className="grid grid-cols-[1fr_1fr_120px_auto_100px_40px] gap-3 px-2 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
               <span>Name</span>
               <span>E-Mail</span>
               <span>Rolle</span>
+              <span>Fachbereich</span>
               <span>Hinzugefügt</span>
               <span></span>
             </div>
@@ -67,13 +69,16 @@ export function TeamSection() {
               const isPending = !m.accepted_at
               const name = displayName(profile, m.invited_email)
               return (
-                <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
+                <div key={m.id} className="grid grid-cols-[1fr_1fr_120px_auto_100px_40px] gap-3 px-2 py-2 items-center border-b border-border/50 last:border-b-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm text-text-primary truncate min-w-0">{name}</span>
                     {isPending && <Badge variant="attention" className="shrink-0">Einladung ausstehend</Badge>}
                   </div>
                   <span className="text-sm text-text-secondary truncate">{profile?.email ?? m.invited_email ?? '—'}</span>
                   <span className="text-sm text-text-primary">{ROLE_LABELS[m.role]}</span>
+                  <div className="min-w-0">
+                    <MemberDepartmentPicker memberId={m.id} memberDepartments={m.departments ?? []} />
+                  </div>
                   <span className="text-sm text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
                   <MemberRowActions member={m} members={members} />
                 </div>
@@ -99,6 +104,9 @@ export function TeamSection() {
                       <span className="text-xs text-text-tertiary">{ROLE_LABELS[m.role]}</span>
                       <span className="text-text-tertiary/40 text-xs">·</span>
                       <span className="text-xs text-text-tertiary tabular-nums">{formatDate(m.created_at)}</span>
+                    </div>
+                    <div className="mt-1">
+                      <MemberDepartmentPicker memberId={m.id} memberDepartments={m.departments ?? []} />
                     </div>
                   </div>
                   <MemberRowActions member={m} members={members} />

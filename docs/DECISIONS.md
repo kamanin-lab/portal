@@ -1,5 +1,33 @@
 # Architecture Decision Records
 
+## ADR-033: Department-based ticket visibility via ClickUp Labels (not Dropdown, not Tags, not per-person assignments) (2026-04-21)
+**Date:** 2026-04-21
+**Status:** Accepted
+
+**Context:** When orgs have specialized roles (SEO agency, marketing team) or external contractors, all members see all tickets. Need role-based ticket filtering without per-person ClickUp assignments (clients are not in ClickUp workspace).
+
+**Decision:** Use ClickUp custom field of type `labels` (multi-select) named "Fachbereich" for department tagging. Portal reads and uses these labels; KAMANIN configures them in ClickUp UI.
+
+**Why Labels, not Dropdown:** `drop_down` in ClickUp is single-select (one option UUID string). `labels` is multi-select (array of option UUIDs). Tasks can belong to multiple departments (e.g., SEO + Marketing), so labels is required.
+
+**Why not Tags:** ClickUp tags are space-global and have no structured option IDs. Labels on a custom field provide stable UUIDs that survive renames, are scoped to the field, and integrate cleanly with the existing custom-field infrastructure.
+
+**Why not per-person assignments:** (1) 150+ archived tickets cannot be retroactively assigned. (2) New team members would not see historical tickets. (3) Agency does not track who in the client team handles what. Department grouping solves all three.
+
+**Checklist for KAMANIN when configuring per client:**
+1. In ClickUp list, create custom field named exactly "Fachbereich"
+2. Set field type to "Labels" (NOT Dropdown)
+3. Add options: Geschaftsfuhrung, Marketing, SEO, Buchhaltung, etc.
+4. In portal /organisation, click "Neu synchronisieren" to detect the field
+5. Assign departments to org members via the department picker on member rows
+
+**Consequences:**
+- Zero regression for existing orgs (all defaults are empty = legacy behavior)
+- Single SQL function `can_user_see_task` is source of truth for both RLS policy and server-side fan-out
+- If field is renamed in ClickUp, autodetect by name breaks; admin must re-sync via /organisation
+- If field options are deleted in ClickUp, orphan option_ids in member/task arrays persist but cause no errors (overlap just fails silently)
+- Webhook always does GET /task/{id} for reliable custom_fields (payload structure for labels is not guaranteed)
+
 ## ADR-032: Reject pre-built codebase knowledge graphs (2026-04)
 **Date:** 2026-04-18
 **Status:** Accepted (reject)

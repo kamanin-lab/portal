@@ -40,6 +40,7 @@ When a portal user posts a comment in a ticket or project chat, all other member
 **Fan-out rules:**
 - Author is always excluded (no self-notification)
 - Viewer-role members are excluded from both bell and email (not just email)
+- **Department-aware filtering (2026-04-21):** For ticket-surface fan-out, recipients are filtered through `getVisibleMemberProfileIds(orgId, taskDepartments, taskCreatorId)` which calls the SQL function `get_visible_member_profile_ids`. This excludes members who cannot see the task based on department assignments. Falls back to viewer-exclusion only if the SQL RPC fails.
 - Email is skipped for recipients who have no email address on their profile
 - If `getOrgContextForUserAndTask` returns `taskBelongsToOrg === false`, the entire fan-out is skipped (cross-org guard)
 - Fan-out block is wrapped in try/catch — a fan-out failure never fails the underlying comment POST
@@ -54,9 +55,9 @@ The webhook function resolves notification recipients through a two-step process
 
 If both paths return zero profiles, the notification is silently dropped. No retry mechanism exists for dropped notifications.
 
-### Viewer filtering (Phase 14)
+### Viewer + Department filtering (Phase 14 + Department Phase)
 
-After recipient resolution, **action-required email types** (`task_review`, `step_ready`) are filtered through `getNonViewerProfileIds(supabase, profileIds)` from `supabase/functions/_shared/org.ts`. This removes viewer-role members from the email recipient list — viewers cannot act on these requests, so sending them action emails is misleading.
+After recipient resolution, **action-required email types** (`task_review`, `step_ready`) are filtered through `getVisibleMemberProfileIds(orgId, taskDepartments, taskCreatorId)` from `supabase/functions/_shared/org.ts`. This removes both viewer-role members AND members whose department assignments do not overlap with the task's departments. Falls back to `getNonViewerProfileIds` (viewer-only filtering) if the department RPC fails or if no org context is available.
 
 **Bell (in-app) notifications are filtered** — viewer-role members are excluded from bell creation (same as email). This applies in `post-task-comment` peer fan-out. In the webhook path, all org members receive bells; the viewer email-only filter from Phase 14 remains for action-required email types. See `shouldCreateBell` in `_shared/notifications.ts`.
 

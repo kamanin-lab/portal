@@ -8,6 +8,7 @@ import { RecommendationApproval } from './RecommendationApproval';
 import { TaskComments } from './TaskComments';
 import { mapStatus } from '../lib/status-mapping';
 import { dict } from '../lib/dictionary';
+import { DepartmentChips } from './DepartmentChips';
 import type { ClickUpTask } from '../types/tasks';
 
 const DESC_MAX_CHARS = 400;
@@ -81,6 +82,11 @@ export function TaskDetail({ task, onClose, onRead }: Props) {
               {task.credits % 1 === 0 ? task.credits : task.credits.toFixed(1)} Credits
             </span>
           )}
+        </div>
+
+        {/* Department (Fachbereich) chips */}
+        <div className="mb-4">
+          <DepartmentChips clickupId={task.clickup_id} departments={task.departments ?? []} />
         </div>
 
         {/* Description */}
