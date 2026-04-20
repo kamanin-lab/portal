@@ -61,6 +61,10 @@ export async function getOrgForUser(
   };
 }
 
+export interface OrgLookupLogger {
+  warn: (msg: string, data?: unknown) => void;
+}
+
 /**
  * Returns all profile_ids in the given org.
  * Used by clickup-webhook for fan-out.
@@ -68,11 +72,17 @@ export async function getOrgForUser(
 export async function getOrgMemberIds(
   supabaseAdmin: ReturnType<typeof createClient>,
   organizationId: string,
+  log?: OrgLookupLogger,
 ): Promise<string[]> {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("org_members")
     .select("profile_id")
     .eq("organization_id", organizationId);
+
+  if (error) {
+    log?.warn("getOrgMemberIds: query failed", { organizationId, error: (error as { message?: string }).message });
+    return [];
+  }
 
   return (data ?? []).map((row: { profile_id: string }) => row.profile_id);
 }
@@ -103,17 +113,25 @@ export async function getUserOrgRole(
 export async function findOrgByListId(
   supabaseAdmin: ReturnType<typeof createClient>,
   listId: string,
+  log?: OrgLookupLogger,
 ): Promise<{ organizationId: string; profileIds: string[] } | null> {
-  const { data: orgs } = await supabaseAdmin
+  const { data: orgs, error } = await supabaseAdmin
     .from("organizations")
     .select("id")
     .contains("clickup_list_ids", [listId]);
 
+  if (error) {
+    log?.warn("findOrgByListId: query failed", { listId, error: (error as { message?: string }).message });
+    return null;
+  }
   if (!orgs || orgs.length === 0) return null;
-  if (orgs.length > 1) return null;
+  if (orgs.length > 1) {
+    log?.warn("findOrgByListId: ambiguous match", { listId, count: orgs.length });
+    return null;
+  }
 
   const organizationId = (orgs[0] as { id: string }).id;
-  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId);
+  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId, log);
   return { organizationId, profileIds };
 }
 
@@ -124,17 +142,22 @@ export async function findOrgByListId(
 export async function findOrgBySupportTaskId(
   supabaseAdmin: ReturnType<typeof createClient>,
   taskId: string,
+  log?: OrgLookupLogger,
 ): Promise<{ organizationId: string; profileIds: string[] } | null> {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("organizations")
     .select("id")
     .eq("support_task_id", taskId)
     .maybeSingle();
 
+  if (error) {
+    log?.warn("findOrgBySupportTaskId: query failed", { taskId, error: (error as { message?: string }).message });
+    return null;
+  }
   if (!data) return null;
 
   const organizationId = (data as { id: string }).id;
-  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId);
+  const profileIds = await getOrgMemberIds(supabaseAdmin, organizationId, log);
   return { organizationId, profileIds };
 }
 
@@ -200,7 +223,7 @@ export async function getOrgContextForTask(
       .maybeSingle();
 
     if (taskCacheRow?.list_id) {
-      const orgResult = await findOrgByListId(supabaseAdmin, taskCacheRow.list_id);
+      const orgResult = await findOrgByListId(supabaseAdmin, taskCacheRow.list_id, log);
       if (orgResult && orgResult.profileIds.length > 0) {
         log.info("Org context resolved via task_cache", { taskId, orgId: orgResult.organizationId });
         return {
@@ -234,10 +257,10 @@ export async function getOrgContextForTask(
         let memberIds: string[] = [];
 
         if (orgId) {
-          memberIds = await getOrgMemberIds(supabaseAdmin, orgId);
+          memberIds = await getOrgMemberIds(supabaseAdmin, orgId, log);
         } else if (projectConfig.clickup_list_id) {
           // Fallback: resolve org via list_id on project_config
-          const orgResult = await findOrgByListId(supabaseAdmin, projectConfig.clickup_list_id);
+          const orgResult = await findOrgByListId(supabaseAdmin, projectConfig.clickup_list_id, log);
           if (orgResult) {
             orgId = orgResult.organizationId;
             memberIds = orgResult.profileIds;
@@ -321,7 +344,7 @@ export async function getOrgContextForUserAndTask(
     const orgId = memberRow.organization_id as string;
 
     // 2. Get all member profile IDs for this org
-    const memberProfileIds = await getOrgMemberIds(supabaseAdmin, orgId);
+    const memberProfileIds = await getOrgMemberIds(supabaseAdmin, orgId, log);
 
     // 3. Determine surface by looking up the task in caches
     // Check task_cache first (ticket surface)
