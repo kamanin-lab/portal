@@ -106,17 +106,14 @@ INSERT INTO chapter_config (
   clickup_cf_option_id, narrative, next_narrative, is_active
 )
 
-// 3. Добавить clickup_list_id к организации
-UPDATE organizations
-SET clickup_list_ids = clickup_list_ids || '"LIST_ID"'::jsonb
-WHERE id = orgId AND NOT (clickup_list_ids @> '"LIST_ID"')
-
-// 4. Активировать модуль 'projects' для орг (если ещё нет)
+// 3. Активировать модуль 'projects' для орг (если ещё нет)
 SELECT * FROM client_workspaces WHERE organization_id = orgId AND module_key = 'projects'
 -- если нет:
 INSERT INTO client_workspaces (organization_id, module_key, display_name, icon, sort_order, is_active)
 VALUES (orgId, 'projects', 'Projekte', 'folder-kanban', <next_order>, true)
 ```
+
+⚠️ **Проектный ClickUp-лист НЕ добавляется в `organizations.clickup_list_ids`** — только ticket/support-листы. Проектный лист обслуживается отдельно через `project_config.clickup_list_id` + `fetch-project-tasks` → `project_task_cache`. См. раздел D.
 
 ---
 
@@ -175,7 +172,7 @@ RETURNING profile_id, clickup_id, name
 - [ ] project_config создан со всеми полями включая start_date / target_date
 - [ ] clickup_phase_field_id заполнен
 - [ ] chapter_config создан с правильными clickup_cf_option_id
-- [ ] clickup_list_id добавлен в organizations.clickup_list_ids
+- [ ] Проектный clickup_list_id **НЕ добавлен** в organizations.clickup_list_ids (только ticket-листы)
 - [ ] Модуль 'projects' активирован в client_workspaces (если нужен)
 - [ ] project_access выдан всем нужным пользователям
 - [ ] Nextcloud путь начинается с /01_OPUS/ и точно соответствует реальной папке
