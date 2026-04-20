@@ -294,12 +294,13 @@ async function sendUnreadMessageReminders(
 
     if (success) {
       // Atomic update with cooldown guard (prevents double-send on concurrent runs)
-      const twoDaysAgo = new Date(Date.now() - twoDaysMs).toISOString();
+      // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
+      const twoDaysAgo = new Date(Date.now() - twoDaysMs).toISOString().replace(/\.\d{3}Z$/, "Z");
       await supabase
         .from("profiles")
         .update({ last_unread_digest_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt."${twoDaysAgo}"`);
+        .or(`last_unread_digest_sent_at.is.null,last_unread_digest_sent_at.lt.${twoDaysAgo}`);
       sent++;
     } else {
       errors++;
@@ -367,7 +368,8 @@ async function sendRecommendationReminders(
 
   // 5. Per-profile loop with atomic claim (5-day cooldown)
   const portalUrlEnv = Deno.env.get("PORTAL_URL") ?? "https://portal.kamanin.at";
-  const cooldownBoundary = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
+  const cooldownBoundary = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
 
   for (const profile of profiles as Record<string, unknown>[]) {
     const tasksForProfile = profileRecMap.get(profile.id as string);
@@ -382,7 +384,7 @@ async function sendRecommendationReminders(
       .from("profiles")
       .update({ last_recommendation_reminder_sent_at: new Date().toISOString() })
       .eq("id", profile.id)
-      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt."${cooldownBoundary}"`)
+      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt.${cooldownBoundary}`)
       .select("id");
 
     if (claimError) {
@@ -661,12 +663,13 @@ async function sendProjectReminders(
       );
 
       // Attempt atomic claim: only proceed if cooldown has expired (prevents double-send)
-      const threeDaysAgo = new Date(Date.now() - cooldownMs).toISOString();
+      // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
+      const threeDaysAgo = new Date(Date.now() - cooldownMs).toISOString().replace(/\.\d{3}Z$/, "Z");
       const { data: claimed } = await supabase
         .from("profiles")
         .update({ last_project_reminder_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt."${threeDaysAgo}"`)
+        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
         .select("id");
 
       if (!claimed || claimed.length === 0) {

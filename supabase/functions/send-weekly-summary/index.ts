@@ -862,7 +862,9 @@ async function sendWeeklySummaries(
   }
 
   const cooldownMs = 6 * 24 * 60 * 60 * 1000;
-  const cooldownBoundary = new Date(Date.now() - cooldownMs).toISOString();
+  // Strip milliseconds: PostgREST's .or() filter parser treats the dot in
+  // `.523Z` as a separator, producing "column does not exist" 42703 errors.
+  const cooldownBoundary = new Date(Date.now() - cooldownMs).toISOString().replace(/\.\d{3}Z$/, "Z");
 
   for (const row of adminRows ?? []) {
     const org = (row as unknown as {
@@ -917,7 +919,7 @@ async function sendWeeklySummaries(
         .from("profiles")
         .update({ last_weekly_summary_sent_at: new Date().toISOString() })
         .eq("id", profile.id)
-        .or(`last_weekly_summary_sent_at.is.null,last_weekly_summary_sent_at.lt."${cooldownBoundary}"`)
+        .or(`last_weekly_summary_sent_at.is.null,last_weekly_summary_sent_at.lt.${cooldownBoundary}`)
         .select("id");
 
       if (claimErr) {
