@@ -135,15 +135,23 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Step 4: Rate-limit — 60s cooldown
-  if (last_invite_sent_at) {
-    const elapsed = Date.now() - new Date(last_invite_sent_at).getTime();
-    if (elapsed < 60_000) {
-      return new Response(
-        JSON.stringify({ error: "Bitte warten Sie einen Moment, bevor Sie erneut senden." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+  // Step 4: Atomic rate-limit reservation — UPDATE only if cooldown elapsed.
+  // This prevents a TOCTOU race where two concurrent requests both pass a
+  // read-only check before either writes the timestamp.
+  const cooldownCutoff = new Date(Date.now() - 60_000).toISOString();
+  const { data: reserved } = await supabaseAdmin
+    .from("org_members")
+    .update({ last_invite_sent_at: new Date().toISOString() })
+    .eq("id", memberId)
+    .or(`last_invite_sent_at.is.null,last_invite_sent_at.lt.${cooldownCutoff}`)
+    .select("id")
+    .maybeSingle();
+
+  if (!reserved) {
+    return new Response(
+      JSON.stringify({ error: "Bitte warten Sie einen Moment, bevor Sie erneut senden." }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   // Step 5: Generate fresh recovery link
@@ -235,11 +243,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Step 7: Update last_invite_sent_at
-  await supabaseAdmin
-    .from("org_members")
-    .update({ last_invite_sent_at: new Date().toISOString() })
-    .eq("id", memberId);
+  // Note: last_invite_sent_at was already set atomically in Step 4 reservation.
 
   log.info("Invite resent successfully", { memberId, organization_id });
   return new Response(

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/shared/lib/supabase'
 import logo from '@/assets/KAMANIN-icon-colour.svg'
@@ -12,6 +12,13 @@ export function PasswortSetzenPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current)
+    }
+  }, [])
 
   // No token → show invalid link state immediately
   if (!token) {
@@ -66,7 +73,7 @@ export function PasswortSetzenPage() {
 
     setSuccess(true)
     // Short delay so user sees success state before redirect
-    setTimeout(() => navigate('/tickets', { replace: true }), 800)
+    redirectTimer.current = setTimeout(() => navigate('/tickets', { replace: true }), 800)
   }
 
   if (success) {
