@@ -148,28 +148,11 @@ function buildQuickActionsFromConfig(rows: QuickActionConfigRow[]): ProjectQuick
   }));
 }
 
-/** Hardcoded fallback when no DB config exists */
-function buildQuickActionsFallback(_project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
-  if (!primaryAttention) return [];
-  return [
-    {
-      key: 'primary-cta',
-      label: 'Freigabe / Prüfung öffnen',
-      subtitle: `Jetzt relevant: ${primaryAttention.title}`,
-      iconToken: 'primary_cta',
-      destinationKind: 'primary_cta',
-      count: 1,
-      isEnabled: true,
-      sortOrder: 10,
-    },
-  ];
-}
-
-function buildQuickActions(project: Project, primaryAttention: ProjectAttentionItem | null): ProjectQuickAction[] {
+function buildQuickActions(project: Project): ProjectQuickAction[] {
   if (project.quickActionsConfig && project.quickActionsConfig.length > 0) {
     return buildQuickActionsFromConfig(project.quickActionsConfig);
   }
-  return buildQuickActionsFallback(project, primaryAttention);
+  return [];
 }
 
 export function interpretProjectOverview(project: Project): InterpretedProjectOverview {
@@ -195,6 +178,6 @@ export function interpretProjectOverview(project: Project): InterpretedProjectOv
     topUpdates: project.updates.slice(0, 3),
     primaryAttention,
     attentionList,
-    quickActions: buildQuickActions(project, primaryAttention),
+    quickActions: buildQuickActions(project),
   };
 }
