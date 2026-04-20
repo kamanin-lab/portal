@@ -58,7 +58,7 @@ If both paths return zero profiles, the notification is silently dropped. No ret
 
 After recipient resolution, **action-required email types** (`task_review`, `step_ready`) are filtered through `getNonViewerProfileIds(supabase, profileIds)` from `supabase/functions/_shared/org.ts`. This removes viewer-role members from the email recipient list — viewers cannot act on these requests, so sending them action emails is misleading.
 
-**Bell (in-app) notifications are NOT filtered** — all org members including viewers receive badge counts and see notification entries. Filtering applies only to email dispatch.
+**Bell (in-app) notifications are filtered** — viewer-role members are excluded from bell creation (same as email). This applies in `post-task-comment` peer fan-out. In the webhook path, all org members receive bells; the viewer email-only filter from Phase 14 remains for action-required email types. See `shouldCreateBell` in `_shared/notifications.ts`.
 
 ## Visibility Gate
 
@@ -111,7 +111,38 @@ Users can control which email types they receive via the Account page (`/konto`)
 
 The webhook function uses `shouldSendEmail(profile, emailType)` to check the appropriate preference key. If the JSONB column is null (pre-migration users), it falls back to the legacy `email_notifications` boolean.
 
-In-app (bell) notifications are always sent regardless of email preferences.
+### Bell (in-app) Notification Gating
+
+As of 2026-04-20, bell notifications are gated by the **same** `notification_preferences` JSONB column as email. They are no longer always created regardless of preferences.
+
+**Helper:** `shouldCreateBell(profile, bellEvent)` in `supabase/functions/_shared/notifications.ts` — mirrors the `shouldSendEmail` pattern.
+
+**Mapping table (`BELL_EVENT_TO_PREF_KEY`):**
+
+| Bell Event | Preference Key |
+|---|---|
+| `task_review` | `task_review` |
+| `task_completed` | `task_completed` |
+| `task_in_progress` | `task_review` |
+| `credit_approval` | `task_review` |
+| `team_question` | `team_comment` |
+| `peer_message` | `peer_messages` |
+| `new_recommendation` | `new_recommendation` |
+| `support_response` | `support_response` |
+| `step_ready` | `project_task_ready` |
+| `step_completed` | `project_step_completed` |
+| `step_in_progress` | `project_task_ready` |
+| `chapter_completed` | `project_step_completed` |
+| `project_step_status` | `project_task_ready` |
+| `project_reply` | `project_messages` |
+
+**Fail-open rule:** Bell events with no mapping in `BELL_EVENT_TO_PREF_KEY` always create a notification (safe default for future event types).
+
+**Backward compat:** If `notification_preferences` is null or doesn't contain the mapped key, falls back to the legacy `email_notifications` boolean.
+
+Bell INSERTs are wrapped at 14 sites in `clickup-webhook/index.ts` and 1 site in `post-task-comment/index.ts` (peer fan-out).
+
+The `/konto` UI heading now reads "E-Mail & In-App-Benachrichtigungen" with a footer note that preferences apply to both channels (`NotificationSection.tsx`).
 
 ## Automated Reminders
 
@@ -148,6 +179,18 @@ Details:
 - **AI gating:** narrative is only generated when `teamComments.length ≥ 5`; 10s timeout; output is sentence-filtered (strips "Bitte…"/"Können Sie…" sentences) and capped at 2 sentences. Failure → email sends without the AI line.
 - **Peer detection:** identifies peer comments via `is_from_portal=true AND profile_id=admin AND author_email != admin.email` (workaround for the `post-task-comment` fan-out bug that leaves `author_email` empty — root cause tracked in `docs/ideas/peer-fan-out-author-email.md`).
 - **Overlap with `unread_digest`:** weekly summary shows unread **count** only; the 48h `unread_digest` remains the primary vehicle for per-message detail.
+
+## Notification Auto-Archive
+
+Runs as part of the `send-reminders` Edge Function cron (same invocation as ticket/project reminders).
+
+| Phase | Trigger | Action |
+|---|---|---|
+| Archive | `is_read = true AND created_at < now() - 30d AND archived_at IS NULL` | Sets `archived_at = now()` |
+| Hard delete | `archived_at IS NOT NULL AND archived_at < now() - 90d` | Deletes rows permanently |
+
+- Frontend (`useNotifications`, `useUnreadCounts`) filters `archived_at IS NULL` — archived bells never appear in the dropdown.
+- The archive/delete loop runs once per cron invocation after all reminder tasks complete. Counts are included in the response JSON (`notificationsArchived`, `notificationsDeleted`).
 
 ## Deduplication
 

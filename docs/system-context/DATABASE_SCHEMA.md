@@ -117,6 +117,7 @@ In-app bell notifications. Created by the webhook function on status changes and
 | task_id | text | | Related ClickUp task ID |
 | comment_id | text | | Related ClickUp comment ID (for team_reply type) |
 | is_read | boolean | DEFAULT false | Read state |
+| archived_at | timestamptz | NULL | Set by `send-reminders` cron when `is_read = true AND created_at < now() - 30d`. NULL = active. Non-NULL = archived (hidden from UI). Added 2026-04-20 (migration `20260420170000_add_notification_archive`). |
 | created_at | timestamptz | DEFAULT now() | Creation timestamp |
 
 **Type Check Constraint:** `notifications_type_check` — allowed values: `'team_reply'`, `'status_change'`, `'step_ready'`, `'project_reply'`, `'project_update'`, `'new_recommendation'`, `'member_invited'`, `'member_removed'`. (Extended in Phase 9 migration 20260414200000 to add the two org membership types.)
@@ -125,7 +126,11 @@ In-app bell notifications. Created by the webhook function on status changes and
 
 **Realtime:** REPLICA IDENTITY FULL — enables instant bell notification updates.
 
+**Partial Index:** `idx_notifications_archive ON notifications (created_at, is_read, archived_at) WHERE archived_at IS NULL` — supports the archive cron query and the frontend `IS NULL` filter efficiently.
+
 **Deduplication:** The webhook checks for existing notifications before creating completion ("completed") and work-started ("started") notifications to prevent duplicates on repeated webhook deliveries.
+
+**Auto-archive:** `send-reminders` cron archives read notifications older than 30 days (sets `archived_at`), then hard-deletes archived rows older than 90 days. Frontend hooks (`useNotifications`, `useUnreadCounts`) always filter `archived_at IS NULL`.
 
 ---
 

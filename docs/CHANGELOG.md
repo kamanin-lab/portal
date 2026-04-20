@@ -1,5 +1,30 @@
 # Changelog
 
+## feat(notifications): unified email + bell gating + auto-archive — 2026-04-20
+
+Bell (in-app) notifications are now gated by the same `notification_preferences` JSONB keys as email. Previously bells were always created regardless of preferences.
+
+### Changes
+
+- **`supabase/functions/_shared/notifications.ts`** (new) — `shouldCreateBell(profile, bellEvent)` helper + `BELL_EVENT_TO_PREF_KEY` mapping (14 bell events → 12 preference keys). Fail-open for unmapped events. Mirrors `shouldSendEmail` pattern.
+- **`supabase/functions/clickup-webhook/index.ts`** — 14 bell INSERT sites wrapped with `shouldCreateBell` guard.
+- **`supabase/functions/post-task-comment/index.ts`** — 1 bell INSERT site (peer fan-out) wrapped with `shouldCreateBell` guard.
+- **`supabase/migrations/20260420170000_add_notification_archive.sql`** — adds `notifications.archived_at timestamptz` + partial index `idx_notifications_archive ON notifications (created_at, is_read, archived_at) WHERE archived_at IS NULL`. Applied to staging and production.
+- **`supabase/functions/send-reminders/index.ts`** — auto-archive cron block: archives read bells older than 30 days (sets `archived_at`), hard-deletes archived rows older than 90 days. Runs after all reminder tasks per invocation.
+- **`src/modules/tickets/hooks/useNotifications.ts`** — query and `markAllAsRead` filter `archived_at IS NULL`.
+- **`src/modules/tickets/hooks/useUnreadCounts.ts`** — notification cross-sync update filters `archived_at IS NULL`.
+- **`src/shared/components/konto/NotificationSection.tsx`** — heading updated to "E-Mail & In-App-Benachrichtigungen"; footer copy clarifies preferences apply to both channels.
+
+### Known limitation (staging)
+E2E tests for webhook-driven bell scenarios are skipped on staging due to `CLICKUP_WEBHOOK_SECRET` mismatch between staging Cloud Supabase and production ClickUp. Documented in the e2e test file.
+
+### Commits
+- `3d980fa` feat(notifications): unified bell gating + auto-archive
+- `a5f5eb5` test(e2e): notification gating e2e tests
+- `e567e3f` chore(merge): staging → main
+
+---
+
 ## feat(invite): full name capture on first login — 2026-04-20
 
 - Added required `Vollständiger Name` input to `PasswortSetzenPage` (`src/shared/pages/PasswortSetzenPage.tsx`) above the password fields. Validation: `trim().length >= 2`, `maxLength=100`, `autoComplete="name"`.
