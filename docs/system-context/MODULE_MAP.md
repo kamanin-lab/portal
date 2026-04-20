@@ -377,7 +377,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 
 ### components (cross-module UI)
 
-**common/**: `ConfirmDialog`, `EmptyState`, `LoadingSkeleton`, `MessageBubble`, `StatusBadge`, `UserAvatar`
+**common/**: `ConfirmDialog`, `EmptyState`, `LoadingSkeleton`, `MessageBubble`, `PasswordChecklist`, `StatusBadge`, `UserAvatar`
 **ui/** (shadcn base): `Button`, `Input`, `Tabs`, `Badge`, `Skeleton`, `Avatar`, `AlertDialog`, `Textarea`, `Tooltip`, `SideSheet`
 **inbox/**: `NotificationAccordionItem`, `NotificationDetailPanel`, `TypeBadge`, `notification-utils.ts`
 **konto/**: `AvatarUpload`, `CreditHistorySection`, `EmailSection`, `NotificationSection`, `PasswordSection`, `ProfileSection`

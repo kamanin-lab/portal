@@ -1,5 +1,18 @@
 # Changelog
 
+## feat(password): live strength checklist on invite flow — 2026-04-20
+
+- Extracted inline 4-rule checklist from `PasswordSection` into reusable `<PasswordChecklist password={...} />` component (`src/shared/components/common/PasswordChecklist.tsx`, 35 lines, pure render).
+- Wired into `PasswortSetzenPage` — both password-setting surfaces now share the same visual contract.
+- Submit gate on invite flow tightened: `length >= 8` → `validatePassword(password).valid` (all 4 rules: length, uppercase, digit, special char).
+- 4 unit tests added (`PasswordChecklist.test.tsx`); 3 existing fixtures in `PasswortSetzenPage.test.tsx` updated to valid password.
+- No DB changes, no Edge Function changes.
+
+### Commits
+- `9cf942d` (staging), `0ab5cd1` (main → prod)
+
+---
+
 ## fix(auth): invite flow — scanner-prefetch mitigation + admin resend — 2026-04-20
 
 ### Problem — Part A (scanner-prefetch)
