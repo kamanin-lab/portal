@@ -247,7 +247,7 @@ async function pushSecrets(
 // "override" = replace with staging value; "copy" = take from Coolify as-is.
 // ---------------------------------------------------------------------------
 
-const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "generate" }> = [
+const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "generate" | "skip" }> = [
   // NOTE: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY are
   // automatically injected by Cloud Supabase — cannot be set via Management API.
   // Security tokens — generate fresh for staging
@@ -256,7 +256,11 @@ const EDGE_FUNCTION_VARS: Array<{ name: string; action: "override" | "copy" | "g
   // ClickUp — copy from production
   { name: "CLICKUP_API_TOKEN",         action: "copy" },
   { name: "CLICKUP_WORKSPACE_ID",      action: "copy" },
-  { name: "CLICKUP_WEBHOOK_SECRET",    action: "copy" },
+  // CLICKUP_WEBHOOK_SECRET: ClickUp issues a different secret per webhook
+  // registration — prod webhook and staging webhook have DISTINCT secrets.
+  // Do NOT copy from prod. Fetch staging's actual secret from ClickUp API
+  // (GET /team/{id}/webhook → find endpoint containing "ahlthosftngdcryltapu").
+  { name: "CLICKUP_WEBHOOK_SECRET",    action: "skip" },
   { name: "CLICKUP_CREDITS_FIELD_ID",  action: "copy" },
   { name: "CLICKUP_VISIBLE_FIELD_ID",  action: "copy" },
   // Email — copy from production
@@ -332,6 +336,9 @@ async function main() {
         stagingVars[name] = val;
       }
       // if not in Coolify, skip silently
+    } else if (action === "skip") {
+      // Intentionally not synced from prod — staging has its own value.
+      // See comments next to each entry for the reason.
     }
   }
 

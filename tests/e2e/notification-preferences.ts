@@ -2,20 +2,16 @@
  * E2E test: unified email+bell notification preferences + auto-archive.
  *
  * Verifies that `notification_preferences` now gates BOTH email and bell (in-app) channels:
+ *   A. User with task_review=false → no bell when task → Client Review (webhook-driven)
+ *   B. User with task_review=true  → bell created when task → Client Review
  *   C. User with peer_messages=false → no team_reply bell when peer posts comment
  *   D. Auto-archive: read notification >30d → archived_at set; archived >90d → deleted
  *
- * KNOWN LIMITATION — scenarios A/B (webhook-driven task_review gate) are NOT automated here:
- *   Staging has a stale CLICKUP_WEBHOOK_SECRET (copied from prod, ClickUp generates a different
- *   one per webhook registration), so real ClickUp webhooks return 401 at staging. To validate
- *   the `task_review` / `task_completed` / `step_*` gates end-to-end, either:
- *     (a) refresh CLICKUP_WEBHOOK_SECRET on staging via rotate-secret skill, or
- *     (b) rely on the 11 Vitest unit tests in src/__tests__/notifications-bell.test.ts
- *         which exhaustively cover shouldCreateBell logic.
- *   The code-review confirmed every INSERT site in clickup-webhook wraps its insert in
- *   `shouldCreateBell(...)` with the correct prefKey.
+ * Prerequisite for A/B: staging CLICKUP_WEBHOOK_SECRET must match the ClickUp-issued
+ * secret for the staging webhook registration. If webhook events return 401, refresh
+ * via Management API (see reference_clickup_test.md memory).
  *
- * Runs against STAGING only. Creates real ClickUp tasks in test list 901520762121.
+ * Runs against STAGING only. Creates real ClickUp tasks in test list 901520327531 (Test - Tasks).
  *
  * Run:
  *   cd g:/01_OPUS/Projects/PORTAL
@@ -29,7 +25,7 @@ import {
   deleteClickupTask,
   clickupCall,
   signInAs,
-  CLICKUP_TEST_LIST_ID,
+  CLICKUP_TEST_LIST_TASKS,
   assert,
   sleep,
   green,
@@ -94,7 +90,7 @@ async function setTaskVisible(taskId: string): Promise<void> {
 async function setup(): Promise<Ctx> {
   console.log(yellow('── SETUP ──'))
 
-  const task = await createClickupTestTask(`E2E NotifPref ${ts}`)
+  const task = await createClickupTestTask(`E2E NotifPref ${ts}`, CLICKUP_TEST_LIST_TASKS)
   console.log(`  ClickUp task: ${task.id}`)
 
   await setTaskVisible(task.id)
@@ -105,7 +101,7 @@ async function setup(): Promise<Ctx> {
     .insert({
       name: `E2E NotifPref Org ${ts}`,
       slug: `e2e-notifpref-${ts}`,
-      clickup_list_ids: [CLICKUP_TEST_LIST_ID],
+      clickup_list_ids: [CLICKUP_TEST_LIST_TASKS],
     })
     .select('id')
     .single()
@@ -132,7 +128,7 @@ async function setup(): Promise<Ctx> {
   const cacheRows = [userGateOff, userGateOn, userPeerOff].map(u => ({
     profile_id: u.userId,
     clickup_id: task.id,
-    list_id: CLICKUP_TEST_LIST_ID,
+    list_id: CLICKUP_TEST_LIST_TASKS,
     name: `E2E NotifPref ${ts}`,
     status: 'to do',
     is_visible: true,
@@ -351,9 +347,7 @@ async function scenarioD_AutoArchive(ctx: Ctx): Promise<void> {
 async function run() {
   const ctx = await setup()
   try {
-    // Scenarios A/B (webhook-driven task_review gate) are not runnable here due to
-    // staging CLICKUP_WEBHOOK_SECRET mismatch — see file header. They are covered by
-    // unit tests in src/__tests__/notifications-bell.test.ts.
+    await scenarioA_GateBlocks(ctx)
     await scenarioC_PeerBlocks(ctx)
     await scenarioD_AutoArchive(ctx)
     console.log(green('\n✅ ALL AUTOMATED SCENARIOS PASSED\n'))
