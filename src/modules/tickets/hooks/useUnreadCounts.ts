@@ -91,15 +91,15 @@ async function markContextAsRead(userId: string, contextType: string): Promise<v
   );
   if (error) throw error;
 
-  // Cross-sync: mark matching notifications as read
+  // Cross-sync: mark matching notifications as read (only non-archived)
   try {
     if (contextType === 'support') {
       await supabase.from('notifications').update({ is_read: true })
-        .eq('profile_id', userId).eq('is_read', false).like('title', 'Message from%');
+        .eq('profile_id', userId).eq('is_read', false).is('archived_at', null).like('title', 'Message from%');
     } else if (contextType.startsWith('task:')) {
       const taskId = contextType.replace('task:', '');
       await supabase.from('notifications').update({ is_read: true })
-        .eq('profile_id', userId).eq('is_read', false).eq('task_id', taskId);
+        .eq('profile_id', userId).eq('is_read', false).is('archived_at', null).eq('task_id', taskId);
     }
   } catch (err) {
     console.warn('Notification cross-sync failed', { error: String(err) });

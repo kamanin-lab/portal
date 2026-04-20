@@ -24,7 +24,14 @@ export const STAGING_ANON = process.env.STAGING_ANON_KEY!
 export const STAGING_SERVICE = process.env.STAGING_SERVICE_ROLE_KEY!
 export const CLICKUP_TOKEN = process.env.CLICKUP_API_TOKEN!
 export const CLICKUP_TEAM_ID = process.env.CLICKUP_TEAM_ID!
-export const CLICKUP_TEST_LIST_ID = '901520762121'
+
+// ClickUp test lists (bounded sandbox per reference_clickup_test.md memory)
+// Both live in folder 901513727289 — safe for any e2e mutation.
+export const CLICKUP_TEST_LIST_PROJECT = '901520762121'  // "Test - Project" — for project-module tests (chapters, phase fields)
+export const CLICKUP_TEST_LIST_TASKS = '901520327531'    // "Test - Tasks" — for ticket-module tests (task_review, team_comment, peer)
+
+// Back-compat alias — existing tests default to the Project list
+export const CLICKUP_TEST_LIST_ID = CLICKUP_TEST_LIST_PROJECT
 
 if (!STAGING_URL?.includes('ahlthosftngdcryltapu')) {
   throw new Error('SAFETY: STAGING_SUPABASE_URL is not the expected staging project. Aborting.')

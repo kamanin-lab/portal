@@ -101,11 +101,11 @@ export function NotificationSection({ preferences }: Props) {
     <section className="bg-surface rounded-[14px] border border-border p-5">
       <div className="flex items-center gap-2 mb-2">
         <HugeiconsIcon icon={Notification03Icon} size={18} className="text-text-secondary" />
-        <h2 className="text-sm font-semibold text-text-primary">E-Mail-Benachrichtigungen</h2>
+        <h2 className="text-sm font-semibold text-text-primary">E-Mail & In-App-Benachrichtigungen</h2>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Wählen Sie, welche E-Mail-Benachrichtigungen Sie erhalten möchten.
-        In-App-Benachrichtigungen bleiben immer aktiv.
+        Wählen Sie, welche Benachrichtigungen Sie erhalten möchten.
+        Gilt für E-Mail und In-App (Glocke).
       </p>
 
       {workspacesLoading ? (

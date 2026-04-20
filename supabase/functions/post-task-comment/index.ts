@@ -7,6 +7,7 @@ import {
   resolvePublicThreadRootId,
 } from "../_shared/clickup-contract.ts";
 import { getUserOrgRole, getOrgContextForUserAndTask, getNonViewerProfileIds } from "../_shared/org.ts";
+import { shouldCreateBell } from "../_shared/notifications.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -632,35 +633,42 @@ Deno.serve(async (req) => {
             }
           }
 
-          // 2. Insert notifications for all recipients
+          // 2. Fetch recipient profiles for bell gating + email
+          const { data: recipientProfiles } = await supabaseAdmin
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .in("id", recipientIds);
+
+          // Insert notifications for eligible recipients (gated by preferences)
           const notificationTitle = orgCtx.surface === "project_task"
             ? `Neue Nachricht zu ${taskName}`
             : `Neue Nachricht zu \u201E${taskName}\u201C`;
           const notificationMessage = `${firstName}: ${displayText.substring(0, 200)}${displayText.length > 200 ? "..." : ""}`;
 
-          const notifications = recipientIds.map(pid => ({
-            profile_id: pid,
-            type: notificationType,
-            title: notificationTitle,
-            message: notificationMessage,
-            task_id: taskId,
-            comment_id: commentId,
-            ...(orgCtx.projectConfigId ? { project_config_id: orgCtx.projectConfigId } : {}),
-            is_read: false,
-          }));
+          const bellEligibleIds = (recipientProfiles || [])
+            .filter(p => shouldCreateBell(p, "peer_message"))
+            .map(p => p.id);
+          if (bellEligibleIds.length > 0) {
+            const notifications = bellEligibleIds.map(pid => ({
+              profile_id: pid,
+              type: notificationType,
+              title: notificationTitle,
+              message: notificationMessage,
+              task_id: taskId,
+              comment_id: commentId,
+              ...(orgCtx.projectConfigId ? { project_config_id: orgCtx.projectConfigId } : {}),
+              is_read: false,
+            }));
 
-          const { error: notifyErr } = await supabaseAdmin.from("notifications").insert(notifications);
-          if (notifyErr) {
-            log.error("Failed to insert peer notifications", { error: notifyErr.message });
-          } else {
-            log.info("Peer notifications created", { count: notifications.length });
+            const { error: notifyErr } = await supabaseAdmin.from("notifications").insert(notifications);
+            if (notifyErr) {
+              log.error("Failed to insert peer notifications", { error: notifyErr.message });
+            } else {
+              log.info("Peer notifications created", { count: notifications.length });
+            }
           }
 
           // 3. Send emails to recipients who have peer_messages enabled
-          const { data: recipientProfiles } = await supabaseAdmin
-            .from("profiles")
-            .select("id, email, full_name, email_notifications, notification_preferences")
-            .in("id", recipientIds);
 
           if (recipientProfiles) {
             for (const rp of recipientProfiles) {
