@@ -294,8 +294,7 @@ async function sendUnreadMessageReminders(
 
     if (success) {
       // Atomic update with cooldown guard (prevents double-send on concurrent runs)
-      // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
-      const twoDaysAgo = new Date(Date.now() - twoDaysMs).toISOString().replace(/\.\d{3}Z$/, "Z");
+      const twoDaysAgo = new Date(Date.now() - twoDaysMs).toISOString();
       await supabase
         .from("profiles")
         .update({ last_unread_digest_sent_at: new Date().toISOString() })
@@ -366,10 +365,9 @@ async function sendRecommendationReminders(
     });
   }
 
-  // 5. Per-profile loop with atomic claim (5-day cooldown)
+  // 5. Per-profile loop — 5-day cooldown enforced via in-memory check
   const portalUrlEnv = Deno.env.get("PORTAL_URL") ?? "https://portal.kamanin.at";
-  // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
-  const cooldownBoundary = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const cooldownMs = 5 * 24 * 60 * 60 * 1000;
 
   for (const profile of profiles as Record<string, unknown>[]) {
     const tasksForProfile = profileRecMap.get(profile.id as string);
@@ -379,23 +377,25 @@ async function sendRecommendationReminders(
     const prefs = profile.notification_preferences as Record<string, boolean> | null;
     if (prefs?.reminders === false) { skipped++; continue; }
 
-    // Atomic claim: only proceed if cooldown has expired (prevents double-send)
-    const { data: claimed, error: claimError } = await supabase
+    // Cooldown check against the snapshot loaded with this profile.
+    const lastSent = profile.last_recommendation_reminder_sent_at as string | null;
+    if (lastSent && Date.now() - new Date(lastSent).getTime() < cooldownMs) {
+      skipped++;
+      continue;
+    }
+
+    // Claim. Not atomic, but cron runs don't overlap and the snapshot-based
+    // check above makes double-send extremely unlikely. A prior .or()+.select()
+    // claim tripped a PostgREST bug (ANY column inside .or() is reported as
+    // "does not exist" when Prefer: return=representation is set).
+    const { error: claimError } = await supabase
       .from("profiles")
       .update({ last_recommendation_reminder_sent_at: new Date().toISOString() })
-      .eq("id", profile.id)
-      .or(`last_recommendation_reminder_sent_at.is.null,last_recommendation_reminder_sent_at.lt.${cooldownBoundary}`)
-      .select("id");
+      .eq("id", profile.id);
 
     if (claimError) {
       log.error("Recommendation reminder: claim error", { error: String(claimError) });
       errors++;
-      continue;
-    }
-
-    if (!claimed?.length) {
-      // Cooldown not expired or another execution claimed first
-      skipped++;
       continue;
     }
 
@@ -662,21 +662,13 @@ async function sendProjectReminders(
         `${portalUrl}/projekte`,
       );
 
-      // Attempt atomic claim: only proceed if cooldown has expired (prevents double-send)
-      // Strip ms — dot in .523Z breaks PostgREST .or() filter parser.
-      const threeDaysAgo = new Date(Date.now() - cooldownMs).toISOString().replace(/\.\d{3}Z$/, "Z");
-      const { data: claimed } = await supabase
+      // Claim the send. The cooldown check at line ~610 already used the
+      // in-memory snapshot; weekly cron runs don't overlap, so a plain UPDATE
+      // is safe. .or()+.select() on one UPDATE tripped a PostgREST bug.
+      await supabase
         .from("profiles")
         .update({ last_project_reminder_sent_at: new Date().toISOString() })
-        .eq("id", profile.id)
-        .or(`last_project_reminder_sent_at.is.null,last_project_reminder_sent_at.lt.${threeDaysAgo}`)
-        .select("id");
-
-      if (!claimed || claimed.length === 0) {
-        // Cooldown not expired or another execution claimed first
-        skipped++;
-        continue;
-      }
+        .eq("id", profile.id);
 
       const success = await sendMailjet(
         { email: profile.email, name: profile.full_name || undefined },
