@@ -43,8 +43,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 const sampleMembers: OrgMember[] = [
-  { id: 'm1', organization_id: 'o1', profile_id: 'p1', role: 'admin', created_at: '2026-01-01T00:00:00Z', profile: { id: 'p1', email: 'admin@acme.at', full_name: 'Admin Anna' } },
-  { id: 'm2', organization_id: 'o1', profile_id: 'p2', role: 'member', created_at: '2026-01-02T00:00:00Z', profile: { id: 'p2', email: 'pending@acme.at', full_name: null } },
+  { id: 'm1', organization_id: 'o1', profile_id: 'p1', role: 'admin', created_at: '2026-01-01T00:00:00Z', accepted_at: '2026-01-01T10:00:00Z', invited_email: null, profile: { id: 'p1', email: 'admin@acme.at', full_name: 'Admin Anna' } },
+  { id: 'm2', organization_id: 'o1', profile_id: 'p2', role: 'member', created_at: '2026-01-02T00:00:00Z', accepted_at: null, invited_email: 'pending@acme.at', profile: { id: 'p2', email: 'pending@acme.at', full_name: null } },
 ]
 
 describe('TeamSection', () => {
@@ -63,15 +63,35 @@ describe('TeamSection', () => {
   it('renders one row per member', () => {
     useOrgMembersMock.mockReturnValue({ data: sampleMembers, isLoading: false })
     render(<TeamSection />, { wrapper })
-    expect(screen.getByText('Admin Anna')).toBeInTheDocument()
-    expect(screen.getByText('admin@acme.at')).toBeInTheDocument()
-    expect(screen.getByText('pending@acme.at')).toBeInTheDocument()
+    // Both desktop and mobile render, so use getAllByText
+    expect(screen.getAllByText('Admin Anna').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('admin@acme.at').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('pending@acme.at').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows "Einladung ausstehend" for pending invites', () => {
+  it('shows "Einladung ausstehend" badge for pending invites (accepted_at is null)', () => {
     useOrgMembersMock.mockReturnValue({ data: sampleMembers, isLoading: false })
     render(<TeamSection />, { wrapper })
-    expect(screen.getByText(/Einladung ausstehend/)).toBeInTheDocument()
+    // The badge text should appear for the pending member
+    const badges = screen.getAllByText(/Einladung ausstehend/)
+    expect(badges.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('does NOT show "Einladung ausstehend" badge for accepted members', () => {
+    const allAccepted: OrgMember[] = [
+      { id: 'm1', organization_id: 'o1', profile_id: 'p1', role: 'admin', created_at: '2026-01-01T00:00:00Z', accepted_at: '2026-01-01T10:00:00Z', invited_email: null, profile: { id: 'p1', email: 'admin@acme.at', full_name: 'Admin Anna' } },
+    ]
+    useOrgMembersMock.mockReturnValue({ data: allAccepted, isLoading: false })
+    render(<TeamSection />, { wrapper })
+    expect(screen.queryByText(/Einladung ausstehend/)).not.toBeInTheDocument()
+  })
+
+  it('shows email local-part as name for pending member without full_name', () => {
+    useOrgMembersMock.mockReturnValue({ data: sampleMembers, isLoading: false })
+    render(<TeamSection />, { wrapper })
+    // m2 has no full_name but invited_email is 'pending@acme.at', so name shows 'pending'
+    // Both desktop and mobile render, so use getAllByText
+    expect(screen.getAllByText('pending').length).toBeGreaterThanOrEqual(1)
   })
 
   it('opens invite dialog on button click', () => {

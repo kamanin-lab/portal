@@ -29,6 +29,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 
 const mkMember = (id: string, role: OrgMember['role'], profileId = `p-${id}`): OrgMember => ({
   id, organization_id: 'o1', profile_id: profileId, role, created_at: '2026-01-01T00:00:00Z',
+  invited_email: null, accepted_at: '2026-01-01T10:00:00Z',
   profile: { id: profileId, email: `${id}@a.at`, full_name: id },
 })
 
