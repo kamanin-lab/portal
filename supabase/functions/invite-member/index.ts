@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,
-      options: { redirectTo: `${Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at"}/passwort-setzen` },
+      options: { redirectTo: `${Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at"}/einladung-annehmen` },
     });
   if (linkError || !linkData?.properties?.hashed_token) {
     log.error("auth.admin.generateLink failed", { error: linkError?.message });
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
   // bypassing GoTrue's redirect entirely (GoTrue redirect always uses API_EXTERNAL_URL = portal.db.kamanin.at).
   const siteUrl = Deno.env.get("SITE_URL") ?? "https://portal.kamanin.at";
   const hashedToken = (linkData.properties as { hashed_token: string }).hashed_token;
-  const recoveryUrl = `${siteUrl}/passwort-setzen?token=${hashedToken}&type=recovery`;
+  const recoveryUrl = `${siteUrl}/einladung-annehmen?token=${hashedToken}&type=recovery`;
 
   // Send invite email via Mailjet — uses same HTML template as send-reminders
   const copy = getEmailCopy("invite", "de");

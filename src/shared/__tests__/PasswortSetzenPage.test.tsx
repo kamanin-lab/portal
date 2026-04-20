@@ -1,70 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { PasswortSetzenPage } from '../pages/PasswortSetzenPage'
 
-const updatePasswordMock = vi.fn()
+const verifyOtpMock = vi.fn()
+const updateUserMock = vi.fn()
 const navigateMock = vi.fn()
-const useAuthMock = vi.fn()
 
-vi.mock('@/shared/hooks/useAuth', () => ({
-  useAuth: () => useAuthMock(),
+vi.mock('@/shared/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      verifyOtp: (...args: unknown[]) => verifyOtpMock(...args),
+      updateUser: (...args: unknown[]) => updateUserMock(...args),
+    },
+  },
 }))
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: () => navigateMock }
 })
 
+import { PasswortSetzenPage } from '../pages/PasswortSetzenPage'
+
 beforeEach(() => {
-  updatePasswordMock.mockReset().mockResolvedValue({ error: null })
+  verifyOtpMock.mockReset().mockResolvedValue({ error: null })
+  updateUserMock.mockReset().mockResolvedValue({ error: null })
   navigateMock.mockReset()
-  useAuthMock.mockReset()
 })
 
-function mountPage() {
+function mountPage(search = '') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/passwort-setzen${search}`]}>
       <PasswortSetzenPage />
     </MemoryRouter>
   )
 }
 
 describe('PasswortSetzenPage', () => {
-  it('shows expired link message when no session', () => {
-    useAuthMock.mockReturnValue({ session: null, isLoading: false, updatePassword: updatePasswordMock })
+  it('shows invalid link message when no token param', () => {
     mountPage()
-    expect(screen.getByText(/Link abgelaufen/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ungültiger oder fehlender Link/i)).toBeInTheDocument()
   })
 
-  it('renders password form when session is present', () => {
-    useAuthMock.mockReturnValue({ session: { access_token: 'x' }, isLoading: false, updatePassword: updatePasswordMock })
-    mountPage()
+  it('renders password form when token is present', () => {
+    mountPage('?token=abc123&type=recovery')
     expect(screen.getByLabelText(/Neues Passwort/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Passwort bestätigen/i)).toBeInTheDocument()
   })
 
   it('disables submit when passwords do not match', () => {
-    useAuthMock.mockReturnValue({ session: { access_token: 'x' }, isLoading: false, updatePassword: updatePasswordMock })
-    mountPage()
+    mountPage('?token=abc123&type=recovery')
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'different' } })
     expect(screen.getByRole('button', { name: /Passwort festlegen/i })).toBeDisabled()
   })
 
-  it('calls updatePassword and navigates to /tickets on success', async () => {
-    useAuthMock.mockReturnValue({ session: { access_token: 'x' }, isLoading: false, updatePassword: updatePasswordMock })
-    mountPage()
+  it('calls verifyOtp then updateUser on submit and navigates to /tickets', async () => {
+    mountPage('?token=abc123&type=recovery')
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
-    await waitFor(() => expect(updatePasswordMock).toHaveBeenCalledWith('abcdefgh'))
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/tickets', { replace: true }))
+
+    await waitFor(() => expect(verifyOtpMock).toHaveBeenCalledWith({
+      token_hash: 'abc123',
+      type: 'recovery',
+    }))
+    await waitFor(() => expect(updateUserMock).toHaveBeenCalledWith({ password: 'abcdefgh' }))
+    // Navigate is called via setTimeout, so allow for timing
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/tickets', { replace: true }), { timeout: 2000 })
   })
 
-  it('shows error on failed updatePassword', async () => {
-    updatePasswordMock.mockResolvedValue({ error: new Error('boom') })
-    useAuthMock.mockReturnValue({ session: { access_token: 'x' }, isLoading: false, updatePassword: updatePasswordMock })
-    mountPage()
+  it('shows error when verifyOtp fails', async () => {
+    verifyOtpMock.mockResolvedValue({ error: new Error('expired') })
+    mountPage('?token=bad&type=recovery')
+    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
+    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
+    fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
+    await waitFor(() => expect(screen.getByText(/Link abgelaufen oder ungültig/i)).toBeInTheDocument())
+    expect(updateUserMock).not.toHaveBeenCalled()
+  })
+
+  it('shows error when updateUser fails', async () => {
+    updateUserMock.mockResolvedValue({ error: new Error('boom') })
+    mountPage('?token=abc123&type=recovery')
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))

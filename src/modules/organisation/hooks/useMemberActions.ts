@@ -48,5 +48,18 @@ export function useMemberActions({ members, currentUserId }: Options) {
     queryClient.invalidateQueries({ queryKey: ['org-members'] })
   }
 
-  return { changeRole, removeMember }
+  async function resendInvite({ memberId }: { memberId: string }) {
+    const { data, error } = await supabase.functions.invoke('resend-invite', {
+      body: { memberId },
+    })
+    if (error || (data && data.error)) {
+      const msg = data?.error ?? error?.message ?? 'Unbekannter Fehler'
+      toast.error('Erneutes Senden fehlgeschlagen.', { description: msg })
+      throw new Error(msg)
+    }
+    toast.success('Einladung erneut gesendet.')
+    queryClient.invalidateQueries({ queryKey: ['org-members'] })
+  }
+
+  return { changeRole, removeMember, resendInvite }
 }

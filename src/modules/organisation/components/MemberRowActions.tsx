@@ -14,8 +14,9 @@ interface Props {
 
 export function MemberRowActions({ member, members }: Props) {
   const { user } = useAuth()
-  const { changeRole, removeMember } = useMemberActions({ members, currentUserId: user?.id })
+  const { changeRole, removeMember, resendInvite } = useMemberActions({ members, currentUserId: user?.id })
   const [removeOpen, setRemoveOpen] = useState(false)
+  const isPending = !member.accepted_at
 
   // Hide actions for current user row (self-protection at UI level)
   if (member.profile_id === user?.id) return null
@@ -45,6 +46,17 @@ export function MemberRowActions({ member, members }: Props) {
             sideOffset={4}
             className="min-w-[180px] bg-surface rounded-[10px] border border-border shadow-lg py-1 z-50"
           >
+            {isPending && (
+              <>
+                <DropdownMenu.Item
+                  onSelect={() => { resendInvite({ memberId: member.id }).catch(() => {}) }}
+                  className="px-3 py-2 text-sm text-text-primary hover:bg-surface-hover cursor-pointer outline-none"
+                >
+                  Einladung erneut senden
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator className="h-px bg-border my-1" />
+              </>
+            )}
             {otherRoles.map(r => (
               <DropdownMenu.Item
                 key={r.value}
