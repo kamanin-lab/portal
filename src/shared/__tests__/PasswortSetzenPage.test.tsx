@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 const verifyOtpMock = vi.fn()
 const updateUserMock = vi.fn()
+const getUserMock = vi.fn()
 const navigateMock = vi.fn()
 
 vi.mock('@/shared/lib/supabase', () => ({
@@ -11,7 +12,11 @@ vi.mock('@/shared/lib/supabase', () => ({
     auth: {
       verifyOtp: (...args: unknown[]) => verifyOtpMock(...args),
       updateUser: (...args: unknown[]) => updateUserMock(...args),
+      getUser: (...args: unknown[]) => getUserMock(...args),
     },
+    from: () => ({
+      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+    }),
   },
 }))
 vi.mock('react-router-dom', async () => {
@@ -24,6 +29,7 @@ import { PasswortSetzenPage } from '../pages/PasswortSetzenPage'
 beforeEach(() => {
   verifyOtpMock.mockReset().mockResolvedValue({ error: null })
   updateUserMock.mockReset().mockResolvedValue({ error: null })
+  getUserMock.mockReset().mockResolvedValue({ data: { user: { id: 'user-xyz' } }, error: null })
   navigateMock.mockReset()
 })
 
@@ -56,6 +62,7 @@ describe('PasswortSetzenPage', () => {
 
   it('calls verifyOtp then updateUser on submit and navigates to /tickets', async () => {
     mountPage('?token=abc123&type=recovery')
+    fireEvent.change(screen.getByLabelText(/Vollständiger Name/i), { target: { value: 'Test User' } })
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
@@ -72,6 +79,7 @@ describe('PasswortSetzenPage', () => {
   it('shows error when verifyOtp fails', async () => {
     verifyOtpMock.mockResolvedValue({ error: new Error('expired') })
     mountPage('?token=bad&type=recovery')
+    fireEvent.change(screen.getByLabelText(/Vollständiger Name/i), { target: { value: 'Test User' } })
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
@@ -82,6 +90,7 @@ describe('PasswortSetzenPage', () => {
   it('shows error when updateUser fails', async () => {
     updateUserMock.mockResolvedValue({ error: new Error('boom') })
     mountPage('?token=abc123&type=recovery')
+    fireEvent.change(screen.getByLabelText(/Vollständiger Name/i), { target: { value: 'Test User' } })
     fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))

@@ -1,5 +1,28 @@
 # Changelog
 
+## feat(invite): full name capture on first login — 2026-04-20
+
+- Added required `Vollständiger Name` input to `PasswortSetzenPage` (`src/shared/pages/PasswortSetzenPage.tsx`) above the password fields. Validation: `trim().length >= 2`, `maxLength=100`, `autoComplete="name"`.
+- After successful `verifyOtp` + `updateUser({ password })`, persists trimmed name to `profiles.full_name` via direct UPDATE. Error is logged to console and swallowed (non-fatal — password is already set, user can fix name later in `/konto`).
+- Before: `profiles.full_name` stayed `NULL` for all invited users; UI fell back to `email.split('@')[0]` in sidebar, TeamSection, comment authors. Now users enter their actual name in one motion with the password.
+- 4 new unit tests (`src/shared/pages/__tests__/PasswortSetzenPage.test.tsx`); 3 existing fixtures in `src/shared/__tests__/PasswortSetzenPage.test.tsx` updated to fill the new required field.
+- No DB changes, no Edge Function changes, no display-component changes (fallbacks remain for legacy profiles with null names).
+
+---
+
+## feat(password): live strength checklist on invite flow — 2026-04-20
+
+- Extracted inline 4-rule checklist from `PasswordSection` into reusable `<PasswordChecklist password={...} />` component (`src/shared/components/common/PasswordChecklist.tsx`, 35 lines, pure render).
+- Wired into `PasswortSetzenPage` — both password-setting surfaces now share the same visual contract.
+- Submit gate on invite flow tightened: `length >= 8` → `validatePassword(password).valid` (all 4 rules: length, uppercase, digit, special char).
+- 4 unit tests added (`PasswordChecklist.test.tsx`); 3 existing fixtures in `PasswortSetzenPage.test.tsx` updated to valid password.
+- No DB changes, no Edge Function changes.
+
+### Commits
+- `9cf942d` (staging), `0ab5cd1` (main → prod)
+
+---
+
 ## fix(auth): invite flow — scanner-prefetch mitigation + admin resend — 2026-04-20
 
 ### Problem — Part A (scanner-prefetch)
