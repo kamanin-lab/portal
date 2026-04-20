@@ -49,22 +49,22 @@ describe('PasswortSetzenPage', () => {
 
   it('disables submit when passwords do not match', () => {
     mountPage('?token=abc123&type=recovery')
-    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
+    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
     fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'different' } })
     expect(screen.getByRole('button', { name: /Passwort festlegen/i })).toBeDisabled()
   })
 
   it('calls verifyOtp then updateUser on submit and navigates to /tickets', async () => {
     mountPage('?token=abc123&type=recovery')
-    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
-    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
+    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
+    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
 
     await waitFor(() => expect(verifyOtpMock).toHaveBeenCalledWith({
       token_hash: 'abc123',
       type: 'recovery',
     }))
-    await waitFor(() => expect(updateUserMock).toHaveBeenCalledWith({ password: 'abcdefgh' }))
+    await waitFor(() => expect(updateUserMock).toHaveBeenCalledWith({ password: 'Test@1234' }))
     // Navigate is called via setTimeout, so allow for timing
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/tickets', { replace: true }), { timeout: 2000 })
   })
@@ -72,8 +72,8 @@ describe('PasswortSetzenPage', () => {
   it('shows error when verifyOtp fails', async () => {
     verifyOtpMock.mockResolvedValue({ error: new Error('expired') })
     mountPage('?token=bad&type=recovery')
-    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
-    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
+    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
+    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
     await waitFor(() => expect(screen.getByText(/Link abgelaufen oder ungültig/i)).toBeInTheDocument())
     expect(updateUserMock).not.toHaveBeenCalled()
@@ -82,8 +82,8 @@ describe('PasswortSetzenPage', () => {
   it('shows error when updateUser fails', async () => {
     updateUserMock.mockResolvedValue({ error: new Error('boom') })
     mountPage('?token=abc123&type=recovery')
-    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'abcdefgh' } })
-    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'abcdefgh' } })
+    fireEvent.change(screen.getByLabelText(/Neues Passwort/i), { target: { value: 'Test@1234' } })
+    fireEvent.change(screen.getByLabelText(/Passwort bestätigen/i), { target: { value: 'Test@1234' } })
     fireEvent.click(screen.getByRole('button', { name: /Passwort festlegen/i }))
     await waitFor(() => expect(screen.getByText(/Passwort konnte nicht gesetzt werden/i)).toBeInTheDocument())
   })
