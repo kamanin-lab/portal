@@ -9,6 +9,7 @@ export function PasswortSetzenPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
+  const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -43,9 +44,10 @@ export function PasswortSetzenPage() {
     )
   }
 
+  const trimmedName = fullName.trim()
   const passwordsMatch = password === confirm
   const { valid: passwordValid } = validatePassword(password)
-  const canSubmit = passwordsMatch && passwordValid && !submitting
+  const canSubmit = trimmedName.length >= 2 && passwordsMatch && passwordValid && !submitting
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -71,6 +73,22 @@ export function PasswortSetzenPage() {
     if (updateError) {
       setError('Passwort konnte nicht gesetzt werden. Bitte erneut versuchen.')
       return
+    }
+
+    // Step 3: Persist full name to profile (non-fatal — password is already set)
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (userData?.user?.id) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ full_name: trimmedName })
+          .eq('id', userData.user.id)
+        if (profileError) {
+          console.error('Profile name update failed (non-fatal):', profileError)
+        }
+      }
+    } catch (e) {
+      console.error('Profile name update failed (non-fatal):', e)
     }
 
     setSuccess(true)
@@ -105,6 +123,22 @@ export function PasswortSetzenPage() {
         <div className="bg-surface rounded-[14px] border border-border p-6 shadow-md">
           <h2 className="text-base font-semibold text-text-primary mb-5">Passwort festlegen</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="full-name">
+                Vollständiger Name
+              </label>
+              <input
+                id="full-name"
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                required
+                autoComplete="name"
+                placeholder="Max Mustermann"
+                maxLength={100}
+                className="h-10 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
+              />
+            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary" htmlFor="new-password">
                 Neues Passwort
