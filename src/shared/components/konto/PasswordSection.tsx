@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick01Icon, LockIcon, MultiplicationSignIcon } from '@hugeicons/core-free-icons'
+import { LockIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
-import { cn } from '@/shared/lib/utils'
-import { PASSWORD_RULES, validatePassword } from '@/shared/lib/password-validation'
+import { validatePassword } from '@/shared/lib/password-validation'
+import { PasswordChecklist } from '@/shared/components/common/PasswordChecklist'
 import { useUpdatePassword } from '@/shared/hooks/useUpdateProfile'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -23,7 +23,7 @@ export function PasswordSection() {
     }
   }, [searchParams])
 
-  const { valid, results } = validatePassword(password)
+  const { valid } = validatePassword(password)
   const passwordsMatch = password.trim() !== '' && password.trim() === confirmPassword.trim()
   const canSubmit = valid && passwordsMatch && !updatePassword.isPending
 
@@ -75,27 +75,7 @@ export function PasswordSection() {
               />
             </div>
 
-            {/* Password strength rules */}
-            {password.length > 0 && (
-              <div className="flex flex-col gap-1">
-                {PASSWORD_RULES.map(rule => {
-                  const result = results.find(r => r.key === rule.key)
-                  const passed = result?.passed ?? false
-                  return (
-                    <div key={rule.key} className="flex items-center gap-1.5">
-                      {passed ? (
-                        <HugeiconsIcon icon={Tick01Icon} size={12} className="text-committed shrink-0" />
-                      ) : (
-                        <HugeiconsIcon icon={MultiplicationSignIcon} size={12} className="text-awaiting shrink-0" />
-                      )}
-                      <span className={cn('text-xs', passed ? 'text-committed' : 'text-awaiting')}>
-                        {rule.label}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <PasswordChecklist password={password} />
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="confirm-password" className="text-xs font-medium text-text-secondary">

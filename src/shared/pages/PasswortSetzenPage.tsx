@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/shared/lib/supabase'
+import { validatePassword } from '@/shared/lib/password-validation'
+import { PasswordChecklist } from '@/shared/components/common/PasswordChecklist'
 import logo from '@/assets/KAMANIN-icon-colour.svg'
 
 export function PasswortSetzenPage() {
@@ -42,7 +44,7 @@ export function PasswortSetzenPage() {
   }
 
   const passwordsMatch = password === confirm
-  const passwordValid = password.length >= 8
+  const { valid: passwordValid } = validatePassword(password)
   const canSubmit = passwordsMatch && passwordValid && !submitting
 
   async function handleSubmit(e: FormEvent) {
@@ -113,10 +115,10 @@ export function PasswortSetzenPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                minLength={8}
                 className="h-10 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
               />
             </div>
+            <PasswordChecklist password={password} />
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary" htmlFor="confirm-password">
                 Passwort bestätigen
@@ -127,7 +129,6 @@ export function PasswortSetzenPage() {
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 required
-                minLength={8}
                 className="h-10 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
               />
             </div>
