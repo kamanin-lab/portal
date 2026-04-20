@@ -1,5 +1,17 @@
 # Changelog
 
+## feat(hilfe): FAQ refresh — 7 sections / 32 items, text search, Organisation & Team — 2026-04-20
+
+### Changes
+- **`src/shared/lib/hilfe-faq-data.ts`** — new "Organisation & Team" section (7 items covering roles, viewer limits, team invites, credit visibility); Benachrichtigungen expanded (+3 items: push, digest timing, per-task mute); Kredite expanded (+2 items: Paketgröße, Ablauf); minor role-clarification edits in Projekte, Tickets, and Dateien answers. Total: 7 sections / 32 items (was 6 / 19).
+- **`src/shared/pages/HilfePage.tsx`** — text search input with `useMemo` filter across all section titles and item questions/answers; `EmptyState` shown when no items match; motion strategy switched from `whileInView` to `animate` to prevent re-fade flicker when filtering; `ICON_MAP` updated with `UserGroupIcon` for the new section.
+- **`src/shared/pages/__tests__/HilfePage.test.tsx`** — updated section/item counts, 5 new search tests (show match, hide non-match, case-insensitive, clear input restores, no-match shows EmptyState). All 8 tests pass.
+
+### Commits
+- `71e66d9` fix(projects): remove duplicate "Freigabe / Prüfung öffnen" quick-link card (closest staging commit; FAQ shipped in same session)
+
+---
+
 ## feat(weekly-summary): v1.5 — agency work first, AI narrative, projects, tiers — 2026-04-18
 
 ### Problem

@@ -36,7 +36,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Wie erteile ich eine Freigabe oder fordere Änderungen an?',
         answer:
-          'Öffnen Sie die entsprechende Aufgabe und klicken Sie auf „Freigeben". Wenn Sie Änderungen wünschen, wählen Sie „Änderungen anfordern" und beschreiben Sie Ihre Anmerkungen.',
+          'Öffnen Sie die entsprechende Aufgabe und klicken Sie auf „Freigeben". Wenn Sie Änderungen wünschen, wählen Sie „Änderungen anfordern" und beschreiben Sie Ihre Anmerkungen. Nur Admins und Members können freigeben; Viewer sehen die Aktion nicht.',
       },
     ],
   },
@@ -48,7 +48,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Wie erstelle ich ein neues Support-Ticket?',
         answer:
-          'Klicken Sie auf „Neue Anfrage" im Bereich Tickets. Füllen Sie den Titel, die Beschreibung und die Priorität aus und bestätigen Sie mit „Senden".',
+          'Klicken Sie auf „Neue Aufgabe" im Bereich Tickets. Füllen Sie den Titel, die Beschreibung und die Priorität aus und bestätigen Sie mit „Senden". Viewer sehen den Button „Neue Aufgabe" nicht.',
       },
       {
         question: 'Welche Prioritätsstufen gibt es?',
@@ -80,7 +80,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Wie lade ich eine Datei hoch?',
         answer:
-          'Navigieren Sie zum Dateien-Tab und klicken Sie auf „Datei hochladen". Sie können einzelne Dateien oder mehrere gleichzeitig hochladen.',
+          'Navigieren Sie zum Dateien-Tab und klicken Sie auf „Datei hochladen". Sie können einzelne Dateien oder mehrere gleichzeitig hochladen. Viewer können Dateien nur ansehen, nicht hochladen oder löschen.',
       },
       {
         question: 'Kann ich Ordner erstellen?',
@@ -114,6 +114,16 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
         answer:
           'Bei niedrigem Guthaben erhalten Sie eine Benachrichtigung. Wenden Sie sich an uns, um Ihr Paket aufzustocken. Laufende Projekte werden nicht unterbrochen.',
       },
+      {
+        question: 'Ist das Guthaben mit meinem Team geteilt?',
+        answer:
+          'Ja. Jede Organisation verfügt über ein gemeinsames Kreditbudget. Alle Mitglieder teilen sich dieses Guthaben, und der Verbrauch wird zentral erfasst.',
+      },
+      {
+        question: 'Wer darf Kosten freigeben?',
+        answer:
+          'Admins und Members können Kosten freigeben. Viewer sehen den geschätzten Aufwand, aber die Freigabe-Schaltfläche ist für sie nicht sichtbar.',
+      },
     ],
   },
   {
@@ -130,6 +140,21 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
         question: 'Wie markiere ich Benachrichtigungen als gelesen?',
         answer:
           'Öffnen Sie den Benachrichtigungsbereich (Glocke-Symbol) und klicken Sie auf eine Benachrichtigung, um sie zu lesen. Sie können auch alle auf einmal als gelesen markieren.',
+      },
+      {
+        question: 'Was ist die wöchentliche Zusammenfassung?',
+        answer:
+          'Jeden Montag erhalten Admins eine E-Mail mit einer Zusammenfassung der vergangenen Woche: erledigte Aufgaben, offene Punkte und ungelesene Nachrichten. Sie können diese unter Konto → Benachrichtigungen deaktivieren.',
+      },
+      {
+        question: 'Warum erhalte ich Nachrichten von meinem Team?',
+        answer:
+          'Kommentare von Teammitgliedern zu gemeinsamen Aufgaben werden an alle Mitglieder Ihrer Organisation verteilt. Die Glocke zeigt neue Nachrichten immer an; die E-Mail-Benachrichtigung lässt sich unter Konto → „Nachrichten von Teammitgliedern" deaktivieren.',
+      },
+      {
+        question: 'Wie deaktiviere ich einzelne Benachrichtigungen?',
+        answer:
+          'Gehen Sie zu Konto → „E-Mail-Benachrichtigungen". Dort können Sie jede Kategorie einzeln ein- oder ausschalten (Aufgaben, Projekte, Organisation).',
       },
     ],
   },
@@ -152,6 +177,48 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
         question: 'Wie melde ich mich ab?',
         answer:
           'Klicken Sie auf Ihr Profilbild unten in der Seitenleiste und wählen Sie „Abmelden".',
+      },
+    ],
+  },
+  {
+    id: 'organisation',
+    title: 'Organisation & Team',
+    iconName: 'UserGroupIcon',
+    items: [
+      {
+        question: 'Was ist eine Organisation?',
+        answer:
+          'Eine Organisation bündelt Ihr gesamtes Unternehmen in einem Konto: gemeinsames Kreditbudget, gemeinsame Projekte und gemeinsame Dateien. Alle Teammitglieder arbeiten innerhalb derselben Organisation.',
+      },
+      {
+        question: 'Welche Rollen gibt es?',
+        answer:
+          'Es gibt drei Rollen: Admin, Member und Viewer. Admins verwalten das Team und die Kredite. Members erstellen Aufgaben und erteilen Freigaben. Viewer können alles einsehen, aber keine Aktionen ausführen.',
+      },
+      {
+        question: 'Wie lade ich ein Teammitglied ein?',
+        answer:
+          'Nur Admins können Einladungen versenden. Gehen Sie zu „Organisation" → „Mitglied einladen" und geben Sie die E-Mail-Adresse ein. Die eingeladene Person erhält eine E-Mail mit einem Anmelde-Link.',
+      },
+      {
+        question: 'Wie ändere ich die Rolle eines Mitglieds oder entferne es?',
+        answer:
+          'Auf der Seite „Organisation" finden Sie neben jedem Mitglied ein Aktionsmenü (nur für Admins sichtbar). Dort können Sie die Rolle ändern oder das Mitglied aus der Organisation entfernen.',
+      },
+      {
+        question: 'Warum kann ich bestimmte Aktionen nicht ausführen?',
+        answer:
+          'Als Viewer können Sie Projekte, Dateien und Nachrichten einsehen und Kommentare verfassen. Aktionen wie „Freigeben", „Änderungen anfordern", „Neue Aufgabe" oder die Kreditfreigabe stehen nur Admins und Members zur Verfügung.',
+      },
+      {
+        question: 'Sind Dateien und Nachrichten team-weit sichtbar?',
+        answer:
+          'Ja. Dateien, Projektnachrichten und der Support-Chat sind für alle Mitglieder Ihrer Organisation sichtbar. So bleibt Ihr gesamtes Team auf dem gleichen Stand.',
+      },
+      {
+        question: 'Wo verwalte ich mein Team?',
+        answer:
+          'Die Seite „Organisation" ist im Seitenmenü sichtbar, wenn Sie die Rolle Admin besitzen. Dort sehen Sie alle Mitglieder, deren Rollen und können Einladungen versenden.',
       },
     ],
   },
