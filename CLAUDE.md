@@ -88,7 +88,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `scripts/sync-staging-schema.ts` | pg_dump prod public schema → apply to staging Cloud Supabase; flags: `--dump-only`, `--apply-only` |
 | `docs/staging-env-reference.txt` | Staging environment variables, project refs, service role keys, site URL |
 | `.github/workflows/deploy-edge-functions-staging.yml` | CI: on push to `staging` → deploy all Edge Functions to staging Cloud Supabase via Supabase CLI |
-| `src/shared/lib/hilfe-faq-data.ts` | FAQ content: `FaqItemData` / `FaqSectionData` types + `FAQ_SECTIONS` array (6 sections, 20 items, German) |
+| `src/shared/lib/hilfe-faq-data.ts` | FAQ content: `FaqItemData` / `FaqSectionData` types + `FAQ_SECTIONS` array (7 sections, 32 items, German) |
 | `src/shared/components/help/FaqItem.tsx` | Accordion item — AnimatePresence height animation, chevron rotation, `isLast` separator |
 | `src/shared/components/help/FaqSection.tsx` | FAQ section card — Hugeicons icon + h2 + FaqItem list |
 | `vercel.json` | `main` branch: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint. `staging` branch: SPA rewrites only (proxy removed — Cloud Supabase handles CORS natively) |
@@ -319,7 +319,7 @@ PORTAL/                         ← GitHub repo root (kamanin-lab/portal)
 │   │   ├── components/help/    # FaqItem (accordion), FaqSection (card)
 │   │   ├── hooks/              # useAuth, useBreakpoint, useWorkspaces
 │   │   ├── lib/                # supabase.ts, utils.ts, linkify.tsx, workspace-routes.ts, hilfe-faq-data.ts
-│   │   ├── pages/              # HilfePage (FAQ with accordion sections + whileInView stagger)
+│   │   ├── pages/              # HilfePage (FAQ with accordion sections + text search + animate stagger)
 │   │   ├── styles/tokens.css   # CSS custom properties
 │   │   └── types/              # common.ts
 │   ├── modules/
