@@ -417,11 +417,12 @@ Deno.serve(async (req) => {
 
       const { data: profileRec } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, organization_id")
         .eq("id", userId)
         .maybeSingle();
 
       const fullNameRec = profileRec?.full_name || userEmail?.split("@")[0] || "Client";
+      const orgIdRec: string | null = profileRec?.organization_id ?? null;
       const firstNameRec = fullNameRec.split(" ")[0];
       const dueDateFormattedRec = new Date(dueDate).toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" });
       const displayTextRec = `Empfehlung angenommen. Erledigen bis: ${dueDateFormattedRec}`;
@@ -471,11 +472,9 @@ Deno.serve(async (req) => {
         log.error("Failed to post auto-comment for recommendation acceptance", { status: autoCommentRespRec.status });
       }
 
-      // Deduct credits on recommendation acceptance (mirrors approve_credits pattern).
-      // NOTE: Recommendations don't revise prior approvals — they use a plain INSERT.
-      // If the unique constraint fires, it's legitimate idempotency and the prior
-      // commitment stands. This is deliberate: accept_recommendation creates a new
-      // task_deduction, not an update to an existing one.
+      // Deduct credits on recommendation acceptance via upsert_task_deduction RPC
+      // (same path as approve_credits). The RPC writes organization_id atomically
+      // and uses the partial unique index for idempotency.
       const { data: recTaskCache } = await supabaseAdminRec
         .from("task_cache")
         .select("credits, name")
@@ -485,25 +484,27 @@ Deno.serve(async (req) => {
 
       const recCredits = recTaskCache?.credits ?? 0;
       if (recCredits > 0) {
-        const { error: recDeductError } = await supabaseAdminRec
-          .from("credit_transactions")
-          .insert({
-            profile_id: userId,
-            amount: -recCredits,
-            type: "task_deduction",
-            task_id: taskId,
-            task_name: recTaskCache?.name || null,
-            description: `${recCredits} Credits — Empfehlung angenommen`,
-          });
+        if (!orgIdRec) {
+          log.error("Cannot deduct credits — profile has no organization_id", { userId, taskId });
+          return new Response(
+            JSON.stringify({ ok: false, code: "ORG_MISSING", message: "Profil ist keiner Organisation zugeordnet." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: recDeductError } = await supabaseAdminRec.rpc("upsert_task_deduction", {
+          p_profile_id: userId,
+          p_organization_id: orgIdRec,
+          p_amount: -recCredits,
+          p_task_id: taskId,
+          p_task_name: recTaskCache?.name || null,
+          p_description: `${recCredits} Credits — Empfehlung angenommen`,
+        });
 
         if (recDeductError) {
-          if (recDeductError.message?.includes("duplicate") || recDeductError.message?.includes("unique")) {
-            log.info("Credit deduction already exists for recommendation (idempotent)", { taskId });
-          } else {
-            log.error("Failed to deduct credits on recommendation acceptance", { error: recDeductError.message });
-          }
+          log.error("Failed to deduct credits on recommendation acceptance", { error: recDeductError.message });
         } else {
-          log.info("Credits deducted on recommendation acceptance", { taskId, amount: -recCredits });
+          log.info("Credits deducted on recommendation acceptance", { taskId, amount: -recCredits, orgId: orgIdRec });
         }
       }
     }

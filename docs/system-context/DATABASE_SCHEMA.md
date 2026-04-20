@@ -248,7 +248,7 @@ Ledger of all credit movements. Positive amounts are top-ups, negative amounts a
 |--------|------|-------------|-------------|
 | id | uuid | PK, DEFAULT gen_random_uuid() | Transaction ID |
 | profile_id | uuid | NOT NULL, FK -> profiles(id) ON DELETE CASCADE | User who triggered the transaction. **Retained for audit trail even after org migration** — not dropped in Phase 13. |
-| organization_id | uuid | nullable, FK -> organizations(id) | Org this transaction belongs to. Added in Phase 9, nullable to preserve historical rows. |
+| organization_id | uuid | **NOT NULL**, FK -> organizations(id) | Org this transaction belongs to. Added in Phase 9 as nullable; backfilled and promoted to NOT NULL on 2026-04-20 (migration `20260420150000_backfill_credit_transactions_org_id.sql`) after discovering orphan rows from the `accept_recommendation` code path. |
 | amount | numeric | NOT NULL | Credit amount (positive = top-up, negative = deduction) |
 | type | text | NOT NULL | Transaction type: `monthly_topup`, `task_deduction`, `manual_adjustment` |
 | task_id | text | | Related ClickUp task ID (for `task_deduction` type) |
