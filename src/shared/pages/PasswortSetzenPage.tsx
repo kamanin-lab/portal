@@ -1,36 +1,20 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '@/shared/hooks/useAuth'
 import { supabase } from '@/shared/lib/supabase'
 import logo from '@/assets/KAMANIN-icon-colour.svg'
 
 export function PasswortSetzenPage() {
-  const { session, isLoading, updatePassword } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const [success, setSuccess] = useState(false)
 
-  // Invite flow: ?token=HASH&type=recovery — verify OTP directly, no GoTrue redirect needed
-  useEffect(() => {
-    const token = searchParams.get('token')
-    const type = searchParams.get('type')
-    if (!token || type !== 'recovery') return
-    setVerifying(true)
-    supabase.auth.verifyOtp({ token_hash: token, type: 'recovery' }).then(({ error }) => {
-      if (error) setError('Dieser Einladungslink ist abgelaufen oder ungültig.')
-      setVerifying(false)
-    })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (isLoading || verifying) {
-    return <div className="min-h-screen bg-bg flex items-center justify-center p-4" />
-  }
-
-  if (!session) {
+  // No token → show invalid link state immediately
+  if (!token) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-4">
         <div className="w-full max-w-[400px]">
@@ -39,9 +23,9 @@ export function PasswortSetzenPage() {
             <p className="text-text-tertiary text-sm">Ihr Projektportal</p>
           </div>
           <div className="bg-surface rounded-[14px] border border-border p-6 shadow-md">
-            <h2 className="text-base font-semibold text-text-primary mb-3">Link abgelaufen</h2>
+            <h2 className="text-base font-semibold text-text-primary mb-3">Ungültiger oder fehlender Link</h2>
             <p className="text-sm text-text-secondary mb-4">
-              {error ?? 'Dieser Einladungslink ist abgelaufen oder ungültig. Bitte wenden Sie sich an Ihren Administrator für eine neue Einladung.'}
+              Dieser Link ist ungültig oder unvollständig. Bitte wenden Sie sich an Ihren Administrator für eine neue Einladung.
             </p>
             <Link to="/login" className="text-sm text-accent hover:underline">Zur Anmeldung</Link>
           </div>
@@ -59,13 +43,47 @@ export function PasswortSetzenPage() {
     if (!canSubmit) return
     setError(null)
     setSubmitting(true)
-    const { error: updateError } = await updatePassword(password)
+
+    // Step 1: Verify the OTP token (exchanges token for a session)
+    // token is guaranteed non-null here (early return above guards against it)
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      token_hash: token as string,
+      type: 'recovery',
+    })
+    if (otpError) {
+      setSubmitting(false)
+      setError('Link abgelaufen oder ungültig. Bitte fordern Sie eine neue Einladung an.')
+      return
+    }
+
+    // Step 2: Now that we have a session, update the password
+    const { error: updateError } = await supabase.auth.updateUser({ password })
     setSubmitting(false)
     if (updateError) {
       setError('Passwort konnte nicht gesetzt werden. Bitte erneut versuchen.')
       return
     }
-    navigate('/tickets', { replace: true })
+
+    setSuccess(true)
+    // Short delay so user sees success state before redirect
+    setTimeout(() => navigate('/tickets', { replace: true }), 800)
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-4">
+        <div className="w-full max-w-[400px]">
+          <div className="flex flex-col items-center mb-8">
+            <img src={logo} alt="KAMANIN" className="h-14 w-auto mb-3" />
+            <p className="text-text-tertiary text-sm">Ihr Projektportal</p>
+          </div>
+          <div className="bg-surface rounded-[14px] border border-border p-6 shadow-md text-center">
+            <h2 className="text-base font-semibold text-text-primary mb-3">Passwort gesetzt</h2>
+            <p className="text-sm text-text-secondary">Sie werden jetzt weitergeleitet...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -119,7 +137,7 @@ export function PasswortSetzenPage() {
               disabled={!canSubmit}
               className="h-10 rounded-[8px] bg-accent text-white text-sm font-semibold transition-colors hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Bitte warten…' : 'Passwort festlegen'}
+              {submitting ? 'Bitte warten...' : 'Passwort festlegen'}
             </button>
           </form>
         </div>

@@ -13,8 +13,9 @@ function openDropdown(trigger: HTMLElement) {
 
 const changeRole = vi.fn()
 const removeMember = vi.fn()
+const resendInvite = vi.fn()
 vi.mock('../hooks/useMemberActions', () => ({
-  useMemberActions: () => ({ changeRole, removeMember }),
+  useMemberActions: () => ({ changeRole, removeMember, resendInvite }),
 }))
 vi.mock('@/shared/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'p-current' } }),
@@ -33,9 +34,16 @@ const mkMember = (id: string, role: OrgMember['role'], profileId = `p-${id}`): O
   profile: { id: profileId, email: `${id}@a.at`, full_name: id },
 })
 
+const mkPendingMember = (id: string, role: OrgMember['role'], profileId = `p-${id}`): OrgMember => ({
+  id, organization_id: 'o1', profile_id: profileId, role, created_at: '2026-01-01T00:00:00Z',
+  invited_email: `${id}@a.at`, accepted_at: null,
+  profile: { id: profileId, email: `${id}@a.at`, full_name: null },
+})
+
 beforeEach(() => {
   changeRole.mockReset().mockResolvedValue(undefined)
   removeMember.mockReset().mockResolvedValue(undefined)
+  resendInvite.mockReset().mockResolvedValue(undefined)
 })
 
 describe('MemberRowActions', () => {
@@ -69,5 +77,28 @@ describe('MemberRowActions', () => {
     const confirmBtn = await screen.findByRole('button', { name: /Entfernen/i })
     fireEvent.click(confirmBtn)
     await waitFor(() => expect(removeMember).toHaveBeenCalledWith({ memberId: 'm1' }))
+  })
+
+  it('shows "Einladung erneut senden" for pending member (accepted_at=null)', async () => {
+    const pending = mkPendingMember('p1', 'member')
+    render(<MemberRowActions member={pending} members={[pending]} />, { wrapper })
+    act(() => openDropdown(screen.getByLabelText('Aktionen')))
+    await waitFor(() => expect(screen.getByText('Einladung erneut senden')).toBeInTheDocument())
+  })
+
+  it('hides "Einladung erneut senden" for accepted member', async () => {
+    const accepted = mkMember('a1', 'member')
+    render(<MemberRowActions member={accepted} members={[accepted]} />, { wrapper })
+    act(() => openDropdown(screen.getByLabelText('Aktionen')))
+    await waitFor(() => expect(screen.getByText(/Entfernen/)).toBeInTheDocument())
+    expect(screen.queryByText('Einladung erneut senden')).toBeNull()
+  })
+
+  it('calls resendInvite on click for pending member', async () => {
+    const pending = mkPendingMember('p2', 'viewer')
+    render(<MemberRowActions member={pending} members={[pending]} />, { wrapper })
+    act(() => openDropdown(screen.getByLabelText('Aktionen')))
+    fireEvent.click(await screen.findByText('Einladung erneut senden'))
+    await waitFor(() => expect(resendInvite).toHaveBeenCalledWith({ memberId: 'p2' }))
   })
 })
