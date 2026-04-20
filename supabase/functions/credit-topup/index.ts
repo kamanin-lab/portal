@@ -79,10 +79,10 @@ Deno.serve(async (req) => {
     const targetLabel = `${targetYear}-${String(targetMonthIndex + 1).padStart(2, "0")}`;
     log.info("Starting monthly credit top-up", { month: targetLabel, year: targetYear });
 
-    // Get all active credit packages
+    // Get all active credit packages (org-scoped since Phase 13 dropped profile_id)
     const { data: packages, error: pkgError } = await supabase
       .from("credit_packages")
-      .select("id, profile_id, package_name, credits_per_month")
+      .select("id, organization_id, package_name, credits_per_month")
       .eq("is_active", true);
 
     if (pkgError) {
@@ -105,14 +105,14 @@ Deno.serve(async (req) => {
     const toppedUp: string[] = [];
 
     for (const pkg of packages) {
-      // Idempotency: check if monthly_topup already exists for this profile this month
+      // Idempotency: check if monthly_topup already exists for this org this month
       const monthStart = new Date(Date.UTC(targetYear, targetMonthIndex, 1)).toISOString();
       const monthEnd = new Date(Date.UTC(targetYear, targetMonthIndex + 1, 1)).toISOString();
 
       const { data: existing } = await supabase
         .from("credit_transactions")
         .select("id")
-        .eq("profile_id", pkg.profile_id)
+        .eq("organization_id", pkg.organization_id)
         .eq("type", "monthly_topup")
         .gte("created_at", monthStart)
         .lt("created_at", monthEnd)
@@ -123,10 +123,29 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // credit_transactions.profile_id is NOT NULL for audit trail. monthly_topup
+      // isn't triggered by a user action — pick an admin of the org as the actor.
+      const { data: adminMember } = await supabase
+        .from("org_members")
+        .select("profile_id")
+        .eq("organization_id", pkg.organization_id)
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle();
+
+      if (!adminMember) {
+        log.error("No admin member found for org — cannot attribute monthly_topup", {
+          organizationId: pkg.organization_id,
+          packageName: pkg.package_name,
+        });
+        continue;
+      }
+
       const { error: insertError } = await supabase
         .from("credit_transactions")
         .insert({
-          profile_id: pkg.profile_id,
+          profile_id: adminMember.profile_id,
+          organization_id: pkg.organization_id,
           amount: pkg.credits_per_month,
           type: "monthly_topup",
           description,

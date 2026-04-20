@@ -1,5 +1,28 @@
 # Changelog
 
+## fix(credits): orphaned transactions after org migration — 2026-04-20
+
+### Problem
+Nach dem Phase 9-13 Org-Migration schrieb der `accept_recommendation`-Pfad in `update-task-status` neue `task_deduction`-Zeilen ohne `organization_id`. `get_org_credit_balance(p_org_id)` summiert nur Zeilen mit gesetztem `organization_id`, daher wurden diese Abzüge in der Saldenanzeige übersprungen — die MBM GmbH sah **8 Credits statt 6** (2 Abzüge vom 10.04. und 17.04. addierten sich zu einer fehlenden Empfehlungs-Deduction von 2 Credits vom 17.04.). Zusätzlich nutzte `credit-topup` noch das alte `profile_id`-Schema von `credit_packages`, das in Phase 13 (Migration `20260416130000`) entfernt wurde — die Funktion würde beim nächsten Monatswechsel fehlschlagen.
+
+### Fix
+- **`supabase/migrations/20260420150000_backfill_credit_transactions_org_id.sql`** — new. Backfill `organization_id` auf allen 2 Orphanen via `org_members`-Join, Guard-Block der explizit fehlschlägt falls Residual-NULLs übrig bleiben, dann `ALTER TABLE … SET NOT NULL` damit künftige Orphans unmöglich sind. Geprüft: 0 Multi-Org-Profiles existieren.
+- **`supabase/functions/update-task-status/index.ts`** (L418-508) — `accept_recommendation`-Branch: Profil-Select erweitert um `organization_id`, raw INSERT ersetzt durch `upsert_task_deduction` RPC (schreibt `organization_id` atomisch, idempotent über partial unique index). Guard: falls `organization_id` am Profil fehlt, wird die Aktion mit 500 abgewiesen statt stillschweigend einen Orphan zu erzeugen.
+- **`supabase/functions/credit-topup/index.ts`** — `credit_packages`-Select auf neues Schema umgestellt (`organization_id` statt `profile_id`), Idempotenz-Check auf `organization_id + Monat`, Transaktions-Actor wird aus `org_members.role='admin'` aufgelöst (monthly_topup ist keine User-Action; `credit_transactions.profile_id` bleibt NOT NULL für Audit-Trail).
+
+### Verification
+- Prod-SQL: `SELECT get_org_credit_balance('ba5e1323…')` → **6.0** (war 8.0).
+- Prod-SQL: `SELECT COUNT(*) FROM credit_transactions WHERE organization_id IS NULL` → **0**.
+- Column `credit_transactions.organization_id` ist jetzt `NOT NULL`.
+- `npm run test` — keine neuen Failures (gleicher 10-Failures-Baseline wie vor der Änderung, alle pre-existing in `MeineAufgabenPage` wegen OrgProvider-Setup in Tests, unrelated).
+- `npm run lint` — keine neuen Errors in geänderten Files.
+
+### Deploy
+- Migration sofort auf Prod angewendet via `portal.db.kamanin.at/pg/query` endpoint.
+- Edge Functions `update-task-status` + `credit-topup` via SCP auf Coolify-Volume, `docker restart supabase-edge-functions-ngkk4c4gsc0kw8wccw0cc04s` — "main function started" bestätigt clean reboot.
+
+---
+
 ## feat(hilfe): FAQ refresh — 7 sections / 32 items, text search, Organisation & Team — 2026-04-20
 
 ### Changes
