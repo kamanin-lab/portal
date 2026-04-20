@@ -13,6 +13,7 @@ async function fetchNotifications(profileId: string): Promise<Notification[]> {
     .from('notifications')
     .select('*')
     .eq('profile_id', profileId)
+    .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -37,7 +38,8 @@ async function markAllAsRead(profileId: string): Promise<void> {
     .from('notifications')
     .update({ is_read: true })
     .eq('profile_id', profileId)
-    .eq('is_read', false);
+    .eq('is_read', false)
+    .is('archived_at', null);
   if (error) throw error;
 }
 

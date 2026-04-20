@@ -17,6 +17,7 @@ import {
 } from "../_shared/clickup-contract.ts";
 import { slugify, buildChapterFolder } from "../_shared/slugify.ts";
 import { findOrgByListId, findOrgBySupportTaskId, getNonViewerProfileIds } from "../_shared/org.ts";
+import { shouldCreateBell } from "../_shared/notifications.ts";
 
 // Fetch with timeout (10 seconds default)
 async function fetchWithTimeout(
@@ -827,18 +828,29 @@ Deno.serve(async (req) => {
 
               // --- CLIENT REVIEW: bell + step_ready email ---
               if (isClientReview) {
-                const notifications = profileIds.map(pid => ({
-                  profile_id: pid,
-                  type: notifType,
-                  title: `${stepName} ist bereit für Ihre Prüfung`,
-                  message: `Ihr Schritt „${stepName}" wartet auf Ihre Prüfung.`,
-                  task_id: taskId,
-                  project_config_id: projectConfigId,
-                  clickup_task_id: taskId,
-                  is_read: false,
-                }));
-                await supabase.from("notifications").insert(notifications);
-                log.info("Project step_ready notifications created", { count: notifications.length });
+                // Fetch all profiles for bell gating
+                const { data: allProfilesForBell } = await supabase
+                  .from("profiles")
+                  .select("id, email, full_name, email_notifications, notification_preferences")
+                  .in("id", profileIds);
+                const bellEligibleIds = (allProfilesForBell || [])
+                  .filter(p => shouldCreateBell(p, "step_ready"))
+                  .map(p => p.id);
+
+                if (bellEligibleIds.length > 0) {
+                  const notifications = bellEligibleIds.map(pid => ({
+                    profile_id: pid,
+                    type: notifType,
+                    title: `${stepName} ist bereit für Ihre Prüfung`,
+                    message: `Ihr Schritt „${stepName}" wartet auf Ihre Prüfung.`,
+                    task_id: taskId,
+                    project_config_id: projectConfigId,
+                    clickup_task_id: taskId,
+                    is_read: false,
+                  }));
+                  await supabase.from("notifications").insert(notifications);
+                  log.info("Project step_ready notifications created", { count: notifications.length });
+                }
 
                 const nonViewerProfileIds = await getNonViewerProfileIds(supabase, profileIds);
                 if (nonViewerProfileIds.length < profileIds.length) {
@@ -847,11 +859,8 @@ Deno.serve(async (req) => {
                     sending: nonViewerProfileIds.length,
                   });
                 }
-                const { data: profiles } = await supabase
-                  .from("profiles")
-                  .select("id, email, full_name, email_notifications, notification_preferences")
-                  .in("id", nonViewerProfileIds);
-                for (const p of profiles || []) {
+                const nonViewerProfiles = (allProfilesForBell || []).filter(p => nonViewerProfileIds.includes(p.id));
+                for (const p of nonViewerProfiles) {
                   if (shouldSendEmail(p, "step_ready")) {
                     await sendMailjetEmail("step_ready", { email: p.email, name: p.full_name }, {
                       firstName: p.full_name?.split(" ")[0], stepName, taskId, projectConfigId: projectConfigId ?? undefined,
@@ -875,23 +884,29 @@ Deno.serve(async (req) => {
                 if (existingNotif && existingNotif.length > 0) {
                   log.info("Project completion notification already sent, skipping", { taskId });
                 } else {
-                  const notifications = profileIds.map(pid => ({
-                    profile_id: pid,
-                    type: notifType,
-                    title: `${stepName} ist abgeschlossen`,
-                    message: `Ihr Projektschritt „${stepName}" wurde erfolgreich abgeschlossen.`,
-                    task_id: taskId,
-                    project_config_id: projectConfigId,
-                    clickup_task_id: taskId,
-                    is_read: false,
-                  }));
-                  await supabase.from("notifications").insert(notifications);
-                  log.info("Project completion notifications created", { count: notifications.length });
-
                   const { data: profiles } = await supabase
                     .from("profiles")
                     .select("id, email, full_name, email_notifications, notification_preferences")
                     .in("id", profileIds);
+
+                  const bellEligibleIds = (profiles || [])
+                    .filter(p => shouldCreateBell(p, "step_completed"))
+                    .map(p => p.id);
+                  if (bellEligibleIds.length > 0) {
+                    const notifications = bellEligibleIds.map(pid => ({
+                      profile_id: pid,
+                      type: notifType,
+                      title: `${stepName} ist abgeschlossen`,
+                      message: `Ihr Projektschritt „${stepName}" wurde erfolgreich abgeschlossen.`,
+                      task_id: taskId,
+                      project_config_id: projectConfigId,
+                      clickup_task_id: taskId,
+                      is_read: false,
+                    }));
+                    await supabase.from("notifications").insert(notifications);
+                    log.info("Project completion notifications created", { count: notifications.length });
+                  }
+
                   for (const p of profiles || []) {
                     if (shouldSendEmail(p, "task_completed")) {
                       await sendMailjetEmail("task_completed", { email: p.email, name: p.full_name }, {
@@ -934,24 +949,31 @@ Deno.serve(async (req) => {
                           .single();
                         const chapterName = chapter?.title || stepName;
 
-                        // Bell notification for chapter completion
-                        const chapterNotifs = profileIds.map((pid: string) => ({
-                          profile_id: pid,
-                          type: "project_update",
-                          title: `Schritt abgeschlossen: ${chapterName}`,
-                          message: `Alle Aufgaben in „${chapterName}" wurden abgeschlossen.`,
-                          task_id: taskId,
-                          is_read: false,
-                        }));
-                        await supabase.from("notifications").insert(chapterNotifs);
-                        log.info("Chapter completion notifications created", { chapterName, count: chapterNotifs.length });
-
-                        // Chapter completion email
-                        const { data: profilesForEmail } = await supabase
+                        // Fetch profiles for bell gating + email
+                        const { data: profilesForChapter } = await supabase
                           .from("profiles")
                           .select("id, email, full_name, email_notifications, notification_preferences")
                           .in("id", profileIds);
-                        for (const p of profilesForEmail || []) {
+
+                        // Bell notification for chapter completion (gated)
+                        const chapterBellIds = (profilesForChapter || [])
+                          .filter(p => shouldCreateBell(p, "chapter_completed"))
+                          .map(p => p.id);
+                        if (chapterBellIds.length > 0) {
+                          const chapterNotifs = chapterBellIds.map((pid: string) => ({
+                            profile_id: pid,
+                            type: "project_update",
+                            title: `Schritt abgeschlossen: ${chapterName}`,
+                            message: `Alle Aufgaben in „${chapterName}" wurden abgeschlossen.`,
+                            task_id: taskId,
+                            is_read: false,
+                          }));
+                          await supabase.from("notifications").insert(chapterNotifs);
+                          log.info("Chapter completion notifications created", { chapterName, count: chapterNotifs.length });
+                        }
+
+                        // Chapter completion email
+                        for (const p of profilesForChapter || []) {
                           if (shouldSendEmail(p, "step_completed")) {
                             await sendMailjetEmail("step_completed", { email: p.email, name: p.full_name }, {
                               firstName: p.full_name?.split(" ")[0], chapterName, taskId, projectConfigId: projectConfigId ?? undefined,
@@ -979,35 +1001,55 @@ Deno.serve(async (req) => {
                 if (existingStarted && existingStarted.length > 0) {
                   log.info("Project work-started notification already sent, skipping", { taskId });
                 } else {
-                  const notifications = profileIds.map(pid => ({
+                  const { data: profilesForStarted } = await supabase
+                    .from("profiles")
+                    .select("id, notification_preferences, email_notifications")
+                    .in("id", profileIds);
+                  const bellEligibleIds = (profilesForStarted || [])
+                    .filter(p => shouldCreateBell(p, "step_in_progress"))
+                    .map(p => p.id);
+
+                  if (bellEligibleIds.length > 0) {
+                    const notifications = bellEligibleIds.map(pid => ({
+                      profile_id: pid,
+                      type: notifType,
+                      title: `Arbeit an ${stepName} hat begonnen`,
+                      message: `Die Arbeit an Ihrem Projektschritt „${stepName}" hat begonnen.`,
+                      task_id: taskId,
+                      project_config_id: projectConfigId,
+                      clickup_task_id: taskId,
+                      is_read: false,
+                    }));
+                    await supabase.from("notifications").insert(notifications);
+                    log.info("Project work-started notifications created", { count: notifications.length });
+                  }
+                }
+              }
+
+              // --- Other status changes: generic bell notification ---
+              else {
+                const { data: profilesForStatus } = await supabase
+                  .from("profiles")
+                  .select("id, notification_preferences, email_notifications")
+                  .in("id", profileIds);
+                const bellEligibleIds = (profilesForStatus || [])
+                  .filter(p => shouldCreateBell(p, "project_step_status"))
+                  .map(p => p.id);
+
+                if (bellEligibleIds.length > 0) {
+                  const notifications = bellEligibleIds.map(pid => ({
                     profile_id: pid,
                     type: notifType,
-                    title: `Arbeit an ${stepName} hat begonnen`,
-                    message: `Die Arbeit an Ihrem Projektschritt „${stepName}" hat begonnen.`,
+                    title: `Status-Update: ${stepName}`,
+                    message: `Der Status von „${stepName}" wurde auf „${statusAfter}" geändert.`,
                     task_id: taskId,
                     project_config_id: projectConfigId,
                     clickup_task_id: taskId,
                     is_read: false,
                   }));
                   await supabase.from("notifications").insert(notifications);
-                  log.info("Project work-started notifications created", { count: notifications.length });
+                  log.info("Project status notifications created", { count: notifications.length, status: statusAfter });
                 }
-              }
-
-              // --- Other status changes: generic bell notification ---
-              else {
-                const notifications = profileIds.map(pid => ({
-                  profile_id: pid,
-                  type: notifType,
-                  title: `Status-Update: ${stepName}`,
-                  message: `Der Status von „${stepName}" wurde auf „${statusAfter}" geändert.`,
-                  task_id: taskId,
-                  project_config_id: projectConfigId,
-                  clickup_task_id: taskId,
-                  is_read: false,
-                }));
-                await supabase.from("notifications").insert(notifications);
-                log.info("Project status notifications created", { count: notifications.length, status: statusAfter });
               }
             }
           }
@@ -1066,19 +1108,25 @@ Deno.serve(async (req) => {
           }
 
           // Notifications + email
-          const notifications = profileIds.map(pid => ({
-            profile_id: pid, type: "team_reply",
-            title: `Neue Nachricht zu ${stepName}`,
-            message: `${firstName}: ${displayText.substring(0, 200)}${displayText.length > 200 ? "..." : ""}`,
-            task_id: taskId, comment_id: commentId,
-            project_config_id: projectConfigId, clickup_task_id: taskId, is_read: false,
-          }));
-          await supabase.from("notifications").insert(notifications);
-
           const { data: profiles } = await supabase
             .from("profiles")
             .select("id, email, full_name, email_notifications, notification_preferences")
             .in("id", profileIds);
+
+          const bellEligibleIds = (profiles || [])
+            .filter(p => shouldCreateBell(p, "project_reply"))
+            .map(p => p.id);
+          if (bellEligibleIds.length > 0) {
+            const notifications = bellEligibleIds.map(pid => ({
+              profile_id: pid, type: "team_reply",
+              title: `Neue Nachricht zu ${stepName}`,
+              message: `${firstName}: ${displayText.substring(0, 200)}${displayText.length > 200 ? "..." : ""}`,
+              task_id: taskId, comment_id: commentId,
+              project_config_id: projectConfigId, clickup_task_id: taskId, is_read: false,
+            }));
+            await supabase.from("notifications").insert(notifications);
+          }
+
           for (const p of profiles || []) {
             if (shouldSendEmail(p, "project_reply")) {
               await sendMailjetEmail("project_reply", { email: p.email, name: p.full_name }, {
@@ -1249,18 +1297,28 @@ Deno.serve(async (req) => {
         const { profileIds, source } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
         if (profileIds.length > 0) {
-          // Create in-app notifications
-          const notifications = profileIds.map(profileId => ({
-            profile_id: profileId,
-            type: "status_change",
-            title: `Aufgabe bereit zur Überprüfung`,
-            message: `„${taskName}" ist bereit für Ihre Überprüfung.`,
-            task_id: taskId,
-            is_read: false,
-          }));
+          // Fetch all profiles for bell gating + email
+          const { data: allProfiles } = await supabase
+            .from("profiles")
+            .select("id, email, full_name, email_notifications, notification_preferences")
+            .in("id", profileIds);
 
-          await supabase.from("notifications").insert(notifications);
-          log.info(`Created status change notifications`, { count: notifications.length, source });
+          // Create in-app notifications (gated by preferences)
+          const bellEligibleIds = (allProfiles || [])
+            .filter(p => shouldCreateBell(p, "task_review"))
+            .map(p => p.id);
+          if (bellEligibleIds.length > 0) {
+            const notifications = bellEligibleIds.map(profileId => ({
+              profile_id: profileId,
+              type: "status_change",
+              title: `Aufgabe bereit zur Überprüfung`,
+              message: `„${taskName}" ist bereit für Ihre Überprüfung.`,
+              task_id: taskId,
+              is_read: false,
+            }));
+            await supabase.from("notifications").insert(notifications);
+            log.info(`Created status change notifications`, { count: notifications.length, source });
+          }
 
           // Update task activity timestamp
           const eventTimestamp = parseClickUpTimestamp(historyItem.date);
@@ -1274,22 +1332,17 @@ Deno.serve(async (req) => {
               sending: nonViewerProfileIds.length,
             });
           }
-          const { data: emailProfiles } = await supabase
-            .from("profiles")
-            .select("id, email, full_name, email_notifications, notification_preferences")
-            .in("id", nonViewerProfileIds);
-          if (emailProfiles) {
-            for (const profile of emailProfiles) {
-              if (shouldSendEmail(profile, "task_review")) {
-                await sendMailjetEmail("task_review", {
-                  email: profile.email,
-                  name: profile.full_name,
-                }, {
-                  firstName: profile.full_name?.split(" ")[0],
-                  taskName,
-                  taskId,
-                }, log);
-              }
+          const emailProfiles = (allProfiles || []).filter(p => nonViewerProfileIds.includes(p.id));
+          for (const profile of emailProfiles) {
+            if (shouldSendEmail(profile, "task_review")) {
+              await sendMailjetEmail("task_review", {
+                email: profile.email,
+                name: profile.full_name,
+              }, {
+                firstName: profile.full_name?.split(" ")[0],
+                taskName,
+                taskId,
+              }, log);
             }
           }
         }
@@ -1394,6 +1447,12 @@ Deno.serve(async (req) => {
                 log.info("Re-approval detected", { taskId, previousCredits, currentCredits: credits });
               }
 
+              // Fetch profiles for bell gating + email
+              const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, email, full_name, email_notifications, notification_preferences")
+                .in("id", profileIds);
+
               // Create bell notifications — use "Aktualisierte Kostenfreigabe" wording
               // on re-approval to match the email, otherwise standard "Kostenfreigabe".
               const notifTitle = isReApproval
@@ -1402,27 +1461,28 @@ Deno.serve(async (req) => {
               const notifMessage = isReApproval
                 ? `Die Sch\u00e4tzung f\u00fcr "${taskName}" wurde von ${previousCredits} auf ${credits} Credits angepasst und wartet erneut auf Ihre Freigabe.`
                 : `Aufgabe "${taskName}" erfordert Ihre Kostenfreigabe${creditsStr}.`;
-              const notifications = profileIds.map(profileId => ({
-                profile_id: profileId,
-                type: "status_change",
-                title: notifTitle,
-                message: notifMessage,
-                task_id: taskId,
-                is_read: false,
-              }));
-              await supabase.from("notifications").insert(notifications);
-              log.info("Created awaiting approval notifications", { count: notifications.length, isReApproval });
+
+              const bellEligibleIds = (profiles || [])
+                .filter(p => shouldCreateBell(p, "credit_approval"))
+                .map(p => p.id);
+              if (bellEligibleIds.length > 0) {
+                const notifications = bellEligibleIds.map(profileId => ({
+                  profile_id: profileId,
+                  type: "status_change",
+                  title: notifTitle,
+                  message: notifMessage,
+                  task_id: taskId,
+                  is_read: false,
+                }));
+                await supabase.from("notifications").insert(notifications);
+                log.info("Created awaiting approval notifications", { count: notifications.length, isReApproval });
+              }
 
               // Update task activity
               const eventTimestamp = parseClickUpTimestamp(historyItem.date);
               await updateTaskActivity(supabase, taskId, eventTimestamp, log);
 
               // Send emails
-              const { data: profiles } = await supabase
-                .from("profiles")
-                .select("id, email, full_name, email_notifications, notification_preferences")
-                .in("id", profileIds);
-
               if (profiles) {
                 for (const profile of profiles) {
                   if (shouldSendEmail(profile, "credit_approval")) {
@@ -1485,18 +1545,22 @@ Deno.serve(async (req) => {
                 .select("id, email, full_name, email_notifications, notification_preferences")
                 .in("id", profileIds);
 
-              // Create in-app notifications
-              const notifications = profileIds.map(profileId => ({
-                profile_id: profileId,
-                type: "status_change",
-                title: `Aufgabe abgeschlossen`,
-                message: `„${taskName}" wurde abgeschlossen.`,
-                task_id: taskId,
-                is_read: false,
-              }));
-
-              await supabase.from("notifications").insert(notifications);
-              log.info(`Created completion notifications`, { count: notifications.length });
+              // Create in-app notifications (gated by preferences)
+              const bellEligibleIds = (profiles || [])
+                .filter(p => shouldCreateBell(p, "task_completed"))
+                .map(p => p.id);
+              if (bellEligibleIds.length > 0) {
+                const notifications = bellEligibleIds.map(profileId => ({
+                  profile_id: profileId,
+                  type: "status_change",
+                  title: `Aufgabe abgeschlossen`,
+                  message: `„${taskName}" wurde abgeschlossen.`,
+                  task_id: taskId,
+                  is_read: false,
+                }));
+                await supabase.from("notifications").insert(notifications);
+                log.info(`Created completion notifications`, { count: notifications.length });
+              }
 
               // Send emails
               if (profiles) {
@@ -1563,17 +1627,26 @@ Deno.serve(async (req) => {
               const { profileIds } = await findProfilesForTask(supabase, taskId, taskListId, log);
 
               if (profileIds.length > 0) {
-                const notifications = profileIds.map(profileId => ({
-                  profile_id: profileId,
-                  type: "status_change",
-                  title: `Arbeit hat begonnen`,
-                  message: `Wir haben mit der Arbeit an Ihrer Aufgabe „${taskName}" begonnen.`,
-                  task_id: taskId,
-                  is_read: false,
-                }));
+                const { data: profilesForStarted } = await supabase
+                  .from("profiles")
+                  .select("id, notification_preferences, email_notifications")
+                  .in("id", profileIds);
+                const bellEligibleIds = (profilesForStarted || [])
+                  .filter(p => shouldCreateBell(p, "task_in_progress"))
+                  .map(p => p.id);
 
-                await supabase.from("notifications").insert(notifications);
-                log.info(`Created work-started notifications`, { count: notifications.length });
+                if (bellEligibleIds.length > 0) {
+                  const notifications = bellEligibleIds.map(profileId => ({
+                    profile_id: profileId,
+                    type: "status_change",
+                    title: `Arbeit hat begonnen`,
+                    message: `Wir haben mit der Arbeit an Ihrer Aufgabe „${taskName}" begonnen.`,
+                    task_id: taskId,
+                    is_read: false,
+                  }));
+                  await supabase.from("notifications").insert(notifications);
+                  log.info(`Created work-started notifications`, { count: notifications.length });
+                }
               }
             } else {
               log.info(`Task not visible in portal - skipping work-started notification`, { taskId });
@@ -1622,26 +1695,31 @@ Deno.serve(async (req) => {
           const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
           if (profileIds.length > 0) {
-            const notifications = profileIds.map((profileId) => ({
-              profile_id: profileId,
-              type: "new_recommendation",
-              title: "Neue Empfehlung",
-              message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
-              task_id: taskId,
-              is_read: false,
-            }));
-
-            const { error: notifError } = await supabase.from("notifications").insert(notifications);
-            if (notifError) {
-              log.error("Failed to insert recommendation notifications", { taskId, error: notifError.message });
-            } else {
-              log.info("Recommendation notifications created", { taskId, count: notifications.length });
-            }
-
             const { data: profiles } = await supabase
               .from("profiles")
               .select("id, email, full_name, email_notifications, notification_preferences")
               .in("id", profileIds);
+
+            const bellEligibleIds = (profiles || [])
+              .filter(p => shouldCreateBell(p, "new_recommendation"))
+              .map(p => p.id);
+            if (bellEligibleIds.length > 0) {
+              const notifications = bellEligibleIds.map((profileId) => ({
+                profile_id: profileId,
+                type: "new_recommendation",
+                title: "Neue Empfehlung",
+                message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
+                task_id: taskId,
+                is_read: false,
+              }));
+
+              const { error: notifError } = await supabase.from("notifications").insert(notifications);
+              if (notifError) {
+                log.error("Failed to insert recommendation notifications", { taskId, error: notifError.message });
+              } else {
+                log.info("Recommendation notifications created", { taskId, count: notifications.length });
+              }
+            }
 
             for (const p of profiles || []) {
               if (shouldSendEmail(p, "new_recommendation")) {
@@ -1890,23 +1968,25 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Create in-app notification
-          const { error: notifyError } = await supabase
-            .from("notifications")
-            .insert({
-              profile_id: profileId,
-              type: "team_reply",
-              title: `Nachricht von ${firstName}`,
-              message: displayTextForClient.substring(0, 200) + (displayTextForClient.length > 200 ? "..." : ""),
-              task_id: taskId,
-              comment_id: commentId,
-              is_read: false,
-            });
+          // Create in-app notification (gated by preferences)
+          if (shouldCreateBell(memberProfile, "support_response")) {
+            const { error: notifyError } = await supabase
+              .from("notifications")
+              .insert({
+                profile_id: profileId,
+                type: "team_reply",
+                title: `Nachricht von ${firstName}`,
+                message: displayTextForClient.substring(0, 200) + (displayTextForClient.length > 200 ? "..." : ""),
+                task_id: taskId,
+                comment_id: commentId,
+                is_read: false,
+              });
 
-          if (notifyError) {
-            log.error("Error creating notification", { error: notifyError.message, profileId });
-          } else {
-            log.info("Support notification created", { profileId });
+            if (notifyError) {
+              log.error("Error creating notification", { error: notifyError.message, profileId });
+            } else {
+              log.info("Support notification created", { profileId });
+            }
           }
 
           // Send email notification for support response (respects per-member preferences)
@@ -1972,26 +2052,32 @@ Deno.serve(async (req) => {
         .select("id, email, full_name, email_notifications, notification_preferences")
         .in("id", profileIds);
 
-      // Create in-app notifications
+      // Create in-app notifications (gated by preferences)
       const commenterFirstName = commenterName.split(" ")[0];
-      const notificationsToInsert = profileIds.map(profileId => ({
-        profile_id: profileId,
-        type: "team_reply",
-        title: `Neue Antwort zu „${taskName}"`,
-        message: `${commenterFirstName} hat geantwortet: ${displayTextForClient.substring(0, 200)}${displayTextForClient.length > 200 ? "..." : ""}`,
-        task_id: taskId,
-        comment_id: commentId,
-        is_read: false,
-      }));
+      const bellEligibleProfileIds = (profiles || [])
+        .filter(p => shouldCreateBell(p, "team_question"))
+        .map(p => p.id);
 
-      const { error: notifyError } = await supabase
-        .from("notifications")
-        .insert(notificationsToInsert);
+      if (bellEligibleProfileIds.length > 0) {
+        const notificationsToInsert = bellEligibleProfileIds.map(profileId => ({
+          profile_id: profileId,
+          type: "team_reply",
+          title: `Neue Antwort zu „${taskName}"`,
+          message: `${commenterFirstName} hat geantwortet: ${displayTextForClient.substring(0, 200)}${displayTextForClient.length > 200 ? "..." : ""}`,
+          task_id: taskId,
+          comment_id: commentId,
+          is_read: false,
+        }));
 
-      if (notifyError) {
-        log.error("Error creating notifications", { error: notifyError.message });
-      } else {
-        log.info(`Created in-app notifications`, { count: notificationsToInsert.length });
+        const { error: notifyError } = await supabase
+          .from("notifications")
+          .insert(notificationsToInsert);
+
+        if (notifyError) {
+          log.error("Error creating notifications", { error: notifyError.message });
+        } else {
+          log.info(`Created in-app notifications`, { count: notificationsToInsert.length });
+        }
       }
 
       // Send email notification for team questions
@@ -2118,26 +2204,31 @@ Deno.serve(async (req) => {
       const { profileIds } = await findProfilesForTask(supabase, taskId, taskInfo.listId, log);
 
       if (profileIds.length > 0) {
-        const notifications = profileIds.map((profileId) => ({
-          profile_id: profileId,
-          type: "new_recommendation",
-          title: "Neue Empfehlung",
-          message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
-          task_id: taskId,
-          is_read: false,
-        }));
-
-        const { error: notifError } = await supabase.from("notifications").insert(notifications);
-        if (notifError) {
-          log.error("Failed to insert recommendation notifications (taskTagUpdated)", { taskId, error: notifError.message });
-        } else {
-          log.info("Recommendation notifications created (taskTagUpdated)", { taskId, count: notifications.length });
-        }
-
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, email, full_name, email_notifications, notification_preferences")
           .in("id", profileIds);
+
+        const bellEligibleIds = (profiles || [])
+          .filter(p => shouldCreateBell(p, "new_recommendation"))
+          .map(p => p.id);
+        if (bellEligibleIds.length > 0) {
+          const notifications = bellEligibleIds.map((profileId) => ({
+            profile_id: profileId,
+            type: "new_recommendation",
+            title: "Neue Empfehlung",
+            message: `Ihr Team hat eine Empfehlung erstellt: "${taskName}"`,
+            task_id: taskId,
+            is_read: false,
+          }));
+
+          const { error: notifError } = await supabase.from("notifications").insert(notifications);
+          if (notifError) {
+            log.error("Failed to insert recommendation notifications (taskTagUpdated)", { taskId, error: notifError.message });
+          } else {
+            log.info("Recommendation notifications created (taskTagUpdated)", { taskId, count: notifications.length });
+          }
+        }
 
         for (const p of profiles || []) {
           if (shouldSendEmail(p, "new_recommendation")) {

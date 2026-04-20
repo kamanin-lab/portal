@@ -798,6 +798,42 @@ Deno.serve(async (req) => {
     const recStats = await sendRecommendationReminders(supabase, log);
     log.info("recommendation_reminder stats", recStats);
 
+    // ===== NOTIFICATION AUTO-ARCHIVE =====
+    // Archive read notifications older than 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    const { data: archivedRows, error: archiveErr } = await supabase
+      .from("notifications")
+      .update({ archived_at: new Date().toISOString() })
+      .lt("created_at", thirtyDaysAgo)
+      .eq("is_read", true)
+      .is("archived_at", null)
+      .select("id");
+
+    const archivedCount = archivedRows?.length ?? 0;
+    if (archiveErr) {
+      log.error("Failed to archive old notifications", { error: archiveErr.message });
+    } else {
+      log.info("Notifications archived", { count: archivedCount });
+    }
+
+    // Hard-delete archived notifications older than 90 days.
+    // Explicit `.not("archived_at", "is", null)` makes intent unambiguous —
+    // `.lt` alone already excludes NULLs per SQL spec, but this guards against future schema drift.
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString();
+    const { data: deletedRows, error: deleteErr } = await supabase
+      .from("notifications")
+      .delete()
+      .not("archived_at", "is", null)
+      .lt("archived_at", ninetyDaysAgo)
+      .select("id");
+
+    const deletedCount = deletedRows?.length ?? 0;
+    if (deleteErr) {
+      log.error("Failed to delete old archived notifications", { error: deleteErr.message });
+    } else {
+      log.info("Archived notifications deleted", { count: deletedCount });
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -812,6 +848,8 @@ Deno.serve(async (req) => {
         recSent: recStats.sent,
         recSkipped: recStats.skipped,
         recErrors: recStats.errors,
+        notificationsArchived: archivedCount ?? 0,
+        notificationsDeleted: deletedCount ?? 0,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
