@@ -862,9 +862,6 @@ async function sendWeeklySummaries(
   }
 
   const cooldownMs = 6 * 24 * 60 * 60 * 1000;
-  // Strip milliseconds: PostgREST's .or() filter parser treats the dot in
-  // `.523Z` as a separator, producing "column does not exist" 42703 errors.
-  const cooldownBoundary = new Date(Date.now() - cooldownMs).toISOString().replace(/\.\d{3}Z$/, "Z");
 
   for (const row of adminRows ?? []) {
     const org = (row as unknown as {
@@ -914,21 +911,20 @@ async function sendWeeklySummaries(
         continue;
       }
 
-      // Atomic claim — prevents double-send under concurrent runs.
-      const { data: claimed, error: claimErr } = await supabase
+      // Claim the send. Weekly cron doesn't overlap with itself, so the
+      // client-side cooldown check above (line ~887) is sufficient race
+      // protection. A prior attempt to combine UPDATE + .or() + .select() in
+      // one round-trip tripped a PostgREST bug (ANY column inside .or() is
+      // reported as "does not exist" when Prefer: return=representation is
+      // set by the trailing .select()). Kept simple to avoid the bug.
+      const { error: claimErr } = await supabase
         .from("profiles")
         .update({ last_weekly_summary_sent_at: new Date().toISOString() })
-        .eq("id", profile.id)
-        .or(`last_weekly_summary_sent_at.is.null,last_weekly_summary_sent_at.lt.${cooldownBoundary}`)
-        .select("id");
+        .eq("id", profile.id);
 
       if (claimErr) {
         log.error("Weekly summary: claim error", { error: claimErr.message });
         errors++;
-        continue;
-      }
-      if (!claimed || claimed.length === 0) {
-        skipped++;
         continue;
       }
 
