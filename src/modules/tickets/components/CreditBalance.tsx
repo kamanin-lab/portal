@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { FlashIcon, TimeScheduleIcon } from '@hugeicons/core-free-icons';
 import { useCredits } from '../hooks/useCredits';
+import { useOrg } from '@/shared/hooks/useOrg';
 import { cn } from '@/shared/lib/utils';
 
 interface Props {
@@ -32,6 +33,7 @@ function getBalanceColor(balance: number, creditsPerMonth: number | null): strin
 
 export function CreditBalance({ compact = false, onNavigate }: Props) {
   const { balance, packageName, creditsPerMonth, isLoading } = useCredits();
+  const { isAdmin } = useOrg();
 
   if (isLoading) return null;
 
@@ -75,14 +77,16 @@ export function CreditBalance({ compact = false, onNavigate }: Props) {
           {formatPackageName(packageName)} · {creditsPerMonth}/Monat
         </div>
       </div>
-      <Link
-        to="/konto#guthaben"
-        onClick={onNavigate}
-        className="shrink-0 text-text-sidebar hover:text-white transition-colors"
-        title="Kreditverlauf anzeigen"
-      >
-        <HugeiconsIcon icon={TimeScheduleIcon} size={14} />
-      </Link>
+      {isAdmin && (
+        <Link
+          to="/organisation#guthaben"
+          onClick={onNavigate}
+          className="shrink-0 text-text-sidebar hover:text-white transition-colors"
+          title="Kreditverlauf anzeigen"
+        >
+          <HugeiconsIcon icon={TimeScheduleIcon} size={14} />
+        </Link>
+      )}
     </div>
   );
 }

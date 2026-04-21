@@ -1,4 +1,5 @@
-import { Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 import { useOrg } from '@/shared/hooks/useOrg'
 import { OrgInfoSection } from '../components/OrgInfoSection'
@@ -9,6 +10,13 @@ import { RolesInfoSection } from '../components/RolesInfoSection'
 
 export function OrganisationPage() {
   const { isAdmin, isLoading } = useOrg()
+  const { hash } = useLocation()
+
+  useEffect(() => {
+    if (!hash) return
+    const el = document.querySelector(hash)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash, isLoading])
 
   if (isLoading) return null
   if (!isAdmin && !isLoading) return <Navigate to="/tickets" replace />

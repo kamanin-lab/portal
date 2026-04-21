@@ -58,7 +58,7 @@ export const FAQ_SECTIONS: FaqSectionData[] = [
       {
         question: 'Wo sehe ich mein aktuelles Guthaben?',
         answer:
-          'Ihre aktuellen Credits werden in der Seitenleiste angezeigt. Detaillierte Informationen finden Sie unter Konto → Guthaben.',
+          'Ihre aktuellen Credits werden in der Seitenleiste angezeigt. Die vollständige Transaktionshistorie finden Administratoren unter Organisation → Guthaben.',
       },
       {
         question: 'Was passiert, wenn mein Guthaben aufgebraucht ist?',

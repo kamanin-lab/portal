@@ -29,7 +29,7 @@ export function TicketsPage() {
 
   const { data: tasks = [], isLoading } = useClickUpTasks()
   const { user } = useAuth()
-  const { isViewer } = useOrg()
+  const { isViewer, isAdmin } = useOrg()
   const { taskUnread, supportUnread } = useUnreadCounts(user?.id)
   const { balance, packageName, creditsPerMonth, isLoading: creditsLoading } = useCredits()
 
@@ -56,32 +56,36 @@ export function TicketsPage() {
         {!isViewer && <NewTaskButton onClick={() => setDialogOpen(true)} />}
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Credit balance — desktop only (mobile shows in MobileHeader) */}
-          {!creditsLoading && packageName && (
-            <Link
-              to="/konto#guthaben"
-              className="hidden md:flex items-center gap-1.5 text-xs shrink-0"
-              title="Kreditverlauf anzeigen"
-            >
-              <HugeiconsIcon icon={FlashIcon} size={14} className={cn(
-                balance < 0 ? 'text-credit-low'
-                  : creditsPerMonth && balance / creditsPerMonth > 0.5 ? 'text-credit-ok'
-                  : creditsPerMonth && balance / creditsPerMonth >= 0.2 ? 'text-credit-warn'
-                  : 'text-credit-low'
-              )} />
-              <span className={cn(
-                'font-semibold',
-                balance < 0 ? 'text-credit-low'
-                  : creditsPerMonth && balance / creditsPerMonth > 0.5 ? 'text-credit-ok'
-                  : creditsPerMonth && balance / creditsPerMonth >= 0.2 ? 'text-credit-warn'
-                  : 'text-credit-low'
-              )}>
-                {balance % 1 === 0 ? balance : balance.toFixed(1)} Credits
-              </span>
-              <span className="text-text-tertiary">/ {creditsPerMonth} pro Monat</span>
-              <HugeiconsIcon icon={TimeScheduleIcon} size={13} className="text-accent" />
-            </Link>
-          )}
+          {/* Credit balance — desktop only (mobile shows in MobileHeader). Link only for admins (history page is admin-only). */}
+          {!creditsLoading && packageName && (() => {
+            const balanceColorClass = balance < 0 ? 'text-credit-low'
+              : creditsPerMonth && balance / creditsPerMonth > 0.5 ? 'text-credit-ok'
+              : creditsPerMonth && balance / creditsPerMonth >= 0.2 ? 'text-credit-warn'
+              : 'text-credit-low'
+            const inner = (
+              <>
+                <HugeiconsIcon icon={FlashIcon} size={14} className={balanceColorClass} />
+                <span className={cn('font-semibold', balanceColorClass)}>
+                  {balance % 1 === 0 ? balance : balance.toFixed(1)} Credits
+                </span>
+                <span className="text-text-tertiary">/ {creditsPerMonth} pro Monat</span>
+                {isAdmin && <HugeiconsIcon icon={TimeScheduleIcon} size={13} className="text-accent" />}
+              </>
+            )
+            return isAdmin ? (
+              <Link
+                to="/organisation#guthaben"
+                className="hidden md:flex items-center gap-1.5 text-xs shrink-0"
+                title="Kreditverlauf anzeigen"
+              >
+                {inner}
+              </Link>
+            ) : (
+              <div className="hidden md:flex items-center gap-1.5 text-xs shrink-0">
+                {inner}
+              </div>
+            )
+          })()}
           <TaskSearchBar
             value={searchQuery}
             onChange={setSearchQuery}
