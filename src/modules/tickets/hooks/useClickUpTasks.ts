@@ -195,6 +195,15 @@ export function useClickUpTasks() {
         log.info('Returning cached tasks', { count: cached.length });
         return cached;
       }
+      // Distinguish "never synced" from "scoped out of everything".
+      // SECURITY DEFINER RPC bypasses RLS and tells us whether raw task_cache
+      // has any rows. If TRUE, the view filtered them all out — skip the 10-15s
+      // EF sync entirely and show empty state instantly.
+      const { data: hasRaw } = await supabase.rpc('has_raw_task_cache_rows');
+      if (hasRaw) {
+        log.info('Cache populated but filtered to 0 — skipping EF fetch');
+        return [];
+      }
       log.info('No cache — fetching fresh from ClickUp');
       const { tasks } = await fetchClickUpTasks(true);
       await updateTaskCache(tasks);
