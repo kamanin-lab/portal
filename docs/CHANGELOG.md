@@ -1,5 +1,30 @@
 # Changelog
 
+## fix(departments): tighten visibility — untagged tasks no longer public for scoped members — 2026-04-21
+
+**Behavior change.** Before: a member with `departments=[SEO]` still saw every untagged ticket (fallback rule). After: scoped members see ONLY tickets with overlapping departments or tickets they created. Untagged tickets are no longer visible to scoped members.
+
+Legacy fallback preserved: member with `departments=[]` continues to see everything (zero regression for clients without Fachbereich configured).
+
+Trigger: MBM added external SEO agency member with `departments=[SEO]`, but he saw all 113 existing tickets (none were tagged Fachbereich yet). The "untagged = public" exception defeated the scope entirely.
+
+### Database
+- **`supabase/migrations/20260421130000_tighten_department_visibility.sql`** — `ALTER FUNCTION can_user_see_task()` drops the `task_departments = []` branch. Also adds `org_members` to `supabase_realtime` publication.
+
+### Frontend
+- **`visibility-filter.ts`** — removed `taskDepartments.length === 0 → visible` branch.
+- **`_shared/org.ts`** — removed matching line in Deno `canUserSeeTask()`.
+- **`useOrg.ts`** — new Realtime subscription on own `org_members` row. When admin re-scopes the current user, refetch org context AND invalidate `['clickup-tasks']` query so Meine Aufgaben updates without a page refresh.
+
+### Tests
+- **`visibility-filter.test.ts`** — inverted 1 test (scoped member does NOT see untagged), added 2 new strict-rule tests (23 tests total, all passing).
+
+### Deployment
+- Migration applied on both staging and self-hosted production (2026-04-21).
+- `_shared/org.ts` copied to Coolify volume, `supabase-edge-functions` restarted.
+
+---
+
 ## feat(departments): ticket visibility by department (Fachbereich) — 2026-04-21
 
 Role-based ticket visibility for organizations with specialized departments. Members see only tickets tagged with their assigned departments (or untagged tickets, or tickets they created). Admins and legacy members (no departments assigned) continue to see everything.

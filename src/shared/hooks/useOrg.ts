@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, createElement } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/shared/lib/supabase'
 import { useAuth } from '@/shared/hooks/useAuth'
 import type { Organization } from '@/shared/types/organization'
@@ -61,6 +62,7 @@ async function fetchOrgForUser(userId: string): Promise<Omit<OrgContextValue, 'i
 
 export function OrgProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [state, setState] = useState<OrgContextValue>({
     organization: null,
     orgRole: 'member',
@@ -85,6 +87,33 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       mounted = false
     }
   }, [user?.id])
+
+  // Realtime subscription to own org_members row. When admin changes this user's
+  // role or departments, refetch org context AND invalidate task queries so the
+  // sidebar/Meine Aufgaben list updates without requiring a page refresh.
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`org-member-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'org_members',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        async () => {
+          const result = await fetchOrgForUser(user.id)
+          setState({ ...result, isLoading: false })
+          queryClient.invalidateQueries({ queryKey: ['clickup-tasks'] })
+        },
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, queryClient])
 
   return createElement(OrgContext.Provider, { value: state }, children)
 }

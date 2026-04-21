@@ -259,10 +259,10 @@ export interface TaskVisibility {
 
 export function canUserSeeTask(member: MemberVisibility, task: TaskVisibility): boolean {
   if (member.role === "admin") return true;
-  if ((member.departments?.length ?? 0) === 0) return true; // legacy fallback
-  if ((task.departments?.length ?? 0) === 0) return true;   // untagged = public
+  if ((member.departments?.length ?? 0) === 0) return true; // legacy fallback: no depts = see all
+  // Untagged tasks are NOT public for scoped members (tightened 2026-04-21).
   if (task.created_by_user_id && task.created_by_user_id === member.profile_id) return true;
-  return task.departments.some((d) => member.departments.includes(d));
+  return (task.departments ?? []).some((d) => member.departments.includes(d));
 }
 
 export interface OrgTaskContext {

@@ -51,9 +51,17 @@ describe('canUserSeeTask', () => {
     expect(canUserSeeTask('member', [OPT_BUCHHALTUNG], [OPT_SEO, OPT_MARKETING], null, USER_A)).toBe(false)
   })
 
-  // ---- Untagged tasks are public ----
-  test('member with departments sees untagged task', () => {
-    expect(canUserSeeTask('member', [OPT_SEO], [], null, USER_A)).toBe(true)
+  // ---- Untagged tasks are NOT public for scoped members (tightened 2026-04-21) ----
+  test('scoped member does NOT see untagged task (strict rule)', () => {
+    expect(canUserSeeTask('member', [OPT_SEO], [], null, USER_A)).toBe(false)
+  })
+
+  test('scoped member with multiple depts does NOT see untagged task', () => {
+    expect(canUserSeeTask('member', [OPT_SEO, OPT_MARKETING], [], null, USER_A)).toBe(false)
+  })
+
+  test('scoped member sees untagged task they created (creator override)', () => {
+    expect(canUserSeeTask('member', [OPT_SEO], [], USER_A, USER_A)).toBe(true)
   })
 
   // ---- Creator override ----

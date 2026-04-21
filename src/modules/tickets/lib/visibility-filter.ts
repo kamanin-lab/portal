@@ -3,12 +3,15 @@
  * Pure function mirroring the SQL function `can_user_see_task`.
  * Single source of truth for client-side visibility checks.
  *
- * Rules:
+ * Rules (tightened 2026-04-21):
  *   1. Admin sees all
- *   2. Member with empty departments → sees all (legacy fallback)
- *   3. Task with empty departments → visible to everyone (untagged = public)
- *   4. Array overlap between member.departments and task.departments
- *   5. Creator override: task creator always sees their own task
+ *   2. Member with empty departments → sees all (legacy fallback, zero regression)
+ *   3. Array overlap between member.departments and task.departments
+ *   4. Creator override: task creator always sees their own task
+ *
+ * Untagged tasks are NOT public for scoped members — a member with non-empty
+ * departments must have overlap or be the creator. This prevents the UX bug
+ * where a newly scoped member still saw every pre-existing (untagged) ticket.
  */
 export function canUserSeeTask(
   userRole: 'admin' | 'member' | 'viewer',
@@ -22,9 +25,6 @@ export function canUserSeeTask(
 
   // Member with no departments assigned → legacy fallback, sees all
   if (userDepartments.length === 0) return true
-
-  // Untagged task → visible to everyone
-  if (taskDepartments.length === 0) return true
 
   // Array overlap check
   if (taskDepartments.some(d => userDepartments.includes(d))) return true
