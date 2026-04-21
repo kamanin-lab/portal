@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
@@ -23,9 +23,27 @@ export function CollapsibleRow({
   chevronPosition = 'left',
   chevronClassName,
 }: CollapsibleRowProps) {
+  // Pre-filter state: toggled freely by the user when forceOpen is false.
   const [userOpen, setUserOpen] = useState(defaultOpen)
-  const isOpen = forceOpen || userOpen
+  // During forceOpen: user can still collapse the auto-expanded section.
+  // Null means "follow forceOpen"; boolean means "user has overridden".
+  // Reset to null whenever forceOpen turns off so the override doesn't leak.
+  const [filterOverride, setFilterOverride] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!forceOpen) setFilterOverride(null)
+  }, [forceOpen])
+
+  const isOpen = forceOpen ? (filterOverride ?? true) : userOpen
   const regionId = useId()
+
+  function handleToggle() {
+    if (forceOpen) {
+      setFilterOverride(prev => !(prev ?? true))
+    } else {
+      setUserOpen(prev => !prev)
+    }
+  }
 
   const chevron = (
     <HugeiconsIcon
@@ -45,7 +63,7 @@ export function CollapsibleRow({
         type="button"
         aria-expanded={isOpen}
         aria-controls={regionId}
-        onClick={() => setUserOpen(prev => !prev)}
+        onClick={handleToggle}
         className="w-full flex items-center gap-1.5 text-left cursor-pointer"
       >
         {chevronPosition === 'left' && chevron}
