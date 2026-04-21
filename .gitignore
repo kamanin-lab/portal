@@ -41,8 +41,15 @@ bun.lockb
 !.claude/skills/**
 !.claude/settings.json
 
-# Client login credentials — local only, never commit
-scripts/client-credentials.md
+# --- scripts/ — локальная рабочая папка (клиентские данные, onboard-конфиги, бэкапы) ---
+# Whitelist-подход: игнорируем всё, разрешаем только код-утилиты и шаблоны.
+# Любые новые .json с клиентскими данными или .md с паролями НЕ попадут в git автоматически.
+scripts/*
+!scripts/*.ts
+!scripts/*.cjs
+!scripts/new-client-template.json
+!scripts/new-client-template.md
+!scripts/README.md
 
 # Old project directories (kept locally as reference, not in repo root)
 kamanin-portal/
@@ -73,7 +80,24 @@ supabase/.temp/
 # Temp task scripts
 tasks/*.js
 tasks/session.json
-scripts/*-production.json
+
+# Root-level ClickUp/DB probe dumps
+/_*.json
+/_tmp/
+/.review/
+
+# Dev seeders с хардкод-секретами
+/seed_dev.js
+/seed_*.js
+
+# Planning debug dumps (могут содержать access tokens)
+.planning/debug/
+
+# Legacy .env в archive
+archive/legacy-reference/tickets/.env
+
+# Supabase DB backups
+supabase/backups/
 
 # Generated staging artifacts
 staging-schema*.sql
