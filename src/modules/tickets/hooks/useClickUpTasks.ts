@@ -198,7 +198,10 @@ export function useClickUpTasks() {
       log.info('No cache — fetching fresh from ClickUp');
       const { tasks } = await fetchClickUpTasks(true);
       await updateTaskCache(tasks);
-      return tasks;
+      // Re-query through visible_task_cache view so RLS/department filter applies.
+      // The EF response contains ALL visible tasks via service role; returning it
+      // directly would bypass the RLS policy and show tickets the user should not see.
+      return await fetchCachedTasks();
     },
     staleTime: 1000 * 60 * 5, // 5 minutes — Realtime handles live updates
     refetchOnWindowFocus: true,
