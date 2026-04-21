@@ -8,7 +8,6 @@ import { ProfileSection } from '@/shared/components/konto/ProfileSection'
 import { EmailSection } from '@/shared/components/konto/EmailSection'
 import { PasswordSection } from '@/shared/components/konto/PasswordSection'
 import { NotificationSection } from '@/shared/components/konto/NotificationSection'
-import { CreditHistorySection } from '@/shared/components/konto/CreditHistorySection'
 import { Button } from '@/shared/components/ui/button'
 
 export function KontoPage() {
@@ -37,7 +36,6 @@ export function KontoPage() {
         <EmailSection currentEmail={profile.email} />
         <PasswordSection />
         <NotificationSection preferences={profile.notification_preferences} />
-        <CreditHistorySection />
 
         <section className="bg-surface rounded-[14px] border border-border p-5">
           <Button

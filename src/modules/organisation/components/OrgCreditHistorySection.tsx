@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { FlashIcon, Add01Icon, MinusSignIcon, ArrowUpRight01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { useCredits } from '@/modules/tickets/hooks/useCredits'
-import { useCreditHistory } from '@/modules/tickets/hooks/useCreditHistory'
+import { useOrgCreditHistory } from '@/modules/organisation/hooks/useOrgCreditHistory'
 import { TaskDetailSheet } from '@/modules/tickets/components/TaskDetailSheet'
-import type { CreditTransaction, MonthGroup } from '@/modules/tickets/hooks/useCreditHistory'
+import type { CreditTransaction, MonthGroup } from '@/modules/organisation/hooks/useOrgCreditHistory'
 import { cn } from '@/shared/lib/utils'
 
 function formatAmount(amount: number): string {
@@ -102,13 +102,12 @@ function MonthSection({ group, onTaskClick }: { group: MonthGroup; onTaskClick: 
   )
 }
 
-export function CreditHistorySection() {
+export function OrgCreditHistorySection() {
   const { balance, packageName, creditsPerMonth, isLoading: balanceLoading } = useCredits()
-  const { months, hasMore, loadMore, isLoading: historyLoading } = useCreditHistory()
+  const { months, hasMore, loadMore, isLoading: historyLoading } = useOrgCreditHistory()
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   if (balanceLoading) return null
-  if (!packageName) return null
 
   const balanceColor = getBalanceColor(balance, creditsPerMonth)
   const displayBalance = balance % 1 === 0 ? String(balance) : balance.toFixed(1)
@@ -129,7 +128,9 @@ export function CreditHistorySection() {
             Credits {balance < 0 ? 'überzogen' : 'verfügbar'}
           </span>
           <span className="text-xxs text-text-tertiary ml-auto">
-            {packageName} · {creditsPerMonth}/Monat
+            {packageName
+              ? `${packageName} · ${creditsPerMonth}/Monat`
+              : 'Kein aktives Paket'}
           </span>
         </div>
 

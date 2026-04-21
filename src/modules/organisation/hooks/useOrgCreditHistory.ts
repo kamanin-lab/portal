@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { supabase } from '@/shared/lib/supabase'
-import { useAuth } from '@/shared/hooks/useAuth'
+import { useOrg } from '@/shared/hooks/useOrg'
 
 export interface CreditTransaction {
   id: string
@@ -11,6 +11,7 @@ export interface CreditTransaction {
   task_name: string | null
   description: string | null
   created_at: string
+  profile_id: string
 }
 
 export interface MonthGroup {
@@ -51,17 +52,17 @@ function groupByMonth(transactions: CreditTransaction[]): MonthGroup[] {
   })
 }
 
-export function useCreditHistory() {
-  const { user } = useAuth()
+export function useOrgCreditHistory() {
+  const { organization } = useOrg()
   const [visibleCount, setVisibleCount] = useState(INITIAL_MONTHS)
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['credit-history', user?.id],
+    queryKey: ['credit-history-org', organization?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('credit_transactions')
-        .select('id, amount, type, task_id, task_name, description, created_at')
-        .eq('profile_id', user!.id)
+        .select('id, amount, type, task_id, task_name, description, created_at, profile_id')
+        .eq('organization_id', organization!.id)
         .neq('amount', 0)
         .order('created_at', { ascending: false })
         .limit(500)
@@ -71,7 +72,7 @@ export function useCreditHistory() {
       }
       return data as CreditTransaction[]
     },
-    enabled: !!user?.id,
+    enabled: !!organization?.id,
     staleTime: 1000 * 60 * 2,
   })
 

@@ -1,11 +1,9 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Building05Icon } from '@hugeicons/core-free-icons'
 import { useOrg } from '@/shared/hooks/useOrg'
-import { useCredits } from '@/modules/tickets/hooks/useCredits'
 
 export function OrgInfoSection() {
   const { organization } = useOrg()
-  const credits = useCredits()
 
   if (!organization) return null
 
@@ -18,10 +16,6 @@ export function OrgInfoSection() {
 
       <div className="flex flex-col gap-3">
         <Field label="Name" value={organization.name} />
-        <Field
-          label="Guthaben"
-          value={credits.isLoading ? 'Lädt...' : `${credits.balance} Credits`}
-        />
       </div>
     </section>
   )

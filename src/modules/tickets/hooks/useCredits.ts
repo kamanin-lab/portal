@@ -72,6 +72,7 @@ export function useCredits(): UseCreditsResult {
         if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
         realtimeDebounceRef.current = setTimeout(() => {
           queryClient.refetchQueries({ queryKey: ['credit-balance', organization.id] });
+          queryClient.refetchQueries({ queryKey: ['credit-history-org', organization.id] });
         }, 300);
       })
       .subscribe();
