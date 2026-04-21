@@ -29,6 +29,10 @@ Role-based ticket visibility for organizations with specialized departments. Mem
 ### Tests
 - **`visibility-filter.test.ts`** — 21 tests covering admin/member/viewer x empty/matching/non-matching departments + creator override + helper functions.
 
+### Fixes (shipped alongside)
+- **Email copy** — replaced all occurrences of "KAMANIN" and "ClickUp" in client-facing email templates with "Ihre Agentur" / "Agentur" to avoid leaking internal tool names.
+- **`send-reminders` department filter** — unread and recommendation digest emails now filter recipients through JS `canUserSeeTask` predicate (mirror of SQL `can_user_see_task`); members with restricted departments no longer receive digests for tickets they cannot see.
+
 ### Docs
 - `DATABASE_SCHEMA.md` — updated with new columns, functions, view, RLS policy.
 - `NOTIFICATION_MATRIX.md` — updated with department-aware fan-out rule.
