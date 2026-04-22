@@ -6,21 +6,22 @@
  * iframe cannot be meaningfully constrained to max-w-4xl. Do not wrap this
  * page in ContentContainer.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { AppRenderer } from '@mcp-ui/client'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { ReadResourceResult, ListResourcesResult } from '@modelcontextprotocol/sdk/types.js'
 import { toast } from 'sonner'
 import { useMcpProxy } from '../hooks/useMcpProxy'
 import { DashboardLoading } from './DashboardLoading'
+import { McpErrorBoundary } from './McpErrorBoundary'
 
-const SANDBOX_URL = new URL('/sandbox-proxy.html', window.location.origin)
 const TOOL_NAME = 'daily-briefing'
 const TOOL_RESOURCE_URI = 'ui://kamanda/daily-briefing'
 
 export function RevenueIntelligencePage() {
   const { callTool, readResource, listResources } = useMcpProxy()
   const [isReady, setIsReady] = useState(false)
+  const sandboxUrl = useMemo(() => new URL('/sandbox-proxy.html', window.location.origin), [])
 
   const handleCallTool = useCallback(
     async (params: { name: string; arguments?: Record<string, unknown> }) => {
@@ -70,17 +71,19 @@ export function RevenueIntelligencePage() {
         </div>
       )}
       <div className={isReady ? 'h-full w-full' : 'h-full w-full opacity-0'}>
-        <AppRenderer
-          toolName={TOOL_NAME}
-          toolResourceUri={TOOL_RESOURCE_URI}
-          sandbox={{ url: SANDBOX_URL }}
-          onCallTool={handleCallTool}
-          onReadResource={handleReadResource}
-          onListResources={handleListResources}
-          onMessage={handleMessage}
-          onError={handleError}
-          onSizeChanged={handleSizeChanged}
-        />
+        <McpErrorBoundary>
+          <AppRenderer
+            toolName={TOOL_NAME}
+            toolResourceUri={TOOL_RESOURCE_URI}
+            sandbox={{ url: sandboxUrl }}
+            onCallTool={handleCallTool}
+            onReadResource={handleReadResource}
+            onListResources={handleListResources}
+            onMessage={handleMessage}
+            onError={handleError}
+            onSizeChanged={handleSizeChanged}
+          />
+        </McpErrorBoundary>
       </div>
     </div>
   )
