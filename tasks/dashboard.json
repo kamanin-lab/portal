@@ -177,6 +177,14 @@
   ],
   "ideas": [
     {
+      "title": "Rotate Leaked Service Role JWT + Repo Visibility Review",
+      "file": "secret-rotation-and-repo-visibility.md",
+      "status": "idea",
+      "priority": "high",
+      "target": "Ad-hoc (security debt)",
+      "summary": "GitGuardian flagged service_role JWT в публичном repo (40+ дней). Ротация требует downtime. Рассмотреть перевод в private + rotation."
+    },
+    {
       "title": "Client Review Reminder Emails",
       "file": "client-review-reminders.md",
       "status": "idea",
