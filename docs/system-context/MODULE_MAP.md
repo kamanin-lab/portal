@@ -351,7 +351,7 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 
 | File | Role |
 |---|---|
-| `useAuth.ts` | `AuthProvider` context. Supabase session, `profile_id`, sign-in/out/magiclink. |
+| `useAuth.ts` | `AuthProvider` context. Supabase session, `profile_id`, sign-in/out/magiclink. `signIn` + `signInWithMagicLink` accept optional `remember` boolean; writes `portal-remember-me` flag before Supabase call. |
 | `useOrg.ts` | `OrgProvider` context. Org, role, `isAdmin`/`isMember`/`isViewer`. |
 | `useWorkspaces.ts` | Sidebar workspaces from `client_workspaces`. |
 | `useMeineAufgaben.ts` | Aggregate tasks-needing-attention across tickets + projects. |
@@ -364,9 +364,9 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 
 | File | Role |
 |---|---|
-| `supabase.ts` | Browser Supabase client. |
+| `supabase.ts` | Hybrid auth storage adapter — routes Supabase tokens to `localStorage` (persistent) or `sessionStorage` (ephemeral) based on `portal-remember-me` flag. Session persistence controlled by "Angemeldet bleiben" checkbox — persistent (30d idle) or ephemeral (3h idle, clears on tab close). |
 | `workspace-routes.ts` | Module-key → route mapping (for sidebar). |
-| `session-timeout.ts` | Auto-logout after inactivity. |
+| `session-timeout.ts` | Two-tier idle timeout: `EPHEMERAL_TIMEOUT_MS` (3h) / `PERSISTENT_TIMEOUT_MS` (30d). `getEffectiveTimeout()` picks live based on remember-me flag. |
 | `password-validation.ts` | Password strength rules. |
 | `date-utils.ts` | Format helpers (German locale). |
 | `upload-with-progress.ts` | XHR upload wrapper with progress events. Used by Files + Projects. |

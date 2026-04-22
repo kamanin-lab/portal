@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-04-17_
+_Status: active_ · _Last updated: 2026-04-22_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
@@ -31,6 +31,14 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+
+### REMEMBER-ME: Angemeldet bleiben — Two-tier session persistence ✅ (2026-04-22)
+- "Angemeldet bleiben" checkbox on login page (default checked); hint "Auf fremden Geräten deaktivieren"
+- Persistent mode (checked): localStorage, 30-day idle timeout
+- Ephemeral mode (unchecked): sessionStorage, 3-hour idle, clears on tab close
+- Hybrid storage adapter in `supabase.ts` reads `portal-remember-me` flag; fail-safe default = persistent
+- `getEffectiveTimeout()` in `session-timeout.ts` re-evaluates live on every 60s tick
+- Commit: `29350ba`, branch: `staging`
 
 ### TASK-018: Peer-to-peer org notifications ✅ (2026-04-17)
 - Fan-out in `post-task-comment`: all org members (excl. author + viewers) receive bell + email when a peer posts a comment in a ticket or project chat

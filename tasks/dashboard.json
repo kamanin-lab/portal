@@ -6,6 +6,15 @@
   "pipeline": [],
   "completedTasks": [
     {
+      "id": "REMEMBER-ME",
+      "title": "Angemeldet bleiben — Two-tier session persistence",
+      "date": "2026-04-22",
+      "commits": ["29350ba"],
+      "summary": "Login checkbox 'Angemeldet bleiben' (default checked). Persistent mode: localStorage + 30d idle. Ephemeral mode: sessionStorage + 3h idle. Hybrid storage adapter in supabase.ts reads portal-remember-me flag. signIn/signInWithMagicLink accept remember param. 7 tests in session-timeout.test.ts.",
+      "filesChanged": 4,
+      "reviewCycles": 1
+    },
+    {
       "id": "TASK-018",
       "title": "Peer-to-Peer Notifications for Organizations",
       "date": "2026-04-17",

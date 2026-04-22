@@ -1,5 +1,20 @@
 # Changelog
 
+## feat(auth): "Angemeldet bleiben" — two-tier session persistence — 2026-04-22
+
+Clients complained about being logged out frequently. Added "Angemeldet bleiben" checkbox to the login page (default checked) implementing a two-tier session model following the Slack/Linear pattern.
+
+- **Login page** — "Angemeldet bleiben" checkbox in `signin` and `magic` modes; hint "Auf fremden Geräten deaktivieren"; default checked (B2B portal on client's own devices).
+- **Persistent mode** (checked): Supabase auth tokens routed to `localStorage`, 30-day idle timeout.
+- **Ephemeral mode** (unchecked): tokens routed to `sessionStorage`, 3-hour idle timeout — clears on tab/window close.
+- **Hybrid storage adapter** (`supabase.ts`) — reads `portal-remember-me` flag from `localStorage` on every auth token read/write; fail-safe default = persistent if flag absent.
+- **Two-tier idle timeout** (`session-timeout.ts`) — `EPHEMERAL_TIMEOUT_MS` (3h) + `PERSISTENT_TIMEOUT_MS` (30d); `getEffectiveTimeout()` picks live based on current flag; 60s tick re-evaluates without page reload.
+- **`useAuth.ts`** — `signIn` and `signInWithMagicLink` accept optional `remember` boolean; writes flag before Supabase call; `signOut` clears the flag.
+- **Tests** — 7 tests in `session-timeout.test.ts` (was 2): constants + `getEffectiveTimeout()` flag logic.
+- Commit: `29350ba`, branch: `staging`.
+
+---
+
 ## fix(departments): tighten visibility — untagged tasks no longer public for scoped members — 2026-04-21
 
 **Behavior change.** Before: a member with `departments=[SEO]` still saw every untagged ticket (fallback rule). After: scoped members see ONLY tickets with overlapping departments or tickets they created. Untagged tickets are no longer visible to scoped members.

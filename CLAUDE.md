@@ -75,6 +75,9 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `supabase/functions/fetch-project-tasks/` | Syncs ClickUp tasks → project_task_cache + AI enrichment via Claude Haiku |
 | `supabase/functions/send-reminders/` | Dual-purpose reminder scheduler: (1) ticket reminders — tasks idle in Client Review 5+ days; (2) project reminders — project_task_cache entries idle in `client review` 3+ days → `project_reminder` email every 3 days, tracked via `profiles.last_project_reminder_sent_at` |
 | `supabase/functions/nextcloud-files/` | WebDAV proxy: list, download, upload (XHR progress), mkdir, delete, delete-client |
+| `src/shared/lib/supabase.ts` | Hybrid auth storage adapter — routes Supabase tokens to `localStorage` (persistent) or `sessionStorage` (ephemeral) based on `portal-remember-me` flag. Exports `REMEMBER_ME_KEY`, `isRemembered()`, `writeRememberFlag()`. |
+| `src/shared/lib/session-timeout.ts` | Two-tier idle timeout: `EPHEMERAL_TIMEOUT_MS` (3h), `PERSISTENT_TIMEOUT_MS` (30d). `getEffectiveTimeout()` picks based on remember-me flag. `SESSION_TIMEOUT_MS` kept as backward-compat alias. |
+| `src/shared/hooks/useAuth.ts` | Auth context + idle-timeout effect; `signIn(email, password, remember?)` and `signInWithMagicLink(email, remember?)` write flag before Supabase call; `signOut` clears `REMEMBER_ME_KEY`. |
 | `src/shared/lib/upload-with-progress.ts` | Shared XHR upload utility — wraps XMLHttpRequest to expose `onProgress` (0–100) for all file uploads |
 | `src/modules/files/components/UploadProgressBar.tsx` | Animated per-file progress bar; exports `UploadItem` interface; auto-dismisses at completion |
 | `src/modules/tickets/components/NewTicketDialog.tsx` | Reusable dialog: mode="ticket" (default) or mode="project" (with chapters/phase) |
