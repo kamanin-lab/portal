@@ -5,6 +5,7 @@ import {
   Folder01Icon,
   DashboardSquare01Icon,
   BubbleChatIcon,
+  ChartBarIncreasingIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/shared/lib/utils'
 import type { ClientWorkspace } from '@/shared/hooks/useWorkspaces'
@@ -26,6 +27,7 @@ const ICON_MAP: Record<string, IconSvgElement> = {
   'headphones': BubbleChatIcon,
   'headset': BubbleChatIcon,
   'box': DashboardSquare01Icon,
+  'chart-bar-increasing': ChartBarIncreasingIcon,
 }
 
 interface Props {

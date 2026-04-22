@@ -20,6 +20,7 @@ const TicketsPage = lazy(() => import('@/modules/tickets/pages/TicketsPage').the
 const SupportPage = lazy(() => import('@/modules/tickets/pages/SupportPage').then(m => ({ default: m.SupportPage })))
 const KontoPage = lazy(() => import('@/shared/pages/KontoPage').then(m => ({ default: m.KontoPage })))
 const OrganisationPage = lazy(() => import('@/modules/organisation/pages/OrganisationPage').then(m => ({ default: m.OrganisationPage })))
+const RevenueIntelligencePage = lazy(() => import('@/modules/revenue-intelligence').then(m => ({ default: m.RevenueIntelligencePage })))
 
 function RouteLoading() {
   return (
@@ -64,6 +65,10 @@ export function AppRoutes() {
         <Route path="/hilfe" element={withRouteLoading(<HilfePage />)} />
         <Route path="/konto" element={withRouteLoading(<KontoPage />)} />
         <Route path="/organisation" element={withRouteLoading(<OrganisationPage />)} />
+        <Route
+          path="/revenue"
+          element={withRouteLoading(<WorkspaceGuard moduleKey="revenue-intelligence"><RevenueIntelligencePage /></WorkspaceGuard>)}
+        />
       </Route>
 
       <Route path="*" element={withRouteLoading(<NotFoundPage />)} />

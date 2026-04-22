@@ -1,0 +1,87 @@
+/**
+ * Revenue Intelligence -- embeds the Kamanda MCP App (daily-briefing tool).
+ *
+ * NOTE: This page is a documented exception to Architecture Rule 11
+ * (ContentContainer width="narrow" on all app pages). An embedded dashboard
+ * iframe cannot be meaningfully constrained to max-w-4xl. Do not wrap this
+ * page in ContentContainer.
+ */
+import { useCallback, useState } from 'react'
+import { AppRenderer } from '@mcp-ui/client'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import type { ReadResourceResult, ListResourcesResult } from '@modelcontextprotocol/sdk/types.js'
+import { toast } from 'sonner'
+import { useMcpProxy } from '../hooks/useMcpProxy'
+import { DashboardLoading } from './DashboardLoading'
+
+const SANDBOX_URL = new URL('/sandbox-proxy.html', window.location.origin)
+const TOOL_NAME = 'daily-briefing'
+const TOOL_RESOURCE_URI = 'ui://kamanda/daily-briefing'
+
+export function RevenueIntelligencePage() {
+  const { callTool, readResource, listResources } = useMcpProxy()
+  const [isReady, setIsReady] = useState(false)
+
+  const handleCallTool = useCallback(
+    async (params: { name: string; arguments?: Record<string, unknown> }) => {
+      const result = await callTool(params)
+      // Upstream MCP server returns a valid CallToolResult JSON-RPC response
+      return result as CallToolResult
+    },
+    [callTool],
+  )
+
+  const handleReadResource = useCallback(
+    async (params: { uri: string }) => {
+      const result = await readResource(params)
+      // Upstream returns valid ReadResourceResult
+      return result as ReadResourceResult
+    },
+    [readResource],
+  )
+
+  const handleListResources = useCallback(
+    async () => {
+      const result = await listResources()
+      // Upstream returns valid ListResourcesResult
+      return result as ListResourcesResult
+    },
+    [listResources],
+  )
+
+  const handleError = useCallback((error: Error) => {
+    console.error('[RevenueIntelligence] AppRenderer error:', error)
+    toast.error('Fehler beim Laden der Umsatz-Intelligenz.')
+  }, [])
+
+  const handleMessage = useCallback(async () => {
+    return {}
+  }, [])
+
+  const handleSizeChanged = useCallback(() => {
+    if (!isReady) setIsReady(true)
+  }, [isReady])
+
+  return (
+    <div className="h-[calc(100vh-3.5rem)] w-full relative">
+      {!isReady && (
+        <div className="absolute inset-0 z-10">
+          <DashboardLoading />
+        </div>
+      )}
+      <div className={isReady ? 'h-full w-full' : 'h-full w-full opacity-0'}>
+        <AppRenderer
+          toolName={TOOL_NAME}
+          toolResourceUri={TOOL_RESOURCE_URI}
+          sandbox={{ url: SANDBOX_URL }}
+          onCallTool={handleCallTool}
+          onReadResource={handleReadResource}
+          onListResources={handleListResources}
+          onMessage={handleMessage}
+          onError={handleError}
+          onSizeChanged={handleSizeChanged}
+        />
+      </div>
+    </div>
+  )
+}

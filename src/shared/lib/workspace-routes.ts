@@ -3,6 +3,7 @@ export const WORKSPACE_ROUTES: Record<string, string> = {
   support: '/support',
   projects: '/projekte',
   files: '/dateien',
+  'revenue-intelligence': '/revenue',
 }
 
 export const WORKSPACE_CHILDREN: Record<
@@ -13,6 +14,7 @@ export const WORKSPACE_CHILDREN: Record<
   support: [],
   projects: [],
   files: [],
+  'revenue-intelligence': [],
 }
 
 export function getWorkspaceRoute(moduleKey: string): string {
