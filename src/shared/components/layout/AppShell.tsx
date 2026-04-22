@@ -11,7 +11,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/inbox': 'Inbox',
   '/meine-aufgaben': 'Meine Aufgaben',
   '/tickets': 'Aufgaben',
-  '/support': 'Support',
+  '/support': 'Support Chat',
   '/projekte': 'Projekte',
   '/nachrichten': 'Nachrichten',
   '/dateien': 'Dateien',

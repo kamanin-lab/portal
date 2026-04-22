@@ -13,7 +13,7 @@ export function SupportSheet({ open, onClose }: SupportSheetProps) {
   const { markAsRead } = useUnreadCounts(user?.id)
 
   return (
-    <SideSheet open={open} onClose={onClose} title="Support" managed>
+    <SideSheet open={open} onClose={onClose} title="Support Chat" managed>
       <div className="flex-1 flex flex-col min-h-0">
         <div className="px-5 py-3 border-b border-border text-xs text-text-tertiary">
           Direkter Kanal zum Team für allgemeine Rückfragen und Support.

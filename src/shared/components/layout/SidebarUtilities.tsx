@@ -29,7 +29,7 @@ export function SidebarUtilities({ expanded, supportUnread = 0, onNavigate }: Pr
         <HugeiconsIcon icon={BubbleChatIcon} size={20} className="shrink-0" />
         {expanded && (
           <>
-            <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex-1">Support</span>
+            <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex-1">Support Chat</span>
             {supportUnread > 0 && (
               <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-cta text-white text-2xs font-bold flex items-center justify-center leading-none shrink-0">
                 {supportUnread > 99 ? '99+' : supportUnread}

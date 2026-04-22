@@ -22,7 +22,7 @@ export function BottomNav() {
   const items: { to: string; icon: IconSvgElement; label: string; badge: number }[] = [
     { to: '/inbox',   icon: InboxIcon,            label: 'Inbox',   badge: inboxUnread },
     { to: '/tickets', icon: ClipboardIcon,         label: 'Aufgaben', badge: 0 },
-    { to: '/support', icon: BubbleChatIcon,          label: 'Support',  badge: supportUnread },
+    { to: '/support', icon: BubbleChatIcon,          label: 'Support Chat',  badge: supportUnread },
     { to: '/dateien', icon: FolderOpenIcon,        label: 'Dateien', badge: 0 },
   ]
 
