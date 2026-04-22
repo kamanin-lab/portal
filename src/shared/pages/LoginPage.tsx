@@ -16,6 +16,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -34,14 +35,14 @@ export function LoginPage() {
 
     try {
       if (mode === 'signin') {
-        const { error } = await signIn(email, password)
+        const { error } = await signIn(email, password, remember)
         if (error) {
           setError('E-Mail oder Passwort ungültig.')
         } else {
           navigate(from, { replace: true })
         }
       } else if (mode === 'magic') {
-        const { error } = await signInWithMagicLink(email)
+        const { error } = await signInWithMagicLink(email, remember)
         if (error) {
           setError('Magic Link konnte nicht gesendet werden. Bitte erneut versuchen.')
         } else {
@@ -119,6 +120,21 @@ export function LoginPage() {
                   className="h-10 px-3 rounded-[8px] border border-border bg-bg text-text-primary text-sm outline-none focus:border-accent transition-colors"
                 />
               </div>
+            )}
+
+            {(mode === 'signin' || mode === 'magic') && (
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={e => setRemember(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-accent cursor-pointer"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-xs text-text-secondary">Angemeldet bleiben</span>
+                  <span className="text-[11px] text-text-tertiary">Auf fremden Geräten deaktivieren</span>
+                </span>
+              </label>
             )}
 
             {error && (

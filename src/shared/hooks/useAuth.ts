@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, createElement } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/shared/lib/supabase'
+import { supabase, writeRememberFlag, REMEMBER_ME_KEY } from '@/shared/lib/supabase'
 import { toast } from 'sonner'
-import { startActivityTracking, getIdleMs, SESSION_TIMEOUT_MS, SESSION_WARNING_MS } from '@/shared/lib/session-timeout'
+import { startActivityTracking, getIdleMs, getEffectiveTimeout, SESSION_WARNING_MS } from '@/shared/lib/session-timeout'
 import type { Profile } from '@/shared/types/common'
 
 const STAGING_AUTH_BYPASS = false
@@ -42,8 +42,8 @@ interface AuthContextValue {
   profile: Profile | null
   isLoading: boolean
   isAuthenticated: boolean
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>
+  signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: Error | null }>
+  signInWithMagicLink: (email: string, remember?: boolean) => Promise<{ error: Error | null }>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
@@ -137,8 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let warnedAboutExpiry = false
 
     const checkInterval = setInterval(() => {
+      const timeout = getEffectiveTimeout()
       const idle = getIdleMs()
-      const remaining = SESSION_TIMEOUT_MS - idle
+      const remaining = timeout - idle
 
       if (remaining <= 0) {
         clearInterval(checkInterval)
@@ -163,12 +164,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, remember: boolean = true) => {
+    writeRememberFlag(remember)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: error as Error | null }
   }
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithMagicLink = async (email: string, remember: boolean = true) => {
+    writeRememberFlag(remember)
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/inbox` },
@@ -190,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    try { localStorage.removeItem(REMEMBER_ME_KEY) } catch { /* noop */ }
     setUser(null)
     setSession(null)
     setProfile(null)
