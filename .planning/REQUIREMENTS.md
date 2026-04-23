@@ -150,15 +150,15 @@ Summerfield DDEV clone at `/home/upan/projects/sf_staging/`. Apache-FPM + PHP 8.
 **State as of 2026-04-23:** DDEV environment is already deployed by Yuri with production DB imported (324 MB, 14 401 URL replacements), uploads 302-redirected to prod via `.htaccess`, and smoke test passing. DEV-01 is therefore already satisfied. DEV-02 through DEV-09 are the Phase 15 deltas to bring this deployed environment to plan-ready state.
 
 - [x] **DEV-01**: DDEV project running at `https://summerfield.ddev.site`; Apache-FPM + PHP 8.4 + MySQL 8.0; mkcert cert trusted; production DB imported and URL-replaced; homepage smoke-test passing. ✓ DONE 2026-04-23.
-- [ ] **DEV-02**: MCP Adapter v0.5.0 installed (composer in mu-plugins OR wp.org plugin — whichever works); verify `mcp_adapter_init` hook fires
-- [ ] **DEV-03**: `kmn-revenue-abilities` plugin symlinked from `/mnt/g/01_OPUS/Projects/PORTAL/wordpress-plugins/kmn-revenue-abilities/` into `/home/upan/projects/sf_staging/wp-content/plugins/`; activated successfully (plugin must exist before this requirement can be satisfied — depends on Phase 16 ABIL-SCAF-01)
-- [ ] **DEV-04**: Maxi AI plugin symlinked (from `/mnt/g/01_OPUS/Projects/PORTAL/maxi-ai/` or separate clone) and activated; coexists with kmn plugin without collision
-- [ ] **DEV-05**: WordPress Application Password generated for `admin` user (description: "mcp-dev"); recorded in mcp-poc `.env.local` as `WOOCOMMERCE_WP_APP_PASS`
-- [ ] **DEV-06**: WooCommerce REST API keys generated for admin; `WOOCOMMERCE_CONSUMER_KEY` / `WOOCOMMERCE_CONSUMER_SECRET` in mcp-poc `.env.local` for legacy tools
-- [ ] **DEV-07**: HPOS enabled on DDEV; `wp_wc_order_stats` and `wp_wc_order_product_lookup` tables exist; verified via `ddev wp wc hpos status`
-- [ ] **DEV-08**: mcp-poc connects to DDEV via `NODE_EXTRA_CA_CERTS` pointing to mkcert CA root
-- [ ] **DEV-09**: `PORTAL/.gitignore` updated: add `wordpress-plugins/*/.phpunit.result.cache` and `wordpress-plugins/*/composer.lock`. CRITICAL: extend `scripts/` whitelist to allow `*.php` files (current whitelist silently excludes them — `seed-orders.php` would be ignored by default)
-- [ ] **DEV-10**: Document actual deployment decisions in `docs/DECISIONS.md` — WSL-native path `/home/upan/projects/sf_staging/`, uploads-redirect via `.htaccess`, Apache-FPM stack choice matching prod
+- [x] **DEV-02**: MCP Adapter v0.5.0 installed (composer in mu-plugins OR wp.org plugin — whichever works); verify `mcp_adapter_init` hook fires
+- [x] **DEV-03**: `kmn-revenue-abilities` plugin symlinked from `/mnt/g/01_OPUS/Projects/PORTAL/wordpress-plugins/kmn-revenue-abilities/` into `/home/upan/projects/sf_staging/wp-content/plugins/`; activated successfully (plugin must exist before this requirement can be satisfied — depends on Phase 16 ABIL-SCAF-01)
+- [x] **DEV-04**: Maxi AI plugin symlinked (from `/mnt/g/01_OPUS/Projects/PORTAL/maxi-ai/` or separate clone) and activated; coexists with kmn plugin without collision
+- [x] **DEV-05**: WordPress Application Password generated for `admin` user (description: "mcp-dev"); recorded in mcp-poc `.env.local` as `WOOCOMMERCE_WP_APP_PASS`
+- [x] **DEV-06**: WooCommerce REST API keys generated for admin; `WOOCOMMERCE_CONSUMER_KEY` / `WOOCOMMERCE_CONSUMER_SECRET` in mcp-poc `.env.local` for legacy tools
+- [x] **DEV-07**: HPOS enabled on DDEV; `wp_wc_order_stats` and `wp_wc_order_product_lookup` tables exist; verified via `ddev wp wc hpos status`
+- [x] **DEV-08**: mcp-poc connects to DDEV via `NODE_EXTRA_CA_CERTS` pointing to mkcert CA root
+- [x] **DEV-09**: `PORTAL/.gitignore` updated: add `wordpress-plugins/*/.phpunit.result.cache` and `wordpress-plugins/*/composer.lock`. CRITICAL: extend `scripts/` whitelist to allow `*.php` files (current whitelist silently excludes them — `seed-orders.php` would be ignored by default)
+- [x] **DEV-10**: Document actual deployment decisions in `docs/DECISIONS.md` — WSL-native path `/home/upan/projects/sf_staging/`, uploads-redirect via `.htaccess`, Apache-FPM stack choice matching prod
 
 ---
 
