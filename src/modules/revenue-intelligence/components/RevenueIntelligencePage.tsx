@@ -6,7 +6,7 @@
  * iframe cannot be meaningfully constrained to max-w-4xl. Do not wrap this
  * page in ContentContainer.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppRenderer } from '@mcp-ui/client'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { ReadResourceResult, ListResourcesResult } from '@modelcontextprotocol/sdk/types.js'
@@ -21,6 +21,12 @@ const TOOL_RESOURCE_URI = 'ui://widgets/daily-briefing.html'
 export function RevenueIntelligencePage() {
   const { callTool, readResource, listResources } = useMcpProxy()
   const [isReady, setIsReady] = useState(false)
+  // The kamanda daily_briefing widget stays in a "loading" state until it
+  // receives a tool result via ui/notifications/tool-result. @mcp-ui/client's
+  // AppRenderer forwards the `toolResult` prop to the iframe for us, so we
+  // invoke the tool once on mount and feed the result in.
+  const [toolResult, setToolResult] = useState<CallToolResult | null>(null)
+
   const sandboxUrl = useMemo(() => new URL('/sandbox-proxy.html', window.location.origin), [])
 
   const handleCallTool = useCallback(
@@ -31,6 +37,24 @@ export function RevenueIntelligencePage() {
     },
     [callTool],
   )
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const result = (await callTool({ name: TOOL_NAME, arguments: {} })) as CallToolResult
+        if (!cancelled) setToolResult(result)
+      } catch (err) {
+        if (!cancelled) {
+          console.error('[RevenueIntelligence] initial tool call failed:', err)
+          // useMcpProxy already toasts user-facing error
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [callTool])
 
   const handleReadResource = useCallback(
     async (params: { uri: string }) => {
@@ -75,6 +99,7 @@ export function RevenueIntelligencePage() {
           <AppRenderer
             toolName={TOOL_NAME}
             toolResourceUri={TOOL_RESOURCE_URI}
+            toolResult={toolResult ?? undefined}
             sandbox={{ url: sandboxUrl }}
             onCallTool={handleCallTool}
             onReadResource={handleReadResource}
