@@ -47,9 +47,11 @@ bun.lockb
 scripts/*
 !scripts/*.ts
 !scripts/*.cjs
+!scripts/*.php
 !scripts/new-client-template.json
 !scripts/new-client-template.md
 !scripts/README.md
+!scripts/seed-orders.md
 
 # Old project directories (kept locally as reference, not in repo root)
 kamanin-portal/
@@ -112,3 +114,14 @@ portal_backup_*.dump
 
 # Local experiment artifacts (not for repo)
 .experiments/
+
+# WordPress plugin — test cache and local overrides (per LOCAL_DEV_SETUP.md §5)
+wordpress-plugins/*/.phpunit.result.cache
+wordpress-plugins/*/composer.lock
+
+# DDEV config in repo (if future dev copies .ddev/config.yaml for reference)
+# Note: active .ddev/ lives at /home/upan/projects/sf_staging/, not in this repo
+.ddev/*
+!.ddev/config.yaml
+!.ddev/providers/
+!.ddev/providers/**
