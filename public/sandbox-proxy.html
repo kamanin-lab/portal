@@ -53,17 +53,22 @@
     document.body.appendChild(inner);
     inner.srcdoc = html;
 
-    // Relay messages from inner iframe to host (parent)
+    // Relay messages from inner iframe to host (parent).
+    //
+    // Origin policy (order matters — check source first, then origin):
+    //   - From inner srcdoc iframe: e.origin is "null" (srcdoc has no origin).
+    //     Gate by e.source identity instead.
+    //   - From host parent: must match selfOrigin.
+    //   - Anything else: drop.
     window.addEventListener('message', function relay(e) {
-      // Validate origin on relay messages too
-      if (e.origin !== selfOrigin) return;
       if (!e.data || typeof e.data !== 'object') return;
 
       if (e.source === inner.contentWindow) {
-        // Forward inner -> host
+        // Inner -> host. Source-identity gate is the trust boundary here;
+        // srcdoc has origin "null" so we cannot validate by origin.
         window.parent.postMessage(e.data, selfOrigin);
-      } else if (e.source === window.parent) {
-        // Forward host -> inner
+      } else if (e.source === window.parent && e.origin === selfOrigin) {
+        // Host -> inner. Require same-origin host.
         if (inner.contentWindow) {
           inner.contentWindow.postMessage(e.data, '*');
         }
