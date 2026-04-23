@@ -136,10 +136,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // For tools/call: only allow 'daily-briefing' tool
+    // For tools/call: whitelist tools exposed by the kamanda-mcp-poc MCP server.
+    // Tool names use underscores (daily_briefing, revenue_today, etc.) per upstream schema.
+    const ALLOWED_TOOLS = new Set([
+      "daily_briefing",
+      "revenue_today",
+      "payment_attention_orders",
+      "incomplete_orders",
+    ]);
     if (method === "tools/call") {
       const toolName = (params as Record<string, unknown> | undefined)?.name;
-      if (toolName !== "daily-briefing") {
+      if (typeof toolName !== "string" || !ALLOWED_TOOLS.has(toolName)) {
         log.warn("Tool not allowed", { toolName });
         return new Response(
           JSON.stringify({ ok: false, code: "BAD_REQUEST", message: `Tool not allowed: ${String(toolName)}`, correlationId }),
@@ -148,10 +155,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For resources/read: only allow ui://kamanda/ URIs
+    // For resources/read: only allow ui:// resource URIs (MCP UI widgets).
+    // Upstream uses ui://widgets/... — accept any ui:// scheme, reject http(s)://
+    // or file:// which would let a compromised upstream exfiltrate arbitrary URLs.
     if (method === "resources/read") {
       const uri = (params as Record<string, unknown> | undefined)?.uri;
-      if (typeof uri !== "string" || !uri.startsWith("ui://kamanda/")) {
+      if (typeof uri !== "string" || !uri.startsWith("ui://")) {
         log.warn("Resource URI not allowed", { uri });
         return new Response(
           JSON.stringify({ ok: false, code: "BAD_REQUEST", message: "Resource URI not allowed", correlationId }),
