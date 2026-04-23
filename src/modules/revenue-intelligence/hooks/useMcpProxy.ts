@@ -44,7 +44,17 @@ async function invoke(method: string, params: Record<string, unknown>, label: st
     throw new Error(`MCP proxy error: ${envelope.code} — ${envelope.message ?? 'unknown'}`)
   }
 
-  return envelope.data
+  // envelope.data is the full JSON-RPC response ({jsonrpc, id, result} or {jsonrpc, id, error}).
+  // MCP SDK / @mcp-ui/client expect the unwrapped `result` object (e.g. ReadResourceResult has
+  // shape {contents: [...]}, not {result: {contents: [...]}}).
+  const rpc = envelope.data as { result?: unknown; error?: { code?: number; message?: string } } | undefined
+  if (rpc?.error) {
+    const msg = rpc.error.message ?? 'Unknown upstream error'
+    console.error(`[useMcpProxy] ${label} upstream JSON-RPC error:`, rpc.error)
+    toast.error('Verbindungsfehler. Bitte erneut versuchen.')
+    throw new Error(`MCP upstream error: ${msg}`)
+  }
+  return rpc?.result ?? envelope.data
 }
 
 export function useMcpProxy() {
