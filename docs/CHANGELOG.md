@@ -1,5 +1,80 @@
 # Changelog
 
+## chore(15-01): Phase 15 Plan 1 — DDEV plumbing + empty plugin scaffold — 2026-04-23
+
+Milestone v3.0 MCP Apps Platform · Phase 15 Wave 1 (Stream A). Closes REQ-IDs DEV-01..10. Plan 15-02 (synthetic seeder) blocked on this.
+
+### Added — PORTAL repo (this commit set)
+- **`wordpress-plugins/kmn-revenue-abilities/`** — empty plugin scaffold (first PHP authored by KAMANIN in PORTAL, first `wordpress-plugins/` directory, first `composer.json`).
+  - `kmn-revenue-abilities.php` (70 lines) — activatable shell with WP 6.9+ version guard, WooCommerce dependency check, ABSPATH guard, plugin header. Mirrors `maxi-ai/maxi-ai.php` conventions verbatim (final class, static methods, no PSR-4 namespaces, procedural + static-class pattern). Zero abilities registered — Phase 16 scope.
+  - `composer.json` — declares `wordpress/mcp-adapter: 0.5.0` (exact pin, not `^0.5.0`, pre-1.0 risk).
+  - `.htaccess` — blocks `.md`/`.txt`/`.example`/`.json`/`.lock` from direct web access.
+  - `readme.md` (82 lines) — developer onboarding: DDEV symlink steps, Application Password + WC REST key generation commands, references to DECISIONS.md rotation runbook.
+- **`.gitignore` whitelist fix** — `scripts/*.php` + `scripts/seed-orders.md` now trackable (required before Plan 15-02 writes the seeder). Added `wordpress-plugins/*/composer.lock` and `.phpunit.result.cache` exclusions per WP plugin practice. Added `.ddev/*` block with `config.yaml` allow-list for future per-dev config reference.
+- **`docs/DECISIONS.md`** — two new ADR blocks:
+  - **ADR-035:** Local WordPress Dev via DDEV on WSL-Native FS — records environment choice (DDEV on WSL2), path choice (`/home/upan/projects/sf_staging/` ext4 over `/mnt/g/` 9P), stack choice (Apache-FPM + PHP 8.4 + MySQL 8.0 to match Summerfield prod), uploads strategy (.htaccess 302-redirect), plugin source location (PORTAL repo + symlink), MCP Adapter install method (composer in mu-plugins, exact pin).
+  - **ADR-036:** WordPress Application Password Rotation for kmn-revenue MCP Bridge — step-by-step runbook for rotating `WOOCOMMERCE_WP_APP_PASS` (6 steps), rotation log (initial issuance 2026-04-23), decoupling assertion from existing `WP_MCP_APP_PASS` (wp-audit.ts), ban on `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+
+### Pending — Yuri's WSL (user_setup)
+These steps require Yuri's WSL environment and cannot be automated from the Windows/PORTAL side:
+- `composer require wordpress/mcp-adapter:0.5.0` inside DDEV mu-plugins
+- Symlinks: `kmn-revenue-abilities` + `maxi-ai` into `/home/upan/projects/sf_staging/wp-content/plugins/`
+- `ddev wp plugin activate kmn-revenue-abilities maxi-ai`
+- Generate Application Password (`ddev wp user application-password create admin mcp-dev --porcelain`)
+- Generate WooCommerce REST API keys (`ddev wp wc api-key create admin ...`)
+- Verify HPOS enabled (`ddev wp wc hpos status`)
+- Configure `NODE_EXTRA_CA_CERTS=$(mkcert -CAROOT)/rootCA.pem` in `~/.bashrc`
+
+See `.planning/phases/15-local-dev-synthetic-seeder/15-01-SUMMARY.md` for the full USER SETUP checklist with expected outputs.
+
+### First in repo
+First DDEV project. First PHP authored by KAMANIN in PORTAL (maxi-ai is vendored, not authored). First `composer.json`. First `wordpress-plugins/` directory.
+
+## feat(revenue-intelligence): Umsatz-Intelligenz MCP App embed — 2026-04-23
+
+POC of Revenue Intelligence module: embeds the Kamanda `daily_briefing` widget inside the portal at `/revenue`. Staging-only — not merged to `main` (org milestone merge policy). Access granted to MBM (Nadine Bonin) and Yuri Kamanin's test org.
+
+### New module: `src/modules/revenue-intelligence/`
+- **`RevenueIntelligencePage.tsx`** — embeds `AppRenderer` from `@mcp-ui/client`; auto-invokes `daily_briefing` on mount; feeds tool result to widget; handles `ui/open-link` events to open WooCommerce admin in new tab. `ContentContainer width="narrow"` compliant.
+- **`McpErrorBoundary.tsx`** — React ErrorBoundary with German fallback UI.
+- **`DashboardLoading.tsx`** — loading skeleton shown while MCP call is in flight.
+- **`hooks/useMcpProxy.ts`** — `useMemo`-stabilized hook wrapping `supabase.functions.invoke('mcp-proxy')`; unwraps JSON-RPC `{result}` envelope; maps UNAUTHORIZED / FORBIDDEN / other codes to German toasts.
+
+### New Edge Function: `supabase/functions/mcp-proxy/`
+- JWT auth gate + `client_workspaces` gate (requires `module_key='revenue-intelligence'` + `is_active=true` for caller's org).
+- Method/tool/resource whitelist: `initialize | tools/list | tools/call (daily_briefing, revenue_today, payment_attention_orders, incomplete_orders) | resources/list | resources/read (uri startsWith "ui://")`.
+- Streamable HTTP MCP (spec 2025-03-26): sends `Accept: application/json, text/event-stream`; parses SSE `data:` events; falls back to JSON.
+- Response envelope `{ok, code, correlationId, message?, data?}`.
+- Passes `Mcp-Session-Id` header in both directions. 10s `AbortController` on upstream fetch.
+- Env: `MCP_SERVER_URL` (staging set to `https://mcp-poc-three.vercel.app/mcp`).
+
+### Routing + shell
+- `/revenue` route with lazy import + `<WorkspaceGuard moduleKey="revenue-intelligence">`.
+- `AppShell.tsx` — added `'/revenue': 'Umsatz-Intelligenz'` to `PAGE_TITLES`.
+- `SidebarWorkspaces.tsx` — added `ChartBarIncreasingIcon` and `'chart-bar-increasing'` mapping.
+- `workspace-routes.ts` — added `'revenue-intelligence': '/revenue'`.
+
+### Sandbox
+- **`public/sandbox-proxy.html`** — AppBridge sandbox proxy (MCP UI protocol). Relays postMessage between host and srcdoc iframe. Same-origin for now; TODO comment marks it for move to `sandbox.kamanin.at` on multi-client rollout.
+
+### Package
+- Added `@mcp-ui/client` v7 (bundles `@modelcontextprotocol/sdk` transitively — do NOT install SDK separately).
+
+### Database migrations (staging `ahlthosftngdcryltapu`)
+- `20260423095000_client_workspaces_unique_constraint.sql` — adds missing `UNIQUE (organization_id, module_key)` constraint (was documented in schema but DDL never applied; caused SQLSTATE 42P10 on first upsert attempt).
+- `20260423100000_revenue_intelligence_workspace_for_mbm.sql` — grants module to MBM org (by slug `mbm-moebel`).
+- `20260423110000_revenue_intelligence_workspace_for_kamanin.sql` — grants module to Yuri's org (by email lookup, slug-agnostic).
+
+### Known non-blocking issues
+- Fallback URL in `mcp-proxy/index.ts:13` still points to old `kamanda-mcp-poc.vercel.app` — staging secret `MCP_SERVER_URL` is correct; fix hardcode when convenient.
+- Sandbox proxy is same-origin; move to separate origin for multi-client production rollout.
+- Occasional first-request `FunctionsFetchError` after login (EF cold start); second page load recovers. Fix: add 1 retry in `useMcpProxy`.
+
+### Commits (staging)
+`031268c`, `0ccd413`, `91940f9`, `b3788d2`, `7ea940d`, `ac38146`, `341a902`, `d999279`, `444a5aa`, `4decb6e`, `34b73bc`
+
+---
+
 ## feat(auth): "Angemeldet bleiben" — two-tier session persistence — 2026-04-22
 
 Clients complained about being logged out frequently. Added "Angemeldet bleiben" checkbox to the login page (default checked) implementing a two-tier session model following the Slack/Linear pattern.

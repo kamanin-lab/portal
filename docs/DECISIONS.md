@@ -1,5 +1,31 @@
 # Architecture Decision Records
 
+## ADR-034: Embedding third-party MCP Apps in the portal via @mcp-ui/client (2026-04-23)
+**Date:** 2026-04-23
+**Status:** Accepted (POC — staging only)
+
+**Context:** Revenue Intelligence POC requires rendering a Kamanda-built MCP App widget (`daily_briefing`) inside the portal. Options: (a) build the widget from scratch in React, (b) use `@mcp-ui/client` `AppRenderer` which handles the full MCP Apps protocol (AppBridge postMessage, tool invocation, UI Resources, sandbox iframe), (c) embed as a plain `<iframe>` without MCP protocol support.
+
+**Decision:** Use `@mcp-ui/client` v7 as the rendering layer. Build a hardened Supabase Edge Function (`mcp-proxy`) as the only portal-side contact point with the upstream MCP server.
+
+**Why @mcp-ui/client over building from scratch:** The MCP Apps protocol (AppBridge, `ui/open-link`, ResizeObserver height reporting, srcdoc sandbox, SSE tool result streaming) has significant surface area. `@mcp-ui/client` encapsulates all of it and is maintained by the MCP Apps spec authors. Building from scratch would replicate that complexity with higher maintenance burden.
+
+**Why a hardened proxy EF rather than direct browser → MCP server:** (1) The upstream MCP server URL and any future auth tokens must not be exposed to the browser. (2) A `client_workspaces` gate enforces module-level access control at the server without trusting client-side guards alone. (3) A whitelist of allowed methods + tool names provides defense-in-depth even if the upstream server's own schema validation is relaxed.
+
+**Whitelist rationale:** The proxy whitelists `initialize | tools/list | tools/call (4 named tools) | resources/list | resources/read (uri startsWith "ui://")`. This is intentionally tighter than the upstream schema. If a future tool is added upstream, the whitelist must be updated explicitly — the conservative default prevents accidental exposure of new tools before they are reviewed.
+
+**Sandbox proxy same-origin compromise:** `public/sandbox-proxy.html` lives on `staging.portal.kamanin.at`. The MCP Apps spec recommends a separate origin for the sandbox proxy to provide true iframe isolation. Same-origin was chosen for the POC to avoid provisioning an additional subdomain and TLS cert before the approach is validated. A TODO comment in the file marks this for remediation before multi-client production rollout.
+
+**Response envelope:** `mcp-proxy` returns `{ok, code, correlationId, message?, data?}` matching the newer EF convention. The `data` field carries the raw MCP response body (JSON or parsed SSE). `useMcpProxy` unwraps the JSON-RPC `{result}` envelope from `data` before passing to `AppRenderer`.
+
+**Consequences:**
+- `@mcp-ui/client` bundles `@modelcontextprotocol/sdk` transitively — do NOT install the SDK separately (version conflict risk).
+- `useMcpProxy` must be `useMemo`-stabilized; identity churn on the returned object caused an infinite `tools/call` loop during development (see `feedback_react_hook_identity_churn.md`).
+- Upstream tool names / URI prefixes must be verified by curling the actual MCP server before writing whitelist rules (5 bugs were caused by trusting the user-provided brief instead — see `feedback_upstream_api_probe.md`).
+- Module is behind `WorkspaceGuard moduleKey="revenue-intelligence"` + EF `client_workspaces` gate — two independent access control layers.
+
+---
+
 ## ADR-033: Department-based ticket visibility via ClickUp Labels (not Dropdown, not Tags, not per-person assignments) (2026-04-21)
 **Date:** 2026-04-21
 **Status:** Accepted
@@ -461,3 +487,48 @@ Fan-out is skipped entirely when `taskBelongsToOrg === false`. This logic lives 
 **Decision:** On the AWAITING APPROVAL handler, when `task_cache.approved_credits` is already set (indicating re-approval), always force-fetch the current credits directly from the ClickUp API (`GET /v2/task/{id}`, reading the credits custom field) instead of trusting the cache. This path also existed for the first-approval case where the cache was empty or zero (existing BLOCKING 4 fix), so the two cases now share the same fetch path. The fresh value is written back to `task_cache.credits` before composing the notification, keeping the cache consistent.
 
 **Consequences:** One additional ClickUp API call per AWAITING APPROVAL webhook event when a re-approval is detected. This is a deliberate tradeoff — correctness over one extra API call. The force-fetch path is gated on `isLikelyReApproval || !credits || credits <= 0`, so first-approval tasks with credits in cache take the fast path.
+
+## ADR-035: Local WordPress Dev via DDEV on WSL-Native FS
+**Date:** 2026-04-23
+**Status:** Accepted
+
+**Context:** Phase 15 milestone (MCP Apps Platform) needs a reproducible WordPress + WooCommerce dev environment on Windows for Summerfield clone work. Existing PORTAL codebase has zero WP/PHP infra — first DDEV, first PHP, first WP plugin. Options evaluated: Local by Flywheel (opaque stack, no Apache-FPM), XAMPP (stack-mismatch vs prod), Lando (abandoned), DDEV (official WP/WC community standard).
+
+**Decision:**
+- **Environment:** DDEV inside WSL2 Ubuntu, orchestrating Docker Desktop. Official supported stack per ddev.readthedocs.io.
+- **Path:** `/home/upan/projects/sf_staging/` — WSL-native ext4. Rejected `/mnt/g/` (Windows 9P bridge 2-4× slower for PHP workloads; composer install visibly slower than ext4 baseline).
+- **Stack:** Apache-FPM + PHP 8.4 + MySQL 8.0. Matches Summerfield production hosting exactly. Eliminates `.htaccess` semantic drift between local and prod.
+- **Uploads strategy:** NOT copied locally. `.htaccess` 302-redirects `/wp-content/uploads/*` to production for images/media (saves ~10 GB local disk, accepts read-only image access on dev).
+- **Plugin source location:** `PORTAL/wordpress-plugins/` (git-tracked), symlinked into `/home/upan/projects/sf_staging/wp-content/plugins/` via WSL `ln -sfn`. Keeps shippable code in the PORTAL repo; keeps ephemeral WP install out.
+- **MCP Adapter install:** composer-managed in `wp-content/mu-plugins/` (Option A per LOCAL_DEV_SETUP.md §6 Step 6). Version pinned exactly to `wordpress/mcp-adapter:0.5.0` — pre-1.0, deliberate upgrades only.
+
+**Consequences:**
+- Developers onboarding follow `docs/ideas/LOCAL_DEV_SETUP.md` §6; no `.ddev/` directory inside this repo (ephemeral per-developer state).
+- `PORTAL/.gitignore` extended with `scripts/*.php` whitelist + `wordpress-plugins/*/composer.lock` ignore + `.ddev/*` block with `config.yaml` allow-list.
+- Plugin scaffold `wordpress-plugins/kmn-revenue-abilities/` is empty shell in Phase 15; abilities land in Phase 16.
+- Summerfield prod deployment is NOT on the Vercel/Supabase CI path — manual rsync, documented in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md` §11.
+- Production deploy flow does NOT use symlinks (no WSL on production host) — symlink-in-DDEV is dev-only.
+
+## ADR-036: WordPress Application Password Rotation for kmn-revenue MCP Bridge
+**Date:** 2026-04-23
+**Status:** Accepted
+
+**Context:** Phase 16 WP plugin `kmn-revenue-abilities` will expose MCP abilities at `/wp-json/mcp/kmn-revenue`, authenticated via WordPress Application Password. Credential must be rotatable without service interruption and must be kept separate from the `wp-audit.ts` credential (Maxi AI Core endpoint) — no cross-contamination between MCP bridges. The Application Password for DDEV is issued in Phase 15; the runbook is recorded now while the credential exists.
+
+**Rotation Runbook:**
+1. WP Admin → Users → target user (`admin` on Summerfield DDEV; dedicated `kmn-analytics-bot` on Summerfield production) → Application Passwords.
+2. Generate new app password with label `mcp-dev-YYYY-MM-DD`; copy immediately (shown once).
+3. Update `WOOCOMMERCE_WP_APP_PASS` in:
+   - Local `mcp-poc/.env.local`
+   - Production mcp-poc Vercel env vars (triggers auto-redeploy)
+4. Run `scripts/verify-wp-bridge.sh` against the target endpoint (Phase 16 artifact; for Phase 15, run `curl -u admin:<pass> https://summerfield.ddev.site/wp-json/wp/v2/users/me` and confirm HTTP 200 with admin user JSON).
+5. Revoke old app password in WP Admin.
+6. Record rotation date + reason (scheduled / incident / compromise) in this ADR's "Rotation log" subsection below.
+
+**Rotation log:**
+- 2026-04-23 — initial credential issued on Summerfield DDEV (admin user, label `mcp-dev`, Phase 15 Plan 1 Task 5)
+
+**Consequences:**
+- Credentials are NEVER stored in git. Only env files (`mcp-poc/.env.local`, Vercel dashboard, Yuri's password vault).
+- `WOOCOMMERCE_WP_USER` / `WOOCOMMERCE_WP_APP_PASS` are named distinctly from `WP_MCP_USER` / `WP_MCP_APP_PASS` (existing `wp-audit.ts` credential) — no credential coupling (MCPS-07 no-coupling assertion).
+- `NODE_TLS_REJECT_UNAUTHORIZED=0` is explicitly FORBIDDEN in any checked-in script. Node must use `NODE_EXTRA_CA_CERTS` pointing at the mkcert root CA only (scoped trust) when talking to DDEV over mkcert TLS.
