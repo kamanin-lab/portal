@@ -15,8 +15,8 @@ import { useMcpProxy } from '../hooks/useMcpProxy'
 import { DashboardLoading } from './DashboardLoading'
 import { McpErrorBoundary } from './McpErrorBoundary'
 
-const TOOL_NAME = 'daily-briefing'
-const TOOL_RESOURCE_URI = 'ui://kamanda/daily-briefing'
+const TOOL_NAME = 'daily_briefing'
+const TOOL_RESOURCE_URI = 'ui://widgets/daily-briefing.html'
 
 export function RevenueIntelligencePage() {
   const { callTool, readResource, listResources } = useMcpProxy()
