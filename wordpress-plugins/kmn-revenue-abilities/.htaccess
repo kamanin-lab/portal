@@ -1,0 +1,5 @@
+# Block direct access to documentation, config, and non-PHP files.
+<FilesMatch "\.(md|example|txt|json|lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
