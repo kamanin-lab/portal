@@ -146,8 +146,8 @@ Plans:
 
 - [ ] **Phase 9: org-db-foundation** — Create organizations + org_members tables, SQL helper functions, data migration to org-scoped schema, RLS transition
 - [ ] **Phase 10: org-edge-functions** — Update 5 existing Edge Functions to read from organizations; add invite-member function; role enforcement on mutating ops
-- [x] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role (completed 2026-04-15)
-- [x] **Phase 12: org-admin-page** — /organisation admin page, InviteMemberDialog, role management, member removal, /passwort-setzen route, sidebar link (completed 2026-04-15)
+- [x] **Phase 11: org-frontend-auth** — OrgContext + useOrg hook, update useWorkspaces + useCredits, role-based UI guards for viewer role (completed 2026-04-15)
+- [x] **Phase 12: org-admin-page** — /organisation admin page, InviteMemberDialog, role management, member removal, /passwort-setzen route, sidebar link (completed 2026-04-15)
 - [x] **Phase 13: org-onboarding-cleanup** — Rewrite onboard-client.ts, drop legacy RLS policies and FK columns, remove dual-read fallbacks (completed 2026-04-15)
 
 ---
@@ -266,3 +266,135 @@ Plans:
 | 12. org-admin-page | 5/5 | Complete   | 2026-04-15 |
 | 13. org-onboarding-cleanup | 4/4 | Complete   | 2026-04-15 |
 | 14. role-based-guards | 2/2 | Complete   | 2026-04-15 |
+
+---
+
+# Milestone v3.0: MCP Apps Platform
+
+**Started:** 2026-04-23
+**Target:** 2 focused working days per `docs/ideas/REVENUE_INTELLIGENCE_V2_PLAN.md` §8
+**Goal:** Reusable MCP Apps infrastructure (build pipeline + token bridge + WordPress companion plugin pattern) with Revenue Intelligence v2 as the first production-grade application on that platform
+**Branch:** `staging` (merge to `main` after Phase 20 + Yuri's qualitative "wow" verdict)
+**First target client:** Summerfield on local DDEV only. MBM production rollout = separate future milestone.
+
+## Success Criteria for v3.0
+
+1. Dashboard at 09:00, 11:00, 14:00, 17:00 never shows universally negative pace — the today-vs-yesterday −85% bug is not reproducible
+2. All 4 blocks render end-to-end under 2s on Summerfield DDEV
+3. 4 consecutive test Monday briefing emails arrive at 08:00 ±5 min Europe/Berlin with zero duplicates
+4. Platform reusability — a second hypothetical MCP App can be built on the same pipeline + token bridge + companion plugin pattern without re-designing infrastructure (paper-review test)
+5. Yuri's qualitative "wow / not-wow" verdict on Block 2 (heatmap) on seeded Summerfield data within 1 week of widget completion
+6. Zero regression on the portal — `RevenueIntelligencePage.tsx` shows zero TypeScript diff; v1 `daily_briefing` path continues working during transition
+7. Code quality gates — all SQL parameterised, composer deps pinned, WP 6.9+ guard active, Application Password rotation runbook in `docs/DECISIONS.md`
+8. Ready for MBM rollout — seeded Summerfield analytics mathematically comparable to MBM's known data shape
+
+## Phases
+
+- [ ] **Phase 15: Local Dev + Synthetic Seeder** — DDEV Summerfield clone up with plugins active and seeder producing 1260 realistic furniture orders; blocks everything downstream
+- [ ] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue`
+- [ ] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated
+- [ ] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer
+- [ ] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff
+- [ ] **Phase 20: Monday Briefing Email** — Edge Function scheduled Mondays 08:00 Berlin, pulls `weekly_briefing_data`, sends HTML briefing via Mailjet
+
+## Phase Details
+
+### Phase 15: Local Dev + Synthetic Seeder
+**Goal**: A working Summerfield DDEV environment with both WP plugins active, Application Password issued, and 1260 realistic furniture orders seeded — so every downstream ability can be developed and validated against data that mirrors MBM's shape
+**Depends on**: None (milestone start)
+**Blocks**: Phase 16, Phase 17, Phase 19, Phase 20
+**Requirements**: DEV-01, DEV-02, DEV-03, DEV-04, DEV-05, DEV-06, DEV-07, DEV-08, DEV-09, SEED-01, SEED-02, SEED-03, SEED-04, SEED-05, SEED-06, SEED-07, SEED-08, SEED-09
+**Deliverable** (concrete acceptance test):
+  1. `curl -sk https://summerfield.ddev.site/wp-json/` returns 200 with mkcert-trusted TLS — no cert warnings in browser
+  2. `ddev wp plugin list --status=active` lists both `kmn-revenue-abilities` and `maxi-ai`
+  3. `ddev wp kmn seed --weeks=12 --daily-avg=15` completes in ≤ 5 minutes and produces `count(wp_wc_order_stats) ≈ 1100` paid orders with Thursday as highest DOW and hour peak inside {10, 11, 19, 20, 21}
+  4. `ddev wp kmn seed reset` deletes exactly the `_kmn_test_order = 1` rows and nothing else (idempotent)
+  5. `mcp-poc` process can reach `https://summerfield.ddev.site` with Basic Auth using the generated Application Password (verified via `curl` probe from Node with `NODE_EXTRA_CA_CERTS`)
+**Notes**: No parallelization possible before this phase — all downstream abilities, tools, and widgets require real seeded data on a reachable DDEV endpoint. Environment guard in seeder (SEED-07) prevents accidental execution outside `*.ddev.site`.
+
+### Phase 16: kmn-revenue-abilities WP Plugin
+**Goal**: A WordPress companion plugin registering 5 MCP abilities that return schema-correct, cached, parameterised SQL results for Summerfield's seeded data — establishing the reusable MCPAPP-WP pattern for future client-data bridges
+**Depends on**: Phase 15
+**Blocks**: Phase 17, Phase 20
+**Requirements**: MCPAPP-WP-01, MCPAPP-WP-02, MCPAPP-WP-03, ABIL-SCAF-01, ABIL-SCAF-02, ABIL-SCAF-03, ABIL-SCAF-04, ABIL-SCAF-05, ABIL-DEF-01, ABIL-DEF-02, ABIL-DEF-03, ABIL-DEF-04, ABIL-DEF-05, ABIL-DEF-06, ABIL-DEF-07, ABIL-QA-01, ABIL-QA-02, ABIL-QA-03, ABIL-QA-04, ABIL-QA-05
+**Deliverable** (concrete acceptance test):
+  1. `curl -u admin:APP_PASS -X POST https://summerfield.ddev.site/wp-json/mcp/kmn-revenue -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'` returns exactly 5 tools: `revenue-run-rate`, `weekly-heatmap`, `repeat-metrics`, `market-basket`, `weekly-briefing-data`
+  2. Each `tools/call` on those 5 tools returns a response whose shape validates against the ability's output JSON Schema (verified by `scripts/verify-wp-bridge.sh`)
+  3. `revenue-run-rate` on seeded data returns `confidence: "medium"` or `"high"` with a numeric `projected_revenue` field — no raw SQL errors, no null-ref crashes
+  4. `market-basket` returns `mode: "market_basket_product"` on seeded data (≥100 multi-item orders exist per SEED-04) with at least one non-empty `basket_pairs` entry containing Boxspringbett→Lattenrost
+  5. Running both `kmn-revenue-abilities` and `maxi-ai` plugins simultaneously, `tools/list` on each endpoint returns only that plugin's own tools (no cross-contamination, ABIL-QA-05)
+  6. 401 response for wrong Application Password; 403 response for authenticated user without `manage_woocommerce` (ABIL-QA-02)
+  7. Every ability response completes within 2s budget (`SET SESSION MAX_EXECUTION_TIME=2000` active, ABIL-QA-03)
+**Notes**: Can run in parallel with Phase 17 once Phase 15 is complete — this is PHP, Phase 17 is TypeScript, no code overlap. MCPAPP-WP-01..03 documentation deliverables embedded here: plugin pattern reference in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md`, Adapter integration documented, App Password rotation runbook appended to `docs/DECISIONS.md`.
+
+### Phase 17: kamanda-mcp Server Expansion
+**Goal**: The MCP server at `G:/01_OPUS/Projects/mcp-poc` exposes 5 new tools that proxy the WP abilities, refactors `daily_briefing` to resilient fan-out, and aligns the portal's MCP proxy whitelist with the new tool surface
+**Depends on**: Phase 15 (DDEV reachable with Application Password)
+**Blocks**: Phase 19 (widget needs `daily_briefing` v2 fan-out), Phase 20 (email needs `weekly_briefing_data` tool exposed)
+**Requirements**: MCPS-01, MCPS-02, MCPS-03, MCPS-04, MCPS-05, MCPS-06, MCPS-07, PORT-01
+**Deliverable** (concrete acceptance test):
+  1. `mcp-poc` process started locally, MCP Inspector connects, `tools/list` returns: 5 new tools (`revenue_run_rate`, `weekly_heatmap`, `repeat_metrics`, `market_basket_or_aov`, `weekly_briefing_data`) + retained legacy tools (`revenue_today`, `payment_attention_orders`) + removed tools (`stuck_orders`, `low_stock_products`, `incomplete_orders` no longer present)
+  2. `tools/call daily_briefing {}` triggers exactly 4 parallel calls via `Promise.allSettled` to WP bridge (run-rate, heatmap, repeat, basket); if any one is manually sabotaged with a 500, the response still returns 3 successful blocks + one `{ status: "error" }` block — whole tool does NOT fail
+  3. `daily_briefing` response includes `_meta["openai/outputTemplate"]` pointing at `ui://widgets/daily-briefing.html`
+  4. New env vars `WOOCOMMERCE_WP_USER`, `WOOCOMMERCE_WP_APP_PASS`, `KMN_BRIDGE_URL` documented in `mcp-poc/.env.example`; distinct from pre-existing `WP_MCP_USER`/`WP_MCP_APP_PASS` (MCPS-07 no-coupling assertion)
+  5. `supabase/functions/mcp-proxy/index.ts` ALLOWED_TOOLS list updated: contains the 5 new tool names, does NOT contain `incomplete_orders`; deployed to staging Cloud Supabase via CI
+**Notes**: Can run in parallel with Phase 16 (different language stacks, different repos). PORT-01 mcp-proxy whitelist update lands here because it's coupled to the tool renames and is a trivial single-file diff. PORT-02..05 deliberately defer to Phase 19 where they are part of widget integration.
+
+### Phase 18: MCP UI Resource Build Pipeline
+**Goal**: A reusable Vite single-file build pipeline for React+Tailwind+Motion widgets plus a bidirectional postMessage token bridge — this is the platform layer that makes Revenue Intelligence v2 possible and future MCP Apps trivial
+**Depends on**: Phase 15 (local dev environment for standalone widget dev)
+**Blocks**: Phase 19 (widget uses this pipeline + bridge)
+**Requirements**: MCPAPP-BUILD-01, MCPAPP-BUILD-02, MCPAPP-BUILD-03, MCPAPP-BUILD-04, MCPAPP-BUILD-05, MCPAPP-BUILD-06, MCPAPP-BUILD-07, MCPAPP-TOKEN-01, MCPAPP-TOKEN-02, MCPAPP-TOKEN-03, MCPAPP-TOKEN-04, MCPAPP-TOKEN-05, MCPAPP-TOKEN-06, MCPAPP-TOKEN-07, MCPAPP-TOKEN-08
+**Deliverable** (concrete acceptance test):
+  1. `cd mcp-poc && npm run build` succeeds and produces exactly one self-contained `dist/index.html` file per widget directory; opening that file offline in a browser shows a rendered React component with working Tailwind styles (CSS inlined, not linked)
+  2. Single-file artifact gzipped size measured via `gzip -c dist/index.html | wc -c` reports ≤ 300 KB (MCPAPP-BUILD-04 budget)
+  3. `npm run dev` on a widget serves at `http://localhost:5174/` with HMR working and a mock-host harness that posts fake tokens; widget applies tokens to `documentElement` CSS vars visibly (hot-reload styling works standalone) (MCPAPP-BUILD-06)
+  4. In portal + sandbox-proxy smoke test: widget posts `kmn/theme/request`, sandbox-proxy relays to parent window, portal responds with `kmn/theme/set` carrying 12 tokens (bg, surface, fg, muted, subtle, accent, success, danger, warning, border, radius-md, radius-lg), widget applies them via `document.documentElement.style.setProperty(k, v)` — verified by Chrome DevTools inspecting computed styles after load
+  5. Widget falls back to bundled defaults when no theme reply arrives within 300ms — tested by opening `dist/index.html` standalone (no parent frame)
+  6. `src/shared/styles/widget-tokens.ts` exists and exports a typed constant covering exactly the 12-token subset of `tokens.css` (MCPAPP-TOKEN-07)
+  7. Protocol-version mismatch handling: widget receiving `kmn/theme/set` with `protocolVersion: 2` logs a console warning and stays on bundled defaults (MCPAPP-TOKEN-08)
+**Notes**: This phase can start in parallel with Phase 19 design/spec work, but Phase 19's final integrated widget cannot build without this pipeline. Preact/compat fallback (MCPAPP-BUILD-05) documented here but only exercised if React bundle busts the 300 KB budget.
+
+### Phase 19: Revenue Intelligence Widget v2
+**Goal**: The production-grade 4-block dashboard replaces the v1 `daily_briefing` widget — eliminating the today-vs-yesterday −85% methodology bug — via a zero-diff drop-in at the same `ui://widgets/daily-briefing.html` URI
+**Depends on**: Phase 17 (`daily_briefing` fan-out available), Phase 18 (build pipeline + token bridge working)
+**Blocks**: None (final v3.0 portal-facing deliverable)
+**Requirements**: WIDG-STRUCT-01, WIDG-STRUCT-02, WIDG-STRUCT-03, WIDG-STRUCT-04, WIDG-STRUCT-05, WIDG-BLOCK-01, WIDG-BLOCK-02, WIDG-BLOCK-03, WIDG-BLOCK-04, WIDG-BLOCK-05, WIDG-QA-01, WIDG-QA-02, WIDG-QA-03, WIDG-QA-04, WIDG-QA-05, PORT-02, PORT-03, PORT-04, PORT-05
+**Deliverable** (concrete acceptance test):
+  1. Loading the Umsatz-Intelligenz page in the portal renders 4 distinct blocks in order: HeuteBlock (run-rate), HeatmapBlock (7×24), RepeatBlock, BasketOrAovBlock — verified against Summerfield DDEV seeded data
+  2. `PerformanceObserver` measurement from `daily_briefing` tool call start to widget `onSizeChanged` fire: ≤ 2s (WIDG-QA-01)
+  3. Dashboard loaded at four clock times (09:00, 11:00, 14:00, 17:00 on the same seeded day): none of the four renders shows universally negative pace indicator (WIDG-QA-02 — the bug fix verification)
+  4. With one ability manually sabotaged (service returns 500), the widget renders 3 healthy blocks plus a "Daten nicht verfügbar" skeleton for the failed block — no blank widget, no full error screen (WIDG-QA-03)
+  5. BasketOrAovBlock conditional render verified: with full seeded data renders `market_basket_product` mode (shows support/confidence/lift); with fixture `?mock=basket-aov` forced to <30 multi-item renders `aov_bands` mode with share-of-count + share-of-revenue bars
+  6. `git diff src/modules/revenue-intelligence/components/RevenueIntelligencePage.tsx` after v2 deployment: empty diff — zero TypeScript changes in portal (PORT-04)
+  7. `public/sandbox-proxy.html` includes the `kmn/theme/*` bidirectional relay block (PORT-02); portal theme publisher survives multiple widget mounts (PORT-03 — mount, unmount, remount still propagates tokens)
+  8. `McpErrorBoundary` wrapping AppRenderer catches a forced throw and renders a German error with reload button (PORT-05)
+  9. All user-facing text in German (WIDG-QA-04); single-file dist ≤ 300 KB gz (WIDG-QA-05)
+**UI hint**: yes
+**Notes**: Design/spec work (block layouts, formatters, mock-host variants) can start while Phase 18 pipeline stabilises. PORT-02..05 live here because they are coupled to widget embedding behaviour; PORT-01 already landed in Phase 17.
+
+### Phase 20: Monday Briefing Email
+**Goal**: An automated Monday 08:00 Europe/Berlin HTML email lands in Yuri's inbox with last-week revenue summary, best slot, repeat metrics, and top 3 products — validating the full Edge Function → MCP server → WP ability → email chain before MBM rollout
+**Depends on**: Phase 16 (`kmn/weekly-briefing-data` ability exists), Phase 17 (`weekly_briefing_data` MCP tool exposed)
+**Blocks**: None
+**Requirements**: EMAIL-01, EMAIL-02, EMAIL-03, EMAIL-04, EMAIL-05, EMAIL-06
+**Deliverable** (concrete acceptance test):
+  1. `supabase/functions/send-weekly-revenue-briefing/index.ts` deployed; manual invoke via `curl` produces a German HTML email arriving at Yuri's inbox within 30s — subject line, revenue summary section, best hour slot callout, repeat rate with benchmark, top-3 products list, portal CTA link all rendered correctly per `REVENUE_INTELLIGENCE_V2_PLAN.md` §4 wireframe (EMAIL-04, EMAIL-06)
+  2. pg_cron schedule configured for Mondays 06:00 UTC; Berlin timezone guard inside the function confirms via logged `Intl.DateTimeFormat('de-DE', {timeZone: 'Europe/Berlin'})` that execution only proceeds within target window — verified by 4 consecutive Mondays of real cron execution producing delivery at 08:00 ±5 min Berlin with zero duplicates (EMAIL-02)
+  3. Function performs a single MCP tool call to `weekly_briefing_data` via MCP proxy (single round-trip, not per-block fan-out from caller side) (EMAIL-03)
+  4. Delivery goes via existing `send-mailjet-email` infrastructure — no new SMTP integration; initial milestone sends only to Yuri (EMAIL-05)
+  5. Function isolation: the existing `send-reminders` Edge Function is NOT modified — `git diff supabase/functions/send-reminders/` is empty (EMAIL-01 regression-risk mitigation)
+**Notes**: Can run in parallel with Phase 18 and Phase 19 once Phase 16 + Phase 17 are complete. Production delivery to Nadine (MBM owner) is explicitly deferred to the MBM-rollout milestone; this milestone proves the plumbing with Yuri as the only recipient.
+
+---
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 15. Local Dev + Synthetic Seeder | 0/? | Not started | — |
+| 16. kmn-revenue-abilities WP Plugin | 0/? | Not started | — |
+| 17. kamanda-mcp Server Expansion | 0/? | Not started | — |
+| 18. MCP UI Resource Build Pipeline | 0/? | Not started | — |
+| 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
+| 20. Monday Briefing Email | 0/? | Not started | — |
