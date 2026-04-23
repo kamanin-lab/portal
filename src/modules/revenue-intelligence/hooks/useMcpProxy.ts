@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { supabase } from '@/shared/lib/supabase'
 import { toast } from 'sonner'
 
@@ -57,21 +58,20 @@ async function invoke(method: string, params: Record<string, unknown>, label: st
   return rpc?.result ?? envelope.data
 }
 
+// The returned object must have stable identity across rerenders. Consumers
+// (notably AppRenderer in RevenueIntelligencePage) depend on callback identity
+// staying fixed — otherwise their useEffect([callback]) dependencies re-run
+// every render and can loop (e.g. re-sending toolResult to the iframe, which
+// then DDoSes our edge proxy).
 export function useMcpProxy() {
-  const callTool = async (params: Record<string, unknown>) =>
-    invoke('tools/call', params, 'callTool')
-
-  const readResource = async (params: Record<string, unknown>) =>
-    invoke('resources/read', params, 'readResource')
-
-  const listTools = async () =>
-    invoke('tools/list', {}, 'listTools')
-
-  const listResources = async () =>
-    invoke('resources/list', {}, 'listResources')
-
-  const initialize = async () =>
-    invoke('initialize', {}, 'initialize')
-
-  return { callTool, readResource, listTools, listResources, initialize }
+  return useMemo(
+    () => ({
+      callTool: (params: Record<string, unknown>) => invoke('tools/call', params, 'callTool'),
+      readResource: (params: Record<string, unknown>) => invoke('resources/read', params, 'readResource'),
+      listTools: () => invoke('tools/list', {}, 'listTools'),
+      listResources: () => invoke('resources/list', {}, 'listResources'),
+      initialize: () => invoke('initialize', {}, 'initialize'),
+    }),
+    [],
+  )
 }

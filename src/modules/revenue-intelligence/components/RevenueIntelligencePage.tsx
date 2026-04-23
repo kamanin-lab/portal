@@ -6,7 +6,7 @@
  * iframe cannot be meaningfully constrained to max-w-4xl. Do not wrap this
  * page in ContentContainer.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppRenderer } from '@mcp-ui/client'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { ReadResourceResult, ListResourcesResult } from '@modelcontextprotocol/sdk/types.js'
@@ -29,32 +29,41 @@ export function RevenueIntelligencePage() {
 
   const sandboxUrl = useMemo(() => new URL('/sandbox-proxy.html', window.location.origin), [])
 
+  // Keep the latest callTool in a ref so the initial-invoke effect can run exactly
+  // once, without re-triggering every time useMcpProxy returns a fresh function
+  // identity on rerender (that caused a tool-call loop, see commit history).
+  const callToolRef = useRef(callTool)
+  callToolRef.current = callTool
+
   const handleCallTool = useCallback(
     async (params: { name: string; arguments?: Record<string, unknown> }) => {
-      const result = await callTool(params)
-      // Upstream MCP server returns a valid CallToolResult JSON-RPC response
+      const result = await callToolRef.current(params)
       return result as CallToolResult
     },
-    [callTool],
+    [],
   )
 
+  // One-shot initial tool invocation. Ref-guard prevents double-fire in React
+  // StrictMode dev and any rerender noise — production sees a single fetch.
+  const initialCallDoneRef = useRef(false)
   useEffect(() => {
+    if (initialCallDoneRef.current) return
+    initialCallDoneRef.current = true
     let cancelled = false
     ;(async () => {
       try {
-        const result = (await callTool({ name: TOOL_NAME, arguments: {} })) as CallToolResult
+        const result = (await callToolRef.current({ name: TOOL_NAME, arguments: {} })) as CallToolResult
         if (!cancelled) setToolResult(result)
       } catch (err) {
         if (!cancelled) {
           console.error('[RevenueIntelligence] initial tool call failed:', err)
-          // useMcpProxy already toasts user-facing error
         }
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [callTool])
+  }, [])
 
   const handleReadResource = useCallback(
     async (params: { uri: string }) => {
@@ -83,9 +92,12 @@ export function RevenueIntelligencePage() {
     return {}
   }, [])
 
+  // Stable identity — isReady is checked via functional setState so we don't
+  // need to rebind the callback when it flips. Rebinding would invalidate
+  // AppRenderer's useEffect deps and cause toolResult re-send loops.
   const handleSizeChanged = useCallback(() => {
-    if (!isReady) setIsReady(true)
-  }, [isReady])
+    setIsReady((prev) => prev || true)
+  }, [])
 
   return (
     <div className="h-[calc(100vh-3.5rem)] w-full relative">
