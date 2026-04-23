@@ -1,10 +1,7 @@
 /**
  * Revenue Intelligence -- embeds the Kamanda MCP App (daily-briefing tool).
- *
- * NOTE: This page is a documented exception to Architecture Rule 11
- * (ContentContainer width="narrow" on all app pages). An embedded dashboard
- * iframe cannot be meaningfully constrained to max-w-4xl. Do not wrap this
- * page in ContentContainer.
+ * Follows Architecture Rule 11 (ContentContainer width="narrow") like every
+ * other app page. The iframe sits inside the centered column.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppRenderer } from '@mcp-ui/client'
@@ -14,6 +11,7 @@ import { toast } from 'sonner'
 import { useMcpProxy } from '../hooks/useMcpProxy'
 import { DashboardLoading } from './DashboardLoading'
 import { McpErrorBoundary } from './McpErrorBoundary'
+import { ContentContainer } from '@/shared/components/layout/ContentContainer'
 
 const TOOL_NAME = 'daily_briefing'
 const TOOL_RESOURCE_URI = 'ui://widgets/daily-briefing.html'
@@ -92,6 +90,25 @@ export function RevenueIntelligencePage() {
     return {}
   }, [])
 
+  // The widget calls ui/open-link when the user clicks "Öffnen →" on an order row.
+  // Without a handler the SDK resolves silently and nothing happens. Open in a new
+  // tab, with noopener to sever the window.opener reference (the sandbox iframe
+  // must not be able to reach our host window).
+  const handleOpenLink = useCallback(async ({ url }: { url: string }) => {
+    try {
+      const parsed = new URL(url)
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        console.warn('[RevenueIntelligence] blocked non-http open-link:', url)
+        return { isError: true }
+      }
+      window.open(parsed.toString(), '_blank', 'noopener,noreferrer')
+      return {}
+    } catch (err) {
+      console.error('[RevenueIntelligence] open-link failed:', err)
+      return { isError: true }
+    }
+  }, [])
+
   // Stable identity — isReady is checked via functional setState so we don't
   // need to rebind the callback when it flips. Rebinding would invalidate
   // AppRenderer's useEffect deps and cause toolResult re-send loops.
@@ -100,28 +117,31 @@ export function RevenueIntelligencePage() {
   }, [])
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] w-full relative">
-      {!isReady && (
-        <div className="absolute inset-0 z-10">
-          <DashboardLoading />
+    <ContentContainer width="narrow" className="p-6 max-[768px]:p-4">
+      <div className="relative w-full min-h-[400px]">
+        {!isReady && (
+          <div className="absolute inset-0 z-10">
+            <DashboardLoading />
+          </div>
+        )}
+        <div className={isReady ? 'w-full' : 'w-full opacity-0'}>
+          <McpErrorBoundary>
+            <AppRenderer
+              toolName={TOOL_NAME}
+              toolResourceUri={TOOL_RESOURCE_URI}
+              toolResult={toolResult ?? undefined}
+              sandbox={{ url: sandboxUrl }}
+              onCallTool={handleCallTool}
+              onReadResource={handleReadResource}
+              onListResources={handleListResources}
+              onMessage={handleMessage}
+              onOpenLink={handleOpenLink}
+              onError={handleError}
+              onSizeChanged={handleSizeChanged}
+            />
+          </McpErrorBoundary>
         </div>
-      )}
-      <div className={isReady ? 'h-full w-full' : 'h-full w-full opacity-0'}>
-        <McpErrorBoundary>
-          <AppRenderer
-            toolName={TOOL_NAME}
-            toolResourceUri={TOOL_RESOURCE_URI}
-            toolResult={toolResult ?? undefined}
-            sandbox={{ url: sandboxUrl }}
-            onCallTool={handleCallTool}
-            onReadResource={handleReadResource}
-            onListResources={handleListResources}
-            onMessage={handleMessage}
-            onError={handleError}
-            onSizeChanged={handleSizeChanged}
-          />
-        </McpErrorBoundary>
       </div>
-    </div>
+    </ContentContainer>
   )
 }
