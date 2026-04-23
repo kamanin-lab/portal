@@ -173,11 +173,20 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
 
+    // Streamable HTTP MCP (spec 2025-03-26) requires both content types in Accept.
+    // Upstream may reply with application/json or text/event-stream.
+    const upstreamHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Accept": "application/json, text/event-stream",
+    };
+    const sessionId = req.headers.get("mcp-session-id");
+    if (sessionId) upstreamHeaders["Mcp-Session-Id"] = sessionId;
+
     let upstreamResponse: Response;
     try {
       upstreamResponse = await fetch(mcpServerUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: upstreamHeaders,
         body: JSON.stringify(rpcEnvelope),
         signal: controller.signal,
       });
@@ -201,11 +210,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    const upstreamJson = JSON.parse(await upstreamResponse.text());
+    const upstreamContentType = upstreamResponse.headers.get("content-type") ?? "";
+    const upstreamBody = await upstreamResponse.text();
+    let upstreamJson: unknown;
+
+    try {
+      if (upstreamContentType.includes("text/event-stream")) {
+        // Parse first SSE "message" event: lines like "event: message\ndata: {json}\n\n".
+        // We join multi-line data fields per SSE spec.
+        const dataLines: string[] = [];
+        for (const line of upstreamBody.split(/\r?\n/)) {
+          if (line.startsWith("data:")) {
+            dataLines.push(line.slice(5).trimStart());
+          } else if (line === "" && dataLines.length > 0) {
+            break; // end of first event
+          }
+        }
+        if (dataLines.length === 0) {
+          throw new Error("SSE response contained no data lines");
+        }
+        upstreamJson = JSON.parse(dataLines.join("\n"));
+      } else {
+        upstreamJson = JSON.parse(upstreamBody);
+      }
+    } catch (parseErr) {
+      const message = parseErr instanceof Error ? parseErr.message : String(parseErr);
+      log.error("Upstream parse failed", { error: message, contentType: upstreamContentType, bodyPreview: upstreamBody.slice(0, 200) });
+      return new Response(
+        JSON.stringify({ ok: false, code: "UPSTREAM_ERROR", message: "MCP server returned unparseable payload", correlationId }),
+        { status: 502, headers: jsonHeaders },
+      );
+    }
+
+    const responseHeaders: Record<string, string> = { ...jsonHeaders };
+    const upstreamSessionId = upstreamResponse.headers.get("mcp-session-id");
+    if (upstreamSessionId) responseHeaders["Mcp-Session-Id"] = upstreamSessionId;
 
     return new Response(
       JSON.stringify({ ok: true, code: "OK", correlationId, data: upstreamJson }),
-      { status: 200, headers: jsonHeaders },
+      { status: 200, headers: responseHeaders },
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
