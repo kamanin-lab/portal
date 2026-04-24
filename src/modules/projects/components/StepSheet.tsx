@@ -1,5 +1,7 @@
 import { SideSheet } from '@/shared/components/ui/SideSheet'
 import { StepDetail } from './steps/StepDetail'
+import { TaskCommentComposer } from '@/modules/tickets/components/TaskComments'
+import { getStepById } from '../lib/helpers'
 import type { Project } from '../types/project'
 
 interface StepSheetProps {
@@ -10,11 +12,14 @@ interface StepSheetProps {
 }
 
 export function StepSheet({ project, stepId, onClose, onOpenTask }: StepSheetProps) {
+  const found = stepId ? getStepById(stepId, project) : null
+
   return (
     <SideSheet
       open={!!stepId}
       onClose={onClose}
-      title={stepId ? 'Schritt' : ''}
+      title={found?.step.title ?? 'Schritt'}
+      footer={found?.step ? <TaskCommentComposer taskId={found.step.clickupTaskId} /> : undefined}
     >
       {stepId ? (
         <StepDetail stepId={stepId} project={project} onClose={onClose} onOpenTask={onOpenTask} />
