@@ -9,6 +9,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { ReadResourceResult, ListResourcesResult } from '@modelcontextprotocol/sdk/types.js'
 import { toast } from 'sonner'
 import { useMcpProxy } from '../hooks/useMcpProxy'
+import { useThemePublisher } from '../hooks/useThemePublisher'
 import { DashboardLoading } from './DashboardLoading'
 import { McpErrorBoundary } from './McpErrorBoundary'
 import { ContentContainer } from '@/shared/components/layout/ContentContainer'
@@ -18,6 +19,7 @@ const TOOL_RESOURCE_URI = 'ui://widgets/daily-briefing.html'
 
 export function RevenueIntelligencePage() {
   const { callTool, readResource, listResources } = useMcpProxy()
+  useThemePublisher()
   const [isReady, setIsReady] = useState(false)
   // The kmn daily_briefing widget stays in a "loading" state until it
   // receives a tool result via ui/notifications/tool-result. @mcp-ui/client's

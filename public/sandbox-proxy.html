@@ -63,6 +63,20 @@
     window.addEventListener('message', function relay(e) {
       if (!e.data || typeof e.data !== 'object') return;
 
+      // NEW BLOCK (MCPAPP-TOKEN-02): Theme messages by prefix — pass through without interpretation.
+      // Must sit BEFORE the AppBridge gate so widget (origin=null) and host (origin=selfOrigin)
+      // can both post kmn/theme/* messages. Early-return keeps the existing relay untouched.
+      if (typeof e.data.type === 'string' && e.data.type.indexOf('kmn/theme/') === 0) {
+        if (e.source === inner.contentWindow) {
+          // widget → host
+          window.parent.postMessage(e.data, selfOrigin);
+        } else if (e.source === window.parent && e.origin === selfOrigin) {
+          // host → widget
+          if (inner.contentWindow) inner.contentWindow.postMessage(e.data, '*');
+        }
+        return;
+      }
+
       if (e.source === inner.contentWindow) {
         // Inner -> host. Source-identity gate is the trust boundary here;
         // srcdoc has origin "null" so we cannot validate by origin.
