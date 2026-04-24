@@ -55,7 +55,8 @@ final class KMN_Revenue_Abilities {
      *
      * Mirrors maxi-ai/maxi-ai.php:35-49. Files are sorted so any
      * order-sensitive defines (e.g. TTL constants before cached()) resolve
-     * deterministically.
+     * deterministically. Net effect equivalent to explicit
+     * `require_once __DIR__ . '/includes/<name>.php'` lines.
      */
     private static function load_includes(): void {
 
