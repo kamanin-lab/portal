@@ -291,7 +291,7 @@ Plans:
 ## Phases
 
 - [x] **Phase 15: Local Dev + Synthetic Seeder** — DDEV Summerfield clone up with plugins active and seeder producing 1260 realistic furniture orders; blocks everything downstream (completed 2026-04-24)
-- [ ] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue`
+- [x] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue` (completed 2026-04-24)
 - [ ] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated
 - [ ] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer
 - [ ] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff
@@ -327,12 +327,12 @@ Plans:
   7. Every ability response completes within 2s budget (`SET SESSION MAX_EXECUTION_TIME=2000` active, ABIL-QA-03)
 **Notes**: Can run in parallel with Phase 17 once Phase 15 is complete — this is PHP, Phase 17 is TypeScript, no code overlap. MCPAPP-WP-01..03 documentation deliverables embedded here: plugin pattern reference in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md`, Adapter integration documented, App Password rotation runbook appended to `docs/DECISIONS.md`.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 16-01-PLAN.md — Plugin bootstrap + MCP server registration + shared infra (autonomous)
 - [x] 16-02-PLAN.md — 4 read abilities: weekly-heatmap, repeat-metrics, revenue-run-rate, market-basket (autonomous)
-- [ ] 16-03-PLAN.md — weekly-briefing-data orchestrator + verify scripts + Maxi coexistence test (human-verify checkpoint)
+- [x] 16-03-PLAN.md — weekly-briefing-data orchestrator + verify scripts + Maxi coexistence test (human-verify checkpoint)
 
 ### Phase 17: kamanda-mcp Server Expansion
 **Goal**: The MCP server at `G:/01_OPUS/Projects/mcp-poc` exposes 5 new tools that proxy the WP abilities, refactors `daily_briefing` to resilient fan-out, and aligns the portal's MCP proxy whitelist with the new tool surface
@@ -400,7 +400,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Local Dev + Synthetic Seeder | 2/2 | Complete   | 2026-04-24 |
-| 16. kmn-revenue-abilities WP Plugin | 2/3 | In Progress|  |
+| 16. kmn-revenue-abilities WP Plugin | 3/3 | Complete   | 2026-04-24 |
 | 17. kamanda-mcp Server Expansion | 0/? | Not started | — |
 | 18. MCP UI Resource Build Pipeline | 0/? | Not started | — |
 | 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
