@@ -93,7 +93,10 @@ unwrap() {
 }
 
 # 2a. weekly-heatmap: best_slot Do 20:00 (dow=4, hod=20); order_count ∈ [17,21]
-resp=$(call kmn-weekly-heatmap '{"weeks":8}')
+# The Phase 15 seeder stores timestamps as UTC with peak at hour 20 UTC. To
+# match that contract, pass timezone=+00:00 — the site's resolved wp_timezone
+# (Europe/Vienna, +02:00 under DST) would otherwise shift the peak to local 22.
+resp=$(call kmn-weekly-heatmap '{"weeks":8,"timezone":"+00:00"}')
 payload=$(unwrap "$resp")
 echo "$payload" | jq -e '.success == true' > /dev/null \
     || fail "kmn-weekly-heatmap returned success=false — $payload"
@@ -128,7 +131,8 @@ echo "$data" | jq -e '.benchmark_pct == 27.0' > /dev/null \
 ok "kmn-repeat-metrics: repeat_rate_pct=$rate ($returning/$unique returning/unique)"
 
 # 2c. revenue-run-rate: confidence enum + expected_by_hour length 24 + payment_split
-resp=$(call kmn-revenue-run-rate '{}')
+# timezone=+00:00 to match seeded-data UTC contract (see 2a note).
+resp=$(call kmn-revenue-run-rate '{"timezone":"+00:00"}')
 payload=$(unwrap "$resp")
 echo "$payload" | jq -e '.success == true' > /dev/null \
     || fail "kmn-revenue-run-rate returned success=false — $payload"
@@ -160,7 +164,8 @@ echo "$data" | jq -e '.aov_bands | length == 3' > /dev/null \
 ok "kmn-market-basket: mode=$mode, basket_pairs=$pairs, multi_item_orders=$multi"
 
 # 2e. weekly-briefing-data: combined payload shape
-resp=$(call kmn-weekly-briefing-data '{}')
+# timezone=+00:00 to match seeded-data UTC contract (see 2a note).
+resp=$(call kmn-weekly-briefing-data '{"timezone":"+00:00"}')
 payload=$(unwrap "$resp")
 echo "$payload" | jq -e '.success == true' > /dev/null \
     || fail "kmn-weekly-briefing-data returned success=false — $payload"

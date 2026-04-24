@@ -12,7 +12,7 @@
  *   4. top_products_3 — top 3 products by quantity sold last week
  *
  * Orchestration rules (RESEARCH §D5 + §Q3):
- * - Sub-ability invocation uses `wp_get_ability($id)->get_callback('execute')`
+ * - Sub-ability invocation uses `wp_get_ability($id)->execute(...)` directly
  *   called directly via `call_user_func()` — this deliberately BYPASSES the
  *   wrapper `execute()` method which would re-run `permission_callback` and
  *   re-validate the input schema. The orchestrator has already passed the
@@ -176,14 +176,19 @@ add_action( 'wp_abilities_api_init', function () {
                                 );
                             }
 
-                            $heatmap_resp = call_user_func(
-                                $heatmap_ability->get_callback( 'execute' ),
-                                [
-                                    'weeks'          => 8,
-                                    'reference_date' => $ref_date,
-                                    'timezone'       => $input['timezone'] ?? null,
-                                ]
-                            );
+                            $heatmap_resp = $heatmap_ability->execute( [
+                                'weeks'          => 8,
+                                'reference_date' => $ref_date,
+                                'timezone'       => $input['timezone'] ?? null,
+                            ] );
+
+                            if ( is_wp_error( $heatmap_resp ) ) {
+                                return kmn_revenue_response(
+                                    false,
+                                    [],
+                                    'weekly-briefing-data sub-call failed (weekly-heatmap): ' . $heatmap_resp->get_error_message()
+                                );
+                            }
 
                             if ( empty( $heatmap_resp['success'] ) ) {
                                 $err = isset( $heatmap_resp['error'] ) ? $heatmap_resp['error'] : 'unknown';
@@ -211,14 +216,19 @@ add_action( 'wp_abilities_api_init', function () {
                                 );
                             }
 
-                            $repeat_resp = call_user_func(
-                                $repeat_ability->get_callback( 'execute' ),
-                                [
-                                    'days'           => 90,
-                                    'reference_date' => $ref_date,
-                                    'timezone'       => $input['timezone'] ?? null,
-                                ]
-                            );
+                            $repeat_resp = $repeat_ability->execute( [
+                                'days'           => 90,
+                                'reference_date' => $ref_date,
+                                'timezone'       => $input['timezone'] ?? null,
+                            ] );
+
+                            if ( is_wp_error( $repeat_resp ) ) {
+                                return kmn_revenue_response(
+                                    false,
+                                    [],
+                                    'weekly-briefing-data sub-call failed (repeat-metrics): ' . $repeat_resp->get_error_message()
+                                );
+                            }
 
                             if ( empty( $repeat_resp['success'] ) ) {
                                 $err = isset( $repeat_resp['error'] ) ? $repeat_resp['error'] : 'unknown';

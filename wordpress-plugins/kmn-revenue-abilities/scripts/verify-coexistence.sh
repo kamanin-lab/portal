@@ -24,7 +24,16 @@ set -euo pipefail
 
 : "${WP_USER:=dev-admin}"
 : "${WP_APP_PASS:?WP_APP_PASS env var required}"
-: "${DDEV:=ddev}"
+# DDEV: command prefix for wp-cli. Autodetect: if we're already inside the DDEV
+# web container (WP_CLI is native), leave empty. Otherwise default to 'ddev'.
+# Respects a caller-provided DDEV value (including empty string via DDEV='').
+if [[ -z "${DDEV+set}" ]]; then
+    if command -v wp >/dev/null 2>&1 && [[ -d /var/www/html ]]; then
+        DDEV=""
+    else
+        DDEV="ddev"
+    fi
+fi
 
 KMN_URL="${KMN_URL:-https://summerfield.ddev.site/wp-json/mcp/kmn-revenue}"
 MAXI_URL="${MAXI_URL:-https://summerfield.ddev.site/wp-json/mcp/maxi-ai}"
@@ -46,11 +55,12 @@ command -v curl >/dev/null 2>&1 || fail "curl is required but not installed"
 
 # Build the wp-cli invocation wrapper. $DDEV may be empty (host wp-cli) or
 # "ddev" (container) or any other container-exec prefix (eg "lando").
+: "${WP_PATH:=/var/www/html}"
 wp_run() {
     if [[ -n "$DDEV" ]]; then
         "$DDEV" wp "$@"
     else
-        wp "$@"
+        wp --path="$WP_PATH" "$@"
     fi
 }
 
@@ -78,7 +88,23 @@ ok "both kmn-revenue-abilities and maxi-ai are active"
 # 2. kmn endpoint returns only kmn-* tools.
 # ---------------------------------------------------------------------------
 
+# MCP Streamable HTTP requires an initialize handshake before tools/list;
+# server-side session id must then be echoed on every subsequent call.
+mcp_session_id() {
+    local url="$1"
+    local headers
+    headers=$(mktemp)
+    curl "${CURL[@]}" -X POST "$url" -D "$headers" -o /dev/null \
+        -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"verify-coexistence","version":"1.0"}}}' 2>/dev/null
+    grep -i '^Mcp-Session-Id:' "$headers" | awk '{print $2}' | tr -d '\r'
+    rm -f "$headers"
+}
+
+KMN_SESSION=$(mcp_session_id "$KMN_URL")
+[[ -n "$KMN_SESSION" ]] || fail "kmn initialize did not return Mcp-Session-Id"
+
 kmn=$(curl "${CURL[@]}" -X POST "$KMN_URL" \
+    -H "Mcp-Session-Id: $KMN_SESSION" \
     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
 kmn_count=$(echo "$kmn" | jq '.result.tools | length' 2>/dev/null || echo "0")
 non_kmn=$(echo "$kmn" | jq -r '.result.tools[]?.name' 2>/dev/null | grep -vc '^kmn-' || true)
@@ -97,8 +123,14 @@ ok "kmn endpoint returns exactly 5 kmn-* tools, zero leakage"
 # returns something other than a JSON-RPC result, we SKIP and rely on step 4
 # (wp_get_abilities count) to catch collisions. Override with MAXI_URL.
 
-maxi_raw=$(curl "${CURL[@]}" -X POST "$MAXI_URL" \
-    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' 2>/dev/null || echo "")
+MAXI_SESSION=$(mcp_session_id "$MAXI_URL" 2>/dev/null || echo "")
+if [[ -n "$MAXI_SESSION" ]]; then
+    maxi_raw=$(curl "${CURL[@]}" -X POST "$MAXI_URL" \
+        -H "Mcp-Session-Id: $MAXI_SESSION" \
+        -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' 2>/dev/null || echo "")
+else
+    maxi_raw=""
+fi
 
 if [[ -n "$maxi_raw" ]] && echo "$maxi_raw" | jq -e '.result.tools' >/dev/null 2>&1; then
     leak=$(echo "$maxi_raw" | jq -r '.result.tools[]?.name' 2>/dev/null | grep -c '^kmn-' || true)
