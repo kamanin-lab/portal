@@ -318,9 +318,10 @@ add_action( 'wp_abilities_api_init', function () {
                             }
 
                             // Batch-load product titles via WP core get_posts(post__in=...).
-                            // This is the one (intentional) read against wp_posts in the
-                            // orchestrator — see note in audit-sql.sh which excludes the
-                            // briefing file from the wp_posts grep.
+                            // This is the sanctioned WP abstraction for product lookup —
+                            // no hand-written JOIN to core catalog tables anywhere on this
+                            // path. audit-sql.sh greps for literal table-name tokens only,
+                            // so get_posts() does not trip the HPOS lint.
                             $pids  = array_map( static fn( $r ) => (int) $r['product_id'], $top_rows );
                             $names = [];
                             if ( ! empty( $pids ) ) {
