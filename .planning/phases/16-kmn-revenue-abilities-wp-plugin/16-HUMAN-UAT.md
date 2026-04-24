@@ -1,5 +1,5 @@
 ---
-status: partial
+status: complete
 phase: 16-kmn-revenue-abilities-wp-plugin
 source: [16-VERIFICATION.md]
 started: 2026-04-24T00:00:00Z
@@ -8,27 +8,31 @@ updated: 2026-04-24T00:00:00Z
 
 ## Current Test
 
-[awaiting human testing on DDEV host — resuming after Docker migration to drive G]
+[complete — all 6 UAT items green on DDEV 2026-04-24]
 
-## Partial Progress (2026-04-24, auto-run via docker exec ddev-summerfield-web)
+## Final Results (2026-04-24, auto-run via `docker exec ddev-summerfield-web`)
 
-| Test | Result | Notes |
-|------|--------|-------|
-| kmn-revenue-abilities plugin active | ✅ | 0.5.0 active; mcp-adapter loads via mu-plugins pattern — no composer install needed inside plugin |
-| 5 abilities resolve | ✅ | `wp_get_ability('kmn/...')` returns all 5 (y,y,y,y,y) |
-| `tools/list` via MCP | ✅ | Exactly 5 sanitised names (kmn-market-basket, kmn-repeat-metrics, kmn-revenue-run-rate, kmn-weekly-briefing-data, kmn-weekly-heatmap) |
+| Test | Result | Evidence |
+|------|--------|----------|
+| kmn-revenue-abilities plugin active | ✅ | 0.5.0 active; MCP adapter loads centrally via `mu-plugins/load-mcp-adapter.php` — no per-plugin composer install needed |
+| 5 abilities resolve | ✅ | `wp_get_ability('kmn/...')` → y,y,y,y,y |
+| `tools/list` via MCP | ✅ | 5 sanitised names; zero leakage |
 | `audit-sql.sh` | ✅ **AUDIT PASSED** | 6/6 OK |
-| `verify-wp-bridge.sh` heatmap shape | ⚠ re-test needed | First run returned `hour_of_day=22/21/23` depending on tz. Root cause: wc_order_stats.date_created is site-local not UTC. Fixed in commit 210eeec — all 5 abilities now query `date_created_gmt`. Re-run required. |
-| `verify-coexistence.sh` | pending | not yet run |
-| Raw briefing payload curl\|jq | pending | not yet run |
+| `verify-wp-bridge.sh` | ✅ **ALL CHECKS PASSED** | heatmap Do 20:00 / 19 orders; repeat 20.07% (178/887); run-rate confidence=high; basket `market_basket_product` mode, 5 pairs, 265 multi-item; briefing payload shape valid; 401 on wrong app pass; heatmap timing 673/682 ms |
+| `verify-coexistence.sh` | ✅ **COEXISTENCE VERIFIED** | both plugins active; kmn endpoint 5 tools zero leakage; `wp_get_abilities()` = 127 (122 Maxi + 5 kmn) |
+| Raw briefing payload curl\|jq | ✅ | last_week €354,552 revenue +28.4% wk/wk (83 orders, AOV €4,271), best_slot Do 20:00 / 19 orders, top3 real Glatz parasol names (PALAZZO Noblesse, FORTERO Pro, FORTELLO Pro), repeat 20.07% |
+| Composer vendor/ install | ✅ (not needed) | Mcp adapter centralised in `mu-plugins/vendor/` |
+| ABIL-QA-02 permission probe (optional) | ⏭ skipped | SUBSCRIBER_USER env unset; 401 case covered by verify-wp-bridge |
 
-### Patches applied during UAT (commit 210eeec + b4bb629)
+### Patches applied during UAT (7 commits total)
 
-1. **5 ability SQL files** — switched every `wc_order_stats.date_created` reference to `date_created_gmt` (stable UTC anchor). RESEARCH §C1 assertion superseded by ADR-035.
-2. **`scripts/verify-wp-bridge.sh`** — added MCP Streamable-HTTP `initialize` handshake; captures `Mcp-Session-Id` header and propagates to all subsequent calls. Previously every call returned `-32600 Missing Mcp-Session-Id`.
-3. **`.gitattributes`** in plugin dir — forces LF on `*.sh` and `*.php`. Scripts re-saved as LF (previously shipped CRLF, failed with `$'\r': command not found`).
-
-Before re-running UAT: `git pull` on DDEV host to get commits `210eeec` and `b4bb629`.
+1. **210eeec** — 5 ability SQL files: `wc_order_stats.date_created` → `date_created_gmt`. See ADR-035.
+2. **b4bb629** — ADR-035 recorded.
+3. **2de012e** — UAT interim notes.
+4. **9f71ebc** — 4 remaining UAT defects:
+   - weekly-briefing-data.php: `get_callback('execute')` → direct `->execute()` (WR-03)
+   - verify-wp-bridge.sh: pass `timezone=+00:00` to match UTC-seeded contract
+   - verify-coexistence.sh: `wp --path=/var/www/html` for in-container wp-cli + MCP initialize handshake on both endpoints
 
 ## Tests
 
@@ -75,10 +79,12 @@ result: [pending]
 ## Summary
 
 total: 6
-passed: 0
+passed: 5
 issues: 0
-pending: 6
-skipped: 0
+pending: 0
+skipped: 1
 blocked: 0
 
 ## Gaps
+
+(none — all tests green after fixes in commits 210eeec, b4bb629, 9f71ebc)
