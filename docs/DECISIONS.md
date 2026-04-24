@@ -1,5 +1,24 @@
 # Architecture Decision Records
 
+## ADR-035: wc_order_stats uses date_created_gmt, not date_created (2026-04-24)
+**Date:** 2026-04-24
+**Status:** Accepted
+**Applies to:** `wordpress-plugins/kmn-revenue-abilities` (Phase 16) — weekly-heatmap, revenue-run-rate, repeat-metrics, market-basket, weekly-briefing-data.
+
+**Context:** Phase 16 RESEARCH.md §C1 claimed `wc_order_stats.date_created` was stored in UTC "confirmed via live data spot-check". Live DDEV evidence during Phase 16 UAT showed a consistent 1h offset between `wc_order_stats.date_created` and `wc_orders.date_created_gmt` (stored as local time per `gmt_offset=1`). Result: heatmap peak landed at UTC hour 22 instead of expected Vienna-local 20 during DST — the CONVERT_TZ math was double-shifting.
+
+**Decision:** Every aggregate over `wc_order_stats` in kmn-revenue-abilities queries `date_created_gmt`, not `date_created`. CONVERT_TZ('+00:00', $offset) then produces correct local bucketing regardless of site gmt_offset or DST phase.
+
+**Root cause:** `OrderStats::update_order_stats_for_order()` calls `wc_string_to_datetime($order->get_date_created())`, where `$order->get_date_created()` returns a WC_DateTime in site-tz. That site-tz datetime flows into the `date_created` column unchanged. The `_gmt` column is the only UTC anchor in that table.
+
+**Why not `date_created` with compensation:** Would require per-query `gmt_offset` subtraction that breaks under DST transitions and any future `gmt_offset` / `timezone_string` changes. `_gmt` is an immutable UTC anchor.
+
+**Trade-offs:**
+- No breaking API change — `timezone` input argument still works.
+- Older RESEARCH assertion in 16-RESEARCH.md §C1 is superseded; that document is historical.
+
+**Verification:** `scripts/verify-wp-bridge.sh` should produce `best_slot.day_of_week=4, hour_of_day=20` for seeded Summerfield data with `gmt_offset=1` OR `timezone_string=Europe/Vienna`. Deferred until Docker migration completes.
+
 ## ADR-034: Embedding third-party MCP Apps in the portal via @mcp-ui/client (2026-04-23)
 **Date:** 2026-04-23
 **Status:** Accepted (POC — staging only)
