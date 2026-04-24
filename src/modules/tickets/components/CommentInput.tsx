@@ -87,7 +87,7 @@ export function CommentInput({
   const canSend = text.trim().length > 0 || attachments.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="pt-3 sticky bottom-0 bg-bg z-10 max-[768px]:pt-2 max-[768px]:pb-1 max-[768px]:border-t max-[768px]:border-border/30">
+    <form onSubmit={handleSubmit} className="pt-3">
       <motion.div
         animate={{
           borderColor: isFocused ? 'var(--accent)' : 'var(--border)',
