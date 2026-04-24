@@ -7,8 +7,10 @@
  * the highest order_count; deterministic tie-break by dow ASC, hod ASC).
  *
  * Timezone: query groups on CONVERT_TZ('+00:00', $offset) so bucketing
- * reflects the store's local week even though wc_order_stats.date_created
- * is stored UTC. Numeric offset is resolved in PHP (kmn_revenue_get_utc_offset).
+ * reflects the store's local week. Anchors on wc_order_stats.date_created_gmt
+ * (true UTC) — date_created WITHOUT _gmt is site-local at insert time and
+ * drifts under DST / gmt_offset changes. Numeric offset resolved in PHP via
+ * kmn_revenue_get_utc_offset(); CONVERT_TZ from '+00:00' is identity-safe.
  *
  * MySQL DAYOFWEEK: 1=Sunday..7=Saturday. We subtract 1 so 0=Sunday..6=Saturday
  * matching the WP_BRIDGE_ARCHITECTURE.md §4b output schema.
@@ -135,13 +137,17 @@ add_action( 'wp_abilities_api_init', function () {
                             list( $start, $end ) = kmn_revenue_utc_bounds_for_window( $ref_date, $weeks * 7, $offset );
                             $placeholders        = kmn_revenue_prepare_in_placeholders( $statuses );
 
+                            // NOTE: Use s.date_created_gmt (UTC) — s.date_created is stored
+                            // in site-local time at insert, which drifts under DST and across
+                            // gmt_offset changes. Only _gmt is a stable UTC anchor. The bounds
+                            // come from kmn_revenue_utc_bounds_for_window() which emits UTC.
                             $sql = $wpdb->prepare(
-                                "SELECT (DAYOFWEEK(CONVERT_TZ(s.date_created, '+00:00', %s)) - 1) AS dow,
-                                        HOUR(CONVERT_TZ(s.date_created, '+00:00', %s))              AS hod,
-                                        COUNT(*)                                                    AS order_count,
-                                        COALESCE(SUM(s.net_total), 0)                               AS net_revenue
+                                "SELECT (DAYOFWEEK(CONVERT_TZ(s.date_created_gmt, '+00:00', %s)) - 1) AS dow,
+                                        HOUR(CONVERT_TZ(s.date_created_gmt, '+00:00', %s))              AS hod,
+                                        COUNT(*)                                                        AS order_count,
+                                        COALESCE(SUM(s.net_total), 0)                                   AS net_revenue
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                  GROUP  BY dow, hod
                                  ORDER  BY dow, hod",

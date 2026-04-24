@@ -141,12 +141,15 @@ add_action( 'wp_abilities_api_init', function () {
                             // 1. Baseline curve: per (local date, hour) revenue over the baseline window.
                             list( $base_start, $base_end ) = kmn_revenue_utc_bounds_for_window( $ref_date, $baseline_days, $offset );
 
+                            // NOTE: Use s.date_created_gmt (UTC) — s.date_created is stored
+                            // in site-local time at insert, which drifts under DST and across
+                            // gmt_offset changes. Only _gmt is a stable UTC anchor.
                             $curve_sql = $wpdb->prepare(
-                                "SELECT DATE(CONVERT_TZ(s.date_created, '+00:00', %s)) AS d,
-                                        HOUR(CONVERT_TZ(s.date_created, '+00:00', %s))  AS h,
+                                "SELECT DATE(CONVERT_TZ(s.date_created_gmt, '+00:00', %s)) AS d,
+                                        HOUR(CONVERT_TZ(s.date_created_gmt, '+00:00', %s))  AS h,
                                         COALESCE(SUM(s.net_total), 0) AS revenue
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                  GROUP  BY d, h
                                  ORDER  BY d, h",
@@ -200,7 +203,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $actual_sql = $wpdb->prepare(
                                 "SELECT COALESCE(SUM(s.net_total), 0) AS total
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)",
                                 array_merge( [ $today_start, $today_end ], $statuses )
                             );
@@ -217,7 +220,7 @@ add_action( 'wp_abilities_api_init', function () {
                                         COALESCE(SUM(s.net_total), 0)                   AS total
                                  FROM   {$wpdb->prefix}wc_order_stats s
                                  JOIN   {$wpdb->prefix}wc_orders o ON s.order_id = o.id
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                  GROUP  BY method
                                  ORDER  BY total DESC",

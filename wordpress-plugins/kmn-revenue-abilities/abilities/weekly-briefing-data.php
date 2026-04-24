@@ -266,7 +266,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $week_sql = $wpdb->prepare(
                                 "SELECT COUNT(*) AS cnt, COALESCE(SUM(s.net_total), 0) AS total
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)",
                                 array_merge( [ $last_start_utc, $last_end_utc ], $statuses )
                             );
@@ -275,7 +275,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $prior_sql = $wpdb->prepare(
                                 "SELECT COUNT(*) AS cnt, COALESCE(SUM(s.net_total), 0) AS total
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)",
                                 array_merge( [ $prior_start_utc, $prior_end_utc ], $statuses )
                             );
@@ -305,7 +305,7 @@ add_action( 'wp_abilities_api_init', function () {
                                 "SELECT p.product_id, SUM(p.product_qty) AS qty_sold
                                  FROM   {$wpdb->prefix}wc_order_product_lookup p
                                  JOIN   {$wpdb->prefix}wc_order_stats s ON p.order_id = s.order_id
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                  GROUP  BY p.product_id
                                  ORDER  BY qty_sold DESC

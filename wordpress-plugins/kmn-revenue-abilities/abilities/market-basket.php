@@ -173,7 +173,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $probe_sql = $wpdb->prepare(
                                 "SELECT COUNT(*)
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                    AND  (SELECT COUNT(*) FROM {$wpdb->prefix}wc_order_product_lookup p WHERE p.order_id = s.order_id) > 1",
                                 array_merge( [ $start, $end ], $statuses )
@@ -184,7 +184,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $total_sql = $wpdb->prepare(
                                 "SELECT COUNT(*)
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)",
                                 array_merge( [ $start, $end ], $statuses )
                             );
@@ -219,7 +219,7 @@ add_action( 'wp_abilities_api_init', function () {
                                     COALESCE(SUM(s.total_sales), 0)                                                           AS rev_total,
                                     COUNT(*)                                                                                  AS order_total
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)",
                                 array_merge(
                                     [ $b1, $b1, $b2, $b2, $b1, $b1, $b2, $b2, $start, $end ],
@@ -263,7 +263,7 @@ add_action( 'wp_abilities_api_init', function () {
                             $sales_sql = $wpdb->prepare(
                                 "SELECT s.total_sales
                                  FROM   {$wpdb->prefix}wc_order_stats s
-                                 WHERE  s.date_created >= %s AND s.date_created < %s
+                                 WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                    AND  s.status IN ($placeholders)
                                  ORDER  BY s.total_sales ASC",
                                 array_merge( [ $start, $end ], $statuses )
@@ -291,7 +291,7 @@ add_action( 'wp_abilities_api_init', function () {
                                             ON a.order_id = b.order_id
                                            AND a.product_id < b.product_id
                                      JOIN   {$wpdb->prefix}wc_order_stats s ON a.order_id = s.order_id
-                                     WHERE  s.date_created >= %s AND s.date_created < %s
+                                     WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                        AND  s.status IN ($placeholders)
                                      GROUP  BY pid_a, pid_b
                                      HAVING co_occ >= 2
@@ -332,7 +332,7 @@ add_action( 'wp_abilities_api_init', function () {
                                         "SELECT p.product_id, COUNT(DISTINCT p.order_id) AS orders_with
                                          FROM   {$wpdb->prefix}wc_order_product_lookup p
                                          JOIN   {$wpdb->prefix}wc_order_stats s ON p.order_id = s.order_id
-                                         WHERE  s.date_created >= %s AND s.date_created < %s
+                                         WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                            AND  s.status IN ($placeholders)
                                            AND  p.product_id IN ($pid_placeholders)
                                          GROUP  BY p.product_id",
@@ -397,7 +397,7 @@ add_action( 'wp_abilities_api_init', function () {
                                      JOIN   {$wpdb->term_relationships} trb ON trb.object_id = b.product_id
                                      JOIN   {$wpdb->term_taxonomy} ttb ON ttb.term_taxonomy_id = trb.term_taxonomy_id AND ttb.taxonomy = 'product_cat'
                                      JOIN   {$wpdb->terms} tb ON tb.term_id = ttb.term_id
-                                     WHERE  s.date_created >= %s AND s.date_created < %s
+                                     WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                        AND  s.status IN ($placeholders)
                                        AND  ta.term_id < tb.term_id
                                      GROUP  BY tid_a, tid_b

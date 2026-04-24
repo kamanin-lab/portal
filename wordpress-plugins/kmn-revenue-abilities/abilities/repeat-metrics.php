@@ -141,7 +141,7 @@ add_action( 'wp_abilities_api_init', function () {
                                     "SELECT o.billing_email, COUNT(*) AS cnt
                                      FROM   {$wpdb->prefix}wc_order_stats s
                                      JOIN   {$wpdb->prefix}wc_orders o ON s.order_id = o.id
-                                     WHERE  s.date_created >= %s AND s.date_created < %s
+                                     WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                        AND  s.status IN ($placeholders)
                                        AND  o.billing_email IS NOT NULL
                                        AND  o.billing_email <> ''
@@ -193,17 +193,17 @@ add_action( 'wp_abilities_api_init', function () {
                                 "SELECT DATEDIFF(pairs.second_date, pairs.first_date) AS days_diff
                                  FROM (
                                      SELECT t.billing_email,
-                                            MIN(CASE WHEN t.rn = 1 THEN t.date_created END) AS first_date,
-                                            MIN(CASE WHEN t.rn = 2 THEN t.date_created END) AS second_date
+                                            MIN(CASE WHEN t.rn = 1 THEN t.date_created_gmt END) AS first_date,
+                                            MIN(CASE WHEN t.rn = 2 THEN t.date_created_gmt END) AS second_date
                                      FROM (
-                                         SELECT o.billing_email, s.date_created,
+                                         SELECT o.billing_email, s.date_created_gmt,
                                                 ROW_NUMBER() OVER (
                                                     PARTITION BY o.billing_email
-                                                    ORDER BY s.date_created
+                                                    ORDER BY s.date_created_gmt
                                                 ) AS rn
                                          FROM   {$wpdb->prefix}wc_order_stats s
                                          JOIN   {$wpdb->prefix}wc_orders o ON s.order_id = o.id
-                                         WHERE  s.date_created >= %s AND s.date_created < %s
+                                         WHERE  s.date_created_gmt >= %s AND s.date_created_gmt < %s
                                            AND  s.status IN ($placeholders)
                                            AND  o.billing_email IS NOT NULL
                                            AND  o.billing_email <> ''

@@ -45,6 +45,22 @@ echo "User:     $WP_USER"
 echo
 
 # ---------------------------------------------------------------------------
+# 0. MCP Streamable HTTP handshake — initialize + capture Mcp-Session-Id
+# ---------------------------------------------------------------------------
+
+init_body='{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"verify-wp-bridge","version":"1.0"}}}'
+init_headers=$(mktemp)
+init_resp=$(curl "${CURL[@]}" -u "$AUTH" -X POST "$BRIDGE_URL" \
+    -D "$init_headers" -d "$init_body")
+SESSION_ID=$(grep -i '^Mcp-Session-Id:' "$init_headers" | awk '{print $2}' | tr -d '\r')
+rm -f "$init_headers"
+[[ -n "$SESSION_ID" ]] || fail "initialize did not return Mcp-Session-Id — response: $init_resp"
+ok "initialize returned Mcp-Session-Id (${SESSION_ID:0:8}…)"
+
+# Append session header to base curl opts for all subsequent calls.
+CURL+=(-H "Mcp-Session-Id: $SESSION_ID")
+
+# ---------------------------------------------------------------------------
 # 1. tools/list returns exactly 5 sanitized tool names
 # ---------------------------------------------------------------------------
 
