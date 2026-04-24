@@ -8,7 +8,27 @@ updated: 2026-04-24T00:00:00Z
 
 ## Current Test
 
-[awaiting human testing on DDEV host]
+[awaiting human testing on DDEV host — resuming after Docker migration to drive G]
+
+## Partial Progress (2026-04-24, auto-run via docker exec ddev-summerfield-web)
+
+| Test | Result | Notes |
+|------|--------|-------|
+| kmn-revenue-abilities plugin active | ✅ | 0.5.0 active; mcp-adapter loads via mu-plugins pattern — no composer install needed inside plugin |
+| 5 abilities resolve | ✅ | `wp_get_ability('kmn/...')` returns all 5 (y,y,y,y,y) |
+| `tools/list` via MCP | ✅ | Exactly 5 sanitised names (kmn-market-basket, kmn-repeat-metrics, kmn-revenue-run-rate, kmn-weekly-briefing-data, kmn-weekly-heatmap) |
+| `audit-sql.sh` | ✅ **AUDIT PASSED** | 6/6 OK |
+| `verify-wp-bridge.sh` heatmap shape | ⚠ re-test needed | First run returned `hour_of_day=22/21/23` depending on tz. Root cause: wc_order_stats.date_created is site-local not UTC. Fixed in commit 210eeec — all 5 abilities now query `date_created_gmt`. Re-run required. |
+| `verify-coexistence.sh` | pending | not yet run |
+| Raw briefing payload curl\|jq | pending | not yet run |
+
+### Patches applied during UAT (commit 210eeec + b4bb629)
+
+1. **5 ability SQL files** — switched every `wc_order_stats.date_created` reference to `date_created_gmt` (stable UTC anchor). RESEARCH §C1 assertion superseded by ADR-035.
+2. **`scripts/verify-wp-bridge.sh`** — added MCP Streamable-HTTP `initialize` handshake; captures `Mcp-Session-Id` header and propagates to all subsequent calls. Previously every call returned `-32600 Missing Mcp-Session-Id`.
+3. **`.gitattributes`** in plugin dir — forces LF on `*.sh` and `*.php`. Scripts re-saved as LF (previously shipped CRLF, failed with `$'\r': command not found`).
+
+Before re-running UAT: `git pull` on DDEV host to get commits `210eeec` and `b4bb629`.
 
 ## Tests
 
