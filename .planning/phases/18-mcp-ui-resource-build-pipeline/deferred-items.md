@@ -23,3 +23,9 @@ const asset = bundle[key]
 if (!asset) continue
 delete bundle[key]
 ```
+
+## 18-05 Deferred — Pre-existing typecheck issues (not caused by Plan 05)
+
+- `widgets/shared/hooks/__tests__/useHostTokens.test.ts:67:28` — TS2532 Object is possibly 'undefined' (introduced in commit 4e79acf, Plan 18-03)
+- `widgets/shared/vite.base.ts:43:9` — TS2322 OutputAsset|OutputChunk|undefined vs OutputAsset|OutputChunk (introduced Plan 18-02)
+- Both errors present before Plan 05 started (verified via git stash). Out of scope per GSD Rule: only auto-fix issues directly caused by current task.
