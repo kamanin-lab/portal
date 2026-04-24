@@ -142,7 +142,11 @@ Deno.serve(async (req) => {
       "daily_briefing",
       "revenue_today",
       "payment_attention_orders",
-      "incomplete_orders",
+      "revenue_run_rate",
+      "weekly_heatmap",
+      "repeat_metrics",
+      "market_basket_or_aov",
+      "weekly_briefing_data",
     ]);
     if (method === "tools/call") {
       const toolName = (params as Record<string, unknown> | undefined)?.name;
