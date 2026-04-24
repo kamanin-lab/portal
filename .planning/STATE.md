@@ -1,29 +1,41 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.0
-milestone_name: "1. Dashboard at 09:00, 11:00, 14:00, 17:00 never shows universally negative pace — the today-vs-yesterday −85% bug is not reproducible"
-status: Milestone v3.0 started — defining requirements and roadmap
-last_updated: "2026-04-24T01:27:15.387Z"
-last_activity: 2026-04-23
+milestone_name: MCP Apps Platform
+status: phase-15-complete
+last_updated: "2026-04-24T02:00:00.000Z"
+last_activity: 2026-04-24
 progress:
   total_phases: 20
-  completed_phases: 14
-  total_plans: 42
-  completed_plans: 43
-  percent: 100
+  completed_phases: 15
+  total_plans: 44
+  completed_plans: 44
+  percent: 75
 ---
 
 # Project State
 
 **Project:** KAMANIN Client Portal
-**Last activity:** 2026-04-23
+**Last activity:** 2026-04-24
 
 ## Current Position
 
-Phase: Not started (roadmap pending)
-Plan: —
-Status: Milestone v3.0 started — defining requirements and roadmap
-Last activity: 2026-04-23 — Milestone v3.0 MCP Apps Platform started. Pre-code research complete (5 docs in docs/ideas/). Next: roadmap via gsd-roadmapper.
+Phase: 15 (Local Dev + Synthetic Seeder) — COMPLETE
+Plan: 2 of 2 — both complete
+Status: Phase 15 closed. Summerfield DDEV has 1099 paid orders seeded, prefix s7uy9uh34_, heatmap preview confirms Do 20:00 peak. Ready for Phase 16.
+Last activity: 2026-04-24 — Phase 15 closed. Heatmap preview evidence captured in 15-02-SUMMARY.md. Next: /gsd-plan-phase 16 (kmn-revenue-abilities — 5 WP abilities).
+
+## Key Facts Discovered in Phase 15 (critical for downstream phases)
+
+- **WP table prefix:** `s7uy9uh34_` (Summerfield hardened prefix, NOT `wp_`). Phase 16+ abilities must resolve via `$wpdb->prefix` dynamically.
+- **Domain:** garden furniture (Gartenmöbel), not bedroom furniture. Price range €62-18,899, avg €2973.
+- **Catalog:** 228 published products, 13 categories (Befestigung, Schutzhülle, Gartenmöbel, Mittelstockschirm, Kissenmanufaktur, Lounge, Ampelschirm, etc.)
+- **Seeded data:** 1099 paid orders, 310 multi-item (triggers `market_basket_product` mode in Phase 16), 20.1% repeat rate, Do peak at 190 orders, 20:00 hour peak at 88 orders.
+- **MCP service account:** `dev-admin` (WP user ID=1). App password recorded in Yuri's vault.
+- **MCP Adapter v0.5.0** installed via composer at `wp-content/mu-plugins/vendor/wordpress/mcp-adapter/` with bootstrap loader `load-mcp-adapter.php`.
+- **DDEV mount added** at `.ddev/docker-compose.portal-mount.yaml` — exposes `/mnt/g/01_OPUS/Projects/PORTAL` to web container so symlinked plugin files resolve.
+- **WC REST keys** generated via SQL+`wc_rand_hash()` (WP-CLI subcommand unavailable).
+- **Seeder runtime:** 8-14 min on Windows DDEV (exceeds 5-min target; accepted trade-off).
 
 ## Previous Milestone
 
