@@ -20,6 +20,7 @@ src/
     projects/       Project Experience (Supabase-backed)
     files/          Client file storage (Nextcloud WebDAV)
     organisation/   Admin-only org settings + member mgmt
+    revenue-intelligence/  Umsatz-Intelligenz MCP App embed (staging only)
   shared/           app shell, cross-module hooks, design tokens, common UI
 supabase/
   functions/        Edge Functions — ClickUp proxy, email, Nextcloud proxy, webhooks
@@ -238,6 +239,51 @@ Bootstrap: `QueryClient`, `QueryClientProvider`, `BrowserRouter`, `AuthProvider`
 
 ---
 
+## modules/revenue-intelligence/ — Umsatz-Intelligenz (MCP App embed)
+
+**What it is:** POC module that embeds the Kamanda `daily_briefing` MCP App widget inside the portal. Clients see a Revenue Intelligence dashboard (KPI row + detail cards) backed by live WooCommerce data from the upstream Kamanda MCP server. Staging-only as of 2026-04-23.
+
+**Entry point:** `components/RevenueIntelligencePage.tsx` at route `/revenue`, guarded by `<WorkspaceGuard moduleKey="revenue-intelligence">`.
+
+**Primary data source:** Upstream MCP server (`https://mcp-poc-three.vercel.app/mcp`) via `supabase/functions/mcp-proxy/` Edge Function. No Supabase tables read by this module (access control only uses `client_workspaces`).
+
+### Architecture rules (this module)
+
+1. All MCP traffic goes through `mcp-proxy` EF — never call the upstream MCP server from the browser directly.
+2. `mcp-proxy` enforces a **method + tool + resource whitelist** — update it explicitly when new tools are added upstream; default is deny.
+3. `useMcpProxy` hook MUST remain `useMemo`-stabilized. Identity churn on the returned object causes an infinite `tools/call` loop (see ADR-034).
+4. `@mcp-ui/client` bundles `@modelcontextprotocol/sdk` transitively — do NOT install the SDK separately.
+5. `public/sandbox-proxy.html` is same-origin for the POC. Before multi-client production rollout, move to a separate origin (e.g. `sandbox.kamanin.at`). TODO comment in file.
+6. Module access is gated at two layers: `WorkspaceGuard` (client-side) + `client_workspaces` check in `mcp-proxy` (server-side).
+
+### components/
+
+| File | Role |
+|---|---|
+| `RevenueIntelligencePage.tsx` | Page shell — `ContentContainer width="narrow"`, renders `AppRenderer` from `@mcp-ui/client`; auto-invokes `daily_briefing` on mount; handles `ui/open-link` to open WooCommerce admin in new tab. |
+| `McpErrorBoundary.tsx` | React ErrorBoundary wrapping `AppRenderer`; German fallback UI on render error. |
+| `DashboardLoading.tsx` | Skeleton shown while MCP tool call is in flight. |
+
+### hooks/
+
+| File | Role | Key EF |
+|---|---|---|
+| `useMcpProxy.ts` | Wraps `supabase.functions.invoke('mcp-proxy')`; unwraps JSON-RPC `{result}` envelope; maps error codes to German toasts. `useMemo`-stabilized. | `mcp-proxy` |
+
+### Cross-module edges
+
+- Uses `shared/components/layout/ContentContainer` (width="narrow").
+- Uses `shared/hooks/useAuth` for session (EF call requires valid JWT).
+- `SidebarWorkspaces` icon map: `'chart-bar-increasing': ChartBarIncreasingIcon`.
+- `workspace-routes.ts`: `'revenue-intelligence': '/revenue'`.
+- `AppShell.tsx` PAGE_TITLES: `'/revenue': 'Umsatz-Intelligenz'`.
+
+### Related Edge Function
+
+`mcp-proxy` — JWT gate + `client_workspaces` gate + method/tool/resource whitelist + Streamable HTTP MCP transport (SSE parser + JSON fallback) + response envelope `{ok, code, correlationId, data?}`.
+
+---
+
 ## modules/files/ — Client Files
 
 **What it is:** Top-level file browser for the org's Nextcloud root. Read-only at root, CRUD inside subfolders. Source of truth is Nextcloud (WebDAV) proxied via Edge Function.
@@ -437,6 +483,12 @@ CSS custom properties for colors, spacing, typography. Priority tokens (`--prior
 | `invite-member` | Creates auth user + profile + `org_members` row + invite email (links to `/einladung-annehmen`). |
 | `resend-invite` | Admin-only resend of invite email to a pending member. 60s cooldown via atomic `last_invite_sent_at` update. |
 | `credit-topup` | Admin-only credit package top-up. |
+
+### MCP proxy
+
+| Function | Purpose |
+|---|---|
+| `mcp-proxy` | Hardened proxy to upstream Kamanda MCP server. JWT gate + `client_workspaces` module gate + method/tool/resource whitelist. Streamable HTTP MCP (SSE parser + JSON fallback). Response envelope `{ok, code, correlationId, data?}`. Env: `MCP_SERVER_URL`. |
 
 ### Other
 

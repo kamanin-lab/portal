@@ -53,6 +53,7 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | Organisation | `src/modules/organisation/` | Live Supabase (organizations, org_members) | Phase 14 complete — admin-only |
 | Shared Shell | `src/shared/` | Auth, layout, design tokens, OrgProvider | Phase 3.5 complete |
 | Hilfe (FAQ) | `src/shared/pages/HilfePage.tsx` | Static FAQ data (`hilfe-faq-data.ts`) | Live |
+| Revenue Intelligence | `src/modules/revenue-intelligence/` | Upstream MCP server via `mcp-proxy` EF | POC — staging only (MBM + Yuri's org) |
 | Content Editor | `src/modules/content/` | — | Future |
 | Discovery Tool | `src/modules/discovery/` | — | Future |
 
@@ -95,6 +96,10 @@ Modular client portal for KAMANIN IT Solutions (web agency, Salzburg, Austria). 
 | `src/shared/lib/hilfe-faq-data.ts` | FAQ content: `FaqItemData` / `FaqSectionData` types + `FAQ_SECTIONS` array (7 sections, 32 items, German) |
 | `src/shared/components/help/FaqItem.tsx` | Accordion item — AnimatePresence height animation, chevron rotation, `isLast` separator |
 | `src/shared/components/help/FaqSection.tsx` | FAQ section card — Hugeicons icon + h2 + FaqItem list |
+| `supabase/functions/mcp-proxy/index.ts` | Hardened MCP proxy: JWT gate + `client_workspaces` module gate + method/tool/resource whitelist + Streamable HTTP MCP transport (SSE parser + JSON fallback). Env: `MCP_SERVER_URL`. Response envelope `{ok, code, correlationId, data?}`. |
+| `src/modules/revenue-intelligence/components/RevenueIntelligencePage.tsx` | Umsatz-Intelligenz page — embeds `AppRenderer` from `@mcp-ui/client`; auto-invokes `daily_briefing` on mount; handles `ui/open-link`. |
+| `src/modules/revenue-intelligence/hooks/useMcpProxy.ts` | `useMemo`-stabilized hook wrapping `mcp-proxy` EF invocation; unwraps JSON-RPC result envelope; maps error codes to German toasts. |
+| `public/sandbox-proxy.html` | AppBridge sandbox proxy — relays postMessage between portal host and srcdoc iframe. Same-origin (staging); TODO: move to `sandbox.kamanin.at` for multi-client rollout. |
 | `vercel.json` | `main` branch: SPA rewrites + `/auth/v1/*` proxy to self-hosted Supabase auth endpoint. `staging` branch: SPA rewrites only (proxy removed — Cloud Supabase handles CORS natively) |
 
 ## Testing
