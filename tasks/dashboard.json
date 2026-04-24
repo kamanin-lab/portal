@@ -1,10 +1,19 @@
 {
-  "lastUpdated": "2026-04-17T16:40:00Z",
+  "lastUpdated": "2026-04-23T20:00:00Z",
   "status": "active",
   "currentTask": null,
   "activeAgents": [],
   "pipeline": [],
   "completedTasks": [
+    {
+      "id": "REVENUE-INTELLIGENCE",
+      "title": "Umsatz-Intelligenz — MCP App embed (POC)",
+      "date": "2026-04-23",
+      "commits": ["031268c", "0ccd413", "91940f9", "b3788d2", "7ea940d", "ac38146", "341a902", "d999279", "444a5aa", "4decb6e", "34b73bc"],
+      "summary": "New module revenue-intelligence: RevenueIntelligencePage (AppRenderer from @mcp-ui/client, auto-invokes daily_briefing), McpErrorBoundary, DashboardLoading, useMcpProxy (useMemo-stabilized). New mcp-proxy EF: JWT + client_workspaces gate, method/tool/resource whitelist, Streamable HTTP MCP SSE parser, response envelope. Route /revenue + WorkspaceGuard. Sandbox proxy public/sandbox-proxy.html. DB: unique constraint on client_workspaces + module grants for MBM + Yuri org. Staging-only. Upstream: mcp-poc-three.vercel.app.",
+      "filesChanged": 12,
+      "reviewCycles": 6
+    },
     {
       "id": "REMEMBER-ME",
       "title": "Angemeldet bleiben — Two-tier session persistence",

@@ -1,6 +1,6 @@
 # Team Dashboard
 
-_Status: active_ · _Last updated: 2026-04-22_
+_Status: active_ · _Last updated: 2026-04-23_
 
 ## Current State
 **Portal is LIVE at https://portal.kamanin.at** (production, `main` branch)
@@ -31,6 +31,16 @@ Git rollback anchor: `v1.0-stable` tag on `main`.
 | Magic link hidden | Until GoTrue SMTP configured |
 
 ## Completed Tasks
+
+### REVENUE-INTELLIGENCE: Umsatz-Intelligenz MCP App embed ✅ (2026-04-23)
+- New module `src/modules/revenue-intelligence/` — `RevenueIntelligencePage`, `McpErrorBoundary`, `DashboardLoading`, `useMcpProxy`
+- New Edge Function `mcp-proxy` — JWT + `client_workspaces` gate, method/tool/resource whitelist, Streamable HTTP MCP (SSE + JSON), response envelope
+- Route `/revenue` with `WorkspaceGuard moduleKey="revenue-intelligence"`; sidebar icon `ChartBarIncreasingIcon`; `workspace-routes.ts` + `AppShell` PAGE_TITLES updated
+- `public/sandbox-proxy.html` — AppBridge sandbox proxy (same-origin POC)
+- Package: `@mcp-ui/client` v7 added
+- Migrations: unique constraint on `client_workspaces(organization_id, module_key)` + module grants for MBM + Yuri's org
+- Staging-only — not merged to `main` (org milestone policy). Upstream: `mcp-poc-three.vercel.app`
+- 11 commits: `031268c` → `34b73bc`
 
 ### REMEMBER-ME: Angemeldet bleiben — Two-tier session persistence ✅ (2026-04-22)
 - "Angemeldet bleiben" checkbox on login page (default checked); hint "Auf fremden Geräten deaktivieren"

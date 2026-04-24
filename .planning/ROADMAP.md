@@ -291,7 +291,8 @@ Plans:
 ## Phases
 
 - [x] **Phase 15: Local Dev + Synthetic Seeder** — DDEV Summerfield clone up with plugins active and seeder producing 1260 realistic furniture orders; blocks everything downstream (completed 2026-04-24)
-- [x] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue` (completed 2026-04-24)
+- [x] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue`
+ (completed 2026-04-24)
 - [ ] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated
 - [ ] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer
 - [ ] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff
@@ -347,6 +348,16 @@ Plans:
   5. `supabase/functions/mcp-proxy/index.ts` ALLOWED_TOOLS list updated: contains the 5 new tool names, does NOT contain `incomplete_orders`; deployed to staging Cloud Supabase via CI
 **Notes**: Can run in parallel with Phase 16 (different language stacks, different repos). PORT-01 mcp-proxy whitelist update lands here because it's coupled to the tool renames and is a trivial single-file diff. PORT-02..05 deliberately defer to Phase 19 where they are part of widget integration.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — kmn-bridge.ts + Zod schemas (typed WP bridge client + response validation)
+- [ ] 17-02-PLAN.md — 5 tool-builder files delegating to the bridge client
+- [ ] 17-03-PLAN.md — mcp-server.ts refactor: daily_briefing Promise.allSettled fan-out + 5 new tool registrations + 3 deprecated tools removed + incomplete-orders.ts deleted
+- [ ] 17-04-PLAN.md — mcp-poc/.env.example adds 3 new vars (WOOCOMMERCE_WP_USER, WOOCOMMERCE_WP_APP_PASS, KMN_BRIDGE_URL)
+- [ ] 17-05-PLAN.md — Portal mcp-proxy ALLOWED_TOOLS alignment + staging CI deploy (PORT-01)
+
+
 ### Phase 18: MCP UI Resource Build Pipeline
 **Goal**: A reusable Vite single-file build pipeline for React+Tailwind+Motion widgets plus a bidirectional postMessage token bridge — this is the platform layer that makes Revenue Intelligence v2 possible and future MCP Apps trivial
 **Depends on**: Phase 15 (local dev environment for standalone widget dev)
@@ -401,7 +412,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 15. Local Dev + Synthetic Seeder | 2/2 | Complete   | 2026-04-24 |
 | 16. kmn-revenue-abilities WP Plugin | 3/3 | Complete    | 2026-04-24 |
-| 17. kamanda-mcp Server Expansion | 0/? | Not started | — |
+| 17. kamanda-mcp Server Expansion | 0/5 | Planned     | — |
 | 18. MCP UI Resource Build Pipeline | 0/? | Not started | — |
 | 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
 | 20. Monday Briefing Email | 0/? | Not started | — |
