@@ -5,7 +5,7 @@ import type { Project } from '../../types/project';
 import { getStepById } from '../../lib/helpers';
 import { getPhaseColor } from '../../lib/phase-colors';
 import { StatusBadge } from '@/shared/components/common/StatusBadge';
-import { TaskComments } from '@/modules/tickets/components/TaskComments';
+import { TaskCommentsList } from '@/modules/tickets/components/TaskComments';
 import { StepActionBar } from './StepActionBar';
 
 interface StepDetailProps {
@@ -73,13 +73,13 @@ export function StepDetail({ stepId, project, onClose, onOpenTask }: StepDetailP
       {/* Divider */}
       <div className="h-px bg-[var(--border-light)] mb-5" />
 
-      {/* Discussion inline */}
-      <TaskComments taskId={step.clickupTaskId} clientBubbleStyle="solid" />
+      {/* Discussion inline — no inner scroll, sheet body handles overflow */}
+      <TaskCommentsList taskId={step.clickupTaskId} clientBubbleStyle="solid" />
     </div>
   );
 }
 
-/* ── Expandable Section ────────────────────────────────────── */
+/* -- Expandable Section -------------------------------------------------- */
 
 interface ExpandableSectionProps {
   title: string;
