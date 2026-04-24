@@ -327,6 +327,13 @@ Plans:
   7. Every ability response completes within 2s budget (`SET SESSION MAX_EXECUTION_TIME=2000` active, ABIL-QA-03)
 **Notes**: Can run in parallel with Phase 17 once Phase 15 is complete — this is PHP, Phase 17 is TypeScript, no code overlap. MCPAPP-WP-01..03 documentation deliverables embedded here: plugin pattern reference in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md`, Adapter integration documented, App Password rotation runbook appended to `docs/DECISIONS.md`.
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — Plugin bootstrap + MCP server registration + shared infra (autonomous)
+- [ ] 16-02-PLAN.md — 4 read abilities: weekly-heatmap, repeat-metrics, revenue-run-rate, market-basket (autonomous)
+- [ ] 16-03-PLAN.md — weekly-briefing-data orchestrator + verify scripts + Maxi coexistence test (human-verify checkpoint)
+
 ### Phase 17: kamanda-mcp Server Expansion
 **Goal**: The MCP server at `G:/01_OPUS/Projects/mcp-poc` exposes 5 new tools that proxy the WP abilities, refactors `daily_briefing` to resilient fan-out, and aligns the portal's MCP proxy whitelist with the new tool surface
 **Depends on**: Phase 15 (DDEV reachable with Application Password)
@@ -393,7 +400,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Local Dev + Synthetic Seeder | 2/2 | Complete   | 2026-04-24 |
-| 16. kmn-revenue-abilities WP Plugin | 0/? | Not started | — |
+| 16. kmn-revenue-abilities WP Plugin | 0/3 | Planned | — |
 | 17. kamanda-mcp Server Expansion | 0/? | Not started | — |
 | 18. MCP UI Resource Build Pipeline | 0/? | Not started | — |
 | 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
