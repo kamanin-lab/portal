@@ -294,7 +294,7 @@ Plans:
 - [x] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue`
  (completed 2026-04-24)
 - [x] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated (completed 2026-04-24)
-- [ ] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer
+- [x] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer (completed 2026-04-24)
 - [ ] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff
 - [ ] **Phase 20: Monday Briefing Email** — Edge Function scheduled Mondays 08:00 Berlin, pulls `weekly_briefing_data`, sends HTML briefing via Mailjet
 
@@ -373,14 +373,14 @@ Plans:
   7. Protocol-version mismatch handling: widget receiving `kmn/theme/set` with `protocolVersion: 2` logs a console warning and stays on bundled defaults (MCPAPP-TOKEN-08)
 **Notes**: This phase can start in parallel with Phase 19 design/spec work, but Phase 19's final integrated widget cannot build without this pipeline. Preact/compat fallback (MCPAPP-BUILD-05) documented here but only exercised if React bundle busts the 300 KB budget.
 
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 Plans:
-- [ ] 18-01-PLAN.md — React 19 upgrade + per-widget dir scaffold + v1 migration + build-widgets.mjs dir-scan refactor
-- [ ] 18-02-PLAN.md — vite.base.ts factory + per-widget vite configs + Tailwind v4 + Motion runtime deps + bundle-size check script
-- [ ] 18-03-PLAN.md — mcp-poc widgets/shared/ (widget-tokens.ts + types.ts + useHostTokens hook) + vitest install + twin contract test (mcp-poc side)
-- [ ] 18-04-PLAN.md — PORTAL widget-tokens.ts twin + contract test + useThemePublisher + sandbox-proxy kmn/theme relay block + RevenueIntelligencePage 1-line wire-up
-- [ ] 18-05-PLAN.md — Dev harness (dev-host.html + fixtures parser + dev:widget script) + bundle-size re-verification + human-verify checkpoint
+- [x] 18-01-PLAN.md — React 19 upgrade + per-widget dir scaffold + v1 migration + build-widgets.mjs dir-scan refactor
+- [x] 18-02-PLAN.md — vite.base.ts factory + per-widget vite configs + Tailwind v4 + Motion runtime deps + bundle-size check script
+- [x] 18-03-PLAN.md — mcp-poc widgets/shared/ (widget-tokens.ts + types.ts + useHostTokens hook) + vitest install + twin contract test (mcp-poc side)
+- [x] 18-04-PLAN.md — PORTAL widget-tokens.ts twin + contract test + useThemePublisher + sandbox-proxy kmn/theme relay block + RevenueIntelligencePage 1-line wire-up
+- [x] 18-05-PLAN.md — Dev harness (dev-host.html + fixtures parser + dev:widget script) + bundle-size re-verification + human-verify checkpoint
 
 ### Phase 19: Revenue Intelligence Widget v2
 **Goal**: The production-grade 4-block dashboard replaces the v1 `daily_briefing` widget — eliminating the today-vs-yesterday −85% methodology bug — via a zero-diff drop-in at the same `ui://widgets/daily-briefing.html` URI
@@ -422,6 +422,6 @@ Plans:
 | 15. Local Dev + Synthetic Seeder | 2/2 | Complete   | 2026-04-24 |
 | 16. kmn-revenue-abilities WP Plugin | 3/3 | Complete    | 2026-04-24 |
 | 17. kamanda-mcp Server Expansion | 5/5 | Complete    | 2026-04-24 |
-| 18. MCP UI Resource Build Pipeline | 0/5 | Planned | — |
+| 18. MCP UI Resource Build Pipeline | 5/5 | Complete    | 2026-04-24 |
 | 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
 | 20. Monday Briefing Email | 0/? | Not started | — |
