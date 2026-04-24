@@ -290,7 +290,7 @@ Plans:
 
 ## Phases
 
-- [ ] **Phase 15: Local Dev + Synthetic Seeder** — DDEV Summerfield clone up with plugins active and seeder producing 1260 realistic furniture orders; blocks everything downstream
+- [x] **Phase 15: Local Dev + Synthetic Seeder** — DDEV Summerfield clone up with plugins active and seeder producing 1260 realistic furniture orders; blocks everything downstream (completed 2026-04-24)
 - [ ] **Phase 16: kmn-revenue-abilities WP Plugin** — WordPress companion plugin with 5 abilities exposed via MCP Adapter `/wp-json/mcp/kmn-revenue`
 - [ ] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated
 - [ ] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer
@@ -392,7 +392,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Local Dev + Synthetic Seeder | 1/2 | In Progress|  |
+| 15. Local Dev + Synthetic Seeder | 2/2 | Complete   | 2026-04-24 |
 | 16. kmn-revenue-abilities WP Plugin | 0/? | Not started | — |
 | 17. kamanda-mcp Server Expansion | 0/? | Not started | — |
 | 18. MCP UI Resource Build Pipeline | 0/? | Not started | — |

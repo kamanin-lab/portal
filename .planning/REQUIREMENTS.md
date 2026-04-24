@@ -166,15 +166,15 @@ Summerfield DDEV clone at `/home/upan/projects/sf_staging/`. Apache-FPM + PHP 8.
 
 WP-CLI command for generating realistic Summerfield data per `SEEDER_SPEC.md`. Lives at `PORTAL/scripts/seed-orders.php`.
 
-- [ ] **SEED-01**: WP-CLI command `wp kmn seed` registered; accepts flags `--weeks`, `--daily-avg`, `--daily-stddev`, `--repeat-rate`, `--multi-item-rate`, `--seed`, `--dry-run`
-- [ ] **SEED-02**: Generates ~1260 orders across 12 weeks with furniture-shop distribution per SEEDER_SPEC §2 (volume, hour curve, day bias, basket composition, AOV bands, payment methods, status mix)
-- [ ] **SEED-03**: Generates ~900 synthetic customers; 22% configured as repeaters (2-5 orders each with median 55-day gap); orders linked to customers via `billing_email`
-- [ ] **SEED-04**: Pre-seeded product combinations force market basket signal: Boxspringbett→Lattenrost, Matratze→Matratzenschoner, Schlafsofa→Kissenset
-- [ ] **SEED-05**: Orders use `wc_create_order()` (HPOS-safe, auto-populates all lookup tables); `set_date_created()` backdates to synthetic datetime; `_kmn_test_order = 1` meta set on every order
-- [ ] **SEED-06**: `wp kmn seed reset` command deletes only orders + users flagged `_kmn_test_order` / `_kmn_test_user`; idempotent
-- [ ] **SEED-07**: Environment guard: seeder refuses to run if `siteurl` does not match `*.ddev.site` pattern; hard error on misuse
-- [ ] **SEED-08**: Validation queries from SEEDER_SPEC §4 pass after seed: ~1100 paid orders, Thu highest DOW, ~315 multi-item orders, ~22% repeat rate, hour peak in {20, 10, 19, 11, 21}
-- [ ] **SEED-09**: Runtime ≤ 5 minutes for full seed on DDEV; emails disabled during run via `woocommerce_email_new_order_enabled=no`
+- [x] **SEED-01**: WP-CLI command `wp kmn seed` registered; accepts flags `--weeks`, `--daily-avg`, `--daily-stddev`, `--repeat-rate`, `--multi-item-rate`, `--seed`, `--dry-run`
+- [x] **SEED-02**: Generates ~1260 orders across 12 weeks with furniture-shop distribution per SEEDER_SPEC §2 (volume, hour curve, day bias, basket composition, AOV bands, payment methods, status mix)
+- [x] **SEED-03**: Generates ~900 synthetic customers; 22% configured as repeaters (2-5 orders each with median 55-day gap); orders linked to customers via `billing_email`
+- [x] **SEED-04**: Pre-seeded product combinations force market basket signal: Boxspringbett→Lattenrost, Matratze→Matratzenschoner, Schlafsofa→Kissenset
+- [x] **SEED-05**: Orders use `wc_create_order()` (HPOS-safe, auto-populates all lookup tables); `set_date_created()` backdates to synthetic datetime; `_kmn_test_order = 1` meta set on every order
+- [x] **SEED-06**: `wp kmn seed reset` command deletes only orders + users flagged `_kmn_test_order` / `_kmn_test_user`; idempotent
+- [x] **SEED-07**: Environment guard: seeder refuses to run if `siteurl` does not match `*.ddev.site` pattern; hard error on misuse
+- [x] **SEED-08**: Validation queries from SEEDER_SPEC §4 pass after seed: ~1100 paid orders, Thu highest DOW, ~315 multi-item orders, ~22% repeat rate, hour peak in {20, 10, 19, 11, 21}
+- [x] **SEED-09**: Runtime ≤ 5 minutes for full seed on DDEV; emails disabled during run via `woocommerce_email_new_order_enabled=no`
 
 ---
 
