@@ -500,3 +500,155 @@ function maxi_ai_tokenize_cli_command( string $command ): array|string {
     return $tokens;
 
 }
+
+/**
+ * Normalize an order-direction string to 'ASC' or 'DESC'.
+ *
+ * Case-insensitive. Returns uppercase. Falls back to $default on invalid input.
+ * Used across list-* abilities to avoid the sanitize_key() trap (sanitize_key
+ * lowercases and would mangle 'DESC' to 'desc', which — while harmless for
+ * WP_Query — silently breaks any downstream case-sensitive comparison).
+ *
+ * @param string|null $value   Raw caller-supplied order direction.
+ * @param string      $default Fallback if $value is missing or invalid.
+ * @return string 'ASC' or 'DESC'.
+ */
+function maxi_ai_normalize_order( ?string $value, string $default = 'DESC' ): string {
+
+    if ( ! is_string( $value ) ) {
+        return $default;
+    }
+
+    $up = strtoupper( trim( $value ) );
+
+    return in_array( $up, [ 'ASC', 'DESC' ], true ) ? $up : $default;
+
+}
+
+/**
+ * Validate an orderby value against an explicit allowlist.
+ *
+ * Returns the caller-supplied value only when it appears in $allowed;
+ * returns $default for missing, empty, or out-of-list values. Never lets
+ * untrusted input reach the backend query layer — even though the schema
+ * enum should block invalid values, we re-check in-process for defense
+ * in depth. MCP dispatch paths have shown REST-validator gaps in the
+ * past (see edge-cases/generic-mcp-tool-error.md).
+ *
+ * The allowlist is the ability's own enum — pass it in explicitly so
+ * the validator stays strict and per-ability.
+ *
+ * @param string|null $value    Raw caller-supplied orderby.
+ * @param string[]    $allowed  Allowlist of valid orderby values for this ability.
+ * @param string      $default  Fallback if missing/invalid. Should itself be in $allowed.
+ * @return string Validated orderby value.
+ */
+function maxi_ai_normalize_orderby( ?string $value, array $allowed, string $default ): string {
+
+    if ( ! is_string( $value ) || $value === '' ) {
+        return $default;
+    }
+
+    return in_array( $value, $allowed, true ) ? $value : $default;
+
+}
+
+/**
+ * Map a validated list-notes orderby enum value to a SQL ORDER BY fragment.
+ *
+ * Only consumed by maxi/list-notes, which queries the custom wp_maxi_ai_notes
+ * table directly. Caller must pre-validate $orderby via
+ * maxi_ai_normalize_orderby() against the list-notes enum, and $order via
+ * maxi_ai_normalize_order(). Inputs are constants by the time they reach here,
+ * so direct interpolation into SQL is safe.
+ *
+ * Priority ordering uses an explicit CASE expression so 'priority DESC'
+ * yields critical → high → normal → low (semantic rank, not alphabetical
+ * string sort). 'rand' ignores direction. Secondary 'created_at DESC'
+ * tie-breaker on priority keeps ordering deterministic within a bucket.
+ *
+ * @param string $orderby Pre-validated enum value (one of:
+ *                        created_at, updated_at, id, title, priority, rand).
+ * @param string $order   'ASC' or 'DESC'. Ignored when $orderby is 'rand'.
+ * @return string SQL fragment safe to interpolate into ORDER BY.
+ */
+function maxi_ai_notes_order_sql( string $orderby, string $order ): string {
+
+    $priority_case = "CASE priority WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'normal' THEN 2 WHEN 'low' THEN 1 ELSE 0 END";
+
+    $map = [
+        'created_at' => "created_at {$order}",
+        'updated_at' => "updated_at {$order}",
+        'id'         => "id {$order}",
+        'title'      => "title {$order}",
+        'priority'   => "{$priority_case} {$order}, created_at DESC",
+        'rand'       => "RAND()",
+    ];
+
+    return $map[ $orderby ] ?? $map['created_at'];
+
+}
+
+/**
+ * Compute a price-range aggregate for a WooCommerce variable product.
+ *
+ * Returns an array of min/max values across visible variations for regular
+ * price, sale price, and active price (sale-if-applicable). Returns null for
+ * non-variable products or variable products with no visible variations —
+ * callers should treat null as "price_range is not applicable for this
+ * product; use the parent's own price fields."
+ *
+ * All values are raw numeric strings as returned by WC (e.g. "44.99").
+ * Sale min/max are empty string if no variations are currently on sale.
+ *
+ * Uses WC's built-in cached methods — typical cost is one transient lookup
+ * per product, not one per variation.
+ *
+ * @param mixed $product A WC_Product instance, or anything else (returns null).
+ * @return array|null
+ *   [
+ *     'regular_min' => string,
+ *     'regular_max' => string,
+ *     'sale_min'    => string,  // "" if no variation on sale
+ *     'sale_max'    => string,  // "" if no variation on sale
+ *     'min'         => string,  // active price min (sale if applicable)
+ *     'max'         => string,  // active price max
+ *   ]
+ */
+function maxi_ai_compute_price_range( $product ): ?array {
+
+    if ( ! class_exists( 'WC_Product_Variable' ) ) {
+        return null;
+    }
+
+    if ( ! ( $product instanceof WC_Product_Variable ) ) {
+        return null;
+    }
+
+    $prices = $product->get_variation_prices( false );
+
+    // Empty arrays mean no visible variations — aggregate is meaningless.
+    if ( empty( $prices['price'] ) ) {
+        return null;
+    }
+
+    // WC's min/max getters return false when no variations qualify
+    // (e.g. sale_min when no variations are on sale). Normalize to
+    // empty string for JSON cleanliness.
+    $normalize = static function ( $value ): string {
+        if ( $value === false || $value === null ) {
+            return '';
+        }
+        return (string) $value;
+    };
+
+    return [
+        'regular_min' => $normalize( $product->get_variation_regular_price( 'min', false ) ),
+        'regular_max' => $normalize( $product->get_variation_regular_price( 'max', false ) ),
+        'sale_min'    => $normalize( $product->get_variation_sale_price( 'min', false ) ),
+        'sale_max'    => $normalize( $product->get_variation_sale_price( 'max', false ) ),
+        'min'         => $normalize( $product->get_variation_price( 'min', false ) ),
+        'max'         => $normalize( $product->get_variation_price( 'max', false ) ),
+    ];
+
+}

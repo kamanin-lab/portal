@@ -119,7 +119,7 @@ final class Maxi_AI_Provider_Self_Hosted implements Maxi_AI_License_Provider {
             return rtrim( MAXI_AI_LICENSE_SERVER_URL, '/' );
         }
 
-        return 'https://maxiweb.si/wp-json/maxi-license/v1';
+        return 'https://api.maxicore.ai/wp-json/maxi-license/v1';
 
     }
 
@@ -212,11 +212,22 @@ final class Maxi_AI_Provider_Self_Hosted implements Maxi_AI_License_Provider {
         $key_string = (string) ( $response['license_key']['key'] ?? '' );
         $masked     = self::mask_key( $key_string );
 
-        $plan = 'pro';
+        $plan = '';
 
         if ( ! empty( $response['meta']['variant_name'] ) ) {
             $plan = sanitize_key( $response['meta']['variant_name'] );
         }
+
+        // Entitlements: prefer the server-provided array when present,
+        // otherwise derive from plan via the client-side PLANS map.
+        // This decouples client rollout from server rollout — the client
+        // can ship with the fallback map and the license server can start
+        // returning entitlements[] whenever it's ready.
+        $entitlements = is_array( $response['entitlements'] ?? null )
+            ? array_values( array_filter( array_map( 'strval', $response['entitlements'] ), 'strlen' ) )
+            : ( class_exists( 'Maxi_AI_Entitlements' )
+                ? Maxi_AI_Entitlements::resolve_entitlements_for_plan( $plan )
+                : [] );
 
         return new Maxi_AI_License_Status( [
             'is_valid'           => $valid && $status === Maxi_AI_License_Status::STATUS_ACTIVE,
@@ -227,6 +238,7 @@ final class Maxi_AI_Provider_Self_Hosted implements Maxi_AI_License_Provider {
             'licensed_domain'    => $domain,
             'instance_id'        => $instance,
             'plan'               => $plan,
+            'entitlements'       => $entitlements,
             'error'              => $valid ? null : ( $response['error'] ?? 'License is not valid.' ),
             'raw'                => $response,
             'checked_at'         => gmdate( 'c' ),

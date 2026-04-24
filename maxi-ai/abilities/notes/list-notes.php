@@ -14,14 +14,19 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-notes',
         [
             'label'       => 'List Notes',
-            'description' => 'List and search notes. Filter by type, status, topic, priority, or free-text search. '
+            'description' => 'List and search notes. Filter by type, status, topic, priority, assigned_to, or free-text search. '
                            . 'Use exclude_status to hide resolved/archived notes. '
+                           . 'Paginate via limit (default 20, max 100) and offset. '
+                           . 'Sort via orderby (created_at, updated_at, id, priority, title, rand) and order (ASC/DESC). Default "created_at DESC". '
+                           . 'Priority sort is semantic, not alphabetical — orderby=priority with order=DESC returns critical → high → normal → low. '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction. '
                            . 'Session start: check operator-note, status: open for instructions, then agent-knowledge, status: active for existing solutions.',
             'category'    => 'notes',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'notes',
             ],
 
             'input_schema' => [
@@ -63,6 +68,15 @@ add_action( 'wp_abilities_api_init', function () {
                     'include_content' => [
                         'type'        => 'boolean',
                         'description' => 'Include the content field in results. Default: false. Set true if you need to read note bodies inline.',
+                    ],
+                    'orderby' => [
+                        'type'        => 'string',
+                        'description' => 'Order by field. Default "created_at". Priority sort is semantic (critical → high → normal → low on DESC). Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'created_at', 'updated_at', 'id', 'priority', 'title', 'rand' ],
+                    ],
+                    'order' => [
+                        'type'        => 'string',
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "DESC". Ignored when orderby=rand.',
                     ],
                     'limit' => [
                         'type'        => 'integer',
@@ -134,6 +148,14 @@ add_action( 'wp_abilities_api_init', function () {
                 $limit        = min( max( (int) ( $input['limit'] ?? 20 ), 1 ), 100 );
                 $offset       = max( (int) ( $input['offset'] ?? 0 ), 0 );
 
+                // Ordering — validate against the allowlist BEFORE building the SQL
+                // fragment. Caller input never reaches ORDER BY directly; only
+                // pre-validated constants interpolate into the fragment string.
+                $allowed_orderby = [ 'created_at', 'updated_at', 'id', 'priority', 'title', 'rand' ];
+                $orderby         = maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'created_at' );
+                $order_dir       = maxi_ai_normalize_order( $input['order'] ?? null, 'DESC' );
+                $order_fragment  = maxi_ai_notes_order_sql( $orderby, $order_dir );
+
                 // Count total.
                 $count_sql = "SELECT COUNT(*) FROM $table $where_clause";
                 if ( ! empty( $params ) ) {
@@ -146,7 +168,7 @@ add_action( 'wp_abilities_api_init', function () {
                 $include_content = $input['include_content'] ?? false;
                 $columns         = $include_content ? '*' : 'id, type, status, title, topic, priority, author_id, assigned_to, created_at, updated_at';
                 $query_params    = array_merge( $params, [ $limit, $offset ] );
-                $select_sql      = "SELECT $columns FROM $table $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
+                $select_sql      = "SELECT $columns FROM $table $where_clause ORDER BY $order_fragment LIMIT %d OFFSET %d";
                 $notes           = $wpdb->get_results( $wpdb->prepare( $select_sql, ...$query_params ), ARRAY_A );
 
                 if ( ! empty( $notes ) ) {

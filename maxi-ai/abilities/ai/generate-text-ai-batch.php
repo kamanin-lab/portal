@@ -20,6 +20,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'ai_generation',
             ],
 
             'input_schema' => [
@@ -53,11 +54,11 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'provider' => [
                         'type'        => 'string',
-                        'description' => 'AI provider (e.g. "openai", "anthropic", "local"). Optional — uses configured default.',
+                        'description' => 'AI provider (e.g. "openai", "anthropic", "openrouter", "local"). Optional — uses configured default.',
                     ],
                     'model' => [
                         'type'        => 'string',
-                        'description' => 'Model override. Applied to all items. Optional.',
+                        'description' => 'Model override. Applied to all items. For OpenRouter, use vendor-prefixed slugs like "openai/gpt-4o-mini" or "anthropic/claude-sonnet-4-20250514". Optional.',
                     ],
                     'priority' => [
                         'type'        => 'integer',

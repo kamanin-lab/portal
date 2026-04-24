@@ -11,10 +11,10 @@ add_action( 'wp_abilities_api_init', function () {
     }
 
     wp_register_ability(
-        'maxi/rules-sync',
+        'maxi/playbooks-sync',
         [
-            'label'       => 'Sync Ability Rules',
-            'description' => 'Install or refresh the baseline ability rules shipped with the plugin. Phase 1: re-seeds defaults from includes/rules/default-rules.php. Phase 2 will also pull policies from docu. Operator-authored rules are never overwritten. Call this when an ability returns rules_not_installed.',
+            'label'       => 'Sync Playbooks',
+            'description' => 'Install or refresh the baseline playbooks shipped with the plugin. Re-seeds defaults from includes/playbooks/default-playbooks.php. Operator-authored playbooks are never overwritten. Call this when an ability returns playbooks_not_installed.',
             'category'    => 'system',
 
             'meta' => [
@@ -31,18 +31,22 @@ add_action( 'wp_abilities_api_init', function () {
 
             'execute_callback' => function ( $input ) {
 
-                // Phase 1: the only sync is the baseline seeder. Phase 2 will
-                // wire this to a docu HTTP client without touching the
-                // ability shape.
-                $count = Maxi_AI_Rule_Store::seed_defaults();
+                $count = Maxi_AI_Playbook_Store::seed_defaults();
+
+                if ( $count > 0 ) {
+                    do_action( 'maxi_ai_audit', 'playbooks_reseeded', [
+                        'rows_affected' => $count,
+                        'trigger'       => 'manual',
+                    ] );
+                }
 
                 return maxi_ai_response(
                     true,
                     [
                         'synced'  => $count,
-                        'source'  => Maxi_AI_Rule_Store::SOURCE_DEFAULT,
+                        'source'  => Maxi_AI_Playbook_Store::SOURCE_DEFAULT,
                         'message' => sprintf(
-                            '%d baseline rule(s) installed or refreshed. Operator rules were preserved.',
+                            '%d baseline playbook(s) installed or refreshed. Operator playbooks were preserved.',
                             $count
                         ),
                     ]
@@ -51,7 +55,7 @@ add_action( 'wp_abilities_api_init', function () {
             },
 
             'permission_callback' => function () {
-                // Editors need to sync rules to bootstrap their session.
+                // Editors need to sync playbooks to bootstrap their session.
                 // This only re-seeds shipped defaults; no destructive action.
                 return current_user_can( 'edit_posts' );
             },

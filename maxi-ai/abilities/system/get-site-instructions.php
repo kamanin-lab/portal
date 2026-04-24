@@ -12,13 +12,20 @@ add_action(
             'maxi/get-site-instructions',
             [
                 'label'       => 'Get Site Instructions',
-                'description' => 'Return the contents of CLAUDE.md',
+                'description' => 'Return the contents of CLAUDE.md from the site root (ABSPATH). Returns success:false with "CLAUDE.md not found" if the file does not exist.',
                 'category'    => 'system',
 
-            'meta' => [
-                'show_in_rest' => true,
-                'mcp'          => [ 'public' => true ],
-            ],
+                'meta' => [
+                    'show_in_rest'  => true,
+                    'mcp'           => [ 'public' => true ],
+                    'feature_group' => 'session_system',
+                ],
+
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [],
+                    'required'   => [],
+                ],
 
                 'execute_callback' => function () {
 

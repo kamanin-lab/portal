@@ -14,12 +14,16 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-terms',
         [
             'label'       => 'List Terms',
-            'description' => 'List terms in a taxonomy with optional filters.',
+            'description' => 'List terms in a taxonomy. Filter by parent, hide_empty, or search text. '
+                           . 'Paginate via per_page (default 100, max 500). '
+                           . 'Sort via orderby (name, slug, term_id, count, description, rand) and order (ASC/DESC). '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction.',
             'category'    => 'taxonomy',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'taxonomy',
             ],
 
             'input_schema' => [
@@ -43,13 +47,12 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'orderby' => [
                         'type'        => 'string',
-                        'description' => 'Order by field. Default "name".',
-                        'enum'        => [ 'name', 'slug', 'term_id', 'count' ],
+                        'description' => 'Order by field. Default "name". Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'name', 'slug', 'term_id', 'count', 'description', 'rand' ],
                     ],
                     'order' => [
                         'type'        => 'string',
-                        'description' => 'Sort direction. Default "ASC".',
-                        'enum'        => [ 'ASC', 'DESC' ],
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "ASC". Ignored when orderby=rand.',
                     ],
                     'per_page' => [
                         'type'        => 'integer',
@@ -67,12 +70,14 @@ add_action( 'wp_abilities_api_init', function () {
                     return maxi_ai_response( false, [], 'Invalid taxonomy: ' . $taxonomy );
                 }
 
+                $allowed_orderby = [ 'name', 'slug', 'term_id', 'count', 'description', 'rand' ];
+
                 $args = [
                     'taxonomy'   => $taxonomy,
                     'hide_empty' => (bool) ( $input['hide_empty'] ?? false ),
                     'number'     => min( intval( $input['per_page'] ?? 100 ), 500 ),
-                    'orderby'    => sanitize_key( $input['orderby'] ?? 'name' ),
-                    'order'      => strtoupper( sanitize_key( $input['order'] ?? 'ASC' ) ),
+                    'orderby'    => maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'name' ),
+                    'order'      => maxi_ai_normalize_order( $input['order'] ?? null, 'ASC' ),
                 ];
 
                 if ( isset( $input['parent'] ) ) {

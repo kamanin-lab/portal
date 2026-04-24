@@ -20,6 +20,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'dev_tools_admin',
             ],
 
             'input_schema' => [
@@ -27,7 +28,7 @@ add_action( 'wp_abilities_api_init', function () {
                 'properties' => [
                     'command' => [
                         'type'        => 'string',
-                        'description' => 'The WP-CLI command to run (without "wp" prefix). This accepts WP-CLI command text only — shell syntax (pipes, redirects, semicolons, backticks, $() etc.) is not permitted. Use double or single quotes for values containing spaces. E.g. "option get blogname", "option get \"my option\"".',
+                        'description' => 'The WP-CLI command to run (without "wp" prefix). WP-CLI command text only — shell syntax (pipes, redirects, semicolons, $()) is not permitted. Inside `db query "..."`, parentheses, <, >, !, and backtick-quoted identifiers ARE allowed (they are SQL, not shell). Use double or single quotes for values containing spaces. E.g. "option get blogname", "db query \"SELECT COUNT(*) FROM wp_posts\"".',
                     ],
                 ],
                 'required' => [ 'command' ],
@@ -43,29 +44,65 @@ add_action( 'wp_abilities_api_init', function () {
                     return maxi_ai_response( false, [], 'Missing command.' );
                 }
 
-                // Layer 1: Reject shell metacharacters — security boundary.
-                // This is WP-CLI command text, not shell command text.
-                // WP-CLI commands are "subcommand arg --flag=value" — shell syntax
-                // (pipes, redirects, subshells, etc.) is never needed or allowed.
-                if ( preg_match( '/[;|&`$()<>{}!\\\\\n\r]/', $command ) ) {
+                // Layer 1: Reject shell metacharacters — agent-guidance guard.
+                // This is WP-CLI command text, not shell command text. Layer 2
+                // (proc_open + argv) is the real shell-injection boundary; Layer 1
+                // exists to fail fast against agents who reach for shell syntax.
+                //
+                // `db query` is SQL-friendly: ( ) < > ! backtick are legal SQL and
+                // cannot be shell hazards because Layer 2 never invokes a shell.
+                // We still block ; | & $ { } \ newlines for defensive reasons
+                // (statement chaining, rarely-needed-in-SQL chars).
+                $is_db_query = (bool) preg_match( '/^db\s+query\s+/i', $command );
+
+                $pattern = $is_db_query
+                    ? '/([;|&$\\\\\n\r{}])/'
+                    : '/([;|&`$()<>{}!\\\\\n\r])/';
+
+                $disallowed_chars = $is_db_query
+                    ? [ ';', '|', '&', '$', '\\', "\n", "\r", '{', '}' ]
+                    : [ ';', '|', '&', '`', '$', '(', ')', '<', '>', '{', '}', '!', '\\', "\n", "\r" ];
+
+                if ( preg_match( $pattern, $command, $m ) ) {
+
+                    $rejected_char = $m[1];
+
+                    // Newlines / returns don't render usefully in the error string.
+                    $rejected_display = ( $rejected_char === "\n" )
+                        ? '\\n (newline)'
+                        : ( ( $rejected_char === "\r" ) ? '\\r (carriage return)' : $rejected_char );
+
                     Maxi_AI_Audit_Log::record(
                         'wp_cli',
                         'wp_cli_rejected',
                         get_current_user_id(),
                         $command,
                         [
-                            'reason'      => 'dangerous_characters',
-                            'raw_command' => $command,
+                            'reason'        => 'dangerous_characters',
+                            'raw_command'   => $command,
+                            'rejected_char' => $rejected_char,
+                            'mode'          => $is_db_query ? 'db_query' : 'default',
                         ]
                     );
+
+                    $context_hint = $is_db_query
+                        ? 'Inside `db query`, ( ) < > ! and backticks are SQL-allowed — but this character still isn\'t.'
+                        : 'This ability runs WP-CLI directly, not a shell — no redirects, pipes, chaining, or expansion.';
 
                     return maxi_ai_response(
                         false,
                         [
-                            'command' => $command,
-                            'reason'  => 'dangerous_characters',
+                            'command'          => $command,
+                            'reason'           => 'dangerous_characters',
+                            'rejected_char'    => $rejected_char,
+                            'disallowed_chars' => $disallowed_chars,
+                            'mode'             => $is_db_query ? 'db_query' : 'default',
                         ],
-                        'Command contains disallowed characters. Shell syntax (;, |, &, $, backticks, etc.) is not permitted. This accepts WP-CLI command text only.'
+                        sprintf(
+                            'Command rejected: character "%s" is not permitted. %s See the maxi/run-wp-cli rule for the full list and alternatives.',
+                            $rejected_display,
+                            $context_hint
+                        )
                     );
                 }
 

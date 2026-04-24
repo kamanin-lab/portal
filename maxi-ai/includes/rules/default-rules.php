@@ -1440,7 +1440,7 @@ The read flag is **consumed on use**: each successful status transition clears i
 - Changing operator-note status without explicit operator instruction.
 MD
         ,
-        'delivery_mode' => 'reject_first',
+        'delivery_mode' => 'inline_on_success',
     ],
 
     'maxi/update-note' => [
@@ -2364,6 +2364,54 @@ MD
         'delivery_mode' => 'reject_first',
     ],
 
+    // ─── Yoast SEO ──────────────────────────────────────────────────────
+
+    'maxi/set-yoast-term-seo' => [
+        'title'   => 'Rules for maxi/set-yoast-term-seo',
+        'content' => <<<'MD'
+# Rules for `maxi/set-yoast-term-seo`
+
+Sets the Yoast SEO title and/or meta description for a taxonomy term. Creates the Yoast record if it does not exist yet — unlike `wp option patch`, which cannot bootstrap missing nested parents in `wpseo_taxonomy_meta`.
+
+## Required fields
+
+- `term_id` — the term to update.
+- `taxonomy` — the taxonomy the term belongs to (e.g. `product_cat`, `category`).
+
+## At least one of
+
+- `title` — Yoast SEO title. Omit to leave unchanged.
+- `description` — Yoast SEO meta description. Omit to leave unchanged.
+
+If neither is provided, the call is rejected.
+
+## Input validation (PHP-enforced)
+
+- **Taxonomy existence:** the taxonomy must be registered.
+- **Term existence:** the term must exist in the given taxonomy.
+- **Yoast active:** returns an error if `WPSEO_VERSION` is not defined.
+- **Capability:** `manage_categories`.
+
+## Behavior
+
+- Reads `wpseo_taxonomy_meta`, ensures `[taxonomy][term_id]` exists, merges the provided fields, and writes the option back.
+- Does NOT overwrite fields that were not provided — other Yoast keys (canonical, noindex, content_score, linkdex) on the same term are preserved.
+- When Yoast Indexables are available, also syncs the matching `wp_yoast_indexable` row so the change takes effect in the `<head>` immediately. Response includes `indexable_synced` to report whether this ran. If Indexables sync fails, the option write still succeeds and the failure is logged — not fatal.
+
+## Audit trail
+
+Logged under category `taxonomy`, event `yoast_term_seo_updated`, with `taxonomy`, `updated_fields`, and `indexable_synced` in the context.
+
+## Anti-patterns
+
+- Sending empty strings to "clear" fields — use explicit empty-string values if you really want to blank them, but prefer leaving the key out to avoid accidental overwrites.
+- Using this ability to set canonical URL or noindex — not supported in this iteration. Only `title` and `description` are writable here.
+- Calling on a taxonomy the current site doesn't register — the ability will reject, but check `maxi/list-terms` first.
+MD
+        ,
+        'delivery_mode' => 'reject_first',
+    ],
+
     // ─── AI ─────────────────────────────────────────────────────────────
 
     'maxi/generate-text-ai' => [
@@ -3011,34 +3059,59 @@ MD
         'content' => <<<'MD'
 # maxi/run-wp-cli
 
-Execute a WP-CLI command through a strict prefix-based allowlist. This accepts **WP-CLI command text only** — shell syntax is not permitted.
+This ability runs WP-CLI directly — it is NOT a shell. Pass WP-CLI command text only (subcommand, args, flags). Shell features do not work.
+
+## Composing the command
+
+**Output is already returned to you.** The response includes the full stdout and stderr under `data.output`. You don't need to redirect, capture, or pipe anything.
+
+### Shell syntax that will be rejected
+
+| Pattern | What to do instead |
+|---|---|
+| `wp post list > file.json` | Take the returned `output` field directly. |
+| `wp option get home \| grep https` | Inspect the returned output yourself, or use WP-CLI's own filters (`--field=`, `--format=json`, `--fields=`). |
+| `wp post list; wp user list` | Make two separate `maxi/run-wp-cli` calls. |
+| `wp eval "$(cat file.php)"` | Not supported — `eval` is hard-banned regardless. |
+| Backticks, `$(...)`, `\`, `{}`, `!` | No shell expansion happens. Pass literal values. |
+
+Rejected characters (for commands other than `db query`): `;`, `|`, `&`, `` ` ``, `$`, `(`, `)`, `<`, `>`, `{`, `}`, `!`, `\`, newlines. See the `db query` subsection below for the SQL-friendly subset.
+
+**Quoting is fine.** Both `"..."` and `'...'` work for values with spaces: `option get "my option name"`.
+
+### `db query` is SQL-friendly
+
+Inside `db query "..."`, parentheses, `<`, `>`, `!`, and backtick-quoted identifiers ARE allowed — they are SQL syntax, not shell syntax. Example:
+
+`db query "SELECT id, COUNT(*) FROM wp_posts WHERE post_date > '2026-01-01' AND id IN (1,2,3)"`
+
+Still blocked inside `db query`: `;`, `|`, `&`, `$`, `{`, `}`, `\`, newlines. One statement per call — the `;` terminator is defensively blocked.
+
+## Allowlist (summary)
+
+- **Always allowed:** read-only commands (`post list`, `option get`, `user list`, `plugin list`, `core version`, …).
+- **Opt-in via wp-config.php:**
+  - `MAXI_AI_ALLOW_DB_READS` → `db query` (SELECT-only, output-blocklisted), `db export`
+  - `MAXI_AI_ALLOW_PLUGIN_WRITES` → plugin activate/deactivate (install/delete via sub-constants)
+  - `MAXI_AI_ALLOW_THEME_WRITES` → theme activate (install/delete via sub-constants)
+  - `MAXI_AI_ALLOW_TRANSLATION_UPDATES` → language packs
+- **Hard-banned regardless of constants:** `eval`, `eval-file`, `db drop`, `db reset`, `db create`, `config set`, `config delete`, `user delete`, …
+
+If a command is rejected with `not_allowed`, the response's `enabling_constant_hint` field tells you which constant to set.
 
 ## PHP-enforced checks
 
 - **Capability:** `manage_options` (admin-only).
-- **Shell metacharacter rejection:** commands containing `;`, `|`, `&`, `` ` ``, `$`, `()`, `<>`, `{}`, `!`, or `\` are rejected before execution. This is WP-CLI command text, not shell command text.
-- **Prefix allowlist:** read-only commands always allowed, write groups opt-in via `wp-config.php` constants.
-- **Hard-banned commands:** always rejected regardless of constants.
-- **Audit logging:** every execution and rejection is logged to category `wp_cli`.
-
-## Command groups
-
-### Always allowed (read-only)
-Standard read commands: `wp post list`, `wp option get`, `wp user list`, `wp plugin list`, etc.
-
-### Opt-in write groups (require wp-config.php constants)
-- `MAXI_AI_ALLOW_DB_READS`: enables `db query` (SELECT-only) with output blocklist, and `db export`.
-- `MAXI_AI_ALLOW_PLUGIN_WRITES`: enables plugin activate/deactivate. Sub-constant `MAXI_AI_ALLOW_PLUGIN_INSTALL` for install, `MAXI_AI_ALLOW_PLUGIN_DELETE` for delete.
-- `MAXI_AI_ALLOW_THEME_WRITES`: enables theme activate. Sub-constant `MAXI_AI_ALLOW_THEME_INSTALL` for install, `MAXI_AI_ALLOW_THEME_DELETE` for delete.
-- `MAXI_AI_ALLOW_TRANSLATION_UPDATES`: enables language pack updates.
-
-### Hard-banned (always rejected)
-`eval`, `eval-file`, `db drop`, `db reset`, `db create`, `config set`, `config delete`, `user delete`, etc.
+- **Shell metacharacters:** rejected pre-execution; response includes `rejected_char` and `disallowed_chars` so you can fix the call deterministically.
+- **Allowlist:** prefix-based, non-bypassable.
+- **DB reads:** `db query` accepts SELECT only; blocklisted SQL terms and blocklisted output terms both reject.
+- **Audit:** every execution and rejection is recorded under category `wp_cli`.
 
 ## Anti-patterns
 
-- Trying to run banned commands — they will be rejected and audit-logged.
-- Running write commands without the corresponding constant enabled.
+- Reaching for shell redirection — output is already returned to you.
+- Chaining with `;` or `&&` — make separate calls.
+- Running write commands without the enabling constant.
 - Using `db query` for anything other than SELECT.
 MD
         ,

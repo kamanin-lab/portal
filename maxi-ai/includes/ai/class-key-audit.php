@@ -30,7 +30,7 @@ class Maxi_AI_Key_Audit {
      * Providers whose credentials are tracked. Kept in sync with
      * Maxi_AI_Config defaults + factory registrations.
      */
-    const PROVIDERS = [ 'openai', 'anthropic', 'replicate', 'bfl', 'local' ];
+    const PROVIDERS = [ 'openai', 'anthropic', 'openrouter', 'replicate', 'bfl', 'local' ];
 
     /**
      * Map provider → settings key for the credential itself.
@@ -40,11 +40,12 @@ class Maxi_AI_Key_Audit {
     public static function key_fields() {
 
         return [
-            'openai'    => 'openai_api_key',
-            'anthropic' => 'anthropic_api_key',
-            'replicate' => 'replicate_api_key',
-            'bfl'       => 'bfl_api_key',
-            'local'     => 'local_endpoint',
+            'openai'     => 'openai_api_key',
+            'anthropic'  => 'anthropic_api_key',
+            'openrouter' => 'openrouter_api_key',
+            'replicate'  => 'replicate_api_key',
+            'bfl'        => 'bfl_api_key',
+            'local'      => 'local_endpoint',
         ];
 
     }
@@ -358,6 +359,9 @@ class Maxi_AI_Key_Audit {
         }
         if ( strpos( $host, 'api.anthropic.com' ) !== false ) {
             return 'anthropic';
+        }
+        if ( strpos( $host, 'openrouter.ai' ) !== false ) {
+            return 'openrouter';
         }
         if ( strpos( $host, 'api.replicate.com' ) !== false ) {
             return 'replicate';

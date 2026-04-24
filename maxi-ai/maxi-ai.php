@@ -2,9 +2,9 @@
 /*
 Plugin Name: Maxi AI Core
 Description: Agentic execution infrastructure for WordPress and WooCommerce - A system layer that enables safe, auditable, and controlled operations on WordPress data. It provides structured abilities, rule enforcement, and execution governance for automated workflows and AI agents — ensuring reliable, predictable, and fully traceable behavior across any site.
-Version: 3.3.0
-Author: Mihael Zadravec, Maxi Web Studio
-Author URI: https://maxiweb.si
+Version: 3.4.7
+Author: Maxi AI Core - Mihael Zadravec, Maxi Web Studio
+Author URI: https://maxicore.ai
 License: GPL-2.0+
 License URI:  https://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -15,8 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Maxi_AI {
 
-    const VERSION    = '3.3.0';
-    const DB_VERSION = '1.9.0';
+    const VERSION    = '3.4.7';
+    // DB_VERSION is for schema changes only.
+    // Content changes are handled by content-hash reseeding in maybe_refresh_seeds().
+    // Do NOT bump DB_VERSION for content-only updates.
+    const DB_VERSION = '2.0.0';
 
     public static function init() {
 
@@ -24,6 +27,7 @@ final class Maxi_AI {
         self::load_bootstrap();
         self::load_abilities();
         self::maybe_upgrade();
+        self::maybe_refresh_seeds();
         self::register_masking_filter();
 
     }
@@ -73,6 +77,11 @@ final class Maxi_AI {
      * - WP-CLI: load eagerly (no REST request to trigger the lazy path,
      *   and CLI commands are one-shot — latency is irrelevant).
      * - Everything else (frontend, admin, cron): abilities are never loaded.
+     *   The license admin page uses a file-scan approach (see
+     *   Maxi_AI_Entitlements::get_summary) that doesn't require the
+     *   registry to be populated — deliberately, to avoid triggering the
+     *   one-shot `wp_abilities_api_init` hook before other plugins have
+     *   attached their listeners.
      */
     private static function load_abilities() {
 
@@ -193,6 +202,79 @@ final class Maxi_AI {
         self::seed_ability_rules();
         self::seed_playbooks();
         update_option( 'maxi_ai_db_version', self::DB_VERSION );
+
+    }
+
+    /**
+     * Detect shipped content drift and re-seed playbooks / rules automatically.
+     *
+     * Compares a hash-of-hashes fingerprint of the shipped defaults against
+     * a stored option. On mismatch, runs seed_defaults() — which only
+     * touches rows whose per-row content_hash actually differs (no version
+     * churn on unchanged rows). After seeding, verifies all rows converged
+     * before storing the new fingerprint; a partial failure leaves the
+     * option stale so the next request retries.
+     *
+     * Steady-state cost: two get_option() reads + two memoized SHA-256
+     * hashes over in-memory arrays. Zero DB writes.
+     */
+    private static function maybe_refresh_seeds() {
+
+        // --- Playbooks ---
+        // Defensive: if includes/playbooks.php failed to load (partial deploy,
+        // filesystem race, etc.), skip this branch with a log line rather than
+        // taking the site down with a fatal. This path is an optimization
+        // (drift detection), not critical functionality.
+        if ( class_exists( 'Maxi_AI_Playbook_Store' ) ) {
+
+            $shipped_pb = Maxi_AI_Playbook_Store::fingerprint_shipped_defaults();
+
+            if ( $shipped_pb !== get_option( 'maxi_ai_playbooks_seed_hash', '' ) ) {
+
+                $count = Maxi_AI_Playbook_Store::seed_defaults();
+
+                // Only store the fingerprint if every default row now matches.
+                // Prevents a partial failure from being silently accepted.
+                if ( Maxi_AI_Playbook_Store::verify_seed_hashes() ) {
+                    update_option( 'maxi_ai_playbooks_seed_hash', $shipped_pb, false );
+                }
+
+                if ( $count > 0 ) {
+                    do_action( 'maxi_ai_audit', 'playbooks_reseeded', [
+                        'rows_affected' => $count,
+                        'trigger'       => 'auto',
+                    ] );
+                }
+            }
+
+        } else {
+            error_log( '[Maxi AI] maybe_refresh_seeds: Maxi_AI_Playbook_Store not loaded — skipping playbook drift check. Likely a partial deploy; normal operation resumes when includes/playbooks.php is in place.' );
+        }
+
+        // --- Rules ---
+        if ( class_exists( 'Maxi_AI_Rule_Store' ) ) {
+
+            $shipped_r = Maxi_AI_Rule_Store::fingerprint_shipped_defaults();
+
+            if ( $shipped_r !== get_option( 'maxi_ai_rules_seed_hash', '' ) ) {
+
+                $count = Maxi_AI_Rule_Store::seed_defaults();
+
+                if ( Maxi_AI_Rule_Store::verify_seed_hashes() ) {
+                    update_option( 'maxi_ai_rules_seed_hash', $shipped_r, false );
+                }
+
+                if ( $count > 0 ) {
+                    do_action( 'maxi_ai_audit', 'rules_reseeded', [
+                        'rows_affected' => $count,
+                        'trigger'       => 'auto',
+                    ] );
+                }
+            }
+
+        } else {
+            error_log( '[Maxi AI] maybe_refresh_seeds: Maxi_AI_Rule_Store not loaded — skipping rule drift check. Likely a partial deploy; normal operation resumes when includes/rules.php is in place.' );
+        }
 
     }
 

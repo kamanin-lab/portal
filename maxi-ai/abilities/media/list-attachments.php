@@ -14,12 +14,16 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-attachments',
         [
             'label'       => 'List Attachments',
-            'description' => 'List media attachments with optional filters.',
+            'description' => 'List media attachments. Filter by mime_type, parent_id, or search text. '
+                           . 'Paginate via per_page (default 20, max 100) and page. '
+                           . 'Sort via orderby (date, title, ID, modified, rand) and order (ASC/DESC). '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction.',
             'category'    => 'media',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'media_basic',
             ],
 
             'input_schema' => [
@@ -47,13 +51,12 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'orderby' => [
                         'type'        => 'string',
-                        'description' => 'Order by field. Default "date".',
-                        'enum'        => [ 'date', 'title', 'ID' ],
+                        'description' => 'Order by field. Default "date". Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'date', 'title', 'ID', 'modified', 'rand' ],
                     ],
                     'order' => [
                         'type'        => 'string',
-                        'description' => 'Sort direction. Default "DESC".',
-                        'enum'        => [ 'ASC', 'DESC' ],
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "DESC". Ignored when orderby=rand.',
                     ],
                 ],
                 'required' => [],
@@ -63,13 +66,15 @@ add_action( 'wp_abilities_api_init', function () {
 
                 $per_page = min( intval( $input['per_page'] ?? 20 ), 100 );
 
+                $allowed_orderby = [ 'date', 'title', 'ID', 'modified', 'rand' ];
+
                 $args = [
                     'post_type'      => 'attachment',
                     'post_status'    => 'inherit',
                     'posts_per_page' => $per_page,
                     'paged'          => max( 1, intval( $input['page'] ?? 1 ) ),
-                    'orderby'        => sanitize_key( $input['orderby'] ?? 'date' ),
-                    'order'          => strtoupper( sanitize_key( $input['order'] ?? 'DESC' ) ),
+                    'orderby'        => maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'date' ),
+                    'order'          => maxi_ai_normalize_order( $input['order'] ?? null, 'DESC' ),
                 ];
 
                 if ( ! empty( $input['mime_type'] ) ) {

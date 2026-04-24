@@ -64,6 +64,11 @@ add_action(
                 'description' => 'Developer and system utilities.',
             ],
 
+            'yoast' => [
+                'label'       => 'Yoast SEO',
+                'description' => 'Yoast SEO integration — term and post SEO fields.',
+            ],
+
         ];
 
         foreach ( $categories as $slug => $args ) {

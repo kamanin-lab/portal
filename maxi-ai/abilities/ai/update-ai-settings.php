@@ -20,6 +20,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'ai_settings_write',
             ],
 
             'input_schema' => [
@@ -33,11 +34,11 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'provider_text' => [
                         'type'        => 'string',
-                        'description' => 'Default provider for text generation (e.g. "openai", "anthropic", "local").',
+                        'description' => 'Default provider for text generation (e.g. "openai", "anthropic", "openrouter", "local").',
                     ],
                     'provider_vision' => [
                         'type'        => 'string',
-                        'description' => 'Default provider for image analysis (e.g. "openai", "anthropic", "local").',
+                        'description' => 'Default provider for image analysis (e.g. "openai", "anthropic", "openrouter", "local").',
                     ],
                     'provider_edit_image' => [
                         'type'        => 'string',
@@ -56,6 +57,10 @@ add_action( 'wp_abilities_api_init', function () {
                     'anthropic_api_key' => [
                         'type'        => 'string',
                         'description' => 'Anthropic (Claude) API key.',
+                    ],
+                    'openrouter_api_key' => [
+                        'type'        => 'string',
+                        'description' => 'OpenRouter API key (sk-or-v1-...). Gives access to many upstream models via one key; use vendor-prefixed model slugs like "openai/gpt-4o-mini".',
                     ],
                     'replicate_api_key' => [
                         'type'        => 'string',
@@ -117,6 +122,7 @@ add_action( 'wp_abilities_api_init', function () {
                     'openai_api_key'     => 'text',
                     'openai_org_id'      => 'text',
                     'anthropic_api_key'  => 'text',
+                    'openrouter_api_key' => 'text',
                     'replicate_api_key'  => 'text',
                     'bfl_api_key'        => 'text',
                     'local_endpoint'     => 'url',
@@ -159,7 +165,7 @@ add_action( 'wp_abilities_api_init', function () {
                 }
 
                 // Keep plaintext copies for audit comparison and response masking.
-                $credential_fields = [ 'openai_api_key', 'anthropic_api_key', 'replicate_api_key', 'bfl_api_key' ];
+                $credential_fields = [ 'openai_api_key', 'anthropic_api_key', 'openrouter_api_key', 'replicate_api_key', 'bfl_api_key' ];
                 $plaintext_keys    = [];
 
                 foreach ( $credential_fields as $secret ) {
@@ -189,11 +195,12 @@ add_action( 'wp_abilities_api_init', function () {
                 // detect actual changes (encrypted blobs differ on every call
                 // due to random nonces).
                 $credential_map = [
-                    'openai_api_key'    => 'openai',
-                    'anthropic_api_key' => 'anthropic',
-                    'replicate_api_key' => 'replicate',
-                    'bfl_api_key'       => 'bfl',
-                    'local_endpoint'    => 'local',
+                    'openai_api_key'     => 'openai',
+                    'anthropic_api_key'  => 'anthropic',
+                    'openrouter_api_key' => 'openrouter',
+                    'replicate_api_key'  => 'replicate',
+                    'bfl_api_key'        => 'bfl',
+                    'local_endpoint'     => 'local',
                 ];
 
                 $actor_id = get_current_user_id();

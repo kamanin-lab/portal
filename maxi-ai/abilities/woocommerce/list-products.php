@@ -14,12 +14,18 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-products',
         [
             'label'       => 'List Products',
-            'description' => 'List WooCommerce products with store-specific filters: search by name, type, stock status, price range, on-sale, featured, SKU.',
+            'description' => 'List WooCommerce products. Filter by search (name), type, category, tag, SKU, stock_status, min_price, max_price, on_sale, featured. '
+                           . 'Paginate via per_page (default 20, max 100) and page. '
+                           . 'Sort via orderby (date, title, price, popularity, rating, menu_order, id, modified, rand) and order (ASC/DESC). '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction. '
+                           . 'On very large catalogs (>10k products) rand uses ORDER BY RAND() which skips indexes; fetch a larger page and sample client-side if performance matters. '
+                           . 'Each item includes a price_range object for variable products ({ regular_min, regular_max, sale_min, sale_max, min, max } — all numeric strings; sale_* are empty string if no variation currently on sale) so price-summary queries don\'t need a follow-up list-variations call. price_range is null for simple, grouped, and external products.',
             'category'    => 'woocommerce',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'woocommerce_catalog',
             ],
 
             'input_schema' => [
@@ -81,13 +87,12 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'orderby' => [
                         'type'        => 'string',
-                        'description' => 'Order by field.',
-                        'enum'        => [ 'date', 'title', 'price', 'popularity', 'rating', 'menu_order', 'id' ],
+                        'description' => 'Order by field. Default "date". Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'date', 'title', 'price', 'popularity', 'rating', 'menu_order', 'id', 'modified', 'rand' ],
                     ],
                     'order' => [
                         'type'        => 'string',
-                        'description' => 'Sort direction.',
-                        'enum'        => [ 'ASC', 'DESC' ],
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "DESC". Ignored when orderby=rand.',
                     ],
                 ],
                 'required' => [],
@@ -102,13 +107,15 @@ add_action( 'wp_abilities_api_init', function () {
                 $per_page = min( intval( $input['per_page'] ?? 20 ), 100 );
                 $page     = max( intval( $input['page'] ?? 1 ), 1 );
 
+                $allowed_orderby = [ 'date', 'title', 'price', 'popularity', 'rating', 'menu_order', 'id', 'modified', 'rand' ];
+
                 $args = [
                     'status'   => sanitize_key( $input['status'] ?? 'publish' ),
                     'limit'    => $per_page,
                     'page'     => $page,
                     'paginate' => true,
-                    'orderby'  => sanitize_key( $input['orderby'] ?? 'date' ),
-                    'order'    => sanitize_key( $input['order'] ?? 'DESC' ),
+                    'orderby'  => maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'date' ),
+                    'order'    => maxi_ai_normalize_order( $input['order'] ?? null, 'DESC' ),
                 ];
 
                 if ( ! empty( $input['search'] ) ) {
@@ -204,6 +211,7 @@ add_action( 'wp_abilities_api_init', function () {
                         'regular_price' => $product->get_regular_price(),
                         'sale_price'   => $product->get_sale_price(),
                         'price'        => $product->get_price(),
+                        'price_range'  => maxi_ai_compute_price_range( $product ),
                         'stock_status' => $product->get_stock_status(),
                         'stock_quantity' => $product->get_stock_quantity(),
                         'on_sale'      => $product->is_on_sale(),

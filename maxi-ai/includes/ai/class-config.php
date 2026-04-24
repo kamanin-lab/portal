@@ -26,6 +26,7 @@ class Maxi_AI_Config {
     private const ENCRYPTED_FIELDS = [
         'openai_api_key',
         'anthropic_api_key',
+        'openrouter_api_key',
         'replicate_api_key',
         'bfl_api_key',
     ];
@@ -52,6 +53,7 @@ class Maxi_AI_Config {
         'openai_api_key'      => '',
         'openai_org_id'       => '',
         'anthropic_api_key'   => '',
+        'openrouter_api_key'  => '',
         'replicate_api_key'   => '',
         'bfl_api_key'         => '',
         'local_endpoint'      => '',

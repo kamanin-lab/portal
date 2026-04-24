@@ -70,6 +70,7 @@ add_action( 'init', function () {
 
     Maxi_AI_Provider_Factory::register( 'openai', 'Maxi_AI_Provider_OpenAI' );
     Maxi_AI_Provider_Factory::register( 'anthropic', 'Maxi_AI_Provider_Anthropic' );
+    Maxi_AI_Provider_Factory::register( 'openrouter', 'Maxi_AI_Provider_OpenRouter' );
     Maxi_AI_Provider_Factory::register( 'replicate', 'Maxi_AI_Provider_Replicate' );
     Maxi_AI_Provider_Factory::register( 'bfl', 'Maxi_AI_Provider_BFL' );
     Maxi_AI_Provider_Factory::register( 'local', 'Maxi_AI_Provider_Local' );

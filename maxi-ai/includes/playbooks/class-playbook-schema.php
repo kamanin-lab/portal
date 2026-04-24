@@ -46,6 +46,7 @@ final class Maxi_AI_Playbook_Schema {
             content longtext,
             source varchar(20) NOT NULL DEFAULT 'default',
             required tinyint(1) unsigned NOT NULL DEFAULT 0,
+            content_hash varchar(64) NOT NULL DEFAULT '',
             version int(11) unsigned NOT NULL DEFAULT 1,
             status varchar(20) NOT NULL DEFAULT 'active',
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

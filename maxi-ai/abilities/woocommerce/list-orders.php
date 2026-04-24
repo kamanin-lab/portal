@@ -14,12 +14,16 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-orders',
         [
             'label'       => 'List Orders',
-            'description' => 'List WooCommerce orders with filters: status, customer, date range. Returns order summaries with totals.',
+            'description' => 'List WooCommerce orders. Filter by status, customer_id, date_after, date_before. Returns order summaries with totals. '
+                           . 'Paginate via per_page (default 20, max 50) and page. '
+                           . 'Sort via orderby (date, id, total, modified, rand) and order (ASC/DESC). '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction.',
             'category'    => 'woocommerce',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'woocommerce_orders',
             ],
 
             'input_schema' => [
@@ -51,13 +55,12 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'orderby' => [
                         'type'        => 'string',
-                        'description' => 'Order by field.',
-                        'enum'        => [ 'date', 'id', 'total' ],
+                        'description' => 'Order by field. Default "date". Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'date', 'id', 'total', 'modified', 'rand' ],
                     ],
                     'order' => [
                         'type'        => 'string',
-                        'description' => 'Sort direction.',
-                        'enum'        => [ 'ASC', 'DESC' ],
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "DESC". Ignored when orderby=rand.',
                     ],
                 ],
                 'required' => [],
@@ -73,15 +76,14 @@ add_action( 'wp_abilities_api_init', function () {
                     $per_page = min( intval( $input['per_page'] ?? 20 ), 50 );
                     $page     = max( intval( $input['page'] ?? 1 ), 1 );
 
-                    $order_input = strtoupper( (string) ( $input['order'] ?? 'DESC' ) );
-                    $order_dir   = in_array( $order_input, [ 'ASC', 'DESC' ], true ) ? $order_input : 'DESC';
+                    $allowed_orderby = [ 'date', 'id', 'total', 'modified', 'rand' ];
 
                     $args = [
                         'limit'    => $per_page,
                         'page'     => $page,
                         'paginate' => true,
-                        'orderby'  => sanitize_key( $input['orderby'] ?? 'date' ),
-                        'order'    => $order_dir,
+                        'orderby'  => maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'date' ),
+                        'order'    => maxi_ai_normalize_order( $input['order'] ?? null, 'DESC' ),
                     ];
 
                     // Status: only pass if set and not 'any'. Omitting returns all statuses.

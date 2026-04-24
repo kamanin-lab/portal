@@ -139,7 +139,7 @@ final class Maxi_AI_License_Admin {
         }
 
         $status = Maxi_AI_License_Manager::get_status();
-        $tiers  = Maxi_AI_License_Tiers::get_summary();
+        $tiers  = Maxi_AI_Entitlements::get_summary();
 
         ?>
         <div class="wrap maxi-ai-license-wrap">
@@ -235,22 +235,34 @@ final class Maxi_AI_License_Admin {
 
             <div class="maxi-ai-license-card">
                 <h2>Ability Tiers</h2>
-                <p>Abilities available by license tier:</p>
+                <p>Abilities available by license tier. Lite includes all Always-Free abilities; Pro includes all Lite abilities plus Pro-only.</p>
 
                 <div class="maxi-ai-license-tiers">
                     <div class="maxi-ai-tier-column">
-                        <h3>Free (<?php echo count( $tiers['free'] ); ?> abilities)</h3>
+                        <h3>Always Free (<?php echo count( $tiers['always_free'] ); ?> abilities)</h3>
+                        <p class="description">No license required.</p>
                         <ul>
-                            <?php foreach ( $tiers['free'] as $ability ) : ?>
+                            <?php foreach ( $tiers['always_free'] as $ability ) : ?>
                                 <li><code><?php echo esc_html( $ability ); ?></code></li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
 
                     <div class="maxi-ai-tier-column">
-                        <h3>Pro (<?php echo count( $tiers['pro'] ); ?> abilities)</h3>
+                        <h3>Lite (<?php echo count( $tiers['lite'] ); ?> abilities)</h3>
+                        <p class="description">Included in Lite and Pro plans.</p>
                         <ul>
-                            <?php foreach ( $tiers['pro'] as $ability ) : ?>
+                            <?php foreach ( $tiers['lite'] as $ability ) : ?>
+                                <li><code><?php echo esc_html( $ability ); ?></code></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+
+                    <div class="maxi-ai-tier-column">
+                        <h3>Pro Only (<?php echo count( $tiers['pro_only'] ); ?> abilities)</h3>
+                        <p class="description">Requires Pro plan.</p>
+                        <ul>
+                            <?php foreach ( $tiers['pro_only'] as $ability ) : ?>
                                 <li><code><?php echo esc_html( $ability ); ?></code></li>
                             <?php endforeach; ?>
                         </ul>

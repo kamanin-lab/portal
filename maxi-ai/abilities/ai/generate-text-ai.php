@@ -14,12 +14,13 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/generate-text-ai',
         [
             'label'       => 'Generate Text (AI)',
-            'description' => 'Generate text using AI. Returns the generated content immediately (synchronous). Supports OpenAI (GPT), Anthropic (Claude), and local providers. Use for single prompts where you need the result right away.',
+            'description' => 'Generate text using AI. Returns the generated content immediately (synchronous). Supports OpenAI (GPT), Anthropic (Claude), OpenRouter (multi-model aggregator), and local providers. Use for single prompts where you need the result right away.',
             'category'    => 'ai',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'ai_generation',
             ],
 
             'input_schema' => [
@@ -35,11 +36,11 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'provider' => [
                         'type'        => 'string',
-                        'description' => 'AI provider to use (e.g. "openai", "anthropic", "local"). Optional — uses configured default.',
+                        'description' => 'AI provider to use (e.g. "openai", "anthropic", "openrouter", "local"). Optional — uses configured default.',
                     ],
                     'model' => [
                         'type'        => 'string',
-                        'description' => 'Model override (e.g. "gpt-4o", "claude-sonnet-4-20250514"). Optional — uses provider default.',
+                        'description' => 'Model override (e.g. "gpt-4o", "claude-sonnet-4-20250514", "openai/gpt-4o-mini"). For OpenRouter, use vendor-prefixed slugs like "openai/gpt-4o-mini" or "anthropic/claude-sonnet-4-20250514". Optional — uses provider default.',
                     ],
                     'max_tokens' => [
                         'type'        => 'integer',

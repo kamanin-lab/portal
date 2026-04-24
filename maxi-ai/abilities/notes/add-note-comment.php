@@ -21,6 +21,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'notes',
             ],
 
             'input_schema' => [

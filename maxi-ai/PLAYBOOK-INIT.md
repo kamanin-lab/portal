@@ -143,15 +143,30 @@ Page content must be valid **Gutenberg block markup**. Examples:
 
 ## Licensing
 
-When a user asks about their license status, version, or tier — call `maxi/get-site-info`. It returns `maxi_ai_version`, `maxi_ai_license.tier` (`pro` or `free`), and `maxi_ai_license.status`.
+Maxi AI Core ships in two paid tiers — **Lite** and **Pro**. Both require an active license. There is no free tier.
 
-When a Pro ability is gated (returns a tier error), explain to the user:
+When a user asks about their license status, version, or tier — call `maxi/get-site-info`. It returns:
 
-1. **What happened:** The ability they requested requires Maxi AI Pro.
-2. **How to get Pro:** Visit https://maxiweb.si to purchase a license key.
-3. **How to activate:** If the user provides a license key, activate it directly via `maxi/activate-license`. Otherwise, direct them to **Settings > Maxi AI License** in WordPress admin.
+- `maxi_ai_version` — current plugin version.
+- `maxi_ai_license.tier` — `lite`, `pro`, or `unlicensed`.
+- `maxi_ai_license.status` — `active`, `grace_period`, `expired`, `inactive`, `invalid`, or `disabled`.
+- `maxi_ai_license.entitlements` — array of feature-group names this license grants (e.g. `ai_generation`, `woocommerce_orders`, `analytics`). Scan this before planning a task — if the group you need isn't in the array, the ability will be gated.
 
-To deactivate a license, use `maxi/deactivate-license`. This clears the stored key and reverts the site to the free tier.
+**When an ability is gated**, the response's `reason` field tells you which path to surface to the user:
+
+- **`plan_insufficient`** (fields: `required_group`, `plan`) — the license is valid, but the user's plan doesn't include the feature group this ability needs. Explain the upgrade path:
+  1. Their current plan (`plan`) does not include `required_group`.
+  2. Upgrade at https://maxicore.ai.
+  3. After upgrading, the new plan takes effect on the next license refresh (up to 12 hours, or immediately via **Settings → Maxi AI → License**).
+
+- **`license_required`** — no valid license. Explain the activation path:
+  1. They need an active Maxi AI license (Lite or Pro depending on which abilities they want).
+  2. Purchase at https://maxicore.ai.
+  3. Activate via `maxi/activate-license` (if they give you the key) or direct them to **Settings → Maxi AI → License**.
+
+To deactivate a license, use `maxi/deactivate-license`. This clears the stored key. After deactivation, only session-bootstrap and license-activation abilities remain callable — the rest require re-activation.
+
+**Grace period:** when a license expires, abilities continue to work for 7 days with a warning appended to each successful response. Tell the user to renew before the grace window closes.
 
 Do not guess or fabricate licensing details. Use `maxi/get-site-info` to check the current state.
 
@@ -180,6 +195,44 @@ If no rule exists for a gated ability, the gate returns `rules_not_installed` �
 **Gate bypass:** `maxi/get-ability-rule`, `maxi/rules-sync`, and `maxi/bootstrap-session` are always callable (no deadlock).
 
 **Ungated reads:** Safe read-only abilities skip the handshake entirely — no round-trip needed. See PLAYBOOK-DOC.md for the full list.
+
+---
+
+## Client Quirks
+
+Different MCP clients surface structured server responses differently. This section documents known quirks and the workarounds that keep agents functional across clients. Scan it before your first gated call on a client you haven't used before.
+
+### Generic "An error occurred while executing the tool"
+
+Some MCP clients (notably Codex) collapse any `success: false` response into the single string `"An error occurred while executing the tool."`, hiding the structured `error`, `data.code`, and `_meta._rule` body. The server's response is structured and useful; your client is discarding it.
+
+**What it actually means.** One of two things produced a response your client couldn't parse:
+
+1. **Parameter name mismatch.** The caller used a parameter name that doesn't match the ability's `input_schema`. Common gotchas: `maxi/delete-note` / `maxi/update-note` / `maxi/get-note` all take `id` (not `note_id`). `maxi/get-ability-rule` takes `ability_id` (not `ability_name`). `maxi/get-attachment` / `maxi/delete-attachment` take `attachment_id`. When WP core's REST validator hits missing or unexpected params, it emits PHP warnings that pollute the HTTP response body and corrupt the JSON the client tries to parse.
+2. **Rule handshake rejection.** The ability is `reject_first` gated and your client rendered the structured `rules_not_acknowledged` response (with the full rule body attached under `_meta._rule`) as the generic error string.
+
+**What to do, in order:**
+
+1. Double-check the parameter names against the ability's `input_schema`. Retry with corrected names.
+2. If names were correct and the ability is gated, call `maxi/get-ability-rule { "ability_id": "<ability>" }` first. That ability is in the rule gate's ALLOWLIST — it is never itself gated and never produces this error. Its response marks the session as acknowledged, so the retry of the real ability passes through with no handshake round-trip.
+3. If steps 1 and 2 both fail, inspect `maxi/get-audit-events` (category: `rules`) to see whether your retries reached the server at all.
+
+### Codex-specific: prefetch only for reject_first abilities — not all reads
+
+Codex's MCP client does not reliably deliver retry requests after a `reject_first` rejection (verified against server-side audit log — claimed retries produce zero additional requests). The workaround is to prefetch `maxi/get-ability-rule` before the first call, but **only for abilities that actually use `reject_first`**. Reads don't — over-prefetching them is wasted round-trips.
+
+**Two delivery modes exist. Treat them differently:**
+
+- **`inline_on_success` (descriptive rules).** The ability runs on first call. Rule body arrives attached to the successful response under `_meta._rule`. No reject, no prefetch needed. **All `get-*`, `list-*`, `search-*` abilities use this mode** (including `get-note`, which is classified as a read even though it has session side-effects). Call them directly.
+- **`reject_first` (prescriptive rules).** The first call is refused with `rules_not_acknowledged` and the rule body is attached to the rejection under `_meta._rule`. The agent must read the rule and retry. **Write and mutation abilities use this mode**: `create-*`, `update-*`, `delete-*`, `assign-*`, `remove-*`, `set-*`, `bulk-*`, `generate-*`, `upload-*`, `attach-*`, `detach-*`, `cancel-*`, `rotate-*`, `activate-*`, `deactivate-*`, `send-*`, `regenerate-thumbnails`, `manage-*`, `register-categories`, `run-wp-cli`.
+
+**For Codex specifically:** prefetch only for the `reject_first` set above. Skip prefetch for reads. If a read call ever unexpectedly returns `rules_not_acknowledged`, that means an operator has written a custom rule for that ability with blocking delivery mode — prefetch that specific ability once and retry; the session then passes through normally.
+
+**For Claude and other MCP clients that render structured errors cleanly:** no prefetch is needed in either mode. On `reject_first`, read the attached `_meta._rule` body from the rejection envelope and retry. The retry is the acknowledgement; subsequent calls pass through.
+
+### Parameter-name discipline applies to all clients
+
+Even on clients that render structured errors correctly, a wrong parameter name triggers PHP validator warnings that can corrupt the response. Always match the exact names from each ability's `input_schema.properties` keys. When in doubt, call `maxi/get-ability-rule` — the rule body documents the correct parameters.
 
 ---
 

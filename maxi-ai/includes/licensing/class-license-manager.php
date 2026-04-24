@@ -109,18 +109,33 @@ final class Maxi_AI_License_Manager {
     }
 
     /**
-     * Check whether the site has an active pro license.
+     * Check whether the site has an active licensed plan (any tier).
      *
-     * This is the primary method used by the license gate.
-     * Checks cache first, refreshes only when expired.
+     * Back-compat shim. Returns true if the license is valid/grace AND
+     * carries any entitlements beyond the always-free baseline. For
+     * fine-grained access checks, use Maxi_AI_Entitlements::grants_access()
+     * with a specific ability ID.
      *
+     * @deprecated 3.4.0 Use Maxi_AI_Entitlements::grants_access() for
+     *             per-ability access checks. This shim returns true for
+     *             either Lite or Pro licenses — it no longer specifically
+     *             means "Pro tier".
      * @return bool
      */
     public static function is_pro(): bool {
 
         $status = self::get_status();
 
-        return $status->grants_pro();
+        if ( ! $status->grants_pro() ) {
+            return false;
+        }
+
+        // Any entitlements beyond the always-free baseline counts as licensed.
+        $always_free = class_exists( 'Maxi_AI_Entitlements' )
+            ? Maxi_AI_Entitlements::ALWAYS_FREE
+            : [];
+
+        return ! empty( array_diff( $status->entitlements, $always_free ) );
 
     }
 

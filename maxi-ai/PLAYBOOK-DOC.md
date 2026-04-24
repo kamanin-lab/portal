@@ -1,5 +1,7 @@
 # Maxi AI Core v3 — Architecture & Reference
 
+*Reflects Maxi AI Core 3.4.6.*
+
 This file contains technical details, security documentation, extensibility guides, and development conventions. Read PLAYBOOK-INIT.md first for operational rules and workflows. Refer to this file when you need architectural understanding, security details, or are developing the plugin itself.
 
 ---
@@ -12,6 +14,8 @@ Every response follows this format:
 ```json
 { "success": bool, "data": { ... }, "error": "string or null" }
 ```
+
+**Listing conventions.** Most `list-*` abilities accept optional `orderby` (e.g. `date`, `title`, `modified`, `rand`, plus type-specific values like `priority` for notes or `price` for products), `order` (`ASC`/`DESC`, case-insensitive), `per_page`, and `page` parameters. When `orderby: rand` is used the `order` parameter has no effect — random ordering has no direction. See each ability's input schema for its supported enum values.
 
 ### Content Abilities
 
@@ -46,6 +50,14 @@ All content abilities accept `post_type` to work with any registered type (page,
 | `maxi/set-terms` | Replace all terms on a post for a taxonomy. | `edit_posts` |
 
 Works with any taxonomy: category, post_tag, product_cat, or custom.
+
+### Yoast SEO Abilities
+
+| Ability | Description | Capability |
+|---|---|---|
+| `maxi/set-yoast-term-seo` | Set Yoast SEO title and/or meta description for a taxonomy term. Creates the `wpseo_taxonomy_meta[taxonomy][term_id]` record if it does not exist yet, merges with any existing Yoast keys (canonical, noindex, linkdex, content_score) instead of overwriting, and syncs the matching `wp_yoast_indexable` row when Yoast Indexables are available. | `manage_categories` |
+
+Requires Yoast SEO plugin active (`WPSEO_VERSION` defined). Returns `indexable_synced: true` when the Indexables repository was reachable and written; the legacy option is always written regardless.
 
 ### Meta Abilities
 
@@ -84,8 +96,8 @@ All meta abilities accept `object_type` (`post`, `term`, or `user`) and `object_
 | Ability | Description | Capability |
 |---|---|---|
 | `maxi/get-site-info` | Site name, URL, language, timezone, WP version, Maxi AI version and license status. | `read` |
-| `maxi/activate-license` | Activate a Maxi AI Pro license key on this site. | `manage_options` |
-| `maxi/deactivate-license` | Deactivate the current license and revert to the free tier. | `manage_options` |
+| `maxi/activate-license` | Activate a Maxi AI license key on this site (Lite or Pro). | `manage_options` |
+| `maxi/deactivate-license` | Deactivate the current license. After deactivation only `session_system` and `licensing` abilities remain callable. | `manage_options` |
 | `maxi/get-site-instructions` | Contents of CLAUDE.md. | `read` |
 | `maxi/get-current-user` | Current authenticated user details and roles. | `read` |
 | `maxi/get-post-types` | List all registered post types with supports/taxonomies. | `read` |
@@ -119,7 +131,7 @@ Batch AI processing with provider abstraction, job queue, retry logic, and backg
 | `maxi/rotate-provider-key` | Rotate a provider API key (or the local endpoint URL). Validates the new credential with a live test call before overwriting the old one — on failure the old key stays in place and a `validation_failed` event is logged. On success a `rotated` event is logged. | `manage_options` |
 | `maxi/list-provider-keys` | List all AI provider credentials with masked key prefixes, rotation timestamps, age in days, last-used timestamps, and a stale flag (keys older than 180 days). Never returns raw keys. | `manage_options` |
 | `maxi/get-audit-events` | Query the Maxi AI audit log. Returns append-only events across all categories (`key`, `license`, `content`, `notes`, `wp_cli`, `email`, `data_masking`, `rules`). Filter by category, event name, or a since timestamp. | `manage_options` |
-| `maxi/generate-text-ai` | Generate text synchronously — returns content immediately. Supports OpenAI (GPT), Anthropic (Claude), and local providers. | `edit_posts` |
+| `maxi/generate-text-ai` | Generate text synchronously — returns content immediately. Supports OpenAI (GPT), Anthropic (Claude), OpenRouter (multi-model aggregator), and local providers. | `edit_posts` |
 | `maxi/generate-text-ai-batch` | Submit a batch text generation job for multiple prompts. Returns job ID — use get-job-status to check progress. | `edit_posts` |
 | `maxi/generate-image-ai` | Generate a single image synchronously — returns attachment immediately. Supports OpenAI (DALL-E 3, gpt-image-1), Replicate, BFL, and local providers. Optional `seed` for reproducibility and `background` (`transparent`/`opaque`/`auto`) — `transparent` produces a real RGBA PNG via gpt-image-1. | `upload_files` |
 | `maxi/generate-image-ai-batch` | Submit a batch image generation job. Returns job ID immediately — images are generated in the background and sideloaded into the media library. | `upload_files` |
@@ -127,7 +139,7 @@ Batch AI processing with provider abstraction, job queue, retry logic, and backg
 | `maxi/get-job-status` | Get the status and progress of an AI batch job, including all items and their outputs. | `edit_posts` |
 | `maxi/cancel-job` | Cancel a pending or running AI batch job. | `edit_posts` |
 
-Supported AI providers: **OpenAI** (DALL-E 3, gpt-image-1 with transparent-background support, GPT, Vision), **Anthropic/Claude** (text, vision), **Replicate** (Flux models including flux-fill-pro), **BFL** (Black Forest Labs direct API — Flux Pro, Flux Kontext Pro, Flux Fill Pro), **Local** (self-hosted). Per-capability provider config (`provider_image`, `provider_edit_image`, `provider_text`, `provider_vision`) with automatic fallback. The default provider for image editing is OpenAI because it's the only one that supports maskless instruction-based editing *and* real alpha transparency in the same call.
+Supported AI providers: **OpenAI** (DALL-E 3, gpt-image-1 with transparent-background support, GPT, Vision), **Anthropic/Claude** (text, vision), **OpenRouter** (text, vision — multi-model aggregator, OpenAI-wire-compatible, one key for dozens of upstream models via vendor-prefixed slugs like `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4-20250514`, `google/gemini-pro-vision`), **Replicate** (Flux models including flux-fill-pro), **BFL** (Black Forest Labs direct API — Flux Pro, Flux Kontext Pro, Flux Fill Pro), **Local** (self-hosted). Per-capability provider config (`provider_image`, `provider_edit_image`, `provider_text`, `provider_vision`) with automatic fallback. The default provider for image editing is OpenAI because it's the only one that supports maskless instruction-based editing *and* real alpha transparency in the same call. OpenRouter is **explicit-only** — never added to default fallback chains, to avoid cascade loops (e.g. OpenAI → OpenRouter routing back to OpenAI upstream). Call it with `provider: "openrouter"`; omitting the `model` defaults to `openai/gpt-4o-mini`. OpenRouter does not support image generation or editing — those calls return `not_supported`.
 
 ### Notes Abilities
 
@@ -163,8 +175,8 @@ Requires WooCommerce to be active. All abilities gracefully return an error if W
 
 | Ability | Description | Capability |
 |---|---|---|
-| `maxi/get-product` | Get a product with full WC data (prices, stock, attributes with taxonomy/term details, variations). | `edit_products` |
-| `maxi/list-products` | List products with WC-specific filters (type, stock, price range, on-sale). | `edit_products` |
+| `maxi/get-product` | Get a product with full WC data (prices, stock, attributes with taxonomy/term details, variations). Response includes a `price_range` object for variable products ({ regular_min, regular_max, sale_min, sale_max, min, max }; `null` for simple/grouped/external). | `edit_products` |
+| `maxi/list-products` | List products with WC-specific filters (type, stock, price range, on-sale). Each item includes a `price_range` aggregate for variable products so price-summary queries don't need a follow-up `list-variations` call. | `edit_products` |
 | `maxi/update-product` | Update WC product data (prices, stock, SKU, dimensions, visibility). | `edit_products` |
 
 #### Variations
@@ -176,7 +188,7 @@ Requires WooCommerce to be active. All abilities gracefully return an error if W
 | `maxi/create-variation` | Create a variation with attribute combination, price, stock, SKU. | `edit_products` |
 | `maxi/update-variation` | Update a variation's attributes, price, stock, SKU, dimensions, or image. | `edit_products` |
 | `maxi/delete-variation` | Delete a product variation permanently. | `edit_products` |
-| `maxi/list-variations` | List all variations of a variable product. Optional `per_page`/`page` pagination for large catalogs. | `edit_products` |
+| `maxi/list-variations` | List variations of one or more variable products. Accepts `product_id` (single) or `product_ids` (batch, max 20 per call). Each variation item carries a `product_id` field identifying its parent. Optional `per_page`/`page` pagination; in batch mode pagination applies across the combined flat list. | `edit_products` |
 | `maxi/set-product-type` | Convert a WooCommerce product between types (simple, variable, grouped, external). | `edit_products` |
 
 #### Bulk Operations
@@ -231,7 +243,7 @@ This plugin exposes powerful site-mutating capabilities over MCP. Running it saf
 
 ### Transport
 
-- **HTTPS everywhere.** All outbound provider calls (OpenAI, Anthropic, Replicate, BFL) are hardcoded to HTTPS. Serve your WordPress site over HTTPS too — an MCP endpoint on HTTP exposes your WordPress application password in cleartext.
+- **HTTPS everywhere.** All outbound provider calls (OpenAI, Anthropic, OpenRouter, Replicate, BFL) are hardcoded to HTTPS. Serve your WordPress site over HTTPS too — an MCP endpoint on HTTP exposes your WordPress application password in cleartext.
 - **No HTTP admin warning yet.** If your site runs on HTTP the plugin will not currently nag you about it. Check `is_ssl()` in your own pre-deploy checks.
 
 ### Credential management
@@ -371,20 +383,46 @@ So there is no confusion about the current security posture:
 
 ### How It Works
 
-- **Per-site licensing:** Each license key is activated per domain. Agencies purchase multiple licenses.
+- **Per-site licensing:** Each license key is activated per domain.
+- **Paid-only:** Both Lite and Pro require an active license. There is no free tier. Unlicensed installs can only call `session_system` and `licensing` abilities — enough to bootstrap a session and activate a key.
 - **Provider-agnostic:** The licensing backend (LemonSqueezy, Freemius, EDD, custom API) is a swappable connector. The core defines an interface (`Maxi_AI_License_Provider`) that any backend must implement.
-- **Runtime gating:** Pro abilities are gated at execution time via callback wrapping — no ability code is modified.
+- **Runtime gating:** Access checks are applied at execution time via callback wrapping — no ability code is modified.
 - **Lazy loading:** Ability files are only loaded on REST API / MCP requests (via `rest_api_init`) and WP-CLI. Regular frontend, admin, and cron page loads never parse ability files.
-- **Grace period:** When a license expires, Pro abilities continue to work for 7 days with a warning. After the grace period, they return a gated error.
+- **Grace period:** When a license expires, entitlement-granted abilities continue to work for 7 days with a warning. After the grace period, they return a gated error.
 - **Offline resilience:** If the remote license server is unreachable, the cached status is extended by 24 hours. No accidental lockout from transient network issues.
 
-### Tier Split
+### Feature groups and plans
 
-**Free tier:** System, content, taxonomy, media, meta (single ops), read-only AI settings, basic development tools.
+Access is gated by **feature groups**, not individual ability IDs. Every ability carries a `feature_group` tag in its registration meta (visible via `mcp-adapter-get-ability-info`). Plans declare which feature groups they include. A license grants a plan → resolves to a set of entitlement groups → the gate permits an ability when its `feature_group` is in that set.
 
-**Pro tier:** AI generation (text, image, batch), AI settings write, key rotation, all WooCommerce abilities, WP-CLI, DB query management, bulk meta operations.
+**Always-free baseline** (no license required): `session_system`, `licensing`.
 
-The full tier map is in `includes/licensing/class-license-tiers.php`. To gate a new ability behind Pro, add its ID to the `PRO` constant array. A `maxi_ai_license_tiers_pro` filter allows runtime modification.
+**Lite plan** adds: `content_read`, `content_write_basic`, `taxonomy`, `notes`, `media_basic`, `meta_basic`, `ai_settings_read`, `dev_tools_basic`.
+
+**Pro plan** adds to Lite: `meta_bulk`, `ai_settings_write`, `ai_generation`, `analytics`, `dev_tools_admin`, `woocommerce_catalog`, `woocommerce_orders`, `woocommerce_coupons`, `woocommerce_shipping_tax`, `woocommerce_bulk`.
+
+`media_ai` is reserved for future AI-generated-image-to-media-library flows.
+
+The plan → groups map lives in `includes/licensing/class-entitlements.php::PLANS`. To change what a plan includes, edit that array — no other code changes needed. To move an ability between groups, edit its `feature_group` tag in its ability file's `meta` array.
+
+**Legacy aliases:** older licenses carrying the historical `agency` plan are transparently mapped to `pro` via `PLAN_ALIASES` in the same file. No admin action required.
+
+### Response shape for gated calls
+
+The gate returns one of two distinct error codes so the agent can surface the right next step:
+
+- **`plan_insufficient`** — license is valid but the plan doesn't include the required group. Payload carries `required_group` and `plan` fields. Prompt the user to upgrade.
+- **`license_required`** — no valid license. Payload carries the `required_group` the ability needs. Prompt the user to activate or renew.
+
+Both are audit-logged under category `license` with event `plan_insufficient`.
+
+### Back-compat shims
+
+`Maxi_AI_License_Tiers::is_pro()` and `Maxi_AI_License_Status::grants_pro()` are retained as deprecated shims through 3.4.x and removed in 3.5.0. Third-party code referencing them keeps working during the transition window.
+
+### Client/server decoupling
+
+The license server can return an explicit `entitlements: string[]` field in its validation response, in which case the client uses it verbatim. Otherwise the client derives entitlements from the `plan` string via the `PLANS` map above. This lets the license server ship `entitlements[]` support on its own schedule without coordinating with client deploys.
 
 ### Admin UI
 
@@ -392,14 +430,14 @@ Settings → Maxi AI License provides:
 - License key input with activate/deactivate buttons
 - Status badge (Active / Grace Period / Expired / Inactive)
 - License details (domain, plan, expiry, last checked)
-- Ability tier overview (free vs pro columns)
+- Entitlements overview (which feature groups this plan grants)
 
 ### Constants
 
 | Constant | Default | Purpose |
 |---|---|---|
 | `MAXI_AI_LICENSE_CHECK_INTERVAL` | `43200` (12h) | Remote validation cache TTL in seconds. Minimum 3600. |
-| `MAXI_AI_UPDATE_URL` | `https://api.maxiweb.si/v1/updates/check` | Custom update server endpoint. |
+| `MAXI_AI_UPDATE_URL` | `https://api.maxicore.ai/v1/updates/check` | Custom update server endpoint. |
 
 ### Registering a Custom Provider
 
@@ -520,7 +558,7 @@ At `wp_abilities_api_init`:
 - Priority 9998: License Gate wraps the already-rule-wrapped callback
 - Priority 9999: Schema Patch injects `default: []` into object-type schemas
 
-Runtime order: **license check → rate limit → write gate → rule check → per-object capability → input validation → original logic**. A Pro-gated ability on a free site says "upgrade to Pro" before hitting any other gate.
+Runtime order: **license check → rate limit → write gate → rule check → per-object capability → input validation → original logic**. A Pro-group-gated ability on a Lite license (or on an unlicensed install) returns `plan_insufficient` or `license_required` before hitting any other gate.
 
 ### Infrastructure files
 
@@ -579,6 +617,7 @@ wp_maxi_ai_ability_rules
 | media       | Media and file handling.         |
 | ai          | AI-powered generation and processing. |
 | woocommerce | WooCommerce store management — products, orders, coupons, shipping, and taxes. |
+| yoast       | Yoast SEO integration — term and post SEO fields. |
 | development | Developer and system utilities.  |
 
 ---
@@ -651,7 +690,7 @@ Example — a client ability that generates a product description using Maxi AI'
 
 These are real gaps in the platform today. They exist as deliberate "wait for a concrete use case" decisions, not oversights:
 
-- **Custom providers.** `Maxi_AI_Provider_Factory` hard-codes the five supported providers (OpenAI, Anthropic, Replicate, BFL, local). A client plugin cannot register a new provider without editing core. The `local` provider already speaks any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, LocalAI, custom gateways), which covers most "bring your own LLM" scenarios.
+- **Custom providers.** `Maxi_AI_Provider_Factory` hard-codes the six supported providers (OpenAI, Anthropic, OpenRouter, Replicate, BFL, local). A client plugin cannot register a new provider without editing core. For most "bring your own LLM" scenarios the `local` provider speaks any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, LocalAI, custom gateways); for access to closed-source upstream models (Claude, Gemini, etc.) without provisioning per-vendor accounts, OpenRouter is the aggregator path.
 - **Hooks on the generation path.** There are no `before_generate` / `after_generate` / `generation_params` filters. A client plugin cannot inject prompt rewrites, response post-processing, or per-tenant routing into Maxi's services without wrapping them in its own layer.
 
 Both will be added when a client engagement needs them — at that point the API shape designs itself against the real use case. If you hit either of these, open an issue describing the scenario rather than forking.

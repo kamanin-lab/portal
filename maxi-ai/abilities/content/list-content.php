@@ -14,12 +14,16 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/list-content',
         [
             'label'       => 'List Content',
-            'description' => 'List posts, pages, or custom post type entries with optional filters.',
+            'description' => 'List posts, pages, or custom post type entries. Filter by post_type, status, author, parent. '
+                           . 'Paginate via per_page (default 20, max 100) and page. '
+                           . 'Sort via orderby (date, title, modified, ID, menu_order, name, author, rand) and order (ASC/DESC). '
+                           . 'Note: when orderby=rand the order parameter has no effect — random ordering has no direction.',
             'category'    => 'content',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'content_read',
             ],
 
             'input_schema' => [
@@ -43,13 +47,12 @@ add_action( 'wp_abilities_api_init', function () {
                     ],
                     'orderby' => [
                         'type'        => 'string',
-                        'description' => 'Order by field. Default "date".',
-                        'enum'        => [ 'date', 'title', 'modified', 'ID', 'menu_order', 'name' ],
+                        'description' => 'Order by field. Default "date". Use "rand" for random order — order direction is ignored when rand is used.',
+                        'enum'        => [ 'date', 'title', 'modified', 'ID', 'menu_order', 'name', 'author', 'rand' ],
                     ],
                     'order' => [
                         'type'        => 'string',
-                        'description' => 'Sort direction. Default "DESC".',
-                        'enum'        => [ 'ASC', 'DESC' ],
+                        'description' => 'Sort direction: "ASC" or "DESC" (case-insensitive). Default "DESC". Ignored when orderby=rand.',
                     ],
                     'author' => [
                         'type'        => 'integer',
@@ -73,13 +76,15 @@ add_action( 'wp_abilities_api_init', function () {
 
                 $per_page = min( intval( $input['per_page'] ?? 20 ), 100 );
 
+                $allowed_orderby = [ 'date', 'title', 'modified', 'ID', 'menu_order', 'name', 'author', 'rand' ];
+
                 $args = [
                     'post_type'      => $post_type,
                     'post_status'    => sanitize_key( $input['status'] ?? 'publish' ),
                     'posts_per_page' => $per_page,
                     'paged'          => max( 1, intval( $input['page'] ?? 1 ) ),
-                    'orderby'        => sanitize_key( $input['orderby'] ?? 'date' ),
-                    'order'          => strtoupper( sanitize_key( $input['order'] ?? 'DESC' ) ),
+                    'orderby'        => maxi_ai_normalize_orderby( $input['orderby'] ?? null, $allowed_orderby, 'date' ),
+                    'order'          => maxi_ai_normalize_order( $input['order'] ?? null, 'DESC' ),
                 ];
 
                 if ( isset( $input['author'] ) ) {

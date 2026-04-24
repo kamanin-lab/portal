@@ -23,6 +23,11 @@ require_once $licensing_dir . '/class-license-status.php';
 // 2. Tier classification (no dependencies).
 require_once $licensing_dir . '/class-license-tiers.php';
 
+// 2b. Entitlements — feature-group + plan resolver (depends on status).
+//     Replaces Maxi_AI_License_Tiers conceptually; both live side-by-side
+//     during the 3.4.x deprecation window.
+require_once $licensing_dir . '/class-entitlements.php';
+
 // 3. License manager (depends on status, tiers, provider interface).
 require_once $licensing_dir . '/class-license-manager.php';
 

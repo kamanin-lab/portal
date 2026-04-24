@@ -22,6 +22,23 @@ final class Maxi_AI_Playbook_Store {
     public const SOURCE_DOCU     = 'docu';
 
     /**
+     * Compute a content hash for drift detection.
+     *
+     * The "v1" prefix versions the hash schema. When new fields are added
+     * to the hash inputs, bump to "v2" to force a clean reseed.
+     *
+     * @param string $title    Playbook title.
+     * @param string $content  Full content body.
+     * @param bool   $required Whether the playbook is required.
+     * @return string 64-char hex SHA-256 hash.
+     */
+    public static function compute_hash( string $title, string $content, bool $required ): string {
+
+        return hash( 'sha256', "v1\0" . $title . "\0" . $content . "\0" . ( $required ? '1' : '0' ) );
+
+    }
+
+    /**
      * Fetch a playbook row by slug.
      *
      * @param string $slug Playbook slug e.g. "operational".
@@ -195,22 +212,30 @@ final class Maxi_AI_Playbook_Store {
         $table = Maxi_AI_Playbook_Schema::table_name();
         $now   = current_time( 'mysql' );
 
-        $existing = self::get( $slug );
+        $existing     = self::get( $slug );
+        $content_hash = self::compute_hash( $title, $content, $required );
 
         if ( $existing ) {
+
+            // Content-equality short-circuit: skip the write if nothing changed.
+            // Prevents version-bump churn and unnecessary session re-acknowledgment.
+            if ( $existing['content_hash'] === $content_hash && $existing['source'] === $source ) {
+                return (int) $existing['id'];
+            }
 
             $updated = $wpdb->update(
                 $table,
                 [
-                    'title'      => $title,
-                    'content'    => $content,
-                    'source'     => $source,
-                    'required'   => $required ? 1 : 0,
-                    'version'    => (int) $existing['version'] + 1,
-                    'updated_at' => $now,
+                    'title'        => $title,
+                    'content'      => $content,
+                    'content_hash' => $content_hash,
+                    'source'       => $source,
+                    'required'     => $required ? 1 : 0,
+                    'version'      => (int) $existing['version'] + 1,
+                    'updated_at'   => $now,
                 ],
                 [ 'slug' => $slug ],
-                [ '%s', '%s', '%s', '%d', '%d', '%s' ],
+                [ '%s', '%s', '%s', '%s', '%d', '%d', '%s' ],
                 [ '%s' ]
             );
 
@@ -221,17 +246,18 @@ final class Maxi_AI_Playbook_Store {
         $inserted = $wpdb->insert(
             $table,
             [
-                'slug'       => $slug,
-                'title'      => $title,
-                'content'    => $content,
-                'source'     => $source,
-                'required'   => $required ? 1 : 0,
-                'version'    => 1,
-                'status'     => 'active',
-                'created_at' => $now,
-                'updated_at' => $now,
+                'slug'         => $slug,
+                'title'        => $title,
+                'content'      => $content,
+                'content_hash' => $content_hash,
+                'source'       => $source,
+                'required'     => $required ? 1 : 0,
+                'version'      => 1,
+                'status'       => 'active',
+                'created_at'   => $now,
+                'updated_at'   => $now,
             ],
-            [ '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' ]
+            [ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' ]
         );
 
         return $inserted ? (int) $wpdb->insert_id : false;
@@ -281,6 +307,110 @@ final class Maxi_AI_Playbook_Store {
         }
 
         return $count;
+
+    }
+
+    /**
+     * Compute a hash-of-hashes fingerprint over all shipped defaults.
+     *
+     * Used by the auto-reseed path in Maxi_AI::maybe_refresh_seeds() to
+     * detect content drift without touching the database. Memoized per
+     * request via static variable.
+     *
+     * @return string 64-char hex SHA-256 fingerprint, or '' on error.
+     */
+    public static function fingerprint_shipped_defaults(): string {
+
+        static $cache = null;
+
+        if ( $cache !== null ) {
+            return $cache;
+        }
+
+        $defaults = require __DIR__ . '/default-playbooks.php';
+
+        if ( ! is_array( $defaults ) ) {
+            return $cache = '';
+        }
+
+        $parts = [];
+
+        foreach ( $defaults as $slug => $p ) {
+
+            if ( ! is_array( $p ) || empty( $p['content'] ) ) {
+                continue;
+            }
+
+            $parts[] = $slug . ':' . self::compute_hash(
+                (string) ( $p['title'] ?? $slug ),
+                (string) $p['content'],
+                (bool) ( $p['required'] ?? false )
+            );
+        }
+
+        sort( $parts );
+
+        return $cache = hash( 'sha256', implode( "\n", $parts ) );
+
+    }
+
+    /**
+     * Verify that all default-source rows match the shipped content hashes.
+     *
+     * Called after seed_defaults() to guard against partial failures. If
+     * any row's stored hash doesn't match the expected hash, returns false
+     * so the fingerprint option stays stale and the next request retries.
+     *
+     * @return bool True if all default rows are consistent with shipped content.
+     */
+    public static function verify_seed_hashes(): bool {
+
+        global $wpdb;
+
+        $table    = Maxi_AI_Playbook_Schema::table_name();
+        $defaults = require __DIR__ . '/default-playbooks.php';
+
+        if ( ! is_array( $defaults ) ) {
+            do_action( 'maxi_ai_audit', 'seed_verification_failed', [
+                'reason' => 'default-playbooks.php did not return an array',
+            ] );
+            return false;
+        }
+
+        $rows = $wpdb->get_results(
+            "SELECT slug, content_hash FROM {$table} WHERE source = 'default'",
+            ARRAY_A
+        );
+
+        $stored = [];
+
+        foreach ( $rows as $r ) {
+            $stored[ $r['slug'] ] = $r['content_hash'];
+        }
+
+        foreach ( $defaults as $slug => $p ) {
+
+            if ( ! is_array( $p ) || empty( $p['content'] ) ) {
+                continue;
+            }
+
+            $expected = self::compute_hash(
+                (string) ( $p['title'] ?? $slug ),
+                (string) $p['content'],
+                (bool) ( $p['required'] ?? false )
+            );
+
+            // If an operator row shadows this slug, skip — seed_defaults() skips those too.
+            if ( ! isset( $stored[ $slug ] ) ) {
+                continue;
+            }
+
+            if ( $stored[ $slug ] !== $expected ) {
+                return false;
+            }
+        }
+
+        return true;
 
     }
 

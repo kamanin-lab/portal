@@ -14,12 +14,13 @@ add_action( 'wp_abilities_api_init', function () {
         'maxi/get-product',
         [
             'label'       => 'Get Product',
-            'description' => 'Get a WooCommerce product with full store data: type, prices, stock, dimensions, attributes, variations, and category/tag IDs.',
+            'description' => 'Get a WooCommerce product with full store data: type, prices, stock, dimensions, attributes, variations, and category/tag IDs. For variable products the response also includes a price_range object ({ regular_min, regular_max, sale_min, sale_max, min, max } — all numeric strings; sale_* empty string when no variation on sale) so price-summary questions can be answered without a follow-up list-variations call. price_range is null for simple/grouped/external products.',
             'category'    => 'woocommerce',
 
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'woocommerce_catalog',
             ],
 
             'input_schema' => [
@@ -112,6 +113,7 @@ add_action( 'wp_abilities_api_init', function () {
                     'reviews_allowed'    => $product->get_reviews_allowed(),
                     'purchase_note'      => $product->get_purchase_note(),
                     'url'                => get_permalink( $product->get_id() ),
+                    'price_range'        => maxi_ai_compute_price_range( $product ),
                 ];
 
                 if ( $product->is_type( 'variable' ) ) {

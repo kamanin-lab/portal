@@ -42,7 +42,7 @@ final class Maxi_AI_License_Updater {
      * Default update server URL.
      * Override with MAXI_AI_UPDATE_URL constant.
      */
-    const DEFAULT_UPDATE_URL = 'https://api.maxiweb.si/v1/updates/check';
+    const DEFAULT_UPDATE_URL = 'https://api.maxicore.ai/v1/updates/check';
 
     /**
      * Cache transient key.
@@ -148,8 +148,8 @@ final class Maxi_AI_License_Updater {
             'name'          => 'Maxi AI Core',
             'slug'          => self::PLUGIN_SLUG,
             'version'       => $remote['version'] ?? '',
-            'author'        => '<a href="https://maxiweb.si">Maxi Web</a>',
-            'homepage'      => $remote['homepage'] ?? 'https://maxiweb.si',
+            'author'        => '<a href="https://maxicore.ai">Maxi AI Core</a>',
+            'homepage'      => $remote['homepage'] ?? 'https://maxicore.ai',
             'requires'      => $remote['requires'] ?? '6.0',
             'tested'        => $remote['tested'] ?? '',
             'requires_php'  => $remote['requires_php'] ?? '7.4',

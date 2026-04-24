@@ -46,6 +46,7 @@ final class Maxi_AI_Rule_Gate {
     private const ALLOWLIST = [
         'maxi/get-ability-rule',
         'maxi/rules-sync',
+        'maxi/playbooks-sync',
         'maxi/bootstrap-session',
         'maxi/get-playbook',
         'maxi/manage-playbooks',

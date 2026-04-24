@@ -59,7 +59,7 @@ final class Maxi_AI_Key_Encryption {
         $nonce = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
         $ct    = sodium_crypto_secretbox( $plaintext, $nonce, $key );
 
-        sodium_memzero( $key );
+        self::safe_memzero( $key );
 
         return self::PREFIX . base64_encode( $nonce . $ct );
 
@@ -91,7 +91,7 @@ final class Maxi_AI_Key_Encryption {
         $min_length = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES + SODIUM_CRYPTO_SECRETBOX_MACBYTES;
 
         if ( $decoded === false || strlen( $decoded ) < $min_length ) {
-            sodium_memzero( $key );
+            self::safe_memzero( $key );
             maxi_ai_log(
                 'Key decryption failed: invalid ciphertext format.',
                 'error',
@@ -104,7 +104,7 @@ final class Maxi_AI_Key_Encryption {
         $ct    = substr( $decoded, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
         $pt    = sodium_crypto_secretbox_open( $ct, $nonce, $key );
 
-        sodium_memzero( $key );
+        self::safe_memzero( $key );
 
         if ( $pt === false ) {
             maxi_ai_log(
@@ -116,6 +116,48 @@ final class Maxi_AI_Key_Encryption {
         }
 
         return $pt;
+
+    }
+
+    /**
+     * Zero out a byte buffer after use, if the host supports it.
+     *
+     * The native libsodium extension implements `sodium_memzero()` as a real
+     * secure-wipe operation. When the host lacks the extension, WordPress
+     * falls back to the `sodium_compat` polyfill — which cannot securely wipe
+     * memory from PHP userland and **throws** on every call to memzero.
+     *
+     * Secure wipe is a defense-in-depth hardening step, not a correctness
+     * requirement. The ciphertext is already produced and the plaintext copy
+     * on the stack will be garbage-collected normally. On hosts without
+     * native libsodium we skip the memzero, log a one-time warning so the
+     * operator can fix the host env, and carry on.
+     *
+     * @param string $buf Buffer to wipe (passed by reference when native).
+     */
+    private static function safe_memzero( &$buf ): void {
+
+        if ( extension_loaded( 'sodium' ) ) {
+            sodium_memzero( $buf );
+            return;
+        }
+
+        // One-time warning — only log once per request to avoid log spam
+        // on heavy encrypt/decrypt workloads.
+        static $warned = false;
+        if ( ! $warned && function_exists( 'maxi_ai_log' ) ) {
+            maxi_ai_log(
+                'Host PHP lacks the native libsodium extension; using sodium_compat polyfill and skipping sodium_memzero (defense-in-depth only). Enable the "sodium" PHP extension on the host to restore secure memory wipe.',
+                'warning',
+                [ 'component' => 'encryption' ]
+            );
+            $warned = true;
+        }
+
+        // Best-effort fallback: overwrite with an equal-length string of
+        // zeros. Not guaranteed to clear every copy the GC may have made,
+        // but better than leaving the key in the original $buf variable.
+        $buf = str_repeat( "\0", strlen( $buf ) );
 
     }
 

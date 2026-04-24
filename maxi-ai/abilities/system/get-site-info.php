@@ -20,6 +20,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'session_system',
             ],
 
             'input_schema' => [
@@ -48,8 +49,9 @@ add_action( 'wp_abilities_api_init', function () {
                 if ( class_exists( 'Maxi_AI_License_Manager' ) ) {
                     $status = Maxi_AI_License_Manager::get_status();
                     $data['maxi_ai_license'] = [
-                        'tier'   => $status->grants_pro() ? 'pro' : 'free',
-                        'status' => $status->status,
+                        'tier'         => $status->plan ?: 'unlicensed',
+                        'status'       => $status->status,
+                        'entitlements' => $status->entitlements,
                     ];
                 }
 

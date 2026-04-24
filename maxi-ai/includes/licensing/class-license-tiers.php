@@ -7,11 +7,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Ability tier classification for Maxi AI.
  *
- * Declarative map of which abilities require a Pro license.
- * Everything not listed here is considered free-tier.
+ * @deprecated 3.4.0 Replaced by Maxi_AI_Entitlements (feature-group +
+ *             plan model). This class is kept as a back-compat shim for
+ *             one release so any third-party code referencing
+ *             Maxi_AI_License_Tiers::is_pro() keeps working. It will be
+ *             removed in 3.5.0.
  *
- * To gate a new ability behind Pro, add its ID to the PRO array.
- * To move a Pro ability to free, remove it from the array.
+ * The PRO array is now informational only — the license gate no longer
+ * consults it. Access checks route through
+ * Maxi_AI_Entitlements::grants_access(), which reads each ability's
+ * feature_group tag and checks it against the license's entitlements.
  *
  * @package Maxi_AI
  */

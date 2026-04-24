@@ -44,6 +44,7 @@ final class Maxi_AI_Rule_Schema {
             title varchar(255) NOT NULL DEFAULT '',
             content longtext,
             source varchar(20) NOT NULL DEFAULT 'default',
+            content_hash varchar(64) NOT NULL DEFAULT '',
             version int(11) unsigned NOT NULL DEFAULT 1,
             status varchar(20) NOT NULL DEFAULT 'active',
             delivery_mode varchar(20) NOT NULL DEFAULT 'reject_first',

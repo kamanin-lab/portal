@@ -20,6 +20,7 @@ add_action( 'wp_abilities_api_init', function () {
             'meta' => [
                 'show_in_rest' => true,
                 'mcp'          => [ 'public' => true ],
+                'feature_group' => 'ai_settings_write',
             ],
 
             'input_schema' => [
@@ -27,7 +28,7 @@ add_action( 'wp_abilities_api_init', function () {
                 'properties' => [
                     'provider' => [
                         'type'        => 'string',
-                        'enum'        => [ 'openai', 'anthropic', 'replicate', 'bfl', 'local' ],
+                        'enum'        => [ 'openai', 'anthropic', 'openrouter', 'replicate', 'bfl', 'local' ],
                         'description' => 'Provider whose credential should be rotated.',
                     ],
                     'new_key' => [

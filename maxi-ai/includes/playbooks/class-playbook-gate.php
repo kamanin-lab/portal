@@ -45,6 +45,7 @@ final class Maxi_AI_Playbook_Gate {
         'maxi/get-playbook',
         'maxi/get-ability-rule',
         'maxi/rules-sync',
+        'maxi/playbooks-sync',
         'maxi/manage-ability-rules',
         'maxi/manage-playbooks',
     ];

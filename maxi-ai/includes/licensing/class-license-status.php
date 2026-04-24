@@ -74,11 +74,28 @@ final class Maxi_AI_License_Status {
     public $instance_id;
 
     /**
-     * License plan identifier (e.g. 'pro', 'agency').
+     * License plan identifier (e.g. 'lite', 'pro', legacy 'agency').
+     *
+     * Empty string when the license is inactive, invalid, or otherwise
+     * unresolved — consumers treat empty as "unlicensed" and fall back
+     * appropriately (e.g. get-site-info returns 'unlicensed' for display).
      *
      * @var string
      */
     public $plan;
+
+    /**
+     * Resolved entitlements — the feature groups this license grants.
+     *
+     * Populated from the license server response when present;
+     * otherwise derived from $plan via Maxi_AI_Entitlements::
+     * resolve_entitlements_for_plan() by the provider.
+     *
+     * The license gate checks ability access against this array.
+     *
+     * @var string[]
+     */
+    public $entitlements;
 
     /**
      * Human-readable error message, if any.
@@ -115,7 +132,10 @@ final class Maxi_AI_License_Status {
         $this->grace_until        = $args['grace_until'] ?? null;
         $this->licensed_domain    = (string) ( $args['licensed_domain'] ?? '' );
         $this->instance_id        = (string) ( $args['instance_id'] ?? '' );
-        $this->plan               = (string) ( $args['plan'] ?? 'pro' );
+        $this->plan               = (string) ( $args['plan'] ?? '' );
+        $this->entitlements       = is_array( $args['entitlements'] ?? null )
+            ? array_values( array_filter( array_map( 'strval', $args['entitlements'] ), 'strlen' ) )
+            : [];
         $this->error              = $args['error'] ?? null;
         $this->raw                = (array) ( $args['raw'] ?? [] );
         $this->checked_at         = (string) ( $args['checked_at'] ?? gmdate( 'c' ) );
@@ -125,11 +145,38 @@ final class Maxi_AI_License_Status {
     /**
      * Whether the license grants pro access (active or in grace period).
      *
+     * Back-compat shim for legacy callers. The authoritative access check
+     * is now per-feature-group via grants_entitlement(). Kept through
+     * the 3.4.x deprecation window; removed in 3.5.0.
+     *
+     * @deprecated 3.4.0 Use grants_entitlement() or Maxi_AI_Entitlements::grants_access().
      * @return bool
      */
     public function grants_pro(): bool {
 
         return $this->is_valid || $this->status === self::STATUS_GRACE_PERIOD;
+
+    }
+
+    /**
+     * Whether the license is currently in a state that grants access
+     * (active or within grace period) AND the given feature group is
+     * in the license's entitlements.
+     *
+     * This is the authoritative per-ability access check.
+     *
+     * @param string $group Feature group name (e.g. 'ai_generation').
+     * @return bool
+     */
+    public function grants_entitlement( string $group ): bool {
+
+        $valid_state = $this->is_valid || $this->status === self::STATUS_GRACE_PERIOD;
+
+        if ( ! $valid_state ) {
+            return false;
+        }
+
+        return in_array( $group, $this->entitlements, true );
 
     }
 
@@ -183,6 +230,7 @@ final class Maxi_AI_License_Status {
             'licensed_domain'    => $this->licensed_domain,
             'instance_id'        => $this->instance_id,
             'plan'               => $this->plan,
+            'entitlements'       => $this->entitlements,
             'error'              => $this->error,
             'raw'                => $this->raw,
             'checked_at'         => $this->checked_at,
