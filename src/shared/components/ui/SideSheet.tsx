@@ -44,8 +44,8 @@ export function SideSheet({ open, onClose, title, children, managed, footer }: S
 
           {footer && (
             <div
-              className="shrink-0 border-t border-border"
-              style={{ paddingBottom: 'env(keyboard-inset-height, 0px)' }}
+              className="shrink-0 border-t border-border px-6 max-[768px]:px-4"
+              style={{ paddingBottom: 'max(0.75rem, env(keyboard-inset-height, 0px))' }}
             >
               {footer}
             </div>

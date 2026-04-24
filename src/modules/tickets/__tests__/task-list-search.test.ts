@@ -26,14 +26,15 @@ function makeTask(overrides: Partial<ClickUpTask>): ClickUpTask {
 }
 
 describe('matchesTaskSearch', () => {
-  test('matches by task name, description, and list name', () => {
+  test('matches by task name and description (list_name excluded — internal ClickUp field)', () => {
     const byName = makeTask({ name: 'Checkout broken' })
     const byDescription = makeTask({ description: 'Customer cannot upload invoice' })
-    const byList = makeTask({ list_name: 'Support Board' })
+    const byListOnly = makeTask({ name: 'Unrelated', description: '', list_name: 'Support Board' })
 
     expect(matchesTaskSearch(byName, 'checkout')).toBe(true)
     expect(matchesTaskSearch(byDescription, 'invoice')).toBe(true)
-    expect(matchesTaskSearch(byList, 'support')).toBe(true)
+    // list_name must NOT contribute to client-visible search — it's internal ClickUp terminology
+    expect(matchesTaskSearch(byListOnly, 'support')).toBe(false)
   })
 
   test('ignores blank optional fields safely', () => {
