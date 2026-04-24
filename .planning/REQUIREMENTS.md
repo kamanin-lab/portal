@@ -93,10 +93,10 @@ Repo: `G:/01_OPUS/Projects/mcp-poc` (separate from PORTAL). Node.js MCP server.
 Minimal changes to portal codebase. `RevenueIntelligencePage.tsx` explicitly targets **zero TypeScript diff** after V2 deployment.
 
 - [ ] **PORT-01**: `supabase/functions/mcp-proxy/index.ts` ALLOWED_TOOLS (lines 141-146) updated: add `revenue_run_rate`, `weekly_heatmap`, `repeat_metrics`, `market_basket_or_aov`, `weekly_briefing_data`; remove `incomplete_orders`
-- [ ] **PORT-02**: `public/sandbox-proxy.html` theme relay block added (forwards messages with `kmn/theme/*` prefix bidirectionally)
-- [ ] **PORT-03**: Theme publisher in portal — listens for `kmn/theme/request` messages, responds with 12-token payload from `widget-tokens.ts`; persists across multiple widget mounts
-- [ ] **PORT-04**: `RevenueIntelligencePage.tsx` unchanged (zero diff assertion) — v2 widget is drop-in replacement at same `ui://widgets/daily-briefing.html` URI
-- [ ] **PORT-05**: `McpErrorBoundary` behaviour verified on v2 widget — catches AppRenderer throws, shows German error with reload button
+- [x] **PORT-02**: `public/sandbox-proxy.html` theme relay block added (forwards messages with `kmn/theme/*` prefix bidirectionally)
+- [x] **PORT-03**: Theme publisher in portal — listens for `kmn/theme/request` messages, responds with 12-token payload from `widget-tokens.ts`; persists across multiple widget mounts
+- [x] **PORT-04**: `RevenueIntelligencePage.tsx` unchanged (zero diff assertion) — v2 widget is drop-in replacement at same `ui://widgets/daily-briefing.html` URI
+- [x] **PORT-05**: `McpErrorBoundary` behaviour verified on v2 widget — catches AppRenderer throws, shows German error with reload button
 
 ---
 
@@ -106,27 +106,27 @@ Built per `MCP_UI_RESOURCE_BUILD_PIPELINE.md`. Located at `mcp-poc/widgets/reven
 
 ### Structure (WIDG-STRUCT)
 
-- [ ] **WIDG-STRUCT-01**: Directory scaffold: `src/index.tsx`, `src/App.tsx`, `src/blocks/*`, `src/lib/*`, `src/styles.css`, `index.html`, `vite.config.ts`, `package.json`, `tsconfig.json`
-- [ ] **WIDG-STRUCT-02**: `src/lib/host-bridge.ts` exports postMessage request/response helpers and protocol types
-- [ ] **WIDG-STRUCT-03**: `src/lib/theme.ts` exports `applyTokens(tokens)` which iterates and sets CSS vars on document root
-- [ ] **WIDG-STRUCT-04**: `src/lib/mock-host.ts` provides fake tokens + fake tool result for standalone dev; supports URL query variants (`?mock=run-rate-sparse`, `?mock=basket-aov`, `?mock=error-block-2`)
-- [ ] **WIDG-STRUCT-05**: `src/lib/formatters.ts` — de-DE locale formatters for currency, number, percentage, date
+- [x] **WIDG-STRUCT-01**: Directory scaffold: `src/index.tsx`, `src/App.tsx`, `src/blocks/*`, `src/lib/*`, `src/styles.css`, `index.html`, `vite.config.ts`, `package.json`, `tsconfig.json`
+- [x] **WIDG-STRUCT-02**: `src/lib/host-bridge.ts` exports postMessage request/response helpers and protocol types
+- [x] **WIDG-STRUCT-03**: `src/lib/theme.ts` exports `applyTokens(tokens)` which iterates and sets CSS vars on document root
+- [x] **WIDG-STRUCT-04**: `src/lib/mock-host.ts` provides fake tokens + fake tool result for standalone dev; supports URL query variants (`?mock=run-rate-sparse`, `?mock=basket-aov`, `?mock=error-block-2`)
+- [x] **WIDG-STRUCT-05**: `src/lib/formatters.ts` — de-DE locale formatters for currency, number, percentage, date
 
 ### Blocks (WIDG-BLOCK)
 
-- [ ] **WIDG-BLOCK-01**: `HeuteBlock.tsx` — renders run-rate projection (primary), pace vs 7-day avg (coloured indicator), same-hour-last-week (tertiary), payment method mini-split bars; handles confidence=low case with "Noch zu früh für Hochrechnung" / "Nicht genug Daten" message
-- [ ] **WIDG-BLOCK-02**: `HeatmapBlock.tsx` — 7×24 grid rendered as coloured cells (5-step colour scale, empty = background); best-slot callout + dimmest-with-orders note; period toggle buttons for 4w/8w/12w (triggers `callTool` via AppBridge); Motion fade-in on container, NOT per-cell (168 cells would stutter)
-- [ ] **WIDG-BLOCK-03**: `RepeatBlock.tsx` — big repeat rate % + PP trend arrow, benchmark line "Shopify B2C ~27%", median days to 2nd order, order basis count
-- [ ] **WIDG-BLOCK-04**: `BasketOrAovBlock.tsx` — conditional render by `mode` field: product-level basket (support/confidence/lift), category-level basket, or AOV bands (share-of-count + share-of-revenue)
-- [ ] **WIDG-BLOCK-05**: Payment-attention orders sub-section ported from v1 (wp-admin deep links) — placed inside HeuteBlock or as separate compact block
+- [x] **WIDG-BLOCK-01**: `HeuteBlock.tsx` — renders run-rate projection (primary), pace vs 7-day avg (coloured indicator), same-hour-last-week (tertiary), payment method mini-split bars; handles confidence=low case with "Noch zu früh für Hochrechnung" / "Nicht genug Daten" message
+- [x] **WIDG-BLOCK-02**: `HeatmapBlock.tsx` — 7×24 grid rendered as coloured cells (5-step colour scale, empty = background); best-slot callout + dimmest-with-orders note; period toggle buttons for 4w/8w/12w (triggers `callTool` via AppBridge); Motion fade-in on container, NOT per-cell (168 cells would stutter)
+- [x] **WIDG-BLOCK-03**: `RepeatBlock.tsx` — big repeat rate % + PP trend arrow, benchmark line "Shopify B2C ~27%", median days to 2nd order, order basis count
+- [x] **WIDG-BLOCK-04**: `BasketOrAovBlock.tsx` — conditional render by `mode` field: product-level basket (support/confidence/lift), category-level basket, or AOV bands (share-of-count + share-of-revenue)
+- [x] **WIDG-BLOCK-05**: Payment-attention orders sub-section ported from v1 (wp-admin deep links) — placed inside HeuteBlock or as separate compact block
 
 ### Widget Quality (WIDG-QA)
 
-- [ ] **WIDG-QA-01**: Dashboard renders all 4 blocks under 2s from page load (measured from `daily_briefing` tool call start to widget `onSizeChanged` firing)
-- [ ] **WIDG-QA-02**: Today-vs-yesterday -85% bug NOT reproducible at any time of day — dashboard loaded at 09:00, 11:00, 14:00, 17:00 never shows universally negative pace
-- [ ] **WIDG-QA-03**: Per-block error handling: if one ability fails in `Promise.allSettled`, that block shows skeleton placeholder "Daten nicht verfügbar", other 3 render normally
-- [ ] **WIDG-QA-04**: All user-facing text in German
-- [ ] **WIDG-QA-05**: Size budget: single-file `dist/index.html` ≤ 300 KB gzipped, verified via build artifact inspection
+- [x] **WIDG-QA-01**: Dashboard renders all 4 blocks under 2s from page load (measured from `daily_briefing` tool call start to widget `onSizeChanged` firing)
+- [x] **WIDG-QA-02**: Today-vs-yesterday -85% bug NOT reproducible at any time of day — dashboard loaded at 09:00, 11:00, 14:00, 17:00 never shows universally negative pace
+- [x] **WIDG-QA-03**: Per-block error handling: if one ability fails in `Promise.allSettled`, that block shows skeleton placeholder "Daten nicht verfügbar", other 3 render normally
+- [x] **WIDG-QA-04**: All user-facing text in German
+- [x] **WIDG-QA-05**: Size budget: single-file `dist/index.html` ≤ 300 KB gzipped, verified via build artifact inspection
 
 ---
 

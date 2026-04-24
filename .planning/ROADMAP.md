@@ -295,7 +295,7 @@ Plans:
  (completed 2026-04-24)
 - [x] **Phase 17: kamanda-mcp Server Expansion** — 5 new MCP tools wrapping WP abilities, `daily_briefing` refactored to Promise.allSettled fan-out, proxy whitelist updated (completed 2026-04-24)
 - [x] **Phase 18: MCP UI Resource Build Pipeline** — Vite single-file widget build + 12-token postMessage bridge; reusable platform layer (completed 2026-04-24)
-- [ ] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff
+- [x] **Phase 19: Revenue Intelligence Widget v2** — 4-block dashboard (run-rate, heatmap, repeat, basket/AOV) replaces v1 widget, zero portal TypeScript diff (completed 2026-04-24)
 - [ ] **Phase 20: Monday Briefing Email** — Edge Function scheduled Mondays 08:00 Berlin, pulls `weekly_briefing_data`, sends HTML briefing via Mailjet
 
 ## Phase Details
@@ -400,6 +400,18 @@ Plans:
 **UI hint**: yes
 **Notes**: Design/spec work (block layouts, formatters, mock-host variants) can start while Phase 18 pipeline stabilises. PORT-02..05 live here because they are coupled to widget embedding behaviour; PORT-01 already landed in Phase 17.
 
+**Plans:** 8/8 plans complete
+
+Plans:
+- [x] 19-01-PLAN.md — Foundation: types.ts + formatters.ts + theme.ts + BlockSkeleton.tsx + formatters tests (Wave 1)
+- [x] 19-02-PLAN.md — Fixtures extension + fixture payloads + useCountUp hook + tests (Wave 1)
+- [x] 19-03-PLAN.md — vitest.config extension + check-german-only.mjs CI gate (Wave 1)
+- [x] 19-04-PLAN.md — HeuteBlock + AttentionList + AppContext + tests (Wave 2)
+- [x] 19-05-PLAN.md — HeatmapBlock with 7×24 grid + period toggle + tests (Wave 2)
+- [x] 19-06-PLAN.md — RepeatBlock + BasketOrAovBlock 3-mode switch + tests (Wave 2)
+- [x] 19-07-PLAN.md — App.tsx v1→v2 in-place replacement + styles.css minimise + full build/bundle/german gates (Wave 3)
+- [x] 19-08-PLAN.md — PORTAL zero-diff verification + human UAT checkpoint (Wave 3)
+
 ### Phase 20: Monday Briefing Email
 **Goal**: An automated Monday 08:00 Europe/Berlin HTML email lands in Yuri's inbox with last-week revenue summary, best slot, repeat metrics, and top 3 products — validating the full Edge Function → MCP server → WP ability → email chain before MBM rollout
 **Depends on**: Phase 16 (`kmn/weekly-briefing-data` ability exists), Phase 17 (`weekly_briefing_data` MCP tool exposed)
@@ -423,5 +435,5 @@ Plans:
 | 16. kmn-revenue-abilities WP Plugin | 3/3 | Complete    | 2026-04-24 |
 | 17. kamanda-mcp Server Expansion | 5/5 | Complete    | 2026-04-24 |
 | 18. MCP UI Resource Build Pipeline | 5/5 | Complete    | 2026-04-24 |
-| 19. Revenue Intelligence Widget v2 | 0/? | Not started | — |
+| 19. Revenue Intelligence Widget v2 | 8/8 | Complete    | 2026-04-24 |
 | 20. Monday Briefing Email | 0/? | Not started | — |
