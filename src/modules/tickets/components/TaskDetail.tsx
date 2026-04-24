@@ -64,7 +64,6 @@ export function TaskDetail({ task, onClose, onRead }: Props) {
 
       {/* Meta row */}
       <div className="flex flex-wrap gap-3 text-xxs text-text-tertiary mb-5">
-        {task.list_name && <span>{task.list_name}</span>}
         {task.created_by_name && (
           <span>{dict.labels.createdBy}: {task.created_by_name}</span>
         )}

@@ -40,7 +40,7 @@ export function matchesTaskSearch(task: ClickUpTask, query: string): boolean {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return true
 
-  return [task.name, task.description, task.list_name]
+  return [task.name, task.description]
     .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
     .some(value => value.toLowerCase().includes(normalized))
 }
