@@ -7,11 +7,13 @@ interface SideSheetProps {
   onClose: () => void
   title: string
   children: React.ReactNode
-  /** When true, the child manages its own scroll. Replaces overflow-y-auto with overflow-hidden. */
+  /** @deprecated Use the `footer` prop instead. Will be removed in a future release. */
   managed?: boolean
+  /** Sticky footer rendered below the scroll body (e.g. comment composer). Border-t + keyboard padding are applied automatically. */
+  footer?: React.ReactNode
 }
 
-export function SideSheet({ open, onClose, title, children, managed }: SideSheetProps) {
+export function SideSheet({ open, onClose, title, children, managed, footer }: SideSheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={o => { if (!o) onClose() }}>
       <Dialog.Portal>
@@ -30,9 +32,24 @@ export function SideSheet({ open, onClose, title, children, managed }: SideSheet
             </Dialog.Close>
           </div>
 
-          <div className={managed ? "flex-1 overflow-hidden flex flex-col min-h-0" : "flex-1 overflow-y-auto"}>
+          <div className={
+            footer
+              ? "flex-1 overflow-y-auto min-h-0"
+              : managed
+                ? "flex-1 overflow-hidden flex flex-col min-h-0"
+                : "flex-1 overflow-y-auto"
+          }>
             {children}
           </div>
+
+          {footer && (
+            <div
+              className="shrink-0 border-t border-border"
+              style={{ paddingBottom: 'env(keyboard-inset-height, 0px)' }}
+            >
+              {footer}
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
