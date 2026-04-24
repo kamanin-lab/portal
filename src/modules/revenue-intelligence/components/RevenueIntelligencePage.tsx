@@ -1,5 +1,5 @@
 /**
- * Revenue Intelligence -- embeds the Kamanda MCP App (daily-briefing tool).
+ * Revenue Intelligence -- embeds the kmn MCP App (daily-briefing tool).
  * Follows Architecture Rule 11 (ContentContainer width="narrow") like every
  * other app page. The iframe sits inside the centered column.
  */
@@ -19,7 +19,7 @@ const TOOL_RESOURCE_URI = 'ui://widgets/daily-briefing.html'
 export function RevenueIntelligencePage() {
   const { callTool, readResource, listResources } = useMcpProxy()
   const [isReady, setIsReady] = useState(false)
-  // The kamanda daily_briefing widget stays in a "loading" state until it
+  // The kmn daily_briefing widget stays in a "loading" state until it
   // receives a tool result via ui/notifications/tool-result. @mcp-ui/client's
   // AppRenderer forwards the `toolResult` prop to the iframe for us, so we
   // invoke the tool once on mount and feed the result in.

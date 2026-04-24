@@ -1,8 +1,8 @@
-# KAMANDA Triage Agent v1 — Claude Code Implementation Prompt
+# kmn Triage Agent v1 — Claude Code Implementation Prompt
 
 ## Context
 
-You are implementing **Triage Agent v1** for the KAMANIN Client Portal (KAMANDA).
+You are implementing **Triage Agent v1** for the KAMANIN Client Portal (kmn).
 This is a production system. Do not experiment. Follow the existing architecture exactly.
 
 ### Existing stack (do not change)

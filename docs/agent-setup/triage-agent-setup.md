@@ -1,8 +1,8 @@
-# KAMANDA Triage Agent — Setup Guide
+# kmn Triage Agent — Setup Guide
 
 ## Overview
 
-The KAMANDA Triage Agent automatically estimates time and cost for new ClickUp tasks.
+The kmn Triage Agent automatically estimates time and cost for new ClickUp tasks.
 When a task is created in a monitored list, the agent fetches optional WordPress site context
 via Maxi AI Core, calls Claude Haiku (via OpenRouter), and posts a structured `[Triage]` comment
 to the ClickUp task within 15 seconds. A developer then replies `[approve]` or `[reject]`

@@ -10,7 +10,7 @@ const ALLOWED_METHODS = new Set([
   "resources/read",
 ]);
 
-const DEFAULT_MCP_SERVER_URL = "https://kamanda-mcp-poc.vercel.app/mcp";
+const DEFAULT_MCP_SERVER_URL = "https://mcp-poc-three.vercel.app/mcp";
 
 Deno.serve(async (req) => {
   const correlationId = crypto.randomUUID();
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // For tools/call: whitelist tools exposed by the kamanda-mcp-poc MCP server.
+    // For tools/call: whitelist tools exposed by the kmn MCP server (mcp-poc Vercel deployment).
     // Tool names use underscores (daily_briefing, revenue_today, etc.) per upstream schema.
     const ALLOWED_TOOLS = new Set([
       "daily_briefing",

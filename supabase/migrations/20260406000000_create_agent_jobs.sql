@@ -1,4 +1,4 @@
--- Migration: create agent_jobs table for KAMANDA Triage Agent v1
+-- Migration: create agent_jobs table for kmn Triage Agent v1
 -- Phase 6: Triage Agent
 
 create table public.agent_jobs (
