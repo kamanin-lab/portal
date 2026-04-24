@@ -24,6 +24,11 @@ vi.mock('../components/TaskDetail', () => ({
   TaskDetail: ({ task }: { task: ClickUpTask }) => <div data-testid="task-detail">{task.name}</div>,
 }))
 
+vi.mock('../components/TaskComments', () => ({
+  TaskCommentComposer: () => <div data-testid="comment-composer" />,
+  TaskCommentsList: () => <div data-testid="comments-list" />,
+}))
+
 function makeTask(overrides: Partial<ClickUpTask> = {}): ClickUpTask {
   return {
     id: overrides.clickup_id ?? 'task-1',
