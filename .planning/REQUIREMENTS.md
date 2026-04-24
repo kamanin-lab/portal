@@ -34,9 +34,9 @@ Reusable infrastructure shared by all future MCP Apps in the portal.
 
 ### WordPress Companion Plugin Pattern (MCPAPP-WP)
 
-- [ ] **MCPAPP-WP-01**: Plugin template pattern documented in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md` (referenceable for future client-data bridges)
-- [ ] **MCPAPP-WP-02**: MCP Adapter v0.5.0 integration pattern: composer-managed, `mcp_adapter_init` hook, separate `server-id` per plugin (no shared namespace)
-- [ ] **MCPAPP-WP-03**: WordPress Application Password auth pattern with rotation runbook in `docs/DECISIONS.md`
+- [x] **MCPAPP-WP-01**: Plugin template pattern documented in `docs/ideas/WP_BRIDGE_ARCHITECTURE.md` (referenceable for future client-data bridges)
+- [x] **MCPAPP-WP-02**: MCP Adapter v0.5.0 integration pattern: composer-managed, `mcp_adapter_init` hook, separate `server-id` per plugin (no shared namespace)
+- [x] **MCPAPP-WP-03**: WordPress Application Password auth pattern with rotation runbook in `docs/DECISIONS.md`
 
 ---
 
@@ -46,11 +46,11 @@ First production usage of the MCPAPP-WP pattern. Lives at `PORTAL/wordpress-plug
 
 ### Plugin Scaffold (ABIL-SCAF)
 
-- [ ] **ABIL-SCAF-01**: Plugin main file `kmn-revenue-abilities.php` with plugin header, WP 6.9+ version guard (deactivate with admin notice if lower), WC dependency check
-- [ ] **ABIL-SCAF-02**: `composer.json` declaring `wordpress/mcp-adapter:^0.5.0`; `vendor/` committed with plugin
-- [ ] **ABIL-SCAF-03**: Bootstrap file `bootstrap/register-mcp-server.php` hooks `mcp_adapter_init`, calls `$adapter->create_server(server_id: 'kmn-revenue', rest_namespace: 'mcp', rest_route: 'kmn-revenue', ...)` — exposes endpoint at `/wp-json/mcp/kmn-revenue`
-- [ ] **ABIL-SCAF-04**: Shared helpers: `includes/sql-helpers.php` (date-range builders, numeric UTC offset resolver), `includes/cache.php` (transient key builder, TTL wrappers, invalidation on `woocommerce_order_status_changed`)
-- [ ] **ABIL-SCAF-05**: `readme.md` with setup instructions (DDEV symlink, Application Password generation, required WP/WC versions)
+- [x] **ABIL-SCAF-01**: Plugin main file `kmn-revenue-abilities.php` with plugin header, WP 6.9+ version guard (deactivate with admin notice if lower), WC dependency check
+- [x] **ABIL-SCAF-02**: `composer.json` declaring `wordpress/mcp-adapter:^0.5.0`; `vendor/` committed with plugin
+- [x] **ABIL-SCAF-03**: Bootstrap file `bootstrap/register-mcp-server.php` hooks `mcp_adapter_init`, calls `$adapter->create_server(server_id: 'kmn-revenue', rest_namespace: 'mcp', rest_route: 'kmn-revenue', ...)` — exposes endpoint at `/wp-json/mcp/kmn-revenue`
+- [x] **ABIL-SCAF-04**: Shared helpers: `includes/sql-helpers.php` (date-range builders, numeric UTC offset resolver), `includes/cache.php` (transient key builder, TTL wrappers, invalidation on `woocommerce_order_status_changed`)
+- [x] **ABIL-SCAF-05**: `readme.md` with setup instructions (DDEV symlink, Application Password generation, required WP/WC versions)
 
 ### Abilities (ABIL-DEF)
 

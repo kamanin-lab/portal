@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.0
-milestone_name: MCP Apps Platform
-status: phase-15-complete
-last_updated: "2026-04-24T02:00:00.000Z"
+milestone_name: "1. Dashboard at 09:00, 11:00, 14:00, 17:00 never shows universally negative pace — the today-vs-yesterday −85% bug is not reproducible"
+status: executing
+last_updated: "2026-04-24T08:57:19.454Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 20
-  completed_phases: 15
-  total_plans: 44
+  completed_phases: 14
+  total_plans: 45
   completed_plans: 44
-  percent: 75
+  percent: 98
 ---
 
 # Project State
@@ -20,10 +20,10 @@ progress:
 
 ## Current Position
 
-Phase: 15 (Local Dev + Synthetic Seeder) — COMPLETE
-Plan: 2 of 2 — both complete
-Status: Phase 15 closed. Summerfield DDEV has 1099 paid orders seeded, prefix s7uy9uh34_, heatmap preview confirms Do 20:00 peak. Ready for Phase 16.
-Last activity: 2026-04-24 — Phase 15 closed. Heatmap preview evidence captured in 15-02-SUMMARY.md. Next: /gsd-plan-phase 16 (kmn-revenue-abilities — 5 WP abilities).
+Phase: 16 (kmn-revenue-abilities-wp-plugin) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-24
 
 ## Key Facts Discovered in Phase 15 (critical for downstream phases)
 
