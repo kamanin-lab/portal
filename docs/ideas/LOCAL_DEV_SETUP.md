@@ -669,4 +669,56 @@ Summerfield DDEV environment is **already live** on Yuri's machine. Superseding 
 
 ---
 
-*Last updated: 2026-04-23 — Canonical stack updated to match actual deployment (Apache-FPM + PHP 8.4 + MySQL 8.0 at `/home/upan/projects/sf_staging/`). Earlier nginx/MariaDB/PHP 8.2 references in §6 Step 2 are superseded.*
+## 18. DDEV Volume Mount for PORTAL Plugin (required)
+
+DDEV containers do not see `/mnt/g/` by default — WSL mounts Windows drives, but Docker Desktop doesn't bind-mount them into child containers. This means symlinks in `wp-content/plugins/` pointing at `/mnt/g/.../PORTAL/wordpress-plugins/kmn-revenue-abilities` resolve from the host shell but NOT from inside the web container — and `ddev wp plugin activate` fails with `plugin could not be found`.
+
+**Fix — add a volume override:**
+
+Create `/home/upan/projects/sf_staging/.ddev/docker-compose.portal-mount.yaml`:
+```yaml
+# Mounts PORTAL git repo from Windows drive into DDEV web container
+# so symlinked WP plugins (kmn-revenue-abilities) can follow their target.
+services:
+  web:
+    volumes:
+      - /mnt/g/01_OPUS/Projects/PORTAL:/mnt/g/01_OPUS/Projects/PORTAL:cached
+```
+
+Then `ddev restart`.
+
+Verify from inside container:
+```bash
+ddev exec ls /mnt/g/01_OPUS/Projects/PORTAL/wordpress-plugins/kmn-revenue-abilities/
+# Expected: composer.json, kmn-revenue-abilities.php, readme.md
+```
+
+After this mount, `ln -sfn /mnt/g/.../kmn-revenue-abilities wp-content/plugins/kmn-revenue-abilities` resolves correctly inside the container.
+
+**Note:** This override lives in the WSL DDEV project dir, not in PORTAL git. Each developer who sets up Summerfield DDEV creates their own copy — path may differ (e.g. `/mnt/c/...` or WSL-native path if they clone PORTAL into WSL home).
+
+---
+
+## 19. Phase 15 Deployment — Actual Installed State (2026-04-24)
+
+After Phase 15 Plan 1 execution, the actual WP install at `/home/upan/projects/sf_staging/` has:
+
+- **`wp-content/mu-plugins/load-mcp-adapter.php`** — loader that requires composer autoloader + `vendor/wordpress/mcp-adapter/mcp-adapter.php`
+- **`wp-content/mu-plugins/vendor/wordpress/mcp-adapter/`** — MCP Adapter v0.5.0 (installed via `ddev composer require`)
+- **`wp-content/mu-plugins/vendor/wordpress/php-mcp-schema/`** — v0.1.1 (adapter dep)
+- **`wp-content/plugins/kmn-revenue-abilities/`** — symlink → `/mnt/g/01_OPUS/Projects/PORTAL/wordpress-plugins/kmn-revenue-abilities` (plugin active, v0.1.0 empty shell)
+- **`wp-content/plugins/maxi-ai/`** — real dir (NOT symlink), Michael's v3.4.7 installed independently
+- **`wp-content/plugins/mcp-adapter/`** — REMOVED in Phase 15 (was stale v0.4.1, conflicted with mu-plugin v0.5.0)
+- **`.ddev/docker-compose.portal-mount.yaml`** — volume override (see §18)
+
+**WordPress users (relevant for MCP):**
+- `dev-admin` (ID=1) — administrator, email `admin@kamanin.at`. Used as MCP service account. Has active Application Password with description `mcp-dev`.
+- `dev-1` (ID=2) — administrator, `yk@kamanin.at` (Yuri's primary)
+
+**Application Password + WC REST keys** generated and recorded in Yuri's vault (not in repo).
+
+**Table prefix:** `s7uy9uh34_` (Summerfield production hardened prefix). All Phase 16+ abilities MUST use `$wpdb->prefix` dynamically — never hardcode `wp_`.
+
+---
+
+*Last updated: 2026-04-24 — §17-19 document actual Phase 15 deployed state. Canonical stack: Apache-FPM + PHP 8.4 + MySQL 8.0 at `/home/upan/projects/sf_staging/`. Earlier nginx/MariaDB/PHP 8.2 references in §6 Step 2 are superseded.*
