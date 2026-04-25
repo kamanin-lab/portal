@@ -45,24 +45,27 @@ export function RevenueIntelligencePage() {
 
   // One-shot initial tool invocation. Ref-guard prevents double-fire in React
   // StrictMode dev and any rerender noise — production sees a single fetch.
+  //
+  // IMPORTANT: do NOT add a `cancelled` flag tied to cleanup. StrictMode runs
+  // the effect twice in dev: mount → cleanup (sets cancelled=true) → remount.
+  // The remount sees `initialCallDoneRef.current === true` and bails, so the
+  // ONLY tool invocation is the one started on first mount. If we honour the
+  // first cleanup's `cancelled` flag, the resulting `setToolResult` call is
+  // suppressed → toolResult stays null → AppRenderer never sends
+  // ui/notifications/tool-result → widget stays in loading state forever.
+  // (See debug session widget-srcdoc-body-empty.md, 2026-04-25.)
   const initialCallDoneRef = useRef(false)
   useEffect(() => {
     if (initialCallDoneRef.current) return
     initialCallDoneRef.current = true
-    let cancelled = false
     ;(async () => {
       try {
         const result = (await callToolRef.current({ name: TOOL_NAME, arguments: {} })) as CallToolResult
-        if (!cancelled) setToolResult(result)
+        setToolResult(result)
       } catch (err) {
-        if (!cancelled) {
-          console.error('[RevenueIntelligence] initial tool call failed:', err)
-        }
+        console.error('[RevenueIntelligence] initial tool call failed:', err)
       }
     })()
-    return () => {
-      cancelled = true
-    }
   }, [])
 
   const handleReadResource = useCallback(
